@@ -62,17 +62,17 @@ git push && git push --tags
 
 ### Vérification
 
-1. Aller sur [GitHub Actions](https://github.com/user/repo/actions)
+1. Aller sur [GitHub Actions](https://github.com/Filirom1/bcd/actions)
 2. Vérifier que les workflows `release-windows` et `release-linux` sont lancés
 3. Attendre la fin du build (~5-10 min)
-4. Vérifier la [Release](https://github.com/user/repo/releases) créée
+4. Vérifier la [Release](https://github.com/Filirom1/bcd/releases) créée
 
 ## Client Godot
 
 ### Préparation
 
 1. **Tests manuels**:
-   - Ouvrir `bcd_godot/project.godot` dans Godot 4.6
+   - Ouvrir `bcd_kids/project.godot` dans Godot 4.6
    - Lancer avec F5
    - Tester:
      - ✓ Découverte serveur (mDNS)
@@ -105,7 +105,7 @@ python scripts/bump_godot_version.py major --push
 ```
 
 Le script:
-- ✅ Met à jour `bcd_godot/export_presets.cfg`
+- ✅ Met à jour `bcd_kids/export_presets.cfg`
 - ✅ Crée commit + tag `godot-vX.X.X`
 - ✅ Push vers GitHub
 - ✅ Déclenche workflow CI/CD
@@ -126,10 +126,10 @@ git push && git push --tags
 
 ### Vérification
 
-1. Aller sur [GitHub Actions](https://github.com/user/repo/actions)
+1. Aller sur [GitHub Actions](https://github.com/Filirom1/bcd/actions)
 2. Vérifier que le workflow `build-godot` est lancé
 3. Attendre la fin du build (~3-5 min)
-4. Vérifier la [Release](https://github.com/user/repo/releases) créée
+4. Vérifier la [Release](https://github.com/Filirom1/bcd/releases) créée
 5. Télécharger et tester les binaires:
    - Windows: `BCD-Godot-vX.X.X-Windows.zip`
    - Linux: `BCD-Godot-vX.X.X-Linux.tar.gz`
@@ -159,7 +159,7 @@ See INSTALL.md for installation instructions.
 
 ### Godot Client
 
-Utiliser le template dans `bcd_godot/RELEASE_TEMPLATE.md`.
+Utiliser le template dans `bcd_kids/RELEASE_TEMPLATE.md`.
 
 **Sections à remplir**:
 - Nouveautés (Added)
@@ -202,7 +202,7 @@ Si une release pose problème:
    ```
 
 2. **Supprimer la release GitHub**:
-   - Aller sur [Releases](https://github.com/user/repo/releases)
+   - Aller sur [Releases](https://github.com/Filirom1/bcd/releases)
    - Cliquer sur "Delete" pour la release
 
 3. **Revert le commit de version**:
@@ -244,6 +244,6 @@ Si une release pose problème:
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/user/repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/user/repo/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Filirom1/bcd/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Filirom1/bcd/discussions)
 - **Documentation**: README.md, INSTALL.md, CLAUDE.md

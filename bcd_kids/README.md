@@ -161,7 +161,7 @@ Le code suit le style du mockup dans `~/Downloads/Godot_v4.6.2-stable_win64.exe/
 Avant d'installer, vérifier la compatibilité du système:
 
 ```powershell
-cd bcd_godot/scripts
+cd bcd_kids/scripts
 .\check-system.ps1
 ```
 
@@ -209,7 +209,7 @@ Deux workflows automatiques:
 
 #### 1. Build continu (`.github/workflows/build-godot.yml`)
 
-Déclenché sur push/PR vers `main` ou `develop` quand `bcd_godot/**` change:
+Déclenché sur push/PR vers `main` ou `develop` quand `bcd_kids/**` change:
 - Build Windows et Linux
 - Upload des artifacts (rétention 14 jours)
 

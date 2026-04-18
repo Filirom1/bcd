@@ -114,6 +114,17 @@ jobs:
 
       - name: Setup export templates (officiel + remplacement custom)
         run: |
+          mkdir -p ~/.local/share/godot/export_templates/
+          mv /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          cp custom-templates/windows_release_x86_64.exe \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/windows_release_x86_64.exe
+
+      - name: Import resources
+        run: godot --headless --import --path bcd_kids/ || true
+
+      - name: Windows Build
+        run: |
           cd bcd_kids
           mkdir -p builds/windows
           godot --headless --verbose --export-release "Windows Desktop" \
@@ -150,6 +161,9 @@ jobs:
           # On remplace uniquement le binaire template par notre version optimisée
           cp custom-templates/linux_release.x86_64 \
              ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/linux_release.x86_64
+
+      - name: Import resources
+        run: godot --headless --import --path bcd_kids/ || true
 
       - name: Linux Build
         run: |

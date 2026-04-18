@@ -19,7 +19,7 @@ python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
 Puis ouvrir **http://127.0.0.1:8000** dans le navigateur.
 
 **Client Godot** (interface pour CP-CM2) :
-- Télécharger depuis [Releases](https://github.com/user/repo/releases) (Windows/Linux)
+- Télécharger depuis [Releases](https://github.com/Filirom1/bcd/releases) (Windows/Linux)
 - Découverte automatique des serveurs BCD sur le réseau (mDNS)
 - Nécessite un serveur BCD API en cours d'exécution
 

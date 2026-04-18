@@ -19,7 +19,7 @@ python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
 Then open **http://127.0.0.1:8000** in your browser.
 
 **Godot Client** (kids-friendly interface for CP-CM2):
-- Download from [Releases](https://github.com/user/repo/releases) (Windows/Linux)
+- Download from [Releases](https://github.com/Filirom1/bcd/releases) (Windows/Linux)
 - Auto-discovers BCD servers on the network (mDNS)
 - Requires a running BCD API server
 
@@ -52,7 +52,7 @@ A colorful, touch-friendly Godot 4.6 client designed for elementary school stude
 - **Windows** (`.exe` 64-bit)
 - **Linux** (`.x86_64` 64-bit)
 
-**Download**: See [Releases](https://github.com/user/repo/releases) tagged `godot-v*.*.*`
+**Download**: See [Releases](https://github.com/Filirom1/bcd/releases)
 
 **Requirements**: The Kids client requires a BCD API server running on the network (auto-discovered via mDNS).
 

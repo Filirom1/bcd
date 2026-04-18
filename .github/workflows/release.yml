@@ -166,6 +166,9 @@ jobs:
           cp custom-templates/windows_release_x86_64.exe \
              ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/windows_release_x86_64.exe
 
+      - name: Import resources
+        run: godot --headless --import --path bcd_kids/ || true
+
       - name: Export Windows
         run: |
           cd bcd_kids
@@ -207,6 +210,9 @@ jobs:
              ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
           cp custom-templates/linux_release.x86_64 \
              ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/linux_release.x86_64
+
+      - name: Import resources
+        run: godot --headless --import --path bcd_kids/ || true
 
       - name: Export Linux
         run: |

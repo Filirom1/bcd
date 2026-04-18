@@ -10,7 +10,7 @@ Vérification de compatibilité système avant installation.
 
 **Option 1: PowerShell normal**
 ```powershell
-cd bcd_godot/scripts
+cd bcd_kids/scripts
 .\check-system.ps1
 ```
 

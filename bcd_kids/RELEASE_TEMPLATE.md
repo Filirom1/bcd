@@ -144,7 +144,7 @@ Voir le README principal du projet BCD pour installer le serveur.
 2. Vérifier CPU/RAM usage
 3. Optimiser Windows (désactiver effets visuels)
 
-Voir [`DEPLOYMENT.md`](https://github.com/user/repo/blob/main/bcd_godot/DEPLOYMENT.md) pour guide complet.
+Voir [`DEPLOYMENT.md`](https://github.com/Filirom1/bcd/blob/main/bcd_kids/DEPLOYMENT.md) pour guide complet.
 
 ## 📝 Notes de Version vX.X.X
 
@@ -173,15 +173,15 @@ sha256sum BCD-Godot-vX.X.X-Linux.tar.gz
 
 ## 📚 Documentation
 
-- **README**: [bcd_godot/README.md](https://github.com/user/repo/blob/main/bcd_godot/README.md)
-- **Guide Déploiement**: [bcd_godot/DEPLOYMENT.md](https://github.com/user/repo/blob/main/bcd_godot/DEPLOYMENT.md)
-- **Scripts**: [bcd_godot/scripts/](https://github.com/user/repo/tree/main/bcd_godot/scripts)
+- **README**: [bcd_kids/README.md](https://github.com/Filirom1/bcd/blob/main/bcd_kids/README.md)
+- **Guide Déploiement**: [bcd_kids/DEPLOYMENT.md](https://github.com/Filirom1/bcd/blob/main/bcd_kids/DEPLOYMENT.md)
+- **Scripts**: [bcd_kids/scripts/](https://github.com/Filirom1/bcd/tree/main/bcd_kids/scripts)
 
 ## 🤝 Support
 
-- **Issues**: [GitHub Issues](https://github.com/user/repo/issues)
+- **Issues**: [GitHub Issues](https://github.com/Filirom1/bcd/issues)
 - **Documentation**: README & DEPLOYMENT.md
-- **Script diagnostic**: `bcd_godot/scripts/check-system.ps1`
+- **Script diagnostic**: `bcd_kids/scripts/check-system.ps1`
 
 ---
 

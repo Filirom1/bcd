@@ -4,7 +4,7 @@ Guide rapide pour créer une nouvelle version du client Godot.
 
 ## Quick Start
 
-Depuis la **racine du projet** (pas `bcd_godot/`):
+Depuis la **racine du projet** (pas `bcd_kids/`):
 
 ```bash
 # Voir la version actuelle
@@ -89,7 +89,7 @@ Si possible, tester sur un vieux PC:
 
 Utiliser le script de vérification système:
 ```bash
-# Dans bcd_godot/scripts/
+# Dans bcd_kids/scripts/
 powershell -ExecutionPolicy Bypass -File check-system.ps1
 ```
 
@@ -134,10 +134,10 @@ git push && git push --tags
 
 ### 3. Vérification GitHub
 
-1. Aller sur [Actions](https://github.com/user/repo/actions)
+1. Aller sur [Actions](https://github.com/Filirom1/bcd/actions)
 2. Vérifier workflow "Release Godot Client" lancé
 3. Attendre fin du build (~3-5 min)
-4. Vérifier [Releases](https://github.com/user/repo/releases)
+4. Vérifier [Releases](https://github.com/Filirom1/bcd/releases)
 
 ### 4. Tests des Binaires
 
@@ -268,6 +268,6 @@ Pour un fix urgent en production:
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/user/repo/issues)
+- **Issues**: [GitHub Issues](https://github.com/Filirom1/bcd/issues)
 - **Documentation**: [README.md](README.md), [DEPLOYMENT.md](DEPLOYMENT.md)
 - **Script version**: `scripts/bump_godot_version.py --help`
