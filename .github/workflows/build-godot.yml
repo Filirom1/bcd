@@ -7,6 +7,11 @@ on:
       - 'bcd_kids/**'
       - '.github/workflows/build-godot.yml'
   workflow_dispatch:
+    inputs:
+      use_official_templates:
+        description: 'Use official Godot templates (skip custom build) — for debugging'
+        type: boolean
+        default: false
 
 env:
   GODOT_VERSION: "4.6.1"
@@ -54,7 +59,7 @@ jobs:
   compile-templates:
     name: Restore Godot Templates
     needs: check
-    if: needs.check.outputs.should-build == 'true'
+    if: needs.check.outputs.should-build == 'true' && inputs.use_official_templates != true
     runs-on: ubuntu-latest
 
     steps:
@@ -95,7 +100,7 @@ jobs:
   export-windows:
     name: Windows Export
     needs: [check, compile-templates]
-    if: needs.check.outputs.should-build == 'true'
+    if: always() && needs.check.outputs.should-build == 'true' && (needs.compile-templates.result == 'success' || needs.compile-templates.result == 'skipped')
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6.1   # ← corrigé (était 4.3)
@@ -107,18 +112,24 @@ jobs:
           lfs: true
 
       - name: Download custom templates
+        if: inputs.use_official_templates != true
         uses: actions/download-artifact@v4
         with:
           name: godot-custom-templates
           path: custom-templates/
 
-      - name: Setup export templates (officiel + remplacement custom)
+      - name: Setup export templates
         run: |
           mkdir -p ~/.local/share/godot/export_templates/
           mv /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable \
              ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
-          cp custom-templates/windows_release_x86_64.exe \
-             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/windows_release_x86_64.exe
+          if [ "${{ inputs.use_official_templates }}" != "true" ]; then
+            echo "Using custom templates"
+            cp custom-templates/windows_release_x86_64.exe \
+               ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/windows_release_x86_64.exe
+          else
+            echo "Using official templates only (debug mode)"
+          fi
 
       - name: Import resources
         run: godot --headless --import --path bcd_kids/ || true
@@ -130,13 +141,21 @@ jobs:
           godot --headless --verbose --export-release "Windows Desktop" \
                 builds/windows/BCD-Kids.exe
 
+      - name: Upload Windows artifact (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BCD-Kids-Windows-${{ inputs.use_official_templates == true && 'official' || 'custom' }}-templates
+          path: bcd_kids/builds/windows/
+          retention-days: 3
+
   # ═══════════════════════════════════════════════════════════════════════════
   # JOB 3 : Export Linux
   # ═══════════════════════════════════════════════════════════════════════════
   export-linux:
     name: Linux Export
     needs: [check, compile-templates]
-    if: needs.check.outputs.should-build == 'true'
+    if: always() && needs.check.outputs.should-build == 'true' && (needs.compile-templates.result == 'success' || needs.compile-templates.result == 'skipped')
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6.1   # ← corrigé (était 4.3)
@@ -148,19 +167,24 @@ jobs:
           lfs: true
 
       - name: Download custom templates
+        if: inputs.use_official_templates != true
         uses: actions/download-artifact@v4
         with:
           name: godot-custom-templates
           path: custom-templates/
 
-      - name: Setup export templates (officiel + remplacement custom)
+      - name: Setup export templates
         run: |
           mkdir -p ~/.local/share/godot/export_templates/
           mv /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable \
              ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
-          # On remplace uniquement le binaire template par notre version optimisée
-          cp custom-templates/linux_release.x86_64 \
-             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/linux_release.x86_64
+          if [ "${{ inputs.use_official_templates }}" != "true" ]; then
+            echo "Using custom templates"
+            cp custom-templates/linux_release.x86_64 \
+               ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/linux_release.x86_64
+          else
+            echo "Using official templates only (debug mode)"
+          fi
 
       - name: Import resources
         run: godot --headless --import --path bcd_kids/ || true
@@ -171,6 +195,14 @@ jobs:
           mkdir -p builds/linux
           godot --headless --verbose --export-release "Linux/X11" \
                 builds/linux/BCD-Kids.x86_64
+
+      - name: Upload Linux artifact (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BCD-Kids-Linux-${{ inputs.use_official_templates == true && 'official' || 'custom' }}-templates
+          path: bcd_kids/builds/linux/
+          retention-days: 3
 
   # ═══════════════════════════════════════════════════════════════════════════
   # JOB 4 : Résumé
