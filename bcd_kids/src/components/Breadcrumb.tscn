@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bcd4cmp0001"]
+
+[ext_resource type="Script" path="res://src/components/Breadcrumb.gd" id="1_scr"]
+
+[node name="Breadcrumb" type="HBoxContainer"]
+script = ExtResource("1_scr")

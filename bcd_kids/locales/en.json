@@ -1,0 +1,155 @@
+{
+	"class_select": {
+		"title": "Choose your class",
+		"scan_placeholder": "Scan book or child card…",
+		"no_classes": "No classes found"
+	},
+	"name_input": {
+		"title": "Enter your first name",
+		"placeholder": "Your first name...",
+		"not_found": "First name not found",
+		"min_chars": "Type at least 2 letters"
+	},
+	"name_choice": {
+		"title": "Multiple \"{name}\" - Choose:",
+		"books_count_one": "{count} book borrowed",
+		"books_count_other": "{count} books borrowed",
+		"no_books": "No books"
+	},
+	"main_menu": {
+		"books_count": "{current}/{limit} books",
+		"holds_ready": "{count} hold ready!",
+		"holds_ready_plural": "{count} holds ready!",
+		"checkout": "BORROW A BOOK",
+		"search": "SEARCH FOR A BOOK",
+		"my_holds": "MY HOLDS",
+		"return_scan": "RETURN BY SCAN",
+		"disconnect": "Disconnect",
+		"my_books": "My books",
+		"return_button": "Return",
+		"no_loans": "No books borrowed",
+		"overdue": "Overdue",
+		"no_holds": "No reservations"
+	},
+	"checkout": {
+		"title": "Checkout",
+		"label": "Book number:",
+		"success": "Book borrowed!",
+		"success_with_title": "{title} — Book borrowed!",
+		"error_limit": "You reached your limit ({current}/{limit})",
+		"error_already_loaned": "Book already on loan",
+		"error_not_found": "Book not found",
+		"error_blocked": "Your account is blocked",
+		"error_overdue": "You have overdue books",
+		"error_not_available": "Book not available",
+		"error_not_loanable": "This book cannot be borrowed",
+		"error_reserved": "This book is reserved for someone else"
+	},
+	"return": {
+		"title": "Return",
+		"label": "Book number:",
+		"success": "Book returned!",
+		"success_with_title": "{title} — Book returned!",
+		"shelve_at": "shelve at: {location}",
+		"on_time": "Returned on time",
+		"late": "{days} days late",
+		"error_not_found": "Book not found",
+		"error_not_on_loan": "This book is not on loan",
+		"hold_ready_for": "📌 Set aside for {name} ({class})",
+		"hold_ready_title": "📌 Hold ready!",
+		"hold_ready_instruction": "Please set this book aside for this borrower.",
+		"returned_today": "Books returned today:",
+		"scan_books_placeholder": "Scan books..."
+	},
+	"search": {
+		"title": "Search",
+		"placeholder": "Search for a book...",
+		"filter_type": "Type:",
+		"filter_genre": "Genre:",
+		"filter_audience": "Audience:",
+		"audience_all": "All",
+		"audience_child": "Child",
+		"audience_youth": "Youth",
+		"audience_adult": "Adult",
+		"available_only": "Available only",
+		"results_count": "{count} results",
+		"status_available": "Available",
+		"status_on_loan": "Borrowed",
+		"status_reserved": "Reserved",
+		"return_due": "Return due: {date}",
+		"reserve": "Reserve"
+	},
+	"hold": {
+		"title": "Hold",
+		"confirmed": "Hold confirmed!",
+		"confirmed_with_title": "{title} — Hold confirmed!",
+		"position": "You are {position} in the queue",
+		"notification": "We'll notify you when available!",
+		"available": "Available! Come get it",
+		"on_loan": "Borrowed",
+		"expires": "Reserved until: {date}",
+		"cancel": "Cancel",
+		"cancelled": "Hold cancelled",
+		"cancelled_with_title": "{title} — Hold cancelled",
+		"error_blocked": "Your account is blocked",
+		"error_duplicate": "You already have a hold on this book",
+		"error_no_items": "This book doesn't exist in our collection",
+		"error_limit": "You have too many active reservations"
+	},
+	"server_discovery": {
+		"title": "Find your library",
+		"subtitle": "Automatically searches for available libraries",
+		"searching": "Searching...",
+		"refresh": "Search again",
+		"servers_available": "Libraries found:",
+		"manual_connection": "Or type your library's address:",
+		"connect": "Connect",
+		"no_servers": "No server found.",
+		"servers_found": "{count} librar(y/ies) found",
+		"localhost_default": "Library on this computer",
+		"connecting": "Connecting to {name}...",
+		"connection_failed": "Cannot connect to {name}",
+		"connected": "Connected to {name}",
+		"connection_error": "Connection failed. Ask your teacher for help.",
+		"enter_url": "Type the address (eg: http://192.168.1.10:8000)"
+	},
+	"auth": {
+		"title": "Authentication",
+		"username": "Username",
+		"username_placeholder": "admin",
+		"password": "Password",
+		"password_placeholder": "••••••••",
+		"scheme": "Authentication method",
+		"required": "This server requires authentication",
+		"use_saved": "Use saved credentials ({username})",
+		"clear": "Clear credentials",
+		"cleared": "Credentials cleared",
+		"digest_note": "⚠️ Digest auth not implemented yet. Use Basic."
+	},
+	"settings": {
+		"theme_applied": "Theme applied: {name}",
+		"theme_random_hint": "Random theme on startup"
+	},
+	"common": {
+		"validate": "Validate",
+		"back": "Back",
+		"ok": "OK",
+		"home": "Home",
+		"loading": "Loading...",
+		"error_network": "No connection to server",
+		"error_unknown": "An error occurred. Please try again or ask for help.",
+		"all": "All"
+	},
+	"splash": {
+		"title": "BCD",
+		"tagline": "The Library Claude Built",
+		"open_source": "🔓 Free to use, remix & share — forever!",
+		"messages": [
+			"📖 Books are superpowers!",
+			"🌍 Share stories, change the world!",
+			"🆓 Free, open, forever!",
+			"🚀 Read. Explore. Dream. Share.",
+			"💡 Knowledge belongs to everyone"
+		]
+	}
+}

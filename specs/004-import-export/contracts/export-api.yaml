@@ -1,0 +1,216 @@
+openapi: 3.1.0
+info:
+  title: BCD Export API Contract
+  version: 1.0.0
+  description: |
+    API contract for exporting borrowers and catalog items to CSV format.
+    Supports Standard, BCDI, and Dublin Core export formats.
+
+paths:
+  /api/v1/export/borrowers:
+    post:
+      summary: Export borrowers to CSV
+      description: |
+        Exports borrower data to CSV with configurable format and filters.
+        Performance target: 1000 records in <5 seconds (SC-001).
+      operationId: exportBorrowers
+      tags:
+        - Export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BorrowerExportRequest'
+      responses:
+        '200':
+          description: CSV file generated successfully
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              example: |
+                id,barcode,first_name,last_name,class_name,grade
+                1,B001,Marie,Dupont,CE1-A,CE1
+                2,B002,Jean,Martin,CE1-A,CE1
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: 'attachment; filename="borrowers_export_20260206.csv"'
+            Content-Type:
+              schema:
+                type: string
+              example: 'text/csv; charset=utf-8'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Export generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/export/catalog:
+    post:
+      summary: Export catalog items to CSV
+      description: |
+        Exports bibliographic records to CSV with configurable format and filters.
+        Performance target: 1000 records in <5 seconds (SC-002).
+        Supports Standard, BCDI, and Dublin Core formats.
+      operationId: exportCatalog
+      tags:
+        - Export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogExportRequest'
+      responses:
+        '200':
+          description: CSV file generated successfully
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              examples:
+                standard:
+                  summary: Standard format
+                  value: |
+                    isbn,title,author,publisher,medium_type,dewey_decimal
+                    9782070612758,Le Petit Prince,Antoine de Saint-Exupéry,Gallimard,book,843
+                bcdi:
+                  summary: BCDI format
+                  value: |
+                    ISBN,Titre,Auteur,Editeur,Support,Cote
+                    9782070612758,Le Petit Prince,Antoine de Saint-Exupéry,Gallimard,Livre,843 SAI
+                dublin_core:
+                  summary: Dublin Core format
+                  value: |
+                    dc.identifier,dc.title,dc.creator,dc.publisher,dc.type,dc.subject
+                    isbn:9782070612758,Le Petit Prince,Antoine de Saint-Exupéry,Gallimard,Text,Fiction
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: 'attachment; filename="catalog_export_bcdi_20260206.csv"'
+            Content-Type:
+              schema:
+                type: string
+              example: 'text/csv; charset=utf-8'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Export generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    BorrowerExportRequest:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: [standard, bcdi]
+          default: standard
+          description: Export format (BCDI format includes French field names)
+        filters:
+          type: object
+          properties:
+            class_names:
+              type: array
+              items:
+                type: string
+              description: Filter by class names (e.g., ["CE1-A", "CE2-B"])
+            grades:
+              type: array
+              items:
+                type: string
+              description: Filter by grade levels (e.g., ["CE1", "CE2"])
+            active_only:
+              type: boolean
+              default: true
+              description: Include only active borrowers
+      example:
+        format: bcdi
+        filters:
+          class_names: ["CE1-A", "CE1-B"]
+          active_only: true
+
+    CatalogExportRequest:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: [standard, bcdi, dublin_core]
+          default: standard
+          description: |
+            Export format:
+            - standard: BCD native format with English field names
+            - bcdi: French school library standard (FR-009)
+            - dublin_core: International metadata standard (FR-010)
+        filters:
+          type: object
+          properties:
+            medium_types:
+              type: array
+              items:
+                type: string
+              description: Filter by medium type codes (e.g., ["book", "cd"])
+            dewey_range:
+              type: object
+              properties:
+                min:
+                  type: string
+                  pattern: '^\d{3}(\.\d+)?$'
+                max:
+                  type: string
+                  pattern: '^\d{3}(\.\d+)?$'
+              description: Filter by Dewey Decimal range (e.g., 500-599 for science)
+            available_only:
+              type: boolean
+              default: false
+              description: Include only available items (not checked out)
+      example:
+        format: dublin_core
+        filters:
+          medium_types: ["book", "periodical"]
+          dewey_range:
+            min: "800"
+            max: "899"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code (e.g., INVALID_FORMAT, EXPORT_FAILED)
+        message:
+          type: string
+          description: Human-readable error message (localized)
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context
+      example:
+        error: INVALID_FORMAT
+        message: "Unsupported export format: 'custom'"
+        details:
+          allowed_formats: ["standard", "bcdi", "dublin_core"]

@@ -1,0 +1,52 @@
+[gd_scene format=3 uid="uid://bcd4cmp0007"]
+
+[ext_resource type="Script" path="res://src/components/FilterPanel.gd" id="1_scr"]
+
+[node name="FilterPanel" type="VBoxContainer"]
+script = ExtResource("1_scr")
+theme_override_constants/separation = 6
+
+[node name="FiltersRow" type="HBoxContainer" parent="."]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="TypeGroup" type="VBoxContainer" parent="FiltersRow"]
+theme_override_constants/separation = 2
+
+[node name="TypeLabel" type="Label" parent="FiltersRow/TypeGroup"]
+unique_name_in_owner = true
+text = "Type"
+theme_type_variation = "LabelSmall"
+
+[node name="TypeOption" type="OptionButton" parent="FiltersRow/TypeGroup"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 32)
+
+[node name="GenreGroup" type="VBoxContainer" parent="FiltersRow"]
+theme_override_constants/separation = 2
+
+[node name="GenreLabel" type="Label" parent="FiltersRow/GenreGroup"]
+unique_name_in_owner = true
+text = "Genre"
+theme_type_variation = "LabelSmall"
+
+[node name="GenreOption" type="OptionButton" parent="FiltersRow/GenreGroup"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 32)
+
+[node name="CategoryGroup" type="VBoxContainer" parent="FiltersRow"]
+theme_override_constants/separation = 2
+
+[node name="CategoryLabel" type="Label" parent="FiltersRow/CategoryGroup"]
+unique_name_in_owner = true
+text = "Catégorie"
+theme_type_variation = "LabelSmall"
+
+[node name="CategoryOption" type="OptionButton" parent="FiltersRow/CategoryGroup"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 32)
+
+[node name="AvailableCheckbox" type="CheckBox" parent="."]
+unique_name_in_owner = true
+text = "Disponibles uniquement"
+theme_type_variation = "LabelSmall"

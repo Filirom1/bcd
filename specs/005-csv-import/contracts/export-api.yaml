@@ -1,0 +1,169 @@
+openapi: 3.1.0
+info:
+  title: BCD Export API Contract
+  version: 1.0.0
+  description: |
+    API contract for exporting catalog to Dublin Core CSV format.
+    Simple, single-endpoint design following existing BCD patterns.
+
+paths:
+  /api/v1/catalog/export:
+    get:
+      summary: Export catalog to Dublin Core CSV
+      description: |
+        Exports entire catalog to Dublin Core CSV format.
+        Performance target: 1000 records in <5 seconds (SC-001).
+        Returns CSV file with UTF-8 encoding and BOM for Excel compatibility.
+      operationId: exportCatalog
+      tags:
+        - Catalog - Export
+      responses:
+        '200':
+          description: CSV file generated successfully
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+              example: |
+                dc.title,dc.identifier,dc.creator,dc.publisher,dc.type,dc.subject,dc.date,item.id,item.callNumber
+                Le Petit Prince,isbn:9782070612758,Antoine de Saint-Exupéry,Gallimard,Livre,histoire|merveilleux,1943,787,800.000
+                Les Misérables,isbn:9782070612345,Victor Hugo,Gallimard,Livre,classique,1862,788,843.000
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: Attachment with filename including timestamp
+              example: 'attachment; filename="catalog_export_20260206_143022.csv"'
+            Content-Type:
+              schema:
+                type: string
+              description: CSV MIME type with UTF-8 charset
+              example: 'text/csv; charset=utf-8'
+        '400':
+          description: Export validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                too_many_records:
+                  value:
+                    error: EXPORT_TOO_LARGE
+                    message: "Export exceeds 10,000 row limit. Current catalog has 12,543 items."
+                    details:
+                      max_rows: 10000
+                      actual_rows: 12543
+        '500':
+          description: Export generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: EXPORT_FAILED
+                message: "Failed to generate CSV export due to database error"
+                details:
+                  error_type: "DatabaseConnectionError"
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code (e.g., EXPORT_FAILED, EXPORT_TOO_LARGE)
+        message:
+          type: string
+          description: Human-readable error message (localized)
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context
+
+---
+
+# Export CSV Format Specification
+
+## Dublin Core Columns (from BiblographicRecord)
+
+| Column | Type | Required | Description | Example |
+|--------|------|----------|-------------|---------|
+| dc.title | String | Yes | Title of work | "Le Petit Prince" |
+| dc.identifier | String | No | ISBN with prefix | "isbn:9782070612758" |
+| dc.creator | String (pipe-sep) | No | Authors | "White E.B.\|Garth Williams" |
+| dc.contributor | String (pipe-sep) | No | Illustrators | "Williams, Garth" |
+| dc.publisher | String | No | Publisher name | "Gallimard" |
+| dc.date | String | No | Publication year | "1943" |
+| dc.type | String | No | Medium type (plain text) | "Livre", "CD", "DVD" |
+| dc.format | String | No | Physical format | "173 pages" |
+| dc.subject | String (pipe-sep) | No | Keywords/subjects | "histoire\|merveilleux" |
+| dc.description | Text | No | Summary/abstract | "L'histoire d'un..." |
+| dc.language | String | No | ISO language code | "fr" |
+| dc.coverage | String | No | Target audience level | "Cycle 3" |
+
+## Item Columns (from Item)
+
+| Column | Type | Required | Description | Example |
+|--------|------|----------|-------------|---------|
+| item.id | String | Yes* | Inventory/barcode number | "787" |
+| item.callNumber | String | No | Dewey/CDU classification | "800.000" |
+| item.acquisitionDate | String | No | ISO 8601 date | "2024-09-15" |
+| item.fundingSource | String | No | Funding source | "Budget BCD 2024" |
+| dc.rights | String | No | Loanability | "Loanable" or "Not loanable" |
+
+*Required per row, but bibliographic records without items export with empty item columns.
+
+## Multi-valued Field Format
+
+Multiple values are **pipe-separated** (`|`):
+
+```csv
+dc.creator,dc.subject
+"Author One|Author Two","keyword1|keyword2|keyword3"
+```
+
+## Special Character Handling (RFC 4180)
+
+- **Commas in values**: Enclose field in double quotes
+- **Quotes in values**: Escape with double quotes (`""`)
+- **Line breaks**: Preserve in quoted fields
+- **Unicode**: UTF-8 encoding with BOM for Excel compatibility
+
+Example:
+```csv
+dc.title,dc.description
+"Book Title, Part 1","Description with ""quotes"" and
+line break"
+```
+
+## Empty Catalog Export
+
+When catalog is empty, export headers only:
+
+```csv
+dc.title,dc.identifier,dc.creator,dc.publisher,dc.type,dc.subject,dc.date,item.id,item.callNumber,item.acquisitionDate,item.fundingSource,dc.rights
+```
+
+## Records Without Items
+
+Bibliographic records with no associated items export with empty item columns:
+
+```csv
+dc.title,dc.identifier,item.id,item.callNumber
+"Les Misérables","isbn:123456",,
+```
+
+## Round-Trip Fidelity Guarantee
+
+Export → Import → Export produces **byte-identical** CSV (spec FR-011, SC-003):
+
+1. Medium types preserved exactly: "Livre" → "Livre" (not normalized)
+2. French characters preserved: "L'Été" → "L'Été" (UTF-8)
+3. Multi-valued fields: "a|b|c" → ["a","b","c"] → "a|b|c"
+4. Empty fields: "" → null → "" (not "null" string)
+5. ISBN prefix: "isbn:123" → "123" (stored) → "isbn:123" (re-exported)

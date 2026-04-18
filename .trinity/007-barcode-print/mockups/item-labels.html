@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Étiquettes Articles - Livres</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        /* Print styles */
+        @page {
+            size: A4 portrait;
+            margin: 5mm 7mm;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-page {
+                page-break-after: always;
+            }
+
+            .print-page:last-child {
+                page-break-after: avoid;
+            }
+
+            .item-label {
+                border: none !important;
+            }
+        }
+
+        /* Screen preview */
+        @media screen {
+            .print-page {
+                max-width: 210mm;
+                margin: 0 auto 20px auto;
+                background: white;
+                padding: 5mm 7mm;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+
+            .item-label {
+                border: 1px dashed #ccc !important;
+            }
+        }
+
+        .label-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 66mm);
+            grid-template-rows: repeat(4, 25mm);
+            gap: 0 2.5mm;
+        }
+
+        .item-label {
+            width: 66mm;
+            height: 25mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            page-break-inside: avoid;
+            background: white;
+        }
+
+        .label-barcode {
+            text-align: center;
+            width: 100%;
+        }
+
+        .label-barcode svg {
+            height: 15mm;
+            width: 60mm;
+        }
+
+        .label-id {
+            font-size: 8pt;
+            font-weight: bold;
+            margin-top: 1mm;
+            text-align: center;
+        }
+
+        .label-library {
+            font-size: 6pt;
+            color: #666;
+            margin-top: 1mm;
+            text-align: center;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: #5a6268;
+        }
+
+        .info-banner {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-banner h2 {
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .info-banner p {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .avery-info {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .avery-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ Imprimer</button>
+
+    <div class="info-banner no-print">
+        <h2>Étiquettes Articles - Livres</h2>
+        <p>Étiquettes autocollantes pour les livres. Format compatible Avery 5160/6479 (12 étiquettes par page).</p>
+    </div>
+
+    <div class="avery-info no-print">
+        <strong>📋 Format Avery:</strong>
+        Format: 66mm × 25mm | Configuration: 3 colonnes × 4 rangées = 12 étiquettes par page<br>
+        Compatible avec: Avery 5160, Avery 6479, et équivalents
+    </div>
+
+    <!-- Page 1: 12 labels -->
+    <div class="print-page">
+        <div class="label-grid">
+            <!-- Label 1 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM001"></svg>
+                </div>
+                <div class="label-id">ITEM001</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 2 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM002"></svg>
+                </div>
+                <div class="label-id">ITEM002</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 3 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM003"></svg>
+                </div>
+                <div class="label-id">ITEM003</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 4 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM004"></svg>
+                </div>
+                <div class="label-id">ITEM004</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 5 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM005"></svg>
+                </div>
+                <div class="label-id">ITEM005</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 6 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM006"></svg>
+                </div>
+                <div class="label-id">ITEM006</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 7 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM007"></svg>
+                </div>
+                <div class="label-id">ITEM007</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 8 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM008"></svg>
+                </div>
+                <div class="label-id">ITEM008</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 9 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM009"></svg>
+                </div>
+                <div class="label-id">ITEM009</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 10 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM010"></svg>
+                </div>
+                <div class="label-id">ITEM010</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 11 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM011"></svg>
+                </div>
+                <div class="label-id">ITEM011</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <!-- Label 12 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM012"></svg>
+                </div>
+                <div class="label-id">ITEM012</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: 12 more labels -->
+    <div class="print-page">
+        <div class="label-grid">
+            <!-- Label 13-24 -->
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM013"></svg>
+                </div>
+                <div class="label-id">ITEM013</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM014"></svg>
+                </div>
+                <div class="label-id">ITEM014</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM015"></svg>
+                </div>
+                <div class="label-id">ITEM015</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM016"></svg>
+                </div>
+                <div class="label-id">ITEM016</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM017"></svg>
+                </div>
+                <div class="label-id">ITEM017</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM018"></svg>
+                </div>
+                <div class="label-id">ITEM018</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM019"></svg>
+                </div>
+                <div class="label-id">ITEM019</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM020"></svg>
+                </div>
+                <div class="label-id">ITEM020</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM021"></svg>
+                </div>
+                <div class="label-id">ITEM021</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM022"></svg>
+                </div>
+                <div class="label-id">ITEM022</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM023"></svg>
+                </div>
+                <div class="label-id">ITEM023</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+
+            <div class="item-label">
+                <div class="label-barcode">
+                    <svg class="barcode" data-code="ITEM024"></svg>
+                </div>
+                <div class="label-id">ITEM024</div>
+                <div class="label-library">Bibliothèque que Claude a Développée</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate all barcodes when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.barcode').forEach(function(svg) {
+                JsBarcode(svg, svg.dataset.code, {
+                    format: 'CODE39',
+                    width: 1.5,
+                    height: 35,
+                    displayValue: false,
+                    margin: 0
+                });
+            });
+        });
+    </script>
+</body>
+</html>

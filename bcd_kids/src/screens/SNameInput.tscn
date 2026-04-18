@@ -1,0 +1,61 @@
+[gd_scene format=3 uid="uid://bcd4scr0004"]
+
+[ext_resource type="Script" path="res://src/screens/SNameInput.gd" id="1_scr"]
+[ext_resource type="PackedScene" uid="uid://bcd4cmp0001" path="res://src/components/Breadcrumb.tscn" id="2_bc"]
+
+[node name="SNameInput" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainMargin" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Root" type="VBoxContainer" parent="MainMargin"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Breadcrumb" parent="MainMargin/Root" instance=ExtResource("2_bc")]
+unique_name_in_owner = true
+
+[node name="FormCenter" type="CenterContainer" parent="MainMargin/Root"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Form" type="VBoxContainer" parent="MainMargin/Root/FormCenter"]
+custom_minimum_size = Vector2(450, 0)
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="MainMargin/Root/FormCenter/Form"]
+text = "Votre prénom ?"
+theme_type_variation = "LabelTitle"
+
+[node name="SearchInput" type="LineEdit" parent="MainMargin/Root/FormCenter/Form"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 52)
+
+[node name="ValidateBtn" type="Button" parent="MainMargin/Root/FormCenter/Form"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(450, 48)
+
+[node name="ErrorLabel" type="Label" parent="MainMargin/Root/FormCenter/Form"]
+unique_name_in_owner = true
+horizontal_alignment = 1
+theme_type_variation = "LabelMedium"
+
+[node name="CandidatesContainer" type="VBoxContainer" parent="MainMargin/Root/FormCenter/Form"]
+unique_name_in_owner = true
+theme_override_constants/separation = 6

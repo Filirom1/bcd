@@ -1,0 +1,3 @@
+borrower_id,first_name,last_name,role,class,barcode,active,blocked,blocked_reason
+STU001,Emma,Martin,student,CE2-A,,true,false,
+TCH001,Marie,Dubois,teacher,,,true,false,

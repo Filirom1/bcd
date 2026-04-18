@@ -1,0 +1,942 @@
+# Barcode Printing Implementation Plan (Trinity Pattern - Client-Side)
+
+## Context & Requirements
+
+The BCD library system needs three types of printable barcode documents:
+
+### 1. Borrower Reference Sheets (A4)
+**Purpose**: For LIBRARIAN use - reference guide to find the right barcode for the right student
+**Layout**: All students grouped by class (new page per class)
+**Content**: Student ID, barcode image, full name, "Élève" status
+**Format**: A4 pages, browser printable
+
+### 2. Student Library Cards
+**Purpose**: Individual cards for students to carry and use for checkout
+**Layout**: Individual card format with barcode
+**Content**: Student barcode, ID, name, class, photo placeholder
+**Format**: Card-sized (credit card or badge size), printable on card stock
+
+### 3. Book Labels (Avery Stickers)
+**Purpose**: Stickers to attach to physical books
+**Layout**: 12 labels per page (3×4 grid)
+**Content**: Barcode, item ID, library name
+**Format**: Avery 5160-compatible (66mm × 25mm labels)
+
+---
+
+## Architecture: Client-Side Only (Vue Components)
+
+**Key insight**: Generate everything in Vue.js frontend - no new backend needed!
+
+**Why this is better**:
+- ✅ **No new API endpoints** - Use existing `/borrowers` and `/catalog` endpoints
+- ✅ **No new service layer** - All logic in Vue components
+- ✅ **Simpler** - Just Vue components + print CSS + JS barcode library
+- ✅ **Consistent** - Follows existing web UI pattern
+- ✅ **Fast** - No server round-trip for HTML generation
+
+**Approach**:
+1. Create Vue components for each print layout
+2. Use JavaScript barcode library (e.g., JsBarcode) to generate barcodes client-side
+3. Fetch data from existing API endpoints
+4. Use print CSS for layout
+5. User clicks menu → Opens print page → Ctrl+P
+
+---
+
+## Implementation Overview
+
+### New Vue Components (3)
+
+1. **`src/bcd_web_vue/js/pages/PrintBorrowerReference.js`**
+   - Fetches borrowers from existing `/api/v1/borrowers` endpoint
+   - Groups by class
+   - Renders barcodes using JsBarcode
+   - Print CSS: new page per class
+
+2. **`src/bcd_web_vue/js/pages/PrintStudentCards.js`**
+   - Fetches borrowers from existing endpoint
+   - Renders as individual cards (2×5 grid per page)
+   - Print CSS: card layout
+
+3. **`src/bcd_web_vue/js/pages/PrintItemLabels.js`**
+   - Fetches items from existing `/api/v1/catalog/items` endpoint
+   - Renders as 3×4 Avery label grid
+   - Print CSS: label layout
+
+### Router Routes (3 new)
+
+**File**: `src/bcd_web_vue/js/router.js`
+
+```javascript
+{
+  path: '/print/borrowers/reference',
+  name: 'PrintBorrowerReference',
+  component: PrintBorrowerReference
+},
+{
+  path: '/print/borrowers/cards',
+  name: 'PrintStudentCards',
+  component: PrintStudentCards
+},
+{
+  path: '/print/catalog/labels',
+  name: 'PrintItemLabels',
+  component: PrintItemLabels
+}
+```
+
+### Print CSS
+
+**File**: `src/bcd_web_vue/css/print-labels.css`
+- Page layouts for all three types
+- Hide navigation/UI elements when printing
+- Page breaks, margins, grids
+
+### JavaScript Barcode Library
+
+**Use JsBarcode** (CDN-based, no npm needed):
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+```
+
+**Or inline SVG generation** if we want to avoid external dependency
+
+---
+
+## Detailed Implementation
+
+### 1. Client-Side Barcode Generation
+
+**Option A: Use JsBarcode (CDN)**
+
+```javascript
+// In Vue component
+import { onMounted } from 'vue';
+
+onMounted(() => {
+  // Generate all barcodes after DOM is ready
+  document.querySelectorAll('.barcode').forEach((svg) => {
+    JsBarcode(svg, svg.dataset.code, {
+      format: 'CODE39', // Or CODE128 from settings
+      width: 2,
+      height: 50,
+      displayValue: false // We'll show text separately
+    });
+  });
+});
+```
+
+**Template**:
+```html
+<svg class="barcode" :data-code="borrower.barcode"></svg>
+```
+
+**Option B: Inline SVG generation** (no external library)
+- More complex but no CDN dependency
+- Could adapt python-barcode logic to JavaScript
+
+**Recommendation**: Use JsBarcode (simpler, proven)
+
+### 2. Borrower Reference Sheet Component
+
+**File**: `src/bcd_web_vue/js/pages/PrintBorrowerReference.js`
+
+```javascript
+import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
+
+export default {
+  name: 'PrintBorrowerReference',
+  setup() {
+    const route = useRoute();
+    const borrowers = ref([]);
+    const loading = ref(true);
+
+    const borrowersByClass = computed(() => {
+      // Group borrowers by class name
+      const grouped = {};
+      borrowers.value.forEach(b => {
+        const className = b.class_name || 'Sans Classe';
+        if (!grouped[className]) {
+          grouped[className] = [];
+        }
+        grouped[className].push(b);
+      });
+      return grouped;
+    });
+
+    onMounted(async () => {
+      // Parse query params (e.g., ?class_ids=1,2,3)
+      const classIds = route.query.class_ids;
+
+      // Fetch borrowers from existing API
+      const params = new URLSearchParams({
+        limit: 500, // Max borrowers
+        ...(classIds && { class_id: classIds })
+      });
+
+      const response = await fetch(`/api/v1/borrowers?${params}`);
+      const data = await response.json();
+      borrowers.value = data.borrowers;
+      loading.value = false;
+
+      // Generate barcodes after data loads
+      setTimeout(() => {
+        document.querySelectorAll('.barcode').forEach((svg) => {
+          JsBarcode(svg, svg.dataset.code, {
+            format: 'CODE39',
+            width: 2,
+            height: 50,
+            displayValue: false
+          });
+        });
+      }, 100);
+    });
+
+    return {
+      borrowers,
+      borrowersByClass,
+      loading
+    };
+  },
+  template: `
+    <div class="print-page">
+      <div v-if="loading" class="loading">Loading...</div>
+
+      <div v-else>
+        <div
+          v-for="(students, className) in borrowersByClass"
+          :key="className"
+          class="class-section"
+        >
+          <h1 class="class-header">{{ className }}</h1>
+
+          <div
+            v-for="student in students"
+            :key="student.id"
+            class="borrower-row"
+          >
+            <div class="borrower-id">{{ student.borrower_id }}</div>
+
+            <div class="borrower-barcode">
+              <svg class="barcode" :data-code="student.barcode"></svg>
+              <div class="barcode-text">{{ student.barcode }}</div>
+            </div>
+
+            <div class="borrower-name">{{ student.full_name }}</div>
+
+            <div class="borrower-status">
+              {{ student.role === 'student' ? 'Élève' : student.role }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+};
+```
+
+**CSS** (in `print-labels.css`):
+```css
+@media print {
+  .class-section {
+    page-break-before: always;
+  }
+  .class-section:first-child {
+    page-break-before: avoid;
+  }
+  .loading {
+    display: none;
+  }
+}
+
+.borrower-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  padding: 10px 0;
+}
+
+.borrower-id {
+  width: 80px;
+  font-weight: bold;
+}
+
+.borrower-barcode {
+  width: 200px;
+  text-align: center;
+}
+
+.borrower-barcode svg {
+  height: 50px;
+}
+
+.barcode-text {
+  font-size: 0.8em;
+  margin-top: 2px;
+}
+
+.borrower-name {
+  flex: 1;
+}
+
+.borrower-status {
+  width: 80px;
+  font-size: 0.9em;
+  color: #666;
+}
+```
+
+### 3. Student Library Cards Component
+
+**File**: `src/bcd_web_vue/js/pages/PrintStudentCards.js`
+
+```javascript
+export default {
+  name: 'PrintStudentCards',
+  setup() {
+    const borrowers = ref([]);
+    const settings = ref(null);
+
+    onMounted(async () => {
+      // Fetch borrowers
+      const params = new URLSearchParams({ limit: 500 });
+      const response = await fetch(`/api/v1/borrowers?${params}`);
+      const data = await response.json();
+      borrowers.value = data.borrowers;
+
+      // Fetch system settings for library name
+      const settingsRes = await fetch('/api/v1/admin/settings');
+      settings.value = await settingsRes.json();
+
+      // Generate barcodes
+      setTimeout(() => {
+        document.querySelectorAll('.barcode').forEach((svg) => {
+          JsBarcode(svg, svg.dataset.code, {
+            format: 'CODE39',
+            width: 1.5,
+            height: 40,
+            displayValue: false
+          });
+        });
+      }, 100);
+    });
+
+    return { borrowers, settings };
+  },
+  template: `
+    <div class="print-page">
+      <div class="card-grid">
+        <div
+          v-for="student in borrowers"
+          :key="student.id"
+          class="library-card"
+        >
+          <div class="card-header">
+            {{ settings?.library_name || 'BCD' }}
+            <span v-if="student.class_name"> - {{ student.class_name }}</span>
+          </div>
+
+          <div class="card-body">
+            <div class="card-photo">
+              <!-- Photo placeholder -->
+            </div>
+
+            <div class="card-info">
+              <div class="card-name">{{ student.full_name }}</div>
+              <div class="card-id">{{ student.borrower_id }}</div>
+              <div class="card-role">{{ student.role === 'student' ? 'Élève' : student.role }}</div>
+            </div>
+          </div>
+
+          <div class="card-barcode">
+            <svg class="barcode" :data-code="student.barcode"></svg>
+            <div class="barcode-text">{{ student.barcode }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+};
+```
+
+**CSS**:
+```css
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 85mm);
+  grid-template-rows: repeat(5, 54mm);
+  gap: 5mm;
+}
+
+.library-card {
+  width: 85mm;
+  height: 54mm;
+  border: 2px solid #000;
+  border-radius: 3mm;
+  padding: 3mm;
+  box-sizing: border-box;
+  page-break-inside: avoid;
+}
+
+.card-header {
+  text-align: center;
+  font-weight: bold;
+  font-size: 10pt;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 2mm;
+  margin-bottom: 2mm;
+}
+
+.card-body {
+  display: flex;
+  gap: 3mm;
+}
+
+.card-photo {
+  width: 25mm;
+  height: 30mm;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  flex-shrink: 0;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-name {
+  font-weight: bold;
+  font-size: 9pt;
+}
+
+.card-id, .card-role {
+  font-size: 8pt;
+  color: #666;
+}
+
+.card-barcode {
+  text-align: center;
+  margin-top: 2mm;
+}
+
+.card-barcode svg {
+  height: 40px;
+}
+
+.card-barcode .barcode-text {
+  font-size: 7pt;
+}
+```
+
+### 4. Item Labels Component
+
+**File**: `src/bcd_web_vue/js/pages/PrintItemLabels.js`
+
+```javascript
+export default {
+  name: 'PrintItemLabels',
+  setup() {
+    const items = ref([]);
+    const settings = ref(null);
+
+    onMounted(async () => {
+      // Fetch items from existing catalog API
+      const response = await fetch('/api/v1/catalog/items?limit=1000');
+      const data = await response.json();
+      items.value = data.items;
+
+      // Fetch settings for library name
+      const settingsRes = await fetch('/api/v1/admin/settings');
+      settings.value = await settingsRes.json();
+
+      // Generate barcodes
+      setTimeout(() => {
+        document.querySelectorAll('.barcode').forEach((svg) => {
+          JsBarcode(svg, svg.dataset.code, {
+            format: 'CODE39',
+            width: 1.5,
+            height: 35,
+            displayValue: false
+          });
+        });
+      }, 100);
+    });
+
+    return { items, settings };
+  },
+  template: `
+    <div class="print-page">
+      <div class="label-grid">
+        <div
+          v-for="item in items"
+          :key="item.id"
+          class="item-label"
+        >
+          <div class="label-barcode">
+            <svg class="barcode" :data-code="item.item_id"></svg>
+          </div>
+          <div class="label-id">{{ item.item_id }}</div>
+          <div class="label-library">{{ settings?.library_name || 'BCD' }}</div>
+        </div>
+      </div>
+    </div>
+  `
+};
+```
+
+**CSS**:
+```css
+@page {
+  size: A4 portrait;
+  margin: 5mm 7mm;
+}
+
+.label-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 66mm);
+  grid-template-rows: repeat(4, 25mm);
+  gap: 2.5mm 0;
+}
+
+.item-label {
+  width: 66mm;
+  height: 25mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  page-break-inside: avoid;
+  border: 1px dashed #ddd; /* Alignment guide - remove in production */
+}
+
+@media print {
+  .item-label {
+    border: none;
+  }
+}
+
+.label-barcode svg {
+  height: 15mm;
+}
+
+.label-id {
+  font-size: 8pt;
+  margin-top: 1mm;
+}
+
+.label-library {
+  font-size: 6pt;
+  color: #666;
+  margin-top: 1mm;
+}
+```
+
+---
+
+## UI Integration
+
+### AdminDropdown Component
+
+**File**: `src/bcd_web_vue/js/components/admin/AdminDropdown.js`
+
+**Add menu items** (context-dependent):
+
+```javascript
+// For BorrowersPage
+<li>
+  <a class="dropdown-item" href="#" @click.prevent="$emit('print-reference')">
+    <i class="bi bi-file-text"></i>
+    {{ t('admin.print_borrower_reference') }}
+  </a>
+</li>
+<li>
+  <a class="dropdown-item" href="#" @click.prevent="$emit('print-cards')">
+    <i class="bi bi-credit-card"></i>
+    {{ t('admin.print_student_cards') }}
+  </a>
+</li>
+
+// For CatalogPage
+<li>
+  <a class="dropdown-item" href="#" @click.prevent="$emit('print-labels')">
+    <i class="bi bi-printer"></i>
+    {{ t('admin.print_item_labels') }}
+  </a>
+</li>
+```
+
+### BorrowersPage Event Handlers
+
+**File**: `src/bcd_web_vue/js/pages/BorrowersPage.js`
+
+```javascript
+const handlePrintReference = () => {
+  // Build URL with current filters
+  const params = new URLSearchParams();
+  if (filters.value.class_id) {
+    params.append('class_ids', filters.value.class_id);
+  }
+
+  // Navigate to print page
+  const url = `/print/borrowers/reference?${params.toString()}`;
+  window.open(url, '_blank');
+};
+
+const handlePrintCards = () => {
+  const params = new URLSearchParams();
+  if (filters.value.class_id) {
+    params.append('class_ids', filters.value.class_id);
+  }
+
+  const url = `/print/borrowers/cards?${params.toString()}`;
+  window.open(url, '_blank');
+};
+```
+
+**Template**:
+```html
+<admin-dropdown
+  page="borrowers"
+  @print-reference="handlePrintReference"
+  @print-cards="handlePrintCards"
+  ...
+></admin-dropdown>
+```
+
+### CatalogPage Event Handler
+
+```javascript
+const handlePrintLabels = () => {
+  window.open('/print/catalog/labels', '_blank');
+};
+```
+
+---
+
+## Router Updates
+
+**File**: `src/bcd_web_vue/js/router.js`
+
+```javascript
+import PrintBorrowerReference from './pages/PrintBorrowerReference.js';
+import PrintStudentCards from './pages/PrintStudentCards.js';
+import PrintItemLabels from './pages/PrintItemLabels.js';
+
+const routes = [
+  // ... existing routes
+  {
+    path: '/print/borrowers/reference',
+    name: 'PrintBorrowerReference',
+    component: PrintBorrowerReference
+  },
+  {
+    path: '/print/borrowers/cards',
+    name: 'PrintStudentCards',
+    component: PrintStudentCards
+  },
+  {
+    path: '/print/catalog/labels',
+    name: 'PrintItemLabels',
+    component: PrintItemLabels
+  }
+];
+```
+
+---
+
+## JsBarcode Integration
+
+**File**: `src/bcd_web_vue/index.html`
+
+**Add to `<head>`**:
+```html
+<!-- JsBarcode for client-side barcode generation -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+```
+
+**Alternative**: Copy JsBarcode to `/js/vendor/` to avoid CDN dependency
+
+---
+
+## Print CSS
+
+**File**: `src/bcd_web_vue/css/print-labels.css`
+
+**Link in index.html**:
+```html
+<link rel="stylesheet" href="/css/print-labels.css">
+```
+
+**Structure**:
+```css
+/* Hide UI elements when printing */
+@media print {
+  .navbar,
+  .breadcrumb,
+  button,
+  .btn,
+  .loading {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Borrower Reference Sheets */
+.class-section { /* ... */ }
+.borrower-row { /* ... */ }
+
+/* Student Library Cards */
+.card-grid { /* ... */ }
+.library-card { /* ... */ }
+
+/* Item Labels */
+.label-grid { /* ... */ }
+.item-label { /* ... */ }
+```
+
+---
+
+## I18n Strings
+
+### English (`src/bcd_web_vue/locales/en.json`)
+```json
+{
+  "admin": {
+    "print_borrower_reference": "Print Reference Sheets",
+    "print_student_cards": "Print Library Cards",
+    "print_item_labels": "Print Item Labels"
+  }
+}
+```
+
+### French (`src/bcd_web_vue/locales/fr.json`)
+```json
+{
+  "admin": {
+    "print_borrower_reference": "Imprimer Feuilles de Référence",
+    "print_student_cards": "Imprimer Cartes Bibliothèque",
+    "print_item_labels": "Imprimer Étiquettes Articles"
+  }
+}
+```
+
+---
+
+## Testing
+
+### Manual Testing
+
+1. **Start server**: `python -m uvicorn src.bcd_api.main:app --reload`
+
+2. **Test borrower reference**:
+   - Go to `/borrowers`
+   - Click Admin → "Print Reference Sheets"
+   - New tab opens with `/print/borrowers/reference`
+   - Verify students grouped by class
+   - Press Ctrl+P → verify print preview
+
+3. **Test student cards**:
+   - Click Admin → "Print Library Cards"
+   - Verify 10 cards per page (2×5 grid)
+   - Press Ctrl+P → verify alignment
+
+4. **Test item labels**:
+   - Go to `/catalog`
+   - Click Admin → "Print Item Labels"
+   - Verify 12 labels per page (3×4 grid)
+   - Print on Avery labels → verify alignment
+
+### Barcode Scanner Testing
+
+- Print sample labels
+- Scan with barcode scanner
+- Verify scanner reads barcodes correctly
+
+---
+
+## Files Summary
+
+### New Files (4):
+1. **`src/bcd_web_vue/js/pages/PrintBorrowerReference.js`** (~80 lines)
+2. **`src/bcd_web_vue/js/pages/PrintStudentCards.js`** (~80 lines)
+3. **`src/bcd_web_vue/js/pages/PrintItemLabels.js`** (~70 lines)
+4. **`src/bcd_web_vue/css/print-labels.css`** (~150 lines)
+
+### Modified Files (6):
+5. **`src/bcd_web_vue/js/router.js`** - Add 3 routes (~15 lines)
+6. **`src/bcd_web_vue/js/components/admin/AdminDropdown.js`** - Add menu items (~30 lines)
+7. **`src/bcd_web_vue/js/pages/BorrowersPage.js`** - Add handlers (~30 lines)
+8. **`src/bcd_web_vue/js/pages/CatalogPage.js`** - Add handler (~15 lines)
+9. **`src/bcd_web_vue/locales/en.json`** - Add 3 keys
+10. **`src/bcd_web_vue/locales/fr.json`** - Add 3 keys
+11. **`src/bcd_web_vue/index.html`** - Add JsBarcode script tag (~2 lines)
+
+**Total new code**: ~500 lines (all frontend!)
+
+**Dependencies**: JsBarcode (CDN) - no backend changes!
+
+---
+
+## Implementation Phases
+
+### Phase 1: Setup
+- [ ] Add JsBarcode to index.html
+- [ ] Create print-labels.css
+- [ ] Add routes to router.js
+
+### Phase 2: Borrower Reference
+- [ ] Create PrintBorrowerReference.js component
+- [ ] Add CSS for reference sheets
+- [ ] Test with real data
+
+### Phase 3: Student Cards
+- [ ] Create PrintStudentCards.js component
+- [ ] Add CSS for card layout
+- [ ] Test printing on card stock
+
+### Phase 4: Item Labels
+- [ ] Create PrintItemLabels.js component
+- [ ] Add CSS for Avery grid
+- [ ] Test alignment with Avery labels
+
+### Phase 5: UI Integration
+- [ ] Update AdminDropdown
+- [ ] Add handlers to BorrowersPage
+- [ ] Add handlers to CatalogPage
+- [ ] Add i18n strings
+- [ ] Final testing
+
+---
+
+## Advantages of This Approach
+
+✅ **No backend changes** - Zero new API endpoints or services
+✅ **Simpler** - All code is Vue components + CSS
+✅ **Faster** - No server round-trip
+✅ **Flexible** - Easy to adjust layout and styling
+✅ **Preview-friendly** - Users see exactly what will print
+✅ **Consistent** - Uses same patterns as rest of web UI
+✅ **Lower effort** - ~6 hours vs ~11 hours for backend approach
+
+---
+
+## Estimated Effort
+
+- **Phase 1** (Setup): 30 min
+- **Phase 2** (Reference Sheets): 2 hours
+- **Phase 3** (Student Cards): 2 hours
+- **Phase 4** (Item Labels): 1.5 hours
+- **Phase 5** (UI Integration): 1 hour
+
+**Total**: ~7 hours (vs 11 hours for backend approach)
+
+---
+
+## Trinity Pattern Progress
+
+### Step 1: Plan Mode - DONE
+Explored existing API endpoints, Vue patterns, print CSS.
+Key findings:
+- Borrower list API enriches with `class_name` and `barcode` fields
+- No `GET /catalog/items` list endpoint exists - need N+1 approach for item labels
+- `App.js` uses `<sidebar-nav />` unconditionally - needs `route.meta.layout` conditional
+- AdminDropdown supports `page` prop ('borrowers'/'catalog') for context-aware menus
+- System settings expose `barcode_type` (code39/code128) for dynamic barcode format
+
+### Step 2: Extended Thinking - DONE
+Deep analysis completed. Key decisions:
+- Client-side only (no backend changes) - use existing APIs
+- JsBarcode via CDN (consistent with project's no-npm approach)
+- Hide sidebar on print routes via `route.meta.layout === 'print'` in App.js
+- Item labels: fetch records paginated, then items per record (N+1 acceptable for school libraries)
+- Read barcode format from system settings for correct JsBarcode format parameter
+- Detailed implementation plan written to `.claude/plans/effervescent-painting-teacup.md`
+
+### Step 3: Sequential Thinking - NOT STARTED
+Structured multi-step reasoning for implementation execution order.
+
+### Step 4: Implementation - NOT STARTED
+Execute the plan: create 4 new files, modify 7 existing files.
+
+**Key insight**: No backend needed! Use existing APIs + client-side rendering.
+
+---
+
+## Refined Implementation Plan (from Deep Analysis)
+
+### Key Technical Decisions (from Step 2 analysis)
+
+- **JsBarcode via CDN** (`jsbarcode@3.11.6`) - consistent with CDN-based architecture (no npm)
+- **Barcode format**: Read from system settings (`barcode_type`: code39 or code128) via `/api/v1/admin/settings`
+- **Layout**: Print routes hide sidebar via `route.meta.layout === 'print'` check in `App.js`
+- **Item labels**: No `GET /catalog/items` list endpoint exists. Fetch all bibliographic records then items per record (N+1). Acceptable for small school libraries (~200-500 records). Batch with `Promise.all` for performance.
+- **Borrower data**: List API enriches response with `class_name` and `barcode` fields - no extra API calls needed
+
+### Files to Create (4)
+
+1. **`src/bcd_web_vue/js/pages/PrintBorrowerReference.js`**
+   - Fetches borrowers via `GET /api/v1/borrowers?limit=500` (enriched response includes `class_name`, `barcode`)
+   - Optional `class_id` query param filter from URL
+   - Groups borrowers by `class_name`
+   - Renders barcode SVGs via JsBarcode after data loads (using `Vue.nextTick`)
+   - Print button + info banner (hidden when printing)
+
+2. **`src/bcd_web_vue/js/pages/PrintStudentCards.js`**
+   - Same data source as reference sheets
+   - Fetches library name from `GET /api/v1/admin/settings`
+   - 2x5 grid per A4 page (85mm x 54mm cards)
+   - Card contains: library name, class, student name, ID, barcode, photo placeholder
+
+3. **`src/bcd_web_vue/js/pages/PrintItemLabels.js`**
+   - Fetches all records via `GET /api/v1/catalog/bibliographic/search?limit=100` (paginated)
+   - For each record, fetches items via `GET /api/v1/catalog/bibliographic/{id}/items`
+   - Fetches library name from settings
+   - 3x4 Avery grid (66mm x 25mm labels, Avery 5160/6479 compatible)
+
+4. **`src/bcd_web_vue/css/print-labels.css`**
+   - All print-specific CSS from mockups
+   - `@media print` rules: hide navbar/sidebar/buttons
+   - Borrower reference, student cards, and item label layouts
+
+### Files to Modify (7)
+
+5. **`src/bcd_web_vue/index.html`** - Add JsBarcode CDN + print CSS link
+6. **`src/bcd_web_vue/js/router.js`** - Add 3 print routes with `meta: { layout: 'print' }`
+7. **`src/bcd_web_vue/js/components/App.js`** - Conditionally hide sidebar on print routes
+8. **`src/bcd_web_vue/js/components/admin/AdminDropdown.js`** - Add print menu items + emits
+9. **`src/bcd_web_vue/js/pages/BorrowersPage.js`** - Add print handlers
+10. **`src/bcd_web_vue/js/pages/CatalogPage.js`** - Add print handler
+11. **`src/bcd_web_vue/locales/en.json` + `fr.json`** - Add i18n keys
+
+### Implementation Phases
+
+**Phase 1: Infrastructure** - index.html, print CSS, routes, App.js sidebar conditional
+**Phase 2: Borrower Reference** - Component + i18n + test
+**Phase 3: Student Cards** - Component + test
+**Phase 4: Item Labels** - Component (with N+1 fetch) + test
+**Phase 5: UI Integration** - AdminDropdown + page handlers + final i18n
+
+### Verification Checklist
+
+- [ ] Server starts without errors
+- [ ] `#/print/borrowers/reference` shows borrowers grouped by class, barcodes visible, no sidebar
+- [ ] `#/print/borrowers/cards` shows 2x5 card grid
+- [ ] `#/print/catalog/labels` shows 3x4 label grid
+- [ ] Ctrl+P on each page shows clean print preview
+- [ ] Admin dropdown on Borrowers page has print menu items
+- [ ] Admin dropdown on Catalog page has print labels item
+- [ ] Print opens in new tab with current filters applied
+- [ ] `pytest tests/integration tests/unit` passes (no regressions)

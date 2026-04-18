@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartes de Bibliothèque - Élèves</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        /* Print styles */
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-page {
+                page-break-after: always;
+            }
+
+            .print-page:last-child {
+                page-break-after: avoid;
+            }
+        }
+
+        /* Screen preview */
+        @media screen {
+            .print-page {
+                max-width: 210mm;
+                margin: 0 auto 20px auto;
+                background: white;
+                padding: 10mm;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 85mm);
+            grid-template-rows: repeat(5, 54mm);
+            gap: 5mm;
+        }
+
+        .library-card {
+            width: 85mm;
+            height: 54mm;
+            border: 2px solid #333;
+            border-radius: 3mm;
+            padding: 3mm;
+            background: white;
+            page-break-inside: avoid;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 10pt;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 2mm;
+            margin-bottom: 2mm;
+            color: #0066cc;
+        }
+
+        .card-body {
+            display: flex;
+            gap: 3mm;
+            flex: 1;
+        }
+
+        .card-photo {
+            width: 25mm;
+            height: 30mm;
+            border: 1px solid #ddd;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8pt;
+            color: #999;
+            text-align: center;
+        }
+
+        .card-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .card-name {
+            font-weight: bold;
+            font-size: 9pt;
+            margin-bottom: 1mm;
+        }
+
+        .card-id {
+            font-size: 8pt;
+            color: #666;
+            margin-bottom: 1mm;
+        }
+
+        .card-class {
+            font-size: 8pt;
+            color: #0066cc;
+            font-weight: bold;
+        }
+
+        .card-barcode {
+            text-align: center;
+            margin-top: auto;
+            padding-top: 2mm;
+        }
+
+        .card-barcode svg {
+            height: 40px;
+            width: 100%;
+        }
+
+        .barcode-text {
+            font-size: 7pt;
+            color: #666;
+            margin-top: 1mm;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: #218838;
+        }
+
+        .info-banner {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-banner h2 {
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .info-banner p {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .cutting-guide {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ Imprimer</button>
+
+    <div class="info-banner no-print">
+        <h2>Cartes de Bibliothèque - Élèves</h2>
+        <p>Cartes individuelles pour chaque élève. Format standard : 85mm × 54mm (format carte bancaire).</p>
+    </div>
+
+    <div class="cutting-guide no-print">
+        <strong>📏 Instructions :</strong> Imprimer sur du papier cartonné (200-300g). Découper le long des bordures noires. 10 cartes par page A4.
+    </div>
+
+    <!-- Page 1: 10 cards -->
+    <div class="print-page">
+        <div class="card-grid">
+            <!-- Card 1 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">DUBOIS Alice</div>
+                        <div class="card-id">ID: STU001</div>
+                        <div class="card-class">Classe: CP-A</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR001"></svg>
+                    <div class="barcode-text">BOR001</div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">MARTIN Baptiste</div>
+                        <div class="card-id">ID: STU002</div>
+                        <div class="card-class">Classe: CP-A</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR002"></svg>
+                    <div class="barcode-text">BOR002</div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">BERNARD Camille</div>
+                        <div class="card-id">ID: STU003</div>
+                        <div class="card-class">Classe: CP-A</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR003"></svg>
+                    <div class="barcode-text">BOR003</div>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">THOMAS Claire</div>
+                        <div class="card-id">ID: STU004</div>
+                        <div class="card-class">Classe: CP-A</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR004"></svg>
+                    <div class="barcode-text">BOR004</div>
+                </div>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">PETIT David</div>
+                        <div class="card-id">ID: STU005</div>
+                        <div class="card-class">Classe: CE1-B</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR005"></svg>
+                    <div class="barcode-text">BOR005</div>
+                </div>
+            </div>
+
+            <!-- Card 6 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">ROBERT Emma</div>
+                        <div class="card-id">ID: STU006</div>
+                        <div class="card-class">Classe: CE1-B</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR006"></svg>
+                    <div class="barcode-text">BOR006</div>
+                </div>
+            </div>
+
+            <!-- Card 7 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">RICHARD Hugo</div>
+                        <div class="card-id">ID: STU007</div>
+                        <div class="card-class">Classe: CE1-B</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR007"></svg>
+                    <div class="barcode-text">BOR007</div>
+                </div>
+            </div>
+
+            <!-- Card 8 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">BONNET Inès</div>
+                        <div class="card-id">ID: STU020</div>
+                        <div class="card-class">Classe: CE2-C</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR020"></svg>
+                    <div class="barcode-text">BOR020</div>
+                </div>
+            </div>
+
+            <!-- Card 9 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">GARNIER Jules</div>
+                        <div class="card-id">ID: STU021</div>
+                        <div class="card-class">Classe: CE2-C</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR021"></svg>
+                    <div class="barcode-text">BOR021</div>
+                </div>
+            </div>
+
+            <!-- Card 10 -->
+            <div class="library-card">
+                <div class="card-header">Bibliothèque que Claude a Développée</div>
+                <div class="card-body">
+                    <div class="card-photo">Photo</div>
+                    <div class="card-info">
+                        <div class="card-name">LAMBERT Léa</div>
+                        <div class="card-id">ID: STU022</div>
+                        <div class="card-class">Classe: CE2-C</div>
+                    </div>
+                </div>
+                <div class="card-barcode">
+                    <svg class="barcode" data-code="BOR022"></svg>
+                    <div class="barcode-text">BOR022</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate all barcodes when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.barcode').forEach(function(svg) {
+                JsBarcode(svg, svg.dataset.code, {
+                    format: 'CODE39',
+                    width: 1.5,
+                    height: 40,
+                    displayValue: false,
+                    margin: 0
+                });
+            });
+        });
+    </script>
+</body>
+</html>

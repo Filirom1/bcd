@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Medium Types Mockup - BCD</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 40px 20px;
+        }
+
+        .mockup-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .mockup-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .demo-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .demo-controls h3 {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        /* Settings Page Layout */
+        .settings-page {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .page-header {
+            padding: 24px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .page-header h1 {
+            font-size: 24px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #45a049;
+        }
+
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e5e5e5;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn-warning {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #f57c00;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+
+        .btn-success {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e5e5;
+            background-color: #fafafa;
+        }
+
+        .tab {
+            padding: 16px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .tab.active {
+            color: #4CAF50;
+            border-bottom-color: #4CAF50;
+            background-color: white;
+        }
+
+        .tab-content {
+            padding: 24px;
+        }
+
+        /* Table */
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .admin-table th {
+            background-color: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #e5e5e5;
+        }
+
+        .admin-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .admin-table tr:hover {
+            background-color: #fafafa;
+        }
+
+        .admin-table code {
+            background-color: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            color: #d32f2f;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge-info {
+            background-color: #e3f2fd;
+            color: #1976D2;
+        }
+
+        .badge-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-secondary {
+            background-color: #e5e5e5;
+            color: #666;
+        }
+
+        .form-control {
+            padding: 6px 8px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .mapping-section {
+            margin-top: 24px;
+        }
+
+        .mapping-section h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .mapping-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .filter-controls select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-container">
+        <h1 class="mockup-title">Admin: Medium Types Management</h1>
+
+        <div class="demo-controls">
+            <h3>Configurable Medium Type Taxonomy</h3>
+            <p style="color: #777; font-size: 13px;">
+                Manage medium types and import mappings without code deployment
+            </p>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="settings-page">
+            <div class="page-header">
+                <h1>Paramètres</h1>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active">Types de support</button>
+                <button class="tab">Correspondances d'import</button>
+                <button class="tab">Général</button>
+            </div>
+
+            <!-- Tab Content: Medium Types -->
+            <div class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="font-size: 18px; color: #333; margin-bottom: 4px;">Types de support</h2>
+                        <p style="font-size: 13px; color: #777;">
+                            Gérez les types de supports disponibles dans le catalogue (9 par défaut + types personnalisés)
+                        </p>
+                    </div>
+                    <button class="btn btn-primary" onclick="toggleModal('create')">
+                        + Ajouter un type
+                    </button>
+                </div>
+
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">Code</th>
+                            <th style="width: 200px;">Nom anglais</th>
+                            <th style="width: 200px;">Nom français</th>
+                            <th style="width: 100px;">État</th>
+                            <th style="width: 120px;">Utilisation</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <code>book</code>
+                                <span class="badge badge-info">Défaut</span>
+                            </td>
+                            <td>Book</td>
+                            <td>Livre</td>
+                            <td><span class="badge badge-success">Actif</span></td>
+                            <td style="color: #666;">1,250 documents</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                                    <button class="btn btn-sm btn-secondary" disabled title="Les types par défaut ne peuvent pas être supprimés">Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <code>periodical</code>
+                                <span class="badge badge-info">Défaut</span>
+                            </td>
+                            <td>Periodical</td>
+                            <td>Périodique</td>
+                            <td><span class="badge badge-success">Actif</span></td>
+                            <td style="color: #666;">187 documents</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                                    <button class="btn btn-sm btn-secondary" disabled>Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <code>cd</code>
+                                <span class="badge badge-info">Défaut</span>
+                            </td>
+                            <td>CD</td>
+                            <td>CD</td>
+                            <td><span class="badge badge-success">Actif</span></td>
+                            <td style="color: #666;">42 documents</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                                    <button class="btn btn-sm btn-secondary" disabled>Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <code>dvd</code>
+                                <span class="badge badge-info">Défaut</span>
+                            </td>
+                            <td>DVD</td>
+                            <td>DVD</td>
+                            <td><span class="badge badge-success">Actif</span></td>
+                            <td style="color: #666;">28 documents</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                                    <button class="btn btn-sm btn-secondary" disabled>Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr style="background-color: #f9f9f9;">
+                            <td>
+                                <code>educational_kit</code>
+                            </td>
+                            <td>Educational Kit</td>
+                            <td>Mallette pédagogique</td>
+                            <td><span class="badge badge-success">Actif</span></td>
+                            <td style="color: #666;">15 documents</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                                    <button class="btn btn-sm btn-warning">Désactiver</button>
+                                    <button class="btn btn-sm btn-danger" title="Impossible: 15 documents utilisent ce type">Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr style="background-color: #f9f9f9;">
+                            <td>
+                                <code>puzzle</code>
+                            </td>
+                            <td>Puzzle</td>
+                            <td>Puzzle</td>
+                            <td><span class="badge badge-success">Actif</span></td>
+                            <td style="color: #666;">8 documents</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                                    <button class="btn btn-sm btn-warning">Désactiver</button>
+                                    <button class="btn btn-sm btn-danger">Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr style="opacity: 0.6;">
+                            <td>
+                                <code>vhs</code>
+                                <span class="badge badge-info">Défaut</span>
+                            </td>
+                            <td>VHS</td>
+                            <td>VHS</td>
+                            <td><span class="badge badge-secondary">Inactif</span></td>
+                            <td style="color: #666;">3 documents</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-secondary">Modifier</button>
+                                    <button class="btn btn-sm btn-success">Réactiver</button>
+                                    <button class="btn btn-sm btn-secondary" disabled>Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Import Mappings Section -->
+                <div class="mapping-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <h3>Correspondances d'import</h3>
+                            <p style="font-size: 13px; color: #777; margin-top: 4px;">
+                                Définissez comment les valeurs externes (BCDI, Dublin Core) sont mappées vers les codes internes
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" onclick="toggleModal('mapping')">
+                            + Ajouter une correspondance
+                        </button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <label style="font-size: 14px; color: #555;">Filtrer par:</label>
+                        <select>
+                            <option>Tous les types</option>
+                            <option>book</option>
+                            <option>periodical</option>
+                            <option>cd</option>
+                            <option>dvd</option>
+                        </select>
+                        <select>
+                            <option>Tous les formats</option>
+                            <option>BCDI</option>
+                            <option>Dublin Core</option>
+                            <option>UNIMARC</option>
+                            <option>Personnalisé</option>
+                        </select>
+                    </div>
+
+                    <div class="mapping-table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Valeur externe</th>
+                                    <th>Code BCD</th>
+                                    <th>Format source</th>
+                                    <th style="width: 100px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Livre</strong></td>
+                                    <td><code>book</code></td>
+                                    <td><span class="badge badge-info">BCDI</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Book</strong></td>
+                                    <td><code>book</code></td>
+                                    <td><span class="badge badge-info">Dublin Core</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Text</strong></td>
+                                    <td><code>book</code></td>
+                                    <td><span class="badge badge-info">Dublin Core</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Périodique</strong></td>
+                                    <td><code>periodical</code></td>
+                                    <td><span class="badge badge-info">BCDI</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>CD Audio</strong></td>
+                                    <td><code>cd</code></td>
+                                    <td><span class="badge badge-info">BCDI</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sound</strong></td>
+                                    <td><code>cd</code></td>
+                                    <td><span class="badge badge-info">Dublin Core</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>DVD Vidéo</strong></td>
+                                    <td><code>dvd</code></td>
+                                    <td><span class="badge badge-info">BCDI</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>MovingImage</strong></td>
+                                    <td><code>dvd</code></td>
+                                    <td><span class="badge badge-info">Dublin Core</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr style="background-color: #f9f9f9;">
+                                    <td><strong>Bd</strong></td>
+                                    <td><code>comic</code></td>
+                                    <td><span class="badge badge-secondary">Personnalisé</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                                <tr style="background-color: #f9f9f9;">
+                                    <td><strong>Kit péda</strong></td>
+                                    <td><code>educational_kit</code></td>
+                                    <td><span class="badge badge-secondary">Personnalisé</span></td>
+                                    <td><button class="btn btn-sm btn-danger">Supprimer</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Medium Type Modal -->
+        <div class="modal-overlay" id="modal-create">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Ajouter un type de support</h3>
+                    <button class="close-btn" onclick="toggleModal('create')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Code (minuscules, chiffres, underscores)</label>
+                        <input type="text" class="form-control" placeholder="ex: educational_kit" value="">
+                        <div class="form-hint">Le code est permanent et ne peut pas être modifié après création</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nom anglais</label>
+                        <input type="text" class="form-control" placeholder="ex: Educational Kit" value="">
+                    </div>
+                    <div class="form-group">
+                        <label>Nom français</label>
+                        <input type="text" class="form-control" placeholder="ex: Mallette pédagogique" value="">
+                        <div class="form-hint">Affiché dans l'interface française</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="toggleModal('create')">Annuler</button>
+                    <button class="btn btn-primary">Créer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Mapping Modal -->
+        <div class="modal-overlay" id="modal-mapping">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Ajouter une correspondance d'import</h3>
+                    <button class="close-btn" onclick="toggleModal('mapping')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Valeur externe</label>
+                        <input type="text" class="form-control" placeholder="ex: Bd, Kit péda, Magazine" value="">
+                        <div class="form-hint">La valeur telle qu'elle apparaît dans le fichier CSV importé</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Code BCD cible</label>
+                        <select class="form-control">
+                            <option>-- Sélectionnez --</option>
+                            <option>book</option>
+                            <option>periodical</option>
+                            <option>cd</option>
+                            <option>dvd</option>
+                            <option>educational_kit</option>
+                            <option>puzzle</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Format source</label>
+                        <select class="form-control">
+                            <option>BCDI</option>
+                            <option>Dublin Core</option>
+                            <option>UNIMARC</option>
+                            <option selected>Personnalisé</option>
+                        </select>
+                        <div class="form-hint">Le format d'origine de cette correspondance</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="toggleModal('mapping')">Annuler</button>
+                    <button class="btn btn-primary">Créer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleModal(modalId) {
+            const modal = document.getElementById('modal-' + modalId);
+            modal.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

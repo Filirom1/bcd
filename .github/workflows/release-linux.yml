@@ -1,0 +1,189 @@
+name: Build Linux Portable Release
+
+# Remplacé par release.yml — conservé pour référence uniquement
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write  # Required for creating releases
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run unit tests
+        run: pytest tests/unit -v
+
+      - name: Run integration tests
+        run: pytest tests/integration -v
+
+  build-linux:
+    name: Build Linux Portable Distribution
+    needs: test  # Only build if tests pass
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            upx-ucl \
+            python3-gi python3-gi-cairo \
+            gir1.2-gtk-3.0 gir1.2-webkit2-4.1 \
+            libwebkit2gtk-4.1-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "."
+          pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --clean bcd.spec
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Create distribution package
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          DIST_NAME="BCD-v${VERSION}-Linux"
+
+          # Create distribution directory
+          mkdir -p "$DIST_NAME"
+
+          # Copy executable and bundled files
+          cp -r dist/bcd/* "$DIST_NAME/"
+          chmod +x "$DIST_NAME/bcd"
+
+          # Copy documentation to top level (PyInstaller buries data in _internal/)
+          cp README.md README_FR.md INSTALL.md DEVELOPERS.md LICENSE "$DIST_NAME/"
+
+          # Create version file
+          echo "BCD Library Management System" > "$DIST_NAME/VERSION.txt"
+          echo "Version: $VERSION" >> "$DIST_NAME/VERSION.txt"
+          echo "Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> "$DIST_NAME/VERSION.txt"
+          echo "Platform: Linux x86_64 (Ubuntu 20.04+ compatible)" >> "$DIST_NAME/VERSION.txt"
+
+      - name: Create tar.gz archive
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          DIST_NAME="BCD-v${VERSION}-Linux"
+          tar -czf "${DIST_NAME}.tar.gz" "$DIST_NAME"
+
+      - name: Generate checksums
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          DIST_NAME="BCD-v${VERSION}-Linux"
+          sha256sum "${DIST_NAME}.tar.gz" > "${DIST_NAME}.tar.gz.sha256"
+
+          echo "BCD v${VERSION} - Linux Portable Distribution" > checksums-linux.txt
+          echo "======================================" >> checksums-linux.txt
+          echo "" >> checksums-linux.txt
+          echo "SHA256 Checksums:" >> checksums-linux.txt
+          cat "${DIST_NAME}.tar.gz.sha256" >> checksums-linux.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz.sha256
+            checksums-linux.txt
+          body: |
+            # BCD v${{ steps.get_version.outputs.VERSION }} - Linux Portable Distribution
+
+            ## Installation
+
+            1. Download `BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz`
+            2. Extract: `tar -xzf BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz`
+            3. Enter directory: `cd BCD-v${{ steps.get_version.outputs.VERSION }}-Linux`
+            4. Run: `./bcd`
+            5. The application window opens automatically
+
+            ## What's New
+
+            See the commit history for changes in this release.
+
+            ## System Requirements
+
+            - Linux x86_64 (Ubuntu 20.04+, Debian 11+, Fedora 36+, or compatible)
+            - 500 MB free disk space
+            - No Python installation required
+            - No internet connection required for normal operation
+
+            ## Features
+
+            - Complete library cataloging with ISBN lookup
+            - Circulation management (check out, return, renew)
+            - Borrower management (students, teachers, staff)
+            - Hold/reservation system
+            - Comprehensive reporting
+            - Bilingual (English/French)
+            - Zero-configuration portable distribution
+
+            ## Documentation
+
+            - Quick start: See `README.md` in the distribution
+            - Complete guide: `INSTALL.md`
+            - API documentation: http://127.0.0.1:8000/api/v1/docs (when running)
+
+            ## Verification
+
+            Verify the download integrity using the SHA256 checksum:
+
+            ```
+            sha256sum -c BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz.sha256
+            ```
+
+            ## Support
+
+            - GitHub Issues: Report bugs and request features
+            - Documentation: See `INSTALL.md` for installation and troubleshooting
+
+            ---
+
+            **Built by**: GitHub Actions
+            **Build Date**: ${{ github.event.head_commit.timestamp }}
+            **Commit**: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BCD-v${{ steps.get_version.outputs.VERSION }}-Linux
+          path: |
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz
+            checksums-linux.txt
+          retention-days: 30

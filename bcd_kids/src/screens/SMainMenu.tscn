@@ -1,0 +1,107 @@
+[gd_scene format=3 uid="uid://bcd4scr001a"]
+
+[ext_resource type="Script" path="res://src/screens/SMainMenu.gd" id="1_scr"]
+[ext_resource type="PackedScene" uid="uid://bcd4cmp0001" path="res://src/components/Breadcrumb.tscn" id="2_bc"]
+
+[node name="SMainMenu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainMargin" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Scroll" type="ScrollContainer" parent="MainMargin"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Root" type="VBoxContainer" parent="MainMargin/Scroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="MainMargin/Scroll/Root"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="BackBtn" type="Button" parent="MainMargin/Scroll/Root/Header"]
+unique_name_in_owner = true
+text = "← Retour"
+custom_minimum_size = Vector2(120, 40)
+
+[node name="Breadcrumb" parent="MainMargin/Scroll/Root/Header" instance=ExtResource("2_bc")]
+unique_name_in_owner = true
+
+[node name="HeaderInfo" type="HBoxContainer" parent="MainMargin/Scroll/Root"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="NameLabel" type="Label" parent="MainMargin/Scroll/Root/HeaderInfo"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_type_variation = "LabelTitle"
+
+[node name="InfoSpacer" type="Control" parent="MainMargin/Scroll/Root/HeaderInfo"]
+size_flags_horizontal = 3
+
+[node name="CountLabel" type="Label" parent="MainMargin/Scroll/Root/HeaderInfo"]
+unique_name_in_owner = true
+theme_type_variation = "LabelSubtitle"
+
+[node name="Separator1" type="HSeparator" parent="MainMargin/Scroll/Root"]
+
+[node name="BooksSectionTitle" type="Label" parent="MainMargin/Scroll/Root"]
+unique_name_in_owner = true
+theme_type_variation = "LabelSubtitle"
+
+[node name="LoansContainer" type="VBoxContainer" parent="MainMargin/Scroll/Root"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Separator2" type="HSeparator" parent="MainMargin/Scroll/Root"]
+
+[node name="ActionsSectionTitle" type="Label" parent="MainMargin/Scroll/Root"]
+unique_name_in_owner = true
+text = "Actions"
+theme_type_variation = "LabelSubtitle"
+
+[node name="ActionsGrid" type="GridContainer" parent="MainMargin/Scroll/Root"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+columns = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+
+[node name="CheckoutBtn" type="Button" parent="MainMargin/Scroll/Root/ActionsGrid"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 60)
+theme_type_variation = "LabelSubtitle"
+
+[node name="SearchBtn" type="Button" parent="MainMargin/Scroll/Root/ActionsGrid"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 60)
+theme_type_variation = "LabelSubtitle"
+
+[node name="ReturnBtn" type="Button" parent="MainMargin/Scroll/Root/ActionsGrid"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 60)
+theme_type_variation = "LabelSubtitle"
+
+[node name="HoldsBtn" type="Button" parent="MainMargin/Scroll/Root/ActionsGrid"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 60)
+theme_type_variation = "LabelSubtitle"

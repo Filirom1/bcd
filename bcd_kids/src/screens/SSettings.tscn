@@ -1,0 +1,156 @@
+[gd_scene format=3 uid="uid://bcd4scr0002"]
+
+[ext_resource type="Script" path="res://src/screens/SSettings.gd" id="1_scr"]
+
+[node name="SSettings" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainMargin" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Root" type="VBoxContainer" parent="MainMargin"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="Header" type="HBoxContainer" parent="MainMargin/Root"]
+size_flags_horizontal = 3
+
+[node name="BackBtn" type="Button" parent="MainMargin/Root/Header"]
+unique_name_in_owner = true
+text = "← Retour"
+custom_minimum_size = Vector2(120, 40)
+
+[node name="Spacer" type="Control" parent="MainMargin/Root/Header"]
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="MainMargin/Root"]
+text = "Paramètres"
+horizontal_alignment = 1
+theme_type_variation = "LabelLarge"
+
+[node name="Separator1" type="HSeparator" parent="MainMargin/Root"]
+
+[node name="SettingsPanel" type="PanelContainer" parent="MainMargin/Root"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="SettingsScroll" type="ScrollContainer" parent="MainMargin/Root/SettingsPanel"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PanelContent" type="VBoxContainer" parent="MainMargin/Root/SettingsPanel/SettingsScroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="ResolutionTitle" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+text = "Résolution"
+
+[node name="CurrentResolutionLabel" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+unique_name_in_owner = true
+text = "Résolution actuelle: ?"
+theme_type_variation = "LabelMedium"
+
+[node name="ResolutionRow" type="HBoxContainer" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="Btn720p" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ResolutionRow"]
+unique_name_in_owner = true
+text = "1280x720\n(petits écrans)"
+custom_minimum_size = Vector2(180, 60)
+
+[node name="Btn1080p" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ResolutionRow"]
+unique_name_in_owner = true
+text = "1920x1080\n(grands écrans)"
+custom_minimum_size = Vector2(180, 60)
+
+[node name="BtnMax" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ResolutionRow"]
+unique_name_in_owner = true
+text = "Maximisée\n(recommandé)"
+custom_minimum_size = Vector2(180, 60)
+
+[node name="Separator2" type="HSeparator" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+
+[node name="QualityTitle" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+text = "Qualité graphique"
+
+[node name="CurrentQualityLabel" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+unique_name_in_owner = true
+text = "Qualité actuelle: ?"
+theme_type_variation = "LabelMedium"
+
+[node name="QualityRow" type="HBoxContainer" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="BtnLowQuality" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/QualityRow"]
+unique_name_in_owner = true
+text = "Basse qualité\n(vieux PC)"
+custom_minimum_size = Vector2(220, 60)
+
+[node name="BtnHighQuality" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/QualityRow"]
+unique_name_in_owner = true
+text = "Haute qualité\n(PC récent)"
+custom_minimum_size = Vector2(220, 60)
+
+[node name="Separator3" type="HSeparator" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+
+[node name="ThemeTitle" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+text = "Theme"
+
+[node name="ThemeCarousel" type="VBoxContainer" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ThemePreview" type="TextureRect" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 180)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CarouselRow" type="HBoxContainer" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel"]
+size_flags_horizontal = 3
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="ThemePrevBtn" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel/CarouselRow"]
+unique_name_in_owner = true
+text = "<"
+custom_minimum_size = Vector2(60, 60)
+
+[node name="ThemeNameLabel" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel/CarouselRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+horizontal_alignment = 1
+theme_type_variation = &"LabelLarge"
+
+[node name="ThemeNextBtn" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel/CarouselRow"]
+unique_name_in_owner = true
+text = ">"
+custom_minimum_size = Vector2(60, 60)
+
+[node name="ThemeIndexLabel" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+horizontal_alignment = 1
+theme_type_variation = &"LabelMedium"
+
+[node name="ThemeApplyBtn" type="Button" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+text = "Appliquer"
+custom_minimum_size = Vector2(0, 50)

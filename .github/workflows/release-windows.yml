@@ -1,0 +1,195 @@
+name: Build Windows Portable Release
+
+# Remplacé par release.yml — conservé pour référence uniquement
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write  # Required for creating releases
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run unit tests
+        run: pytest tests/unit -v
+
+      - name: Run integration tests
+        run: pytest tests/integration -v
+
+  build-windows:
+    name: Build Windows Portable Distribution
+    needs: test  # Only build if tests pass
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "."
+          pip install pyinstaller
+
+      - name: Download UPX
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip" -OutFile "upx.zip"
+          Expand-Archive -Path upx.zip -DestinationPath .
+          Move-Item -Path upx-4.2.2-win64 -Destination upx
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --clean --upx-dir=upx bcd.spec
+
+      - name: Extract version from tag
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Create distribution package
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          DIST_NAME="BCD-v${VERSION}-Windows"
+
+          # Create distribution directory
+          mkdir -p "$DIST_NAME"
+
+          # Copy executable and bundled files
+          cp -r dist/bcd/* "$DIST_NAME/"
+
+          # Copy documentation to top level (PyInstaller buries data in _internal/)
+          cp README.md README_FR.md INSTALL.md DEVELOPERS.md LICENSE "$DIST_NAME/"
+
+          # Create version file
+          echo "BCD Library Management System" > "$DIST_NAME/VERSION.txt"
+          echo "Version: $VERSION" >> "$DIST_NAME/VERSION.txt"
+          echo "Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> "$DIST_NAME/VERSION.txt"
+          echo "Platform: Windows 10/11 (64-bit)" >> "$DIST_NAME/VERSION.txt"
+
+      - name: Create ZIP archive
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          DIST_NAME="BCD-v${VERSION}-Windows"
+
+          # Use 7-Zip (pre-installed on Windows runners)
+          7z a -tzip "${DIST_NAME}.zip" "$DIST_NAME"
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          DIST_NAME="BCD-v${VERSION}-Windows"
+
+          # SHA256 checksum
+          sha256sum "${DIST_NAME}.zip" > "${DIST_NAME}.zip.sha256"
+
+          # Create checksums file
+          echo "BCD v${VERSION} - Windows Portable Distribution" > checksums.txt
+          echo "======================================" >> checksums.txt
+          echo "" >> checksums.txt
+          echo "SHA256 Checksums:" >> checksums.txt
+          cat "${DIST_NAME}.zip.sha256" >> checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip.sha256
+            checksums.txt
+          body: |
+            # BCD v${{ steps.get_version.outputs.VERSION }} - Windows Portable Distribution
+
+            ## Installation
+
+            1. Download `BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip`
+            2. Extract to any folder (e.g., `C:\BCD`)
+            3. Double-click `bcd.exe`
+            4. The application window opens automatically
+
+            ## What's New
+
+            See the commit history for changes in this release.
+
+            ## System Requirements
+
+            - Windows 10 or Windows 11 (64-bit)
+            - 500 MB free disk space
+            - No Python installation required
+            - No internet connection required for normal operation
+
+            ## Features
+
+            - Complete library cataloging with ISBN lookup
+            - Circulation management (check out, return, renew)
+            - Borrower management (students, teachers, staff)
+            - Hold/reservation system
+            - Comprehensive reporting
+            - Bilingual (English/French)
+            - Zero-configuration portable distribution
+
+            ## Documentation
+
+            - Quick start: See `README.md` in the distribution
+            - Complete guide: `INSTALL.md` (Option 1: Windows Portable Edition)
+            - API documentation: http://127.0.0.1:8000/api/v1/docs (when running)
+
+            ## Verification
+
+            Verify the download integrity using the SHA256 checksum:
+
+            ```
+            certutil -hashfile BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip SHA256
+            ```
+
+            Compare the output with the checksum in `checksums.txt`.
+
+            ## Support
+
+            - GitHub Issues: Report bugs and request features
+            - Documentation: See `INSTALL.md` for installation and troubleshooting
+
+            ---
+
+            **Built by**: GitHub Actions
+            **Build Date**: ${{ github.event.head_commit.timestamp }}
+            **Commit**: ${{ github.sha }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BCD-v${{ steps.get_version.outputs.VERSION }}-Windows
+          path: |
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip
+            checksums.txt
+          retention-days: 30

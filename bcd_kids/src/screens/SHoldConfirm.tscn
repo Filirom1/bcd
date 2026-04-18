@@ -1,0 +1,70 @@
+[gd_scene format=3 uid="uid://bcd4scr0003"]
+
+[ext_resource type="Script" path="res://src/screens/SHoldConfirm.gd" id="1_scr"]
+
+[node name="SHoldConfirm" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainMargin" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Center" type="CenterContainer" parent="MainMargin"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Content" type="VBoxContainer" parent="MainMargin/Center"]
+custom_minimum_size = Vector2(500, 0)
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="MainMargin/Center/Content"]
+unique_name_in_owner = true
+horizontal_alignment = 1
+theme_type_variation = "LabelTitle"
+
+[node name="InfoPanel" type="PanelContainer" parent="MainMargin/Center/Content"]
+size_flags_horizontal = 3
+
+[node name="InfoContent" type="VBoxContainer" parent="MainMargin/Center/Content/InfoPanel"]
+theme_override_constants/separation = 6
+
+[node name="BookTitleLabel" type="Label" parent="MainMargin/Center/Content/InfoPanel/InfoContent"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_type_variation = "LabelMedium"
+theme_type_variation = "LabelSubtitle"
+
+[node name="AuthorsLabel" type="Label" parent="MainMargin/Center/Content/InfoPanel/InfoContent"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_type_variation = "LabelMedium"
+
+[node name="QueueLabel" type="Label" parent="MainMargin/Center/Content/InfoPanel/InfoContent"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_type_variation = "LabelMedium"
+visible = false
+
+[node name="NotifLabel" type="Label" parent="MainMargin/Center/Content"]
+unique_name_in_owner = true
+horizontal_alignment = 1
+autowrap_mode = 3
+theme_type_variation = "LabelMedium"
+
+[node name="BtnRow" type="HBoxContainer" parent="MainMargin/Center/Content"]
+alignment = 1
+
+[node name="OkBtn" type="Button" parent="MainMargin/Center/Content/BtnRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 60)

@@ -1,0 +1,262 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+BCD is a school library management system for French elementary schools:
+- **REST API** (FastAPI) — business logic layer
+- **CLI Client** (Click) — thin client over the API
+- **Web UI** (Vue 3) — SPA with vendored dependencies (no build tools, works offline)
+- **Godot Client** (Godot 4.6) — kid-friendly client for students (ages 6-11)
+- SQLite for development, PostgreSQL-ready for production
+- Bilingual (English/French), single-server (API + Web UI on same origin)
+
+## Commands
+
+### Development Setup
+
+```bash
+# NixOS (recommended): auto-creates venv, sets PYTHONPATH, configures Playwright
+nix-shell
+
+# Manual:
+python3.11 -m venv venv && source venv/bin/activate
+pip install -e ".[dev]"
+alembic upgrade head
+```
+
+### Running
+
+```bash
+# Start server (API + Web UI)
+python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
+# Web UI: http://127.0.0.1:8000
+# API docs: http://127.0.0.1:8000/api/v1/docs
+
+# CLI
+python -m src.bcd_cli.main checkout
+python -m src.bcd_cli.main catalog import data/sample_bibliographic.csv
+
+# Godot Client (kids interface)
+# 1. Open bcd_kids/project.godot in Godot 4.6
+# 2. Press F5 to run
+# Auto-discovers the server via mDNS on localhost:8000
+```
+
+### Testing
+
+```bash
+pytest                                              # all tests
+pytest --cov=src --cov-report=html                  # with coverage
+pytest tests/integration/services/ -v               # service-layer tests only
+pytest tests/integration/test_catalog_service.py -v # single file
+pytest -m unit | integration | contract | slow       # by marker
+```
+
+Pre-commit hook: `./scripts/install-hooks.sh` (runs `pytest tests/integration tests/unit` before each commit; skips CLI tests due to known setup issues).
+
+### Database Migrations
+
+```bash
+alembic revision --autogenerate -m "description"    # create
+alembic upgrade head                                # apply
+alembic downgrade -1                                # rollback
+```
+
+### Simulate Realistic Data
+
+```bash
+python reset_and_simulate.py   # drops DB, re-migrates, imports catalog/students,
+                                # simulates 9 months of circulation activity (~500+ transactions)
+```
+
+### Code Quality
+
+```bash
+black src/ tests/
+ruff src/ tests/
+```
+
+### Version Management
+
+**Unified versioning** for entire project (API + CLI + Kids client):
+```bash
+# Show current version
+python scripts/bump_version.py --current
+
+# Bump version (updates API AND Kids client)
+python scripts/bump_version.py patch   # 1.0.0 -> 1.0.1
+python scripts/bump_version.py minor   # 1.0.0 -> 1.1.0
+python scripts/bump_version.py major   # 1.0.0 -> 2.0.0
+
+# Bump and push (triggers ALL releases)
+python scripts/bump_version.py patch --push
+```
+
+The script:
+- Updates `pyproject.toml` (single source of truth)
+- Synchronizes `bcd_kids/export_presets.cfg` with the same version
+- Creates a git commit
+- Creates TWO annotated git tags:
+  - `v*.*.*` → triggers `.github/workflows/release-windows.yml` and `release-linux.yml`
+  - `godot-v*.*.*` → triggers `.github/workflows/release-godot.yml`
+- Optionally pushes to trigger GitHub Actions releases
+
+**Important**: The project uses a single version number for all components. API and Kids client versions are always synchronized.
+
+## Architecture
+
+### Source Layout
+
+```
+src/
+├── bcd_api/          # FastAPI REST API
+│   ├── api/v1/       # Thin route handlers (call services, no business logic)
+│   ├── services/     # All business logic (one file per domain)
+│   ├── models/       # SQLAlchemy ORM models
+│   ├── schemas/      # Pydantic request/response schemas
+│   └── core/         # database.py, config.py, deps.py, portable.py, mdns.py
+├── bcd_cli/          # Click CLI (thin HTTP client over API)
+│   └── commands/     # One module per command group
+├── bcd_web_vue/      # Vue 3 SPA (vendored deps — no npm, no build step)
+│   ├── js/           # ~80 Vue 3 components organized by feature
+│   ├── locales/      # i18n: en.json, fr.json
+│   └── vendor/       # Vue 3.4, vue-router, vue-i18n, Bootstrap 5.3
+├── bcd_converters/   # One-off data migration scripts (Bibliopuce, ONDE, XLS)
+├── bcd_kids/        # Godot 4.6 client (kid-friendly, ages 6-11)
+│   ├── autoload/     # Singletons: GS (state), API (HTTP), I18n (i18n), Mgr (navigation)
+│   ├── src/
+│   │   ├── BCDTheme.gd       # Color palette + UI helpers
+│   │   ├── components/       # Reusable components (Breadcrumb, AutocompleteInput, etc.)
+│   │   └── screens/          # 9 screens (procedural UI, no .tscn files)
+│   ├── locales/      # i18n: fr.json, en.json
+│   ├── project.godot
+│   └── export_presets.cfg    # Windows/Linux/Web export configs
+└── shared/           # constants.py, validators.py, version.py
+```
+
+### Key Architectural Rules
+
+- **Service layer**: ALL business logic lives in `src/bcd_api/services/`. Routes are thin — they validate input, call a service, return the response.
+- **Dependency injection**: `db: Session = Depends(get_db)` everywhere. Never create sessions manually.
+- **Exception flow**: Services raise `BCDException` subclasses. The API layer in `main.py` converts them to HTTP responses (400/409/422).
+- **API-first**: CLI and Web UI are pure clients. They contain no business logic.
+- **SQLite StaticPool**: `core/database.py` uses `StaticPool` to maintain a single SQLite connection across threads — do not change this without understanding the implications.
+
+### Database
+
+7 tables: `bibliographic_record`, `item`, `borrower`, `class`, `circulation`, `hold`, `system_settings`. All schema changes via Alembic migrations. Foreign keys enforced via SQLite PRAGMA. Comprehensive indexing on all WHERE/JOIN/ORDER BY fields.
+
+### Configuration (`src/bcd_api/core/config.py`)
+
+Key settings (via `.env`):
+- `DATABASE_URL` — defaults to `sqlite:///./data/bcd.db`
+- `API_HOST`, `API_PORT` — server bind address
+- `BNF_API_URL`, `BNF_RATE_LIMIT` — French National Library (1 req/s)
+- `UI_MODE` — `webview`/`browser`/`godot`: choose which interface to launch on startup; used for portable builds
+- `KIDS_CLIENT_PATH` — path to Kids client executable (required when `UI_MODE=godot`)
+
+### Portable Builds
+
+PyInstaller spec at `bcd.spec`. `src/bcd_api/core/portable.py` handles bundled resource detection. The `--ui-mode` flag (or `UI_MODE` in .env) chooses which interface to launch: `webview` (native window), `browser` (system browser), or `godot` (Kids client).
+
+### mDNS Discovery
+
+`src/bcd_api/core/mdns.py` — announces the server on the local network via Zeroconf at startup.
+
+## Testing Philosophy
+
+Prefer **service-layer integration tests** in `tests/integration/services/`. Each test uses the `db_session` fixture (transaction rollback isolation — no cleanup needed). Follow AAA pattern with descriptive names: `test_<action>_<condition>_<expected_result>`. Mock BNF API calls (`src/bcd_api/services/bnf_service.py`) to avoid network dependencies.
+
+E2E tests use Playwright with page objects in `tests/e2e/page_objects/`. API-layer tests (`tests/api/`) may be skipped due to TestClient/database isolation conflicts.
+
+Coverage goals: 80%+ minimum, 90%+ for services.
+
+## Project Constitution & Spec-Kit
+
+Full constitution at `.specify/memory/constitution.md` (v1.2.0), architecture patterns at `.specify/architecture-patterns.md` (v1.0.0). These are the authoritative references — read them before implementing new features.
+
+Feature workflow: `/speckit.specify` → `/speckit.plan` → `/speckit.clarify` → `/speckit.tasks` → `/speckit.analyze` (pre-implementation gate) → `/speckit.implement` → `/speckit.review` (post-implementation gate, required before merge).
+
+Feature specs live in `specs/<feature-id>/` (spec.md, plan.md, tasks.md, research.md, contracts/).
+
+Key constitution rules to internalize:
+- ≤2 clicks for primary actions; smart defaults
+- All user-facing text externalized (no hard-coded en/fr strings)
+- All DB changes via Alembic with up/down scripts
+- Performance target: 5+ year old hardware (2 GHz CPU, 4 GB RAM), response ≤500 ms
+- Cross-platform: Linux & Windows, use `pathlib` for all file operations
+
+## Internationalization
+
+Web UI translations: `src/bcd_web_vue/locales/en.json` and `fr.json`. Both files must be updated together. Missing keys fall back to English.
+
+## External Integrations
+
+**BNF API** (French National Library): `src/bcd_api/services/bnf_service.py`. SRU protocol, XML responses, rate-limited to 1 req/s. Always mock in tests.
+
+## Branch & Commit Conventions
+
+- Main branch: `main`
+- Feature branches: `<feature-id>-<brief-description>`
+- Commits: Conventional Commits (`feat:`, `fix:`, `docs:`, etc.)
+
+## Active Technologies
+- Python 3.11 (scripts), JavaScript ES2020 (Vue 3 SPA — no transpilation) + Vue 3.4.21 (already vendored), Bootstrap 5.3.3 offcanvas (already vendored), `marked.js` v9 (vendored, ~50KB UMD global build) (001-contextual-help)
+- Help documentation — `docs/help/{en,fr}/*.md` + `docs/help/images/*.png`, served via symlink at `src/bcd_web_vue/help` → `/static/help/` (001-contextual-help)
+- Python 3.11 (backend), JavaScript ES2020 (frontend) + FastAPI 0.104+, SQLAlchemy 2.0+, Alembic (backend); Vue 3.4.21, vue-router, vue-i18n (frontend, vendored) (008-inventory-page)
+- SQLite (development), PostgreSQL-compatible (production) (008-inventory-page)
+
+## Godot Client
+
+See [`bcd_kids/README.md`](bcd_kids/README.md) for complete documentation.
+
+**Key points**:
+- Godot 4.6 project (procedural UI, no .tscn files for screens)
+- Kid-friendly interface for ages 6-11 (CP-CM2)
+- Autoload singletons: GS (state), API (HTTP client), I18n (translations), Mgr (navigation)
+- 9 screens: ServerDiscovery → ClassSelect → NameInput → MainMenu → Checkout/Return/Search/Holds
+- Export presets: Windows Desktop, Linux/X11
+- GitHub Actions: Builds on push to main/develop, releases on tags `godot-v*.*.*`
+- CI/CD workflows:
+  - `.github/workflows/build-godot.yml` — continuous builds (artifacts 14 days)
+  - `.github/workflows/release-godot.yml` — versioned releases (GitHub Releases)
+
+**Architecture**:
+- All screens use `class_name S*` (e.g., `SMainMenu`, `SSearch`)
+- Components use `class_name ComponentName` (e.g., `Breadcrumb`, `BookCard`)
+- BCDTheme provides color palette and UI helpers (buttons, labels, panels, etc.)
+- Navigation: `Mgr.push(screen)`, `Mgr.pop()`, `Mgr.replace(screen)`
+- API calls return untyped (can be Dictionary or Array) — handle both
+- Translations: `I18n.t(key)` or `I18n.t(key, params)`
+
+**Colors** (BCDTheme):
+- BG: `#F2F8FF` (light blue sky)
+- PRIMARY: `#4D99F2` (bright blue)
+- SUCCESS: `#33CC66` (green)
+- ERROR: `#F24D66` (soft red)
+- WARNING: `#F2BF33` (yellow)
+- AVAILABLE: green, RESERVED: yellow, ON_LOAN: red
+
+**Build/Export**:
+- Local: Open project in Godot 4.6 → Project → Export
+- Release: Use `python scripts/bump_godot_version.py patch --push` (creates tag + triggers CI)
+- Platforms: Windows (`.exe`), Linux (`.x86_64`)
+
+**Optimisations pour vieux PC**:
+- OpenGL Compatibility renderer (pas Vulkan)
+- VSync activé (limite 60 FPS)
+- Anti-aliasing désactivé (MSAA=0)
+- Textures S3TC compressées (BPTC désactivé)
+- Console wrapper désactivé (évite faux positifs antivirus)
+- Binaire unique embed_pck (pas de .pck séparé)
+- Métadonnées Windows complètes (file_version, product_name, etc.)
+- Limite mémoire messages queue: 4MB
+- Target: 4GB RAM, HDD, Windows 10, GPU Intel HD Graphics 2000+
+
+Voir `bcd_kids/DEPLOYMENT.md` pour guide complet déploiement PC scolaires.
+
+## Recent Changes
+- 001-contextual-help: Added Python 3.11 (scripts), JavaScript ES2020 (Vue 3 SPA — no transpilation) + Vue 3.4.21 (already vendored), Bootstrap 5.3.3 offcanvas (already vendored), `marked.js` v9 (to vendor, ~50KB UMD global build)
+- Godot 4.6 client: Kid-friendly interface with mDNS discovery, barcode scanning, catalog search, holds management (Windows/Linux/Web builds via GitHub Actions)

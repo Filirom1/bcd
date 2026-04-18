@@ -1,0 +1,1175 @@
+openapi: 3.1.0
+info:
+  title: BCD Admin Features API
+  description: |
+    API endpoints for administrative operations (bulk edit, delete, class management).
+
+    **Security**: Admin operations are destructive. Frontend must implement confirmation dialogs.
+
+    **Atomicity**: All bulk operations run in single transaction (all succeed or all fail).
+
+    **CASCADE Behavior**: See data-model.md for detailed CASCADE delete rules.
+  version: 1.0.0
+  contact:
+    name: BCD Library System
+    url: https://github.com/yourusername/bcd4
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+tags:
+  - name: admin-borrowers
+    description: Bulk operations on borrowers
+  - name: admin-catalog
+    description: Bulk operations on catalog
+  - name: classes
+    description: Class management (CRUD)
+
+paths:
+  # ========================================
+  # CLASS MANAGEMENT (EXISTING - documented for completeness)
+  # ========================================
+
+  /classes:
+    get:
+      summary: List classes
+      description: |
+        List all classes with optional filters and pagination.
+
+        Results ordered by class name.
+      tags:
+        - classes
+      parameters:
+        - name: grade_level
+          in: query
+          description: Filter by grade level (CP, CE1, CE2, CM1, CM2)
+          required: false
+          schema:
+            type: string
+            example: CP
+        - name: academic_year
+          in: query
+          description: Filter by academic year (e.g., 2025-2026)
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{4}$'
+            example: "2025-2026"
+        - name: limit
+          in: query
+          description: Maximum results (1-500)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+        - name: offset
+          in: query
+          description: Pagination offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassResponse'
+
+    post:
+      summary: Create class
+      description: |
+        Create a new class/grade level.
+
+        **Validation**:
+        - Class name must be unique per academic year
+        - Grade level must be valid (CP, CE1, CE2, CM1, CM2)
+      tags:
+        - classes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassCreate'
+      responses:
+        '201':
+          description: Class created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassResponse'
+        '409':
+          description: Class name already exists for this academic year
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Class 'CP-A' already exists for academic year 2025-2026"
+                error_code: "DUPLICATE_CLASS_NAME"
+                context:
+                  class_name: "CP-A"
+                  academic_year: "2025-2026"
+
+  /classes/{class_id}:
+    get:
+      summary: Get class details
+      tags:
+        - classes
+      parameters:
+        - name: class_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Class details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassResponse'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Update class
+      description: |
+        Update class information.
+
+        Only provided fields are updated (partial update).
+      tags:
+        - classes
+      parameters:
+        - name: class_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassUpdate'
+      responses:
+        '200':
+          description: Class updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassResponse'
+        '404':
+          description: Class not found
+        '409':
+          description: New class name already exists
+
+    delete:
+      summary: Delete class
+      description: |
+        Delete a class.
+
+        **CASCADE Behavior**:
+        - Borrowers in this class: `class_id` set to NULL (unassigned)
+        - No borrowers are deleted
+        - No circulation history is deleted
+      tags:
+        - classes
+      parameters:
+        - name: class_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Class deleted successfully
+        '404':
+          description: Class not found
+
+  # ========================================
+  # BORROWER SINGLE EDIT (NEW)
+  # ========================================
+
+  /borrowers/{borrower_id}:
+    patch:
+      summary: Update single borrower
+      description: |
+        Update borrower information.
+
+        **Editable Fields**:
+        - first_name, last_name (updates full_name automatically)
+        - borrower_id (must be unique, validates against system settings)
+        - role (student, teacher, staff)
+        - class_id (students only)
+        - email, phone, notes
+
+        **Validation**:
+        - Borrower ID format validated against system settings regex
+        - Borrower ID must be unique (if changed)
+        - Class ID must exist (if provided)
+      tags:
+        - admin-borrowers
+      parameters:
+        - name: borrower_id
+          in: path
+          description: Internal borrower ID (not borrower_id field)
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BorrowerUpdate'
+      responses:
+        '200':
+          description: Borrower updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowerResponse'
+        '404':
+          description: Borrower not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Borrower ID already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Borrower ID '101' is already assigned to Amira BENALI"
+                error_code: "BORROWER_ID_NOT_AVAILABLE"
+                context:
+                  borrower_id: "101"
+                  existing_borrower_name: "Amira BENALI"
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Invalid borrower_id format: 'ABC123' (expected: numeric)"
+                error_code: "VALIDATION_FAILED"
+
+  # ========================================
+  # BORROWER BULK OPERATIONS (NEW)
+  # ========================================
+
+  /admin/borrowers/bulk-edit:
+    post:
+      summary: Bulk edit borrowers
+      description: |
+        Perform bulk operations on multiple borrowers.
+
+        **Supported Operations**:
+        - `change_class`: Assign borrowers to a new class
+        - `change_role`: Change borrower role (student/teacher/staff)
+
+        **Atomicity**: All updates succeed or all fail (single transaction).
+
+        **Validation**:
+        - All borrower IDs must exist
+        - Target class ID must exist (for change_class)
+        - Target role must be valid (for change_role)
+      tags:
+        - admin-borrowers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/BulkChangeClassRequest'
+                - $ref: '#/components/schemas/BulkChangeRoleRequest'
+            examples:
+              change_class:
+                summary: Change class for students
+                value:
+                  operation: "change_class"
+                  borrower_ids: [123, 124, 125]
+                  target_class_id: 2
+              change_role:
+                summary: Change role to teacher
+                value:
+                  operation: "change_role"
+                  borrower_ids: [126, 127]
+                  target_role: "teacher"
+      responses:
+        '200':
+          description: Bulk operation completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkOperationResult'
+              example:
+                total_count: 3
+                successful_count: 3
+                failed_count: 0
+                operation: "change_class"
+                details:
+                  target_class_name: "CE1-A"
+        '400':
+          description: Bulk operation failed (rolled back)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Bulk change_class failed: 1 of 3 records could not be processed"
+                error_code: "BULK_OPERATION_FAILED"
+                context:
+                  operation: "change_class"
+                  total_count: 3
+                  failed_count: 1
+                  successful_count: 0
+                  errors:
+                    - record_id: 124
+                      error: "Borrower not found"
+        '404':
+          description: Target class not found
+        '422':
+          description: Invalid operation or parameters
+
+  /admin/borrowers/bulk-delete:
+    post:
+      summary: Bulk delete borrowers
+      description: |
+        Delete multiple borrowers.
+
+        **CASCADE Behavior**:
+        - Circulation transactions: Deleted
+        - Holds: Deleted
+        - Items: NOT deleted
+        - Classes: NOT deleted
+
+        **Atomicity**: All deletes succeed or all fail (single transaction).
+
+        **Warning**: This operation is irreversible. Circulation history is permanently deleted.
+      tags:
+        - admin-borrowers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDeleteRequest'
+            example:
+              borrower_ids: [123, 124, 125]
+      responses:
+        '200':
+          description: Bulk delete completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkOperationResult'
+              example:
+                total_count: 3
+                successful_count: 3
+                failed_count: 0
+                operation: "delete"
+                details:
+                  deleted_borrower_names:
+                    - "Amira BENALI"
+                    - "Lucas MARTIN"
+                    - "Sofia GARCIA"
+        '400':
+          description: Bulk delete failed (rolled back)
+        '404':
+          description: One or more borrowers not found
+
+  # ========================================
+  # CATALOG SINGLE EDIT (NEW)
+  # ========================================
+
+  /catalog/records/{record_id}:
+    patch:
+      summary: Update single bibliographic record
+      description: |
+        Update bibliographic record metadata.
+
+        **Editable Fields**:
+        - title, subtitle
+        - authors, illustrators (JSON arrays)
+        - publisher, publication_year
+        - category, genre, target_audience
+        - language, medium_type
+        - description
+
+        **Read-Only Fields** (auto-computed):
+        - total_items, total_circulations
+        - created_at, updated_at
+      tags:
+        - admin-catalog
+      parameters:
+        - name: record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BiblographicRecordUpdate'
+      responses:
+        '200':
+          description: Record updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiblographicRecordResponse'
+        '404':
+          description: Record not found
+        '422':
+          description: Validation failed
+
+  /catalog/items/{item_id}:
+    patch:
+      summary: Update single item
+      description: |
+        Update item metadata and status.
+
+        **Editable Fields**:
+        - call_number, shelf_location
+        - condition (good, damaged, lost, withdrawn)
+        - status (available, on_loan, on_hold, in_repair, lost, withdrawn)
+        - loanable (true/false)
+        - acquisition_date, funding_source
+
+        **Validation**:
+        - Item ID (barcode) must be unique if changed
+        - Cannot change status to 'on_loan' via this endpoint (use circulation API)
+      tags:
+        - admin-catalog
+      parameters:
+        - name: item_id
+          in: path
+          description: Internal item ID (not item_id barcode field)
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemUpdate'
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '404':
+          description: Item not found
+        '409':
+          description: Barcode already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Barcode 'ITEM-001' is already assigned to item 789"
+                error_code: "DUPLICATE_BARCODE"
+                context:
+                  barcode: "ITEM-001"
+                  existing_item_id: "789"
+        '422':
+          description: Validation failed
+
+  # ========================================
+  # CATALOG BULK OPERATIONS (NEW)
+  # ========================================
+
+  /admin/catalog/bulk-edit:
+    post:
+      summary: Bulk edit catalog records
+      description: |
+        Update common fields for multiple bibliographic records.
+
+        **Editable Fields** (via bulk operation):
+        - category
+        - genre
+        - target_audience
+        - language
+        - medium_type
+
+        **Atomicity**: All updates succeed or all fail (single transaction).
+
+        **Use Case**: Reclassify multiple records at once (e.g., change genre from "Conte" to "Album").
+      tags:
+        - admin-catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkEditRecordsRequest'
+            example:
+              record_ids: [456, 457, 458]
+              fields:
+                category: "Fiction"
+                genre: "Album"
+                target_audience: "child"
+      responses:
+        '200':
+          description: Bulk edit completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkOperationResult'
+              example:
+                total_count: 3
+                successful_count: 3
+                failed_count: 0
+                operation: "edit_fields"
+                details:
+                  updated_fields:
+                    - category
+                    - genre
+                    - target_audience
+        '400':
+          description: Bulk edit failed (rolled back)
+        '404':
+          description: One or more records not found
+        '422':
+          description: Invalid field values
+
+  /admin/catalog/bulk-delete:
+    post:
+      summary: Bulk delete catalog records
+      description: |
+        Delete multiple bibliographic records.
+
+        **CASCADE Behavior**:
+        - Items: Deleted (all physical copies)
+        - Circulation transactions: Deleted
+        - Holds: Deleted
+
+        **Atomicity**: All deletes succeed or all fail (single transaction).
+
+        **Warning**: This operation is irreversible. All items and circulation history are permanently deleted.
+      tags:
+        - admin-catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkDeleteRecordsRequest'
+            example:
+              record_ids: [456, 457, 458]
+      responses:
+        '200':
+          description: Bulk delete completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkOperationResult'
+              example:
+                total_count: 3
+                successful_count: 3
+                failed_count: 0
+                operation: "delete"
+                details:
+                  deleted_record_titles:
+                    - "Le Loup Est Revenu"
+                    - "Elmer"
+                    - "La Chenille Qui Fait Des Trous"
+                  deleted_items_count: 9
+        '400':
+          description: Bulk delete failed (rolled back)
+        '404':
+          description: One or more records not found
+
+# ========================================
+# COMPONENT SCHEMAS
+# ========================================
+
+components:
+  schemas:
+    # ========================================
+    # CLASS SCHEMAS
+    # ========================================
+
+    ClassCreate:
+      type: object
+      required:
+        - name
+        - grade_level
+        - academic_year
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Class name (e.g., "CP-A", "CE1-B")
+          example: "CP-A"
+        grade_level:
+          type: string
+          enum: [CP, CE1, CE2, CM1, CM2]
+          description: Grade level
+          example: "CP"
+        academic_year:
+          type: string
+          pattern: '^\d{4}-\d{4}$'
+          description: Academic year (YYYY-YYYY format)
+          example: "2025-2026"
+        homeroom_teacher:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Homeroom teacher name
+          example: "Mme Dubois"
+        notes:
+          type: string
+          nullable: true
+          description: Administrative notes
+
+    ClassUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          nullable: true
+        grade_level:
+          type: string
+          enum: [CP, CE1, CE2, CM1, CM2]
+          nullable: true
+        homeroom_teacher:
+          type: string
+          maxLength: 100
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    ClassResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "CP-A"
+        grade_level:
+          type: string
+          example: "CP"
+        academic_year:
+          type: string
+          example: "2025-2026"
+        homeroom_teacher:
+          type: string
+          nullable: true
+          example: "Mme Dubois"
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # BORROWER SCHEMAS
+    # ========================================
+
+    BorrowerUpdate:
+      type: object
+      description: Partial update schema (all fields optional)
+      properties:
+        borrower_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+          nullable: true
+          description: User-facing ID (must be unique, validated against system settings)
+          example: "102"
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          nullable: true
+          example: "Amira"
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          nullable: true
+          example: "BENALI"
+        role:
+          type: string
+          enum: [student, teacher, staff]
+          nullable: true
+          example: "student"
+        class_id:
+          type: integer
+          nullable: true
+          description: Class assignment (students only, null for teachers/staff)
+          example: 1
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          nullable: true
+        phone:
+          type: string
+          maxLength: 20
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    BorrowerResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        borrower_id:
+          type: string
+          example: "101"
+        first_name:
+          type: string
+          example: "Amira"
+        last_name:
+          type: string
+          example: "BENALI"
+        full_name:
+          type: string
+          example: "Amira BENALI"
+        role:
+          type: string
+          enum: [student, teacher, staff]
+          example: "student"
+        class_id:
+          type: integer
+          nullable: true
+          example: 1
+        grade_level:
+          type: string
+          nullable: true
+          example: "CP"
+        barcode:
+          type: string
+          example: "BOR-101"
+        active:
+          type: boolean
+          example: true
+        blocked_reason:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # BULK BORROWER OPERATION SCHEMAS
+    # ========================================
+
+    BulkChangeClassRequest:
+      type: object
+      required:
+        - operation
+        - borrower_ids
+        - target_class_id
+      properties:
+        operation:
+          type: string
+          enum: [change_class]
+          example: "change_class"
+        borrower_ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          description: List of borrower internal IDs
+          example: [123, 124, 125]
+        target_class_id:
+          type: integer
+          description: Target class ID
+          example: 2
+
+    BulkChangeRoleRequest:
+      type: object
+      required:
+        - operation
+        - borrower_ids
+        - target_role
+      properties:
+        operation:
+          type: string
+          enum: [change_role]
+          example: "change_role"
+        borrower_ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          example: [126, 127]
+        target_role:
+          type: string
+          enum: [student, teacher, staff]
+          description: Target role
+          example: "teacher"
+
+    BulkDeleteRequest:
+      type: object
+      required:
+        - borrower_ids
+      properties:
+        borrower_ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          description: List of borrower internal IDs to delete
+          example: [123, 124, 125]
+
+    # ========================================
+    # CATALOG SCHEMAS
+    # ========================================
+
+    BiblographicRecordUpdate:
+      type: object
+      description: Partial update schema (all fields optional)
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+        subtitle:
+          type: string
+          maxLength: 500
+          nullable: true
+        authors:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: List of author names
+          example: ["Geoffroy de Pennart"]
+        illustrators:
+          type: array
+          items:
+            type: string
+          nullable: true
+        publisher:
+          type: string
+          maxLength: 200
+          nullable: true
+        publication_year:
+          type: integer
+          minimum: 1000
+          maximum: 2100
+          nullable: true
+        category:
+          type: string
+          maxLength: 100
+          nullable: true
+        genre:
+          type: string
+          maxLength: 100
+          nullable: true
+        target_audience:
+          type: string
+          enum: [child, youth, adult]
+          nullable: true
+        language:
+          type: string
+          maxLength: 10
+          nullable: true
+          example: "fr"
+        medium_type:
+          type: string
+          maxLength: 50
+          nullable: true
+          example: "Livre"
+        description:
+          type: string
+          nullable: true
+
+    BiblographicRecordResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        isbn:
+          type: string
+          nullable: true
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        authors:
+          type: array
+          items:
+            type: string
+          nullable: true
+        illustrators:
+          type: array
+          items:
+            type: string
+          nullable: true
+        publisher:
+          type: string
+          nullable: true
+        publication_year:
+          type: integer
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        genre:
+          type: string
+          nullable: true
+        target_audience:
+          type: string
+          nullable: true
+        language:
+          type: string
+          nullable: true
+        medium_type:
+          type: string
+        description:
+          type: string
+          nullable: true
+        total_items:
+          type: integer
+        total_circulations:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ItemUpdate:
+      type: object
+      description: Partial update schema (all fields optional)
+      properties:
+        item_id:
+          type: string
+          minLength: 1
+          maxLength: 20
+          nullable: true
+          description: Barcode/item ID (must be unique)
+        call_number:
+          type: string
+          maxLength: 50
+          nullable: true
+        shelf_location:
+          type: string
+          maxLength: 100
+          nullable: true
+        condition:
+          type: string
+          enum: [good, damaged, lost, withdrawn]
+          nullable: true
+        status:
+          type: string
+          enum: [available, on_loan, on_hold, in_repair, lost, withdrawn]
+          nullable: true
+        loanable:
+          type: boolean
+          nullable: true
+        acquisition_date:
+          type: string
+          format: date
+          nullable: true
+        funding_source:
+          type: string
+          maxLength: 100
+          nullable: true
+
+    ItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_id:
+          type: string
+        bibliographic_record_id:
+          type: integer
+        call_number:
+          type: string
+          nullable: true
+        shelf_location:
+          type: string
+          nullable: true
+        condition:
+          type: string
+        status:
+          type: string
+        loanable:
+          type: boolean
+        acquisition_date:
+          type: string
+          format: date
+          nullable: true
+        funding_source:
+          type: string
+          nullable: true
+        circulation_count:
+          type: integer
+        last_borrowed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ========================================
+    # BULK CATALOG OPERATION SCHEMAS
+    # ========================================
+
+    BulkEditRecordsRequest:
+      type: object
+      required:
+        - record_ids
+        - fields
+      properties:
+        record_ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          description: List of bibliographic record IDs
+          example: [456, 457, 458]
+        fields:
+          type: object
+          description: Fields to update (only provided fields are updated)
+          properties:
+            category:
+              type: string
+              maxLength: 100
+              nullable: true
+            genre:
+              type: string
+              maxLength: 100
+              nullable: true
+            target_audience:
+              type: string
+              enum: [child, youth, adult]
+              nullable: true
+            language:
+              type: string
+              maxLength: 10
+              nullable: true
+            medium_type:
+              type: string
+              maxLength: 50
+              nullable: true
+          minProperties: 1
+          example:
+            category: "Fiction"
+            genre: "Album"
+            target_audience: "child"
+
+    BulkDeleteRecordsRequest:
+      type: object
+      required:
+        - record_ids
+      properties:
+        record_ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          description: List of bibliographic record IDs to delete
+          example: [456, 457, 458]
+
+    # ========================================
+    # COMMON RESPONSE SCHEMAS
+    # ========================================
+
+    BulkOperationResult:
+      type: object
+      properties:
+        total_count:
+          type: integer
+          description: Total number of records in operation
+          example: 3
+        successful_count:
+          type: integer
+          description: Number of records successfully processed
+          example: 3
+        failed_count:
+          type: integer
+          description: Number of records that failed
+          example: 0
+        operation:
+          type: string
+          description: Operation type
+          enum: [change_class, change_role, delete, edit_fields]
+          example: "change_class"
+        details:
+          type: object
+          description: Operation-specific details
+          additionalProperties: true
+          example:
+            target_class_name: "CE1-A"
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message (for logging, not i18n)
+          example: "Borrower ID '101' is already assigned to Amira BENALI"
+        error_code:
+          type: string
+          description: Machine-readable error code (for frontend i18n)
+          example: "BORROWER_ID_NOT_AVAILABLE"
+        context:
+          type: object
+          description: Structured error context (for frontend translation interpolation)
+          additionalProperties: true
+          example:
+            borrower_id: "101"
+            existing_borrower_name: "Amira BENALI"

@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://bcd4scr0010"]
+
+[ext_resource type="Script" path="res://src/screens/SClassSelect.gd" id="1_scr"]
+
+[node name="SClassSelect" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainMargin" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Root" type="VBoxContainer" parent="MainMargin"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="TopBar" type="HBoxContainer" parent="MainMargin/Root"]
+size_flags_horizontal = 3
+
+[node name="ServerBtn" type="Button" parent="MainMargin/Root/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 40)
+
+[node name="TopSpacer" type="Control" parent="MainMargin/Root/TopBar"]
+size_flags_horizontal = 3
+
+[node name="SettingsBtn" type="Button" parent="MainMargin/Root/TopBar"]
+unique_name_in_owner = true
+size_flags_vertical = 4
+text = "⚙️"
+custom_minimum_size = Vector2(50, 40)
+
+[node name="LangSep1" type="Control" parent="MainMargin/Root/TopBar"]
+custom_minimum_size = Vector2(8, 0)
+
+[node name="FrBtn" type="Button" parent="MainMargin/Root/TopBar"]
+unique_name_in_owner = true
+text = "FR"
+custom_minimum_size = Vector2(60, 40)
+
+[node name="LangSep2" type="Control" parent="MainMargin/Root/TopBar"]
+custom_minimum_size = Vector2(8, 0)
+
+[node name="EnBtn" type="Button" parent="MainMargin/Root/TopBar"]
+unique_name_in_owner = true
+text = "EN"
+custom_minimum_size = Vector2(60, 40)
+
+[node name="TitleLabel" type="Label" parent="MainMargin/Root"]
+unique_name_in_owner = true
+horizontal_alignment = 1
+theme_type_variation = "LabelLarge"
+
+[node name="Separator" type="HSeparator" parent="MainMargin/Root"]
+
+[node name="ScanRow" type="HBoxContainer" parent="MainMargin/Root"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ScanInput" type="LineEdit" parent="MainMargin/Root/ScanRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="ClassesGrid" type="GridContainer" parent="MainMargin/Root"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 4
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12

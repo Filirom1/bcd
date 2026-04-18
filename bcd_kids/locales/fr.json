@@ -1,0 +1,155 @@
+{
+	"class_select": {
+		"title": "Choisis ta classe",
+		"scan_placeholder": "Scanne un livre ou la carte d'un élève…",
+		"no_classes": "Aucune classe trouvée"
+	},
+	"name_input": {
+		"title": "Tape ton prénom",
+		"placeholder": "Ton prénom...",
+		"not_found": "Prénom non trouvé",
+		"min_chars": "Tape au moins 2 lettres"
+	},
+	"name_choice": {
+		"title": "Plusieurs \"{name}\" - Choisis:",
+		"books_count_one": "{count} livre emprunté",
+		"books_count_other": "{count} livres empruntés",
+		"no_books": "Aucun livre"
+	},
+	"main_menu": {
+		"books_count": "{current}/{limit} livres",
+		"holds_ready": "{count} réservation prête !",
+		"holds_ready_plural": "{count} réservations prêtes !",
+		"checkout": "EMPRUNTER UN LIVRE",
+		"search": "CHERCHER UN LIVRE",
+		"my_holds": "MES RÉSERVATIONS",
+		"return_scan": "RENDRE PAR SCAN",
+		"disconnect": "Déconnexion",
+		"my_books": "Mes livres",
+		"return_button": "Rendre",
+		"no_loans": "Aucun livre emprunté",
+		"overdue": "En retard",
+		"no_holds": "Aucune réservation"
+	},
+	"checkout": {
+		"title": "Emprunter",
+		"label": "Numéro du livre:",
+		"success": "Livre emprunté !",
+		"success_with_title": "{title} — Livre emprunté !",
+		"error_limit": "Tu as atteint ta limite ({current}/{limit})",
+		"error_already_loaned": "Livre déjà emprunté",
+		"error_not_found": "Livre non trouvé",
+		"error_blocked": "Ton compte est bloqué",
+		"error_overdue": "Tu as des livres en retard",
+		"error_not_available": "Livre non disponible",
+		"error_not_loanable": "Ce livre ne peut pas être emprunté",
+		"error_reserved": "Ce livre est réservé pour quelqu'un d'autre"
+	},
+	"return": {
+		"title": "Rendre",
+		"label": "Numéro du livre:",
+		"success": "Livre rendu !",
+		"success_with_title": "{title} — Livre rendu !",
+		"shelve_at": "ranger à : {location}",
+		"on_time": "Rendu à l'heure",
+		"late": "{days} jours de retard",
+		"error_not_found": "Livre non trouvé",
+		"error_not_on_loan": "Ce livre n'est pas emprunté",
+		"hold_ready_for": "📌 Mettre de côté pour {name} ({class})",
+		"hold_ready_title": "📌 Réservation à traiter !",
+		"hold_ready_instruction": "Mettre ce livre de côté pour cet élève.",
+		"returned_today": "Livres rendus aujourd'hui:",
+		"scan_books_placeholder": "Scannez des livres..."
+	},
+	"search": {
+		"title": "Rechercher",
+		"placeholder": "Chercher un livre...",
+		"filter_type": "Type:",
+		"filter_genre": "Genre:",
+		"filter_audience": "Public:",
+		"audience_all": "Tous",
+		"audience_child": "Enfant",
+		"audience_youth": "Jeune",
+		"audience_adult": "Adulte",
+		"available_only": "Disponibles seulement",
+		"results_count": "{count} résultats",
+		"status_available": "Disponible",
+		"status_on_loan": "Emprunté",
+		"status_reserved": "Réservé",
+		"return_due": "Retour prévu: {date}",
+		"reserve": "Réserver"
+	},
+	"hold": {
+		"title": "Réservation",
+		"confirmed": "Réservation confirmée !",
+		"confirmed_with_title": "{title} — Réservation confirmée !",
+		"position": "Tu es {position}er dans la file d'attente",
+		"notification": "On te préviendra quand le livre sera disponible !",
+		"available": "Disponible ! Viens le chercher",
+		"on_loan": "Emprunté",
+		"expires": "Réservé jusqu'au: {date}",
+		"cancel": "Annuler",
+		"cancelled": "Réservation annulée",
+		"cancelled_with_title": "{title} — Réservation annulée",
+		"error_blocked": "Ton compte est bloqué",
+		"error_duplicate": "Tu as déjà réservé ce livre",
+		"error_no_items": "Ce livre n'existe pas dans notre collection",
+		"error_limit": "Tu as trop de réservations en cours"
+	},
+	"server_discovery": {
+		"title": "Trouve ta bibliothèque",
+		"subtitle": "Cherche automatiquement les bibliothèques disponibles",
+		"searching": "Recherche en cours...",
+		"refresh": "Chercher à nouveau",
+		"servers_available": "Bibliothèques trouvées :",
+		"manual_connection": "Ou tape l'adresse de ta bibliothèque :",
+		"connect": "Se connecter",
+		"no_servers": "Aucun serveur trouvé.",
+		"servers_found": "{count} bibliothèque(s) trouvée(s)",
+		"localhost_default": "Bibliothèque sur cet ordinateur",
+		"connecting": "Connexion à {name}...",
+		"connection_failed": "Impossible de se connecter à {name}",
+		"connected": "Connecté à {name}",
+		"connection_error": "Connexion impossible. Demande de l'aide à ton enseignant.",
+		"enter_url": "Tape l'adresse (ex : http://192.168.1.10:8000)"
+	},
+	"auth": {
+		"title": "Authentification",
+		"username": "Nom d'utilisateur",
+		"username_placeholder": "admin",
+		"password": "Mot de passe",
+		"password_placeholder": "••••••••",
+		"scheme": "Méthode d'authentification",
+		"required": "Ce serveur nécessite une authentification",
+		"use_saved": "Utiliser les identifiants sauvegardés ({username})",
+		"clear": "Effacer les identifiants",
+		"cleared": "Identifiants effacés",
+		"digest_note": "⚠️ Digest auth non implémenté pour le moment. Utilisez Basic."
+	},
+	"settings": {
+		"theme_applied": "Theme appliqué : {name}",
+		"theme_random_hint": "Thème aléatoire au démarrage"
+	},
+	"common": {
+		"validate": "Valider",
+		"back": "Retour",
+		"ok": "OK",
+		"home": "Accueil",
+		"loading": "Chargement...",
+		"error_network": "Pas de connexion au serveur",
+		"error_unknown": "Une erreur est survenue. Réessaie ou demande de l'aide.",
+		"all": "Tous"
+	},
+	"splash": {
+		"title": "BCD",
+		"tagline": "Bibliothèque que Claude a Développée",
+		"open_source": "🔓 Libre d'usage et de modif' — pour toujours !",
+		"messages": [
+			"📖 Les livres, c'est des super-pouvoirs !",
+			"🌍 Partage tes histoires, change le monde !",
+			"🆓 Gratuit, libre, pour toujours !",
+			"🚀 Lis. Explore. Rêve. Partage.",
+			"💡 Le savoir appartient à tout le monde"
+		]
+	}
+}

@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://bcd4cmp001a"]
+
+[ext_resource type="Script" path="res://src/components/Notification.gd" id="1_scr"]
+
+[node name="Notification" type="PanelContainer"]
+size_flags_horizontal = 3
+script = ExtResource("1_scr")
+
+[node name="MessageLabel" type="Label" parent="."]
+unique_name_in_owner = true
+horizontal_alignment = 1
+theme_type_variation = "LabelSubtitle"

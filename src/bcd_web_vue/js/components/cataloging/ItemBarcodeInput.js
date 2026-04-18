@@ -1,0 +1,287 @@
+/**
+ * Item Barcode Input Component
+ * Creates physical items (copies) for a bibliographic record
+ */
+
+const { defineComponent, ref, computed } = Vue;
+const { useI18n } = VueI18n;
+import { apiClient } from '../../api/client.js';
+import { useNotification } from '../../composables/useNotification.js';
+import { useErrorHandler } from '../../composables/useErrorHandler.js';
+import StickerPicker from '../ui/StickerPicker.js';
+
+export default defineComponent({
+    name: 'ItemBarcodeInput',
+
+    components: { StickerPicker },
+
+    props: {
+        recordId: {
+            type: Number,
+            required: true
+        },
+        recordTitle: {
+            type: String,
+            required: true
+        },
+        recordMediumType: {
+            type: String,
+            default: ''
+        }
+    },
+
+    emits: ['item-created', 'done'],
+
+    setup(props, { emit }) {
+        const { t } = useI18n();
+        const { success, error: showError } = useNotification();
+        const { handleError } = useErrorHandler(t);
+
+        // State
+        const barcode = ref('');
+        const barcodeInput = ref(null);
+        const callNumber = ref('');
+        const callNumberInput = ref(null);
+        const shelfLocation = ref('');
+        const loading = ref(false);
+        const createdItems = ref([]);
+
+        const isPeriodical = computed(() => props.recordMediumType === 'P\u00e9riodique');
+
+        /**
+         * Create item with barcode
+         */
+        const createItem = async () => {
+            const barcodeValue = barcode.value.trim();
+
+            if (!barcodeValue) {
+                showError(t('cataloging.error_no_barcode'));
+                return;
+            }
+
+            try {
+                loading.value = true;
+
+                // Create item
+                const itemData = {
+                    item_id: barcodeValue,  // API expects 'item_id' not 'barcode'
+                    bibliographic_record_id: props.recordId
+                };
+
+                if (isPeriodical.value) {
+                    const cn = callNumber.value.trim();
+                    if (!cn) {
+                        showError(t('periodical.required'));
+                        loading.value = false;
+                        return;
+                    }
+                    itemData.call_number = cn;
+                } else {
+                    const cn = callNumber.value.trim();
+                    if (cn) itemData.call_number = cn;
+                }
+
+                const sl = shelfLocation.value.trim();
+                if (sl) itemData.shelf_location = sl;
+
+                const item = await apiClient.post('/catalog/items', itemData);
+
+                // Add to created items list
+                createdItems.value.push(item);
+
+                success(t('cataloging.item_created', {
+                    barcode: item.item_id || item.barcode
+                }));
+
+                // Emit event
+                emit('item-created', item);
+
+                // Clear barcode for next item (keep shelf_location + call_number for batch scanning)
+                barcode.value = '';
+                if (isPeriodical.value) callNumber.value = '';
+
+                // Re-focus input for rapid scanning
+                setTimeout(() => {
+                    if (isPeriodical.value) {
+                        callNumberInput.value?.focus();
+                    } else {
+                        barcodeInput.value?.focus();
+                    }
+                }, 100);
+
+            } catch (err) {
+                if (err.error_code === 'DUPLICATE_ITEM_ID') {
+                    showError(t('cataloging.error_barcode_exists', {
+                        barcode: barcodeValue
+                    }));
+                } else {
+                    handleError(err);
+                }
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        /**
+         * Handle Enter key (scanner compatibility)
+         */
+        const handleKeypress = (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                createItem();
+            }
+        };
+
+        /**
+         * Finish creating items
+         */
+        const finish = () => {
+            emit('done');
+        };
+
+        // Computed
+        const itemCount = computed(() => createdItems.value.length);
+
+        return {
+            barcode,
+            barcodeInput,
+            callNumber,
+            callNumberInput,
+            shelfLocation,
+            loading,
+            createdItems,
+            itemCount,
+            isPeriodical,
+            createItem,
+            handleKeypress,
+            finish
+        };
+    },
+
+    template: `
+        <div class="item-barcode-input">
+            <h5 class="mb-3">
+                <i class="bi bi-box-seam"></i>
+                {{ $t('cataloging.create_items_title') }}
+            </h5>
+
+            <div class="alert alert-info mb-4">
+                <p class="mb-2">
+                    <strong>{{ $t('cataloging.record_created_title') }}:</strong> {{ recordTitle }}
+                </p>
+                <p class="mb-0 small">
+                    {{ $t('cataloging.scan_barcodes_help') }}
+                </p>
+            </div>
+
+            <form @submit.prevent="createItem">
+                <!-- Issue number field (periodicals only) -->
+                <div v-if="isPeriodical" class="mb-3">
+                    <label class="form-label">
+                        {{ $t('periodical.issue_number') }}
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input
+                        ref="callNumberInput"
+                        v-model="callNumber"
+                        type="text"
+                        class="form-control"
+                        :placeholder="$t('periodical.issue_number_placeholder')"
+                        :disabled="loading"
+                        @keypress.enter.prevent="$refs.barcodeInput?.focus()"
+                    />
+                </div>
+
+                <!-- Shelf location + call number (non-periodicals) -->
+                <div v-if="!isPeriodical" class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ $t('catalog.shelf_location') }}</label>
+                        <input
+                            v-model="shelfLocation"
+                            type="text"
+                            class="form-control"
+                            :placeholder="$t('catalog.shelf_location')"
+                            :disabled="loading"
+                        />
+                        <sticker-picker v-model="shelfLocation" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ $t('catalog.call_number') }}</label>
+                        <input
+                            v-model="callNumber"
+                            type="text"
+                            class="form-control"
+                            placeholder="ex: 843.91 DUP"
+                            :disabled="loading"
+                        />
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label for="item-barcode-input" class="form-label">
+                            {{ $t('cataloging.item_barcode_label') }}
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">
+                                <i class="bi bi-upc"></i>
+                            </span>
+                            <input
+                                id="item-barcode-input"
+                                ref="barcodeInput"
+                                v-model="barcode"
+                                type="text"
+                                class="form-control"
+                                :placeholder="$t('cataloging.item_barcode_placeholder')"
+                                :disabled="loading"
+                                @keypress="handleKeypress"
+                                autofocus
+                            />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button
+                            type="submit"
+                            class="btn btn-success btn-lg w-100"
+                            :disabled="loading || !barcode.trim()"
+                        >
+                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                            <i v-else class="bi bi-plus-circle me-2"></i>
+                            {{ $t('cataloging.add_copy') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Created Items List -->
+            <div v-if="createdItems.length > 0" class="mt-4">
+                <h6>
+                    {{ $t('cataloging.created_items') }} ({{ itemCount }})
+                </h6>
+                <ul class="list-group">
+                    <li
+                        v-for="item in createdItems"
+                        :key="item.id"
+                        class="list-group-item d-flex justify-content-between align-items-center"
+                    >
+                        <div>
+                            <i class="bi bi-box-seam text-success me-2"></i>
+                            <strong>{{ item.item_id || item.barcode }}</strong>
+                            <span v-if="item.shelf_location" class="ms-2 text-muted small">
+                                <i class="bi bi-geo-alt"></i> {{ item.shelf_location }}
+                            </span>
+                            <span v-if="item.call_number" class="ms-2 text-muted small">
+                                {{ /^\\d+$/.test(item.call_number) ? 'n\u00b0 ' + item.call_number : item.call_number }}
+                            </span>
+                        </div>
+                        <span class="badge bg-success">
+                            {{ $t('item.status_available') }}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    `
+});

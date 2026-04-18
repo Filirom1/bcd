@@ -1,0 +1,23 @@
+# Godot 4+ specific ignores
+.godot/
+.import/
+
+# Build outputs
+builds/
+*.exe
+*.pck
+*.x86_64
+*.zip
+*.tar.gz
+
+# Godot export logs
+export.log
+
+# Editor temp files
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db

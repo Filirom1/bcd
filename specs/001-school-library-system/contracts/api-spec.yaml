@@ -1,0 +1,1604 @@
+openapi: 3.0.3
+info:
+  title: BCD Library Management System API
+  description: |
+    REST API for school library management (Bibliothèque Centre Documentaire).
+
+    **Operational Model**: Librarian-operated system with offline-first design.
+    - No fines/fees (privilege blocking instead)
+    - No email/SMS notifications (printed reports)
+    - Librarian-mediated access (no student self-service)
+
+    **Key Features**:
+    - Circulation (checkout/return/renew with barcode scanning)
+    - Cataloging (BNF SRU API integration for ISBN lookup)
+    - Borrower management (students/teachers/staff organized by class)
+    - Holds/reservations (librarian-mediated queue management)
+    - Reports (overdue, statistics, never-borrowed)
+    - Barcode generation (Code 39/128)
+  version: 1.0.0
+  contact:
+    name: BCD API Support
+    email: support@bcd-library.local
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server (localhost)
+  - url: http://library-server.local:8000/api/v1
+    description: Production server (local network)
+
+tags:
+  - name: circulation
+    description: Checkout, return, renew operations
+  - name: holds
+    description: Hold/reservation management (librarian-mediated)
+  - name: catalog
+    description: Bibliographic records and items
+  - name: borrowers
+    description: Borrower (student/teacher/staff) management
+  - name: reports
+    description: Statistics and reports
+  - name: admin
+    description: System settings and administration
+
+paths:
+  # ========================================
+  # CIRCULATION ENDPOINTS
+  # ========================================
+
+  /circulation/checkout:
+    post:
+      tags: [circulation]
+      summary: Check out items to a borrower
+      description: |
+        Creates circulation transactions for one or more items checked out to a borrower.
+        Validates borrower is active and not over loan limit.
+      operationId: checkoutItems
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - borrower_id
+                - item_ids
+              properties:
+                borrower_id:
+                  type: string
+                  description: Borrower's unique ID
+                  example: "101"
+                item_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of item IDs to check out
+                  example: ["785", "787"]
+                  minItems: 1
+                  maxItems: 10
+            example:
+              borrower_id: "101"
+              item_ids: ["785", "787"]
+      responses:
+        '201':
+          description: Items successfully checked out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction_ids:
+                    type: array
+                    items:
+                      type: integer
+                    description: IDs of created circulation transactions
+                  due_dates:
+                    type: array
+                    items:
+                      type: string
+                      format: date
+                    description: Due dates for each item (ISO 8601)
+                  borrower:
+                    $ref: '#/components/schemas/BorrowerSummary'
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CheckedOutItem'
+              example:
+                transaction_ids: [1, 2]
+                due_dates: ["2026-02-13", "2026-02-13"]
+                borrower:
+                  borrower_id: "101"
+                  full_name: "Amira BENALI"
+                  class_name: "CP-A"
+                  current_loans: 2
+                  loan_limit: 2
+                items:
+                  - item_id: "785"
+                    title: "Ils ont arrêté mon père"
+                    due_date: "2026-02-13"
+                  - item_id: "787"
+                    title: "Stuart Little"
+                    due_date: "2026-02-13"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict (item already on loan, borrower over limit, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "checkout_conflict"
+                message: "Borrower has reached maximum loan limit (2/2)"
+                details:
+                  borrower_id: "101"
+                  current_loans: 2
+                  loan_limit: 2
+
+  /circulation/return:
+    post:
+      tags: [circulation]
+      summary: Return items
+      description: |
+        Processes return of one or more items. Updates circulation transaction
+        with return date and resets item status to available.
+      operationId: returnItems
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_ids
+              properties:
+                item_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of item IDs to return
+                  example: ["785", "787", "790"]
+                  minItems: 1
+                  maxItems: 20
+            example:
+              item_ids: ["785", "787"]
+      responses:
+        '200':
+          description: Items successfully returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  returned:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                        return_date:
+                          type: string
+                          format: date-time
+                        was_overdue:
+                          type: boolean
+                        days_overdue:
+                          type: integer
+                        title:
+                          type: string
+                        borrower_name:
+                          type: string
+              example:
+                returned:
+                  - item_id: "785"
+                    return_date: "2026-02-10T14:30:00Z"
+                    was_overdue: false
+                    days_overdue: 0
+                    title: "Ils ont arrêté mon père"
+                    borrower_name: "Amira BENALI"
+                  - item_id: "787"
+                    return_date: "2026-02-10T14:30:00Z"
+                    was_overdue: true
+                    days_overdue: 3
+                    title: "Stuart Little"
+                    borrower_name: "Amira BENALI"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /circulation/renew:
+    post:
+      tags: [circulation]
+      summary: Renew items
+      description: |
+        Renews selected items for borrower. Extends due date by loan duration.
+        Items cannot be renewed if they have holds or exceeded renewal limit.
+      operationId: renewItems
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_ids
+              properties:
+                item_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of item IDs to renew
+                  example: ["785", "787"]
+                  minItems: 1
+            example:
+              item_ids: ["785", "787"]
+      responses:
+        '200':
+          description: Renewal results (may be partial success)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  renewed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                        new_due_date:
+                          type: string
+                          format: date
+                        renewal_count:
+                          type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                        reason:
+                          type: string
+                          enum: [renewal_limit_exceeded, item_has_holds, item_not_on_loan]
+                        message:
+                          type: string
+              example:
+                renewed:
+                  - item_id: "785"
+                    new_due_date: "2026-02-27"
+                    renewal_count: 1
+                errors:
+                  - item_id: "787"
+                    reason: "item_has_holds"
+                    message: "Cannot renew - item has pending holds"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /circulation/borrower/{borrower_id}/items:
+    get:
+      tags: [circulation]
+      summary: Get borrower's current loans
+      description: Returns all items currently on loan to a borrower with renewal eligibility
+      operationId: getBorrowerLoans
+      parameters:
+        - name: borrower_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "101"
+      responses:
+        '200':
+          description: Borrower's current loans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  borrower:
+                    $ref: '#/components/schemas/BorrowerSummary'
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                        title:
+                          type: string
+                        checkout_date:
+                          type: string
+                          format: date-time
+                        due_date:
+                          type: string
+                          format: date
+                        days_overdue:
+                          type: integer
+                        is_overdue:
+                          type: boolean
+                        can_renew:
+                          type: boolean
+                        renewal_count:
+                          type: integer
+                        renewal_limit:
+                          type: integer
+              example:
+                borrower:
+                  borrower_id: "101"
+                  full_name: "Amira BENALI"
+                  class_name: "CP-A"
+                  current_loans: 2
+                  loan_limit: 2
+                items:
+                  - item_id: "785"
+                    title: "Ils ont arrêté mon père"
+                    checkout_date: "2026-01-30T10:15:00Z"
+                    due_date: "2026-02-13"
+                    days_overdue: 0
+                    is_overdue: false
+                    can_renew: true
+                    renewal_count: 0
+                    renewal_limit: 2
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /circulation/item/{item_id}/history:
+    get:
+      tags: [circulation]
+      summary: Get item circulation history
+      description: Returns current borrower and past circulation history for an item
+      operationId: getItemHistory
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "785"
+      responses:
+        '200':
+          description: Item circulation history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    type: object
+                    properties:
+                      item_id:
+                        type: string
+                      title:
+                        type: string
+                      status:
+                        type: string
+                  current_borrower:
+                    type: object
+                    nullable: true
+                    properties:
+                      borrower_id:
+                        type: string
+                      full_name:
+                        type: string
+                      checkout_date:
+                        type: string
+                        format: date-time
+                      due_date:
+                        type: string
+                        format: date
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        borrower_id:
+                          type: string
+                        borrower_name:
+                          type: string
+                        checkout_date:
+                          type: string
+                          format: date-time
+                        return_date:
+                          type: string
+                          format: date-time
+                        days_overdue:
+                          type: integer
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /circulation/borrower/{borrower_id}/history:
+    get:
+      tags: [circulation]
+      summary: Get borrower circulation history
+      description: Returns current loans and past circulation history for a borrower
+      operationId: getBorrowerHistory
+      parameters:
+        - name: borrower_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "101"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: Borrower circulation history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  borrower:
+                    $ref: '#/components/schemas/BorrowerSummary'
+                  current_loans:
+                    type: array
+                    items:
+                      type: object
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        item_id:
+                          type: string
+                        title:
+                          type: string
+                        checkout_date:
+                          type: string
+                          format: date-time
+                        return_date:
+                          type: string
+                          format: date-time
+                        days_overdue:
+                          type: integer
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ========================================
+  # HOLD/RESERVATION ENDPOINTS
+  # ========================================
+
+  /holds:
+    post:
+      tags: [holds]
+      summary: Place a hold (librarian-mediated)
+      description: |
+        Librarian places a hold on behalf of a borrower for a bibliographic record.
+        Assigns queue position automatically.
+      operationId: createHold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - borrower_id
+                - bibliographic_record_id
+              properties:
+                borrower_id:
+                  type: string
+                  example: "105"
+                bibliographic_record_id:
+                  type: integer
+                  example: 1
+                notes:
+                  type: string
+                  example: "Student very interested in this series"
+      responses:
+        '201':
+          description: Hold successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hold_id:
+                    type: integer
+                  queue_position:
+                    type: integer
+                  estimated_availability:
+                    type: string
+                    format: date
+                    nullable: true
+                  borrower:
+                    type: object
+                    properties:
+                      borrower_id:
+                        type: string
+                      full_name:
+                        type: string
+                  bibliographic_record:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                      total_items:
+                        type: integer
+                      items_available:
+                        type: integer
+              example:
+                hold_id: 5
+                queue_position: 2
+                estimated_availability: "2026-02-20"
+                borrower:
+                  borrower_id: "105"
+                  full_name: "Emma BERNARD"
+                bibliographic_record:
+                  id: 1
+                  title: "Ils ont arrêté mon père"
+                  total_items: 2
+                  items_available: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /holds/{hold_id}:
+    delete:
+      tags: [holds]
+      summary: Cancel a hold
+      description: Cancels a hold and reorders the queue
+      operationId: cancelHold
+      parameters:
+        - name: hold_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Hold cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /holds/bibliographic/{bibliographic_record_id}:
+    get:
+      tags: [holds]
+      summary: Get holds for a title
+      description: Returns all active holds for a bibliographic record with queue positions
+      operationId: getHoldsForTitle
+      parameters:
+        - name: bibliographic_record_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of holds for this title
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bibliographic_record:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                  holds:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hold_id:
+                          type: integer
+                        borrower_id:
+                          type: string
+                        borrower_name:
+                          type: string
+                        class_name:
+                          type: string
+                        hold_date:
+                          type: string
+                          format: date-time
+                        queue_position:
+                          type: integer
+                        status:
+                          type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /holds/borrower/{borrower_id}:
+    get:
+      tags: [holds]
+      summary: Get borrower's holds
+      description: Returns all active holds for a borrower
+      operationId: getBorrowerHolds
+      parameters:
+        - name: borrower_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Borrower's active holds
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  borrower:
+                    $ref: '#/components/schemas/BorrowerSummary'
+                  holds:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hold_id:
+                          type: integer
+                        bibliographic_record_id:
+                          type: integer
+                        title:
+                          type: string
+                        queue_position:
+                          type: integer
+                        status:
+                          type: string
+                        hold_date:
+                          type: string
+                          format: date-time
+                        estimated_availability:
+                          type: string
+                          format: date
+                          nullable: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /holds/ready-for-pickup:
+    get:
+      tags: [holds]
+      summary: Get holds ready for pickup
+      description: Returns all holds where items are available and waiting for borrower pickup
+      operationId: getReadyHolds
+      responses:
+        '200':
+          description: Holds ready for pickup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  holds:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hold_id:
+                          type: integer
+                        borrower_id:
+                          type: string
+                        borrower_name:
+                          type: string
+                        class_name:
+                          type: string
+                        title:
+                          type: string
+                        available_date:
+                          type: string
+                          format: date-time
+                        expires_in_days:
+                          type: integer
+                          description: Days until hold expires
+
+  # ========================================
+  # CATALOG ENDPOINTS
+  # ========================================
+
+  /catalog/bibliographic:
+    post:
+      tags: [catalog]
+      summary: Create bibliographic record
+      description: |
+        Creates a new bibliographic record either from ISBN lookup (BNF API)
+        or manual entry. Returns enriched metadata from BNF if ISBN provided.
+      operationId: createBibliographicRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [isbn]
+                  properties:
+                    isbn:
+                      type: string
+                      example: "978-2-8006-8734-6"
+                    override_fields:
+                      type: object
+                      description: Fields to override from BNF data
+                - type: object
+                  required: [title, medium_type]
+                  properties:
+                    title:
+                      type: string
+                    subtitle:
+                      type: string
+                    authors:
+                      type: array
+                      items:
+                        type: string
+                    publisher:
+                      type: string
+                    publication_year:
+                      type: integer
+                    medium_type:
+                      type: string
+                      enum: [Livre, CD, DVD, Revue, Magazine, Autre]
+                    category:
+                      type: string
+                    genre:
+                      type: string
+      responses:
+        '201':
+          description: Bibliographic record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiblographicRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: ISBN already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/bibliographic/{id}:
+    get:
+      tags: [catalog]
+      summary: Get bibliographic record
+      operationId: getBibliographicRecord
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Bibliographic record details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiblographicRecordDetailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /catalog/bibliographic/search:
+    get:
+      tags: [catalog]
+      summary: Search bibliographic records
+      operationId: searchBibliographic
+      parameters:
+        - name: q
+          in: query
+          description: Search query (title, author, ISBN)
+          schema:
+            type: string
+        - name: title
+          in: query
+          schema:
+            type: string
+        - name: author
+          in: query
+          schema:
+            type: string
+        - name: isbn
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: genre
+          in: query
+          schema:
+            type: string
+        - name: language
+          in: query
+          schema:
+            type: string
+        - name: target_audience
+          in: query
+          schema:
+            type: string
+            enum: [child, youth, adult]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BiblographicRecord'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /catalog/items:
+    post:
+      tags: [catalog]
+      summary: Create item (copy)
+      description: Creates a physical copy of a bibliographic record
+      operationId: createItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_id
+                - bibliographic_record_id
+              properties:
+                item_id:
+                  type: string
+                  example: "785"
+                bibliographic_record_id:
+                  type: integer
+                  example: 1
+                call_number:
+                  type: string
+                  example: "800.000"
+                shelf_location:
+                  type: string
+                  example: "Fiction - Section A - Row 3"
+                loanable:
+                  type: boolean
+                  default: true
+                acquisition_date:
+                  type: string
+                  format: date
+                funding_source:
+                  type: string
+      responses:
+        '201':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Item ID already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /catalog/import:
+    post:
+      tags: [catalog]
+      summary: Import bibliographic records and items from CSV
+      operationId: importCatalog
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file with bibliographic and item data
+      responses:
+        '200':
+          description: Import results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bibliographic_created:
+                    type: integer
+                  items_created:
+                    type: integer
+                  skipped:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row:
+                          type: integer
+                        error:
+                          type: string
+
+  # ========================================
+  # BORROWER ENDPOINTS
+  # ========================================
+
+  /borrowers:
+    get:
+      tags: [borrowers]
+      summary: List borrowers
+      operationId: listBorrowers
+      parameters:
+        - name: class_id
+          in: query
+          schema:
+            type: integer
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [student, teacher, staff]
+        - name: active
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        '200':
+          description: List of borrowers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Borrower'
+
+    post:
+      tags: [borrowers]
+      summary: Create borrower
+      operationId: createBorrower
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BorrowerCreate'
+      responses:
+        '201':
+          description: Borrower created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Borrower'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /borrowers/{borrower_id}:
+    get:
+      tags: [borrowers]
+      summary: Get borrower details
+      operationId: getBorrower
+      parameters:
+        - name: borrower_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Borrower details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BorrowerDetailed'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /borrowers/import:
+    post:
+      tags: [borrowers]
+      summary: Import borrowers from CSV
+      operationId: importBorrowers
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Import results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported:
+                    type: integer
+                  skipped:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+
+  # ========================================
+  # REPORT ENDPOINTS
+  # ========================================
+
+  /reports/overdue:
+    get:
+      tags: [reports]
+      summary: Generate overdue items report
+      description: |
+        Returns overdue items organized by class for printing.
+        Optionally filter by specific class.
+      operationId: getOverdueReport
+      parameters:
+        - name: class_id
+          in: query
+          schema:
+            type: integer
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, pdf]
+            default: json
+      responses:
+        '200':
+          description: Overdue report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated_at:
+                    type: string
+                    format: date-time
+                  classes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        class_name:
+                          type: string
+                        grade_level:
+                          type: string
+                        overdue_items:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              borrower_name:
+                                type: string
+                              item_id:
+                                type: string
+                              title:
+                                type: string
+                              due_date:
+                                type: string
+                                format: date
+                              days_overdue:
+                                type: integer
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /reports/never-borrowed:
+    get:
+      tags: [reports]
+      summary: Get titles never borrowed this academic year
+      operationId: getNeverBorrowedReport
+      responses:
+        '200':
+          description: List of titles never borrowed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  academic_year:
+                    type: string
+                  total:
+                    type: integer
+                  bibliographic_records:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BiblographicRecord'
+
+  /reports/most-borrowed:
+    get:
+      tags: [reports]
+      summary: Get most borrowed titles
+      operationId: getMostBorrowedReport
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: period
+          in: query
+          description: Time period for statistics
+          schema:
+            type: string
+            enum: [week, month, year, all-time]
+            default: year
+      responses:
+        '200':
+          description: Most borrowed titles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period:
+                    type: string
+                  bibliographic_records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        bibliographic_record:
+                          $ref: '#/components/schemas/BiblographicRecord'
+                        circulation_count:
+                          type: integer
+
+  # ========================================
+  # ADMIN ENDPOINTS
+  # ========================================
+
+  /admin/settings:
+    get:
+      tags: [admin]
+      summary: Get system settings
+      operationId: getSettings
+      responses:
+        '200':
+          description: System settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+
+    put:
+      tags: [admin]
+      summary: Update system settings
+      operationId: updateSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSettings'
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+
+  /admin/backup:
+    post:
+      tags: [admin]
+      summary: Create database backup
+      operationId: createBackup
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [sql, sqlite]
+            default: sqlite
+      responses:
+        '200':
+          description: Backup file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /admin/barcodes/generate:
+    post:
+      tags: [admin]
+      summary: Generate barcode labels
+      description: Generates printable PDF with barcode labels
+      operationId: generateBarcodes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                borrower_ids:
+                  type: array
+                  items:
+                    type: string
+                item_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: PDF with barcodes
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+# ========================================
+# COMPONENTS
+# ========================================
+
+components:
+  schemas:
+    BiblographicRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        isbn:
+          type: string
+          nullable: true
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        authors:
+          type: array
+          items:
+            type: string
+        illustrators:
+          type: array
+          items:
+            type: string
+        publisher:
+          type: string
+          nullable: true
+        publication_year:
+          type: integer
+          nullable: true
+        collection:
+          type: string
+          nullable: true
+        series_number:
+          type: string
+          nullable: true
+        language:
+          type: string
+          nullable: true
+          description: ISO 639 language code
+        country_code:
+          type: string
+          nullable: true
+        binding_type:
+          type: string
+          nullable: true
+          enum: [hardcover, paperback, spiral, other]
+        category:
+          type: string
+          nullable: true
+        genre:
+          type: string
+          nullable: true
+        level:
+          type: string
+          nullable: true
+        medium_type:
+          type: string
+          enum: [Livre, CD, DVD, Revue, Magazine, Autre]
+        target_audience:
+          type: string
+          nullable: true
+          enum: [child, youth, adult]
+        keywords:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+          nullable: true
+        page_count:
+          type: integer
+          nullable: true
+        has_illustrations:
+          type: boolean
+        dimensions:
+          type: string
+          nullable: true
+        total_items:
+          type: integer
+        total_circulations:
+          type: integer
+
+    BiblographicRecordDetailed:
+      allOf:
+        - $ref: '#/components/schemas/BiblographicRecord'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Item'
+            active_holds:
+              type: integer
+            items_available:
+              type: integer
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+        item_id:
+          type: string
+        bibliographic_record_id:
+          type: integer
+        call_number:
+          type: string
+          nullable: true
+        shelf_location:
+          type: string
+          nullable: true
+        condition:
+          type: string
+          enum: [good, damaged, lost, withdrawn]
+        status:
+          type: string
+          enum: [available, on_loan, on_hold, in_repair, lost, withdrawn]
+        loanable:
+          type: boolean
+        acquisition_date:
+          type: string
+          format: date
+          nullable: true
+        funding_source:
+          type: string
+          nullable: true
+        circulation_count:
+          type: integer
+
+    Borrower:
+      type: object
+      properties:
+        id:
+          type: integer
+        borrower_id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        full_name:
+          type: string
+        role:
+          type: string
+          enum: [student, teacher, staff]
+        class_id:
+          type: integer
+          nullable: true
+        grade_level:
+          type: string
+          nullable: true
+        barcode:
+          type: string
+        active:
+          type: boolean
+        blocked_reason:
+          type: string
+          nullable: true
+
+    BorrowerCreate:
+      type: object
+      required:
+        - borrower_id
+        - first_name
+        - last_name
+        - role
+      properties:
+        borrower_id:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [student, teacher, staff]
+        class_id:
+          type: integer
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+
+    BorrowerSummary:
+      type: object
+      properties:
+        borrower_id:
+          type: string
+        full_name:
+          type: string
+        class_name:
+          type: string
+          nullable: true
+        current_loans:
+          type: integer
+        loan_limit:
+          type: integer
+        active:
+          type: boolean
+        blocked_reason:
+          type: string
+          nullable: true
+
+    BorrowerDetailed:
+      allOf:
+        - $ref: '#/components/schemas/Borrower'
+        - type: object
+          properties:
+            current_loans:
+              type: array
+              items:
+                type: object
+            active_holds:
+              type: array
+              items:
+                type: object
+            circulation_stats:
+              type: object
+              properties:
+                total_checkouts:
+                  type: integer
+                total_overdue:
+                  type: integer
+
+    CheckedOutItem:
+      type: object
+      properties:
+        item_id:
+          type: string
+        title:
+          type: string
+        due_date:
+          type: string
+          format: date
+
+    SystemSettings:
+      type: object
+      properties:
+        id_format:
+          type: string
+          enum: [numeric, alphanumeric]
+        id_validation_regex:
+          type: string
+        barcode_type:
+          type: string
+          enum: [code39, code128]
+        loan_limit_default:
+          type: integer
+        loan_limit_teacher:
+          type: integer
+        loan_duration_days:
+          type: integer
+        renewal_limit:
+          type: integer
+        hold_expiration_days:
+          type: integer
+        language:
+          type: string
+          enum: [fr, en]
+        academic_year_current:
+          type: string
+        library_name:
+          type: string
+
+    Pagination:
+      type: object
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          nullable: true
+
+  responses:
+    BadRequest:
+      description: Bad request (validation error)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "validation_error"
+            message: "Invalid request parameters"
+            details:
+              field: "borrower_id"
+              issue: "Required field missing"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "not_found"
+            message: "Resource not found"

@@ -1,0 +1,615 @@
+openapi: 3.1.0
+info:
+  title: BCD Import API Contract
+  version: 1.0.0
+  description: |
+    API contract for importing borrowers and catalog items from CSV files.
+    Supports fuzzy column mapping and value normalization for BCDI, Dublin Core,
+    and other formats via configurable mapping rules.
+
+paths:
+  /api/v1/import/borrowers/upload:
+    post:
+      summary: Upload borrower CSV for preview
+      description: |
+        Step 1 of import wizard: Upload CSV file and auto-detect column mappings.
+        Performance target: 1000 rows parsed in <3 seconds (SC-006).
+        Auto-detection success rate: 80-90% (FR-046).
+      operationId: uploadBorrowerCSV
+      tags:
+        - Import
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file (UTF-8, Latin-1, or Windows-1252 encoding)
+      responses:
+        '200':
+          description: File uploaded and parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportPreviewResponse'
+        '400':
+          description: Invalid file format or size limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                file_too_large:
+                  value:
+                    error: FILE_TOO_LARGE
+                    message: "File exceeds 10,000 row limit (FR-062)"
+                    details:
+                      max_rows: 10000
+                      actual_rows: 15000
+        '422':
+          description: CSV parsing failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/import/borrowers/preview:
+    post:
+      summary: Preview import with user-corrected mappings
+      description: |
+        Step 2 of import wizard: User corrects auto-detected mappings, system
+        validates data and shows preview with normalization results.
+      operationId: previewBorrowerImport
+      tags:
+        - Import
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportMappingRequest'
+      responses:
+        '200':
+          description: Import preview generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportPreviewResponse'
+        '400':
+          description: Invalid column mappings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/import/borrowers/confirm:
+    post:
+      summary: Execute borrower import
+      description: |
+        Step 3 of import wizard: Commit validated data to database.
+        Performance target: 1000 rows in <10 seconds (SC-006).
+        Transaction safety: Rollback on error, no partial imports (FR-063).
+      operationId: confirmBorrowerImport
+      tags:
+        - Import
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportConfirmRequest'
+      responses:
+        '200':
+          description: Import completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResultResponse'
+        '400':
+          description: Validation errors prevent import
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Import transaction failed (rolled back)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/import/catalog/upload:
+    post:
+      summary: Upload catalog CSV for preview
+      description: |
+        Step 1 of catalog import wizard: Upload CSV and auto-detect format
+        (Standard, BCDI, Dublin Core) via fuzzy column matching.
+      operationId: uploadCatalogCSV
+      tags:
+        - Import
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file (UTF-8, Latin-1, or Windows-1252 encoding)
+      responses:
+        '200':
+          description: File uploaded and parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogImportPreviewResponse'
+        '400':
+          description: Invalid file format or size limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/import/catalog/preview:
+    post:
+      summary: Preview catalog import with mappings
+      description: |
+        Step 2 of catalog import wizard: Show normalized medium types,
+        fuzzy-matched values, and validation errors.
+      operationId: previewCatalogImport
+      tags:
+        - Import
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogImportMappingRequest'
+      responses:
+        '200':
+          description: Catalog import preview generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogImportPreviewResponse'
+
+  /api/v1/import/catalog/confirm:
+    post:
+      summary: Execute catalog import
+      description: |
+        Step 3 of catalog import wizard: Insert bibliographic records with
+        normalized medium types via FK lookup.
+      operationId: confirmCatalogImport
+      tags:
+        - Import
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportConfirmRequest'
+      responses:
+        '200':
+          description: Catalog import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResultResponse'
+
+components:
+  schemas:
+    ImportPreviewResponse:
+      type: object
+      required:
+        - upload_id
+        - row_count
+        - detected_format
+        - column_mappings
+        - preview_rows
+        - validation_summary
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+          description: Temporary upload session ID (expires in 1 hour)
+        row_count:
+          type: integer
+          description: Total rows in CSV (excluding header)
+        detected_format:
+          type: string
+          enum: [standard, bcdi, dublin_core, unknown]
+          description: Auto-detected format based on column names
+        detected_encoding:
+          type: string
+          enum: [utf-8, latin-1, windows-1252]
+          description: Auto-detected character encoding (FR-069)
+        column_mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMapping'
+          description: Auto-detected column mappings (80-90% accuracy per FR-046)
+        preview_rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          maxItems: 10
+          description: First 10 rows for user validation
+        validation_summary:
+          $ref: '#/components/schemas/ValidationSummary'
+      example:
+        upload_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        row_count: 250
+        detected_format: bcdi
+        detected_encoding: windows-1252
+        column_mappings:
+          - csv_column: "Nom"
+            bcd_field: "last_name"
+            confidence: 0.95
+            match_method: "exact"
+          - csv_column: "Prénom"
+            bcd_field: "first_name"
+            confidence: 0.95
+            match_method: "exact"
+          - csv_column: "Classe"
+            bcd_field: "class_name"
+            confidence: 0.90
+            match_method: "fuzzy"
+        preview_rows:
+          - { "Nom": "Dupont", "Prénom": "Marie", "Classe": "CE1-A" }
+          - { "Nom": "Martin", "Prénom": "Jean", "Classe": "CE1-A" }
+        validation_summary:
+          total_rows: 250
+          valid_rows: 245
+          error_rows: 5
+          warning_rows: 10
+
+    CatalogImportPreviewResponse:
+      type: object
+      required:
+        - upload_id
+        - row_count
+        - detected_format
+        - column_mappings
+        - medium_type_normalizations
+        - preview_rows
+        - validation_summary
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        row_count:
+          type: integer
+        detected_format:
+          type: string
+          enum: [standard, bcdi, dublin_core, unimarc, unknown]
+        detected_encoding:
+          type: string
+        column_mappings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnMapping'
+        medium_type_normalizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediumTypeNormalization'
+          description: |
+            Fuzzy-matched medium types showing French/BCDI → generic code mappings.
+            Example: "Livre" → "book", "CD Audio" → "cd"
+        preview_rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+          maxItems: 10
+        validation_summary:
+          $ref: '#/components/schemas/ValidationSummary'
+
+    ColumnMapping:
+      type: object
+      required:
+        - csv_column
+        - bcd_field
+        - confidence
+        - match_method
+      properties:
+        csv_column:
+          type: string
+          description: Original CSV column header
+        bcd_field:
+          type: string
+          description: Target BCD database field
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Fuzzy matching confidence score (0.0 to 1.0)
+        match_method:
+          type: string
+          enum: [exact, fuzzy, manual]
+          description: |
+            - exact: Exact string match (confidence = 1.0)
+            - fuzzy: Fuzzy string match via rapidfuzz (confidence 0.8-0.99)
+            - manual: User manually selected mapping (confidence = 1.0)
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              bcd_field:
+                type: string
+              confidence:
+                type: number
+          maxItems: 3
+          description: Alternative mapping suggestions for low-confidence matches
+
+    MediumTypeNormalization:
+      type: object
+      required:
+        - original_value
+        - normalized_code
+        - confidence
+        - match_method
+      properties:
+        original_value:
+          type: string
+          description: Original medium type value from CSV (e.g., "Livre", "Book", "CD Audio")
+        normalized_code:
+          type: string
+          description: Generic English code stored in database (e.g., "book", "cd")
+        normalized_display:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Multilingual display names for UI, keyed by locale.
+            Always contains "en" key as fallback. Other locales optional (fr, it, es, etc.).
+          example:
+            en: "Book"
+            fr: "Livre"
+            it: "Libro"
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        match_method:
+          type: string
+          enum: [exact, fuzzy, synonym, manual]
+          description: |
+            - exact: Exact match in mapping table
+            - fuzzy: Fuzzy match via rapidfuzz (80%+ threshold per research.md)
+            - synonym: Matched via synonym expansion (e.g., "Bk" → "Book" → "book")
+            - manual: User manually selected mapping
+        suggestions:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              confidence:
+                type: number
+          maxItems: 3
+      example:
+        original_value: "Livre"
+        normalized_code: "book"
+        normalized_display:
+          en: "Book"
+          fr: "Livre"
+          it: "Libro"
+        confidence: 1.0
+        match_method: "exact"
+
+    ValidationSummary:
+      type: object
+      required:
+        - total_rows
+        - valid_rows
+        - error_rows
+        - warning_rows
+      properties:
+        total_rows:
+          type: integer
+        valid_rows:
+          type: integer
+          description: Rows that will be imported successfully
+        error_rows:
+          type: integer
+          description: Rows that will be skipped due to validation errors
+        warning_rows:
+          type: integer
+          description: Rows with warnings but will still import
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          description: List of validation errors (row-level)
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationWarning'
+
+    ValidationError:
+      type: object
+      required:
+        - row_number
+        - field
+        - error_code
+        - message
+      properties:
+        row_number:
+          type: integer
+          description: 1-based row number in CSV (excluding header)
+        field:
+          type: string
+          description: Field name with error
+        error_code:
+          type: string
+          enum: [REQUIRED_FIELD_MISSING, INVALID_FORMAT, DUPLICATE_VALUE, UNKNOWN_MEDIUM_TYPE]
+        message:
+          type: string
+          description: Human-readable error message (localized)
+        original_value:
+          type: string
+          description: Original value that caused the error
+
+    ValidationWarning:
+      type: object
+      required:
+        - row_number
+        - field
+        - warning_code
+        - message
+      properties:
+        row_number:
+          type: integer
+        field:
+          type: string
+        warning_code:
+          type: string
+          enum: [LOW_CONFIDENCE_MAPPING, MISSING_OPTIONAL_FIELD, TRUNCATED_VALUE]
+        message:
+          type: string
+        original_value:
+          type: string
+        suggested_value:
+          type: string
+
+    ImportMappingRequest:
+      type: object
+      required:
+        - upload_id
+        - column_mappings
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        column_mappings:
+          type: array
+          items:
+            type: object
+            required:
+              - csv_column
+              - bcd_field
+            properties:
+              csv_column:
+                type: string
+              bcd_field:
+                type: string
+
+    CatalogImportMappingRequest:
+      type: object
+      required:
+        - upload_id
+        - column_mappings
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        column_mappings:
+          type: array
+          items:
+            type: object
+            required:
+              - csv_column
+              - bcd_field
+            properties:
+              csv_column:
+                type: string
+              bcd_field:
+                type: string
+        medium_type_mappings:
+          type: array
+          items:
+            type: object
+            required:
+              - original_value
+              - normalized_code
+            properties:
+              original_value:
+                type: string
+              normalized_code:
+                type: string
+          description: User-corrected medium type mappings for low-confidence matches
+
+    ImportConfirmRequest:
+      type: object
+      required:
+        - upload_id
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        skip_errors:
+          type: boolean
+          default: true
+          description: |
+            If true, skip rows with validation errors and import valid rows only.
+            If false, reject entire import if any errors exist (FR-063).
+
+    ImportResultResponse:
+      type: object
+      required:
+        - success
+        - imported_count
+        - skipped_count
+        - error_count
+      properties:
+        success:
+          type: boolean
+        imported_count:
+          type: integer
+          description: Number of rows successfully imported
+        skipped_count:
+          type: integer
+          description: Number of rows skipped due to errors
+        error_count:
+          type: integer
+          description: Total number of validation errors
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          description: List of errors for skipped rows
+        import_log_url:
+          type: string
+          format: uri
+          description: Download URL for detailed import log (CSV format per FR-060)
+      example:
+        success: true
+        imported_count: 245
+        skipped_count: 5
+        error_count: 5
+        errors:
+          - row_number: 12
+            field: "class_name"
+            error_code: REQUIRED_FIELD_MISSING
+            message: "Class name is required"
+            original_value: ""
+        import_log_url: "/api/v1/import/logs/a1b2c3d4-e5f6-7890-abcd-ef1234567890.csv"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://bcd4cmp0002"]
+
+[ext_resource type="Script" path="res://src/components/BookCard.gd" id="1_scr"]
+
+[node name="BookCard" type="PanelContainer"]
+custom_minimum_size = Vector2(200, 0)
+script = ExtResource("1_scr")
+
+[node name="Content" type="VBoxContainer" parent="."]
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+autowrap_mode = 3
+
+[node name="AuthorsLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+autowrap_mode = 3
+theme_type_variation = "LabelSmall"
+
+[node name="StatusLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
+theme_type_variation = "LabelMedium"
+
+[node name="ActionBtn" type="Button" parent="Content"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_type_variation = "ButtonSmall"

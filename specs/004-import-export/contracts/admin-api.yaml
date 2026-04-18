@@ -1,0 +1,605 @@
+openapi: 3.1.0
+info:
+  title: BCD Admin API Contract - Medium Types & Mappings
+  version: 1.0.0
+  description: |
+    API contract for managing configurable medium types and import mappings.
+    Enables customization without code deployment (FR-038 to FR-045).
+
+paths:
+  /api/v1/admin/medium-types:
+    get:
+      summary: List all medium types
+      description: |
+        Retrieve all medium types (active and inactive) for admin management.
+        Returns both system-default and user-created types.
+      operationId: listMediumTypes
+      tags:
+        - Admin - Medium Types
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Filter to active types only
+        - name: include_usage_count
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include count of bibliographic records using each type
+      responses:
+        '200':
+          description: Medium types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MediumType'
+              example:
+                - id: 1
+                  code: "book"
+                  display_names:
+                    en: "Book"
+                    fr: "Livre"
+                    it: "Libro"
+                  active: true
+                  is_system_default: true
+                  usage_count: 1250
+                  created_at: "2024-01-01T00:00:00Z"
+                  updated_at: "2024-01-01T00:00:00Z"
+                - id: 10
+                  code: "educational_kit"
+                  display_names:
+                    en: "Educational Kit"
+                    fr: "Mallette pédagogique"
+                    it: "Kit educativo"
+                  active: true
+                  is_system_default: false
+                  usage_count: 42
+                  created_at: "2025-09-15T10:30:00Z"
+                  updated_at: "2025-09-15T10:30:00Z"
+
+    post:
+      summary: Create new medium type
+      description: |
+        Create a custom medium type for school-specific collections.
+        Performance target: <5 minutes to add new type (SC-013).
+      operationId: createMediumType
+      tags:
+        - Admin - Medium Types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMediumTypeRequest'
+      responses:
+        '201':
+          description: Medium type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediumType'
+        '400':
+          description: Validation error (duplicate code, invalid format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicate_code:
+                  value:
+                    error: DUPLICATE_CODE
+                    message: "Medium type code 'book' already exists"
+                    details:
+                      existing_id: 1
+                invalid_code_format:
+                  value:
+                    error: INVALID_CODE_FORMAT
+                    message: "Code must be lowercase letters, numbers, and underscores only"
+                    details:
+                      code: "Educational Kit!"
+                      pattern: "^[a-z0-9_]+$"
+
+  /api/v1/admin/medium-types/{id}:
+    get:
+      summary: Get medium type by ID
+      operationId: getMediumType
+      tags:
+        - Admin - Medium Types
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Medium type retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediumType'
+        '404':
+          description: Medium type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Update medium type
+      description: |
+        Update display names or active status. Code cannot be changed once created
+        to preserve referential integrity (FR-041).
+      operationId: updateMediumType
+      tags:
+        - Admin - Medium Types
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMediumTypeRequest'
+      responses:
+        '200':
+          description: Medium type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediumType'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Medium type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete medium type
+      description: |
+        Delete medium type if no bibliographic records reference it (FR-043).
+        System-default types cannot be deleted (FR-044).
+      operationId: deleteMediumType
+      tags:
+        - Admin - Medium Types
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Medium type deleted successfully
+        '400':
+          description: Cannot delete (has references or is system default)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                has_references:
+                  value:
+                    error: CANNOT_DELETE_IN_USE
+                    message: "Cannot delete medium type 'educational_kit' - 42 items use this type"
+                    details:
+                      usage_count: 42
+                      suggested_action: "Deactivate instead of deleting, or reassign items first"
+                system_default:
+                  value:
+                    error: CANNOT_DELETE_SYSTEM_DEFAULT
+                    message: "Cannot delete system-default medium type 'book'"
+                    details:
+                      is_system_default: true
+        '404':
+          description: Medium type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/medium-types/{id}/deactivate:
+    post:
+      summary: Deactivate medium type
+      description: |
+        Soft-delete by setting active=false. Prevents new items from using this type
+        while preserving existing references (FR-042).
+      operationId: deactivateMediumType
+      tags:
+        - Admin - Medium Types
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Medium type deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediumType'
+        '404':
+          description: Medium type not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/medium-types/{id}/reactivate:
+    post:
+      summary: Reactivate medium type
+      description: Set active=true to re-enable deactivated type
+      operationId: reactivateMediumType
+      tags:
+        - Admin - Medium Types
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Medium type reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediumType'
+
+  /api/v1/admin/medium-type-mappings:
+    get:
+      summary: List all import mappings
+      description: |
+        Retrieve all configured import mappings for fuzzy matching.
+        Used to map French/BCDI/Dublin Core values → generic codes.
+      operationId: listMediumTypeMappings
+      tags:
+        - Admin - Import Mappings
+      parameters:
+        - name: medium_type_code
+          in: query
+          schema:
+            type: string
+          description: Filter mappings for specific medium type code
+      responses:
+        '200':
+          description: Mappings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MediumTypeMapping'
+              example:
+                - id: 1
+                  external_value: "Livre"
+                  medium_type_code: "book"
+                  source_format: "bcdi"
+                  created_at: "2024-01-01T00:00:00Z"
+                - id: 2
+                  external_value: "Book"
+                  medium_type_code: "book"
+                  source_format: "dublin_core"
+                  created_at: "2024-01-01T00:00:00Z"
+                - id: 3
+                  external_value: "Text"
+                  medium_type_code: "book"
+                  source_format: "dublin_core"
+                  created_at: "2024-01-01T00:00:00Z"
+
+    post:
+      summary: Create import mapping
+      description: |
+        Add new mapping to support additional external values during import.
+        Example: Map "Bd" (French abbreviation) → "comic" code.
+      operationId: createMediumTypeMapping
+      tags:
+        - Admin - Import Mappings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMediumTypeMappingRequest'
+      responses:
+        '201':
+          description: Mapping created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediumTypeMapping'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicate_mapping:
+                  value:
+                    error: DUPLICATE_MAPPING
+                    message: "Mapping for 'Livre' in format 'bcdi' already exists"
+                    details:
+                      existing_id: 1
+                invalid_medium_type:
+                  value:
+                    error: INVALID_MEDIUM_TYPE
+                    message: "Medium type code 'unknown' does not exist"
+                    details:
+                      available_codes: ["book", "cd", "dvd", "periodical"]
+
+  /api/v1/admin/medium-type-mappings/{id}:
+    delete:
+      summary: Delete import mapping
+      description: Remove mapping from import normalization rules
+      operationId: deleteMediumTypeMapping
+      tags:
+        - Admin - Import Mappings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Mapping deleted successfully
+        '404':
+          description: Mapping not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/admin/medium-type-mappings/bulk:
+    post:
+      summary: Bulk create mappings
+      description: |
+        Import multiple mappings at once (e.g., from BCDI documentation).
+        Useful for initial setup or migrating from other systems.
+      operationId: bulkCreateMappings
+      tags:
+        - Admin - Import Mappings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mappings
+              properties:
+                mappings:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CreateMediumTypeMappingRequest'
+                  minItems: 1
+                  maxItems: 100
+                skip_duplicates:
+                  type: boolean
+                  default: true
+                  description: Skip mappings that already exist instead of erroring
+      responses:
+        '200':
+          description: Bulk import completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created_count:
+                    type: integer
+                  skipped_count:
+                    type: integer
+                  error_count:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                        error:
+                          type: string
+                        message:
+                          type: string
+              example:
+                created_count: 95
+                skipped_count: 5
+                error_count: 0
+                errors: []
+
+components:
+  schemas:
+    MediumType:
+      type: object
+      required:
+        - id
+        - code
+        - display_names
+        - active
+        - is_system_default
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Primary key
+        code:
+          type: string
+          pattern: '^[a-z0-9_]+$'
+          maxLength: 50
+          description: |
+            Generic English code stored in database (e.g., "book", "cd", "educational_kit").
+            Immutable after creation to preserve referential integrity.
+        display_names:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Multilingual display names keyed by locale code.
+            MUST contain "en" key as fallback. Other locales optional (fr, it, es, de, etc.).
+          example:
+            en: "Book"
+            fr: "Livre"
+            it: "Libro"
+            es: "Libro"
+        active:
+          type: boolean
+          description: If false, type is hidden from new item creation
+        is_system_default:
+          type: boolean
+          description: |
+            True for 9 default types (book, periodical, audiobook, cd, dvd, vhs,
+            board_game, video_game, other). System defaults cannot be deleted.
+        usage_count:
+          type: integer
+          description: Number of bibliographic records using this type (optional, only if requested)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateMediumTypeRequest:
+      type: object
+      required:
+        - code
+        - display_names
+      properties:
+        code:
+          type: string
+          pattern: '^[a-z0-9_]+$'
+          maxLength: 50
+          description: Lowercase letters, numbers, underscores only (e.g., "educational_kit")
+        display_names:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Multilingual display names. MUST contain at least "en" key.
+            Add other locales as needed (fr, it, es, de, etc.).
+          example:
+            en: "Educational Kit"
+            fr: "Mallette pédagogique"
+            it: "Kit educativo"
+        active:
+          type: boolean
+          default: true
+      example:
+        code: "educational_kit"
+        display_names:
+          en: "Educational Kit"
+          fr: "Mallette pédagogique"
+          it: "Kit educativo"
+        active: true
+
+    UpdateMediumTypeRequest:
+      type: object
+      properties:
+        display_names:
+          type: object
+          additionalProperties:
+            type: string
+          description: |
+            Update multilingual display names. Partial updates supported.
+            Example: Send only {"it": "Libro"} to add Italian translation without affecting existing en/fr.
+        active:
+          type: boolean
+      description: |
+        At least one field must be provided. Code cannot be updated.
+        Partial display_names updates merge with existing values (no full replacement).
+      example:
+        display_names:
+          it: "Kit educativo"
+          es: "Kit educativo"
+
+    MediumTypeMapping:
+      type: object
+      required:
+        - id
+        - external_value
+        - medium_type_code
+        - source_format
+        - created_at
+      properties:
+        id:
+          type: integer
+        external_value:
+          type: string
+          maxLength: 100
+          description: |
+            External value to match during import (e.g., "Livre", "Book", "Text", "Bd").
+            Case-insensitive during fuzzy matching.
+        medium_type_code:
+          type: string
+          description: Target medium type code (must exist in medium_types table)
+        source_format:
+          type: string
+          enum: [bcdi, dublin_core, unimarc, custom]
+          description: |
+            Source format this mapping applies to:
+            - bcdi: French school library standard
+            - dublin_core: International metadata standard
+            - unimarc: French bibliographic exchange format
+            - custom: User-defined mappings
+        created_at:
+          type: string
+          format: date-time
+
+    CreateMediumTypeMappingRequest:
+      type: object
+      required:
+        - external_value
+        - medium_type_code
+        - source_format
+      properties:
+        external_value:
+          type: string
+          maxLength: 100
+        medium_type_code:
+          type: string
+        source_format:
+          type: string
+          enum: [bcdi, dublin_core, unimarc, custom]
+      example:
+        external_value: "Bd"
+        medium_type_code: "comic"
+        source_format: "custom"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code (e.g., DUPLICATE_CODE, CANNOT_DELETE_IN_USE)
+        message:
+          type: string
+          description: Human-readable error message (localized)
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context

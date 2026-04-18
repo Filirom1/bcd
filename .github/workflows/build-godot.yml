@@ -1,0 +1,244 @@
+name: Build Kids Client
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'bcd_kids/**'
+      - '.github/workflows/build-godot.yml'
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.6.1"
+  GODOT_SOURCE_TAG: "4.6.1-stable"
+
+jobs:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 0 : Vérifie si ce source tree a déjà été buildé
+  # Résultat : should-build=true/false transmis aux jobs suivants
+  # ═══════════════════════════════════════════════════════════════════════════
+  check:
+    name: Check Build Cache
+    runs-on: ubuntu-latest
+    outputs:
+      should-build: ${{ steps.set-flag.outputs.should-build }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Look up build marker
+        id: marker
+        uses: actions/cache/restore@v4
+        with:
+          path: .build-marker
+          key: bcd-kids-built-${{ hashFiles('bcd_kids/**') }}
+          lookup-only: true
+
+      - name: Set should-build flag
+        id: set-flag
+        run: |
+          if [ "${{ steps.marker.outputs.cache-hit }}" = "true" ]; then
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "Build already exists for this source tree — nothing to do."
+          else
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "No existing build found — will build."
+          fi
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 1 : Compilation des templates custom (seulement si custom.py change)
+  # Durée : ~90 min la première fois, instantané ensuite (cache)
+  # ═══════════════════════════════════════════════════════════════════════════
+  compile-templates:
+    name: Compile Custom Templates
+    needs: check
+    if: needs.check.outputs.should-build == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute cache key
+        id: cache-key
+        run: |
+          echo "key=godot-templates-${{ env.GODOT_VERSION }}-${{ hashFiles('bcd_kids/custom.py') }}" \
+            >> $GITHUB_OUTPUT
+
+      - name: Restore templates from cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: custom-templates/
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Install build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential scons python3 \
+            pkg-config libx11-dev libxcursor-dev libxinerama-dev \
+            libgl1-mesa-dev libglu-dev libudev-dev libxi-dev libxrandr-dev \
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
+          # Configure MinGW to use POSIX threads (required by Godot)
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+      - name: Clone Godot ${{ env.GODOT_SOURCE_TAG }} source
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 \
+            --branch ${{ env.GODOT_SOURCE_TAG }} \
+            https://github.com/godotengine/godot.git godot-src
+
+      - name: Copy custom.py into Godot source
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cp bcd_kids/custom.py godot-src/custom.py
+
+      - name: Compile Windows template (cross-compile via MinGW)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd godot-src
+          scons platform=windows arch=x86_64 use_mingw=yes d3d12=no profile=custom.py
+
+      - name: Compile Linux template
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd godot-src
+          scons platform=linuxbsd arch=x86_64 d3d12=no profile=custom.py
+
+      - name: Collect compiled templates
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p custom-templates
+          cp godot-src/bin/godot.linuxbsd.template_release.x86_64 \
+             custom-templates/linux_release.x86_64
+          cp godot-src/bin/godot.windows.template_release.x86_64.exe \
+             custom-templates/windows_release_x86_64.exe
+
+      - name: Save templates to cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: custom-templates/
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Upload templates artifact (pour les jobs Docker)
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-custom-templates
+          path: custom-templates/
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 2 : Export Windows
+  # ═══════════════════════════════════════════════════════════════════════════
+  export-windows:
+    name: Windows Export
+    needs: [check, compile-templates]
+    if: needs.check.outputs.should-build == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6.1   # ← corrigé (était 4.3)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Download custom templates
+        uses: actions/download-artifact@v4
+        with:
+          name: godot-custom-templates
+          path: custom-templates/
+
+      - name: Setup export templates (officiel + remplacement custom)
+        run: |
+          cd bcd_kids
+          mkdir -p builds/windows
+          godot --headless --verbose --export-release "Windows Desktop" \
+                builds/windows/BCD-Kids.exe
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 3 : Export Linux
+  # ═══════════════════════════════════════════════════════════════════════════
+  export-linux:
+    name: Linux Export
+    needs: [check, compile-templates]
+    if: needs.check.outputs.should-build == 'true'
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6.1   # ← corrigé (était 4.3)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Download custom templates
+        uses: actions/download-artifact@v4
+        with:
+          name: godot-custom-templates
+          path: custom-templates/
+
+      - name: Setup export templates (officiel + remplacement custom)
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/
+          mv /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          # On remplace uniquement le binaire template par notre version optimisée
+          cp custom-templates/linux_release.x86_64 \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/linux_release.x86_64
+
+      - name: Linux Build
+        run: |
+          cd bcd_kids
+          mkdir -p builds/linux
+          godot --headless --verbose --export-release "Linux/X11" \
+                builds/linux/BCD-Kids.x86_64
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 4 : Résumé
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [check, export-windows, export-linux]
+    if: always()
+    steps:
+      - name: Checkout (for marker save)
+        if: needs.check.outputs.should-build == 'true' && needs.export-windows.result == 'success' && needs.export-linux.result == 'success'
+        uses: actions/checkout@v4
+
+      - name: Save build marker to cache
+        if: needs.check.outputs.should-build == 'true' && needs.export-windows.result == 'success' && needs.export-linux.result == 'success'
+        run: touch .build-marker
+
+      - name: Store build marker
+        if: needs.check.outputs.should-build == 'true' && needs.export-windows.result == 'success' && needs.export-linux.result == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: .build-marker
+          key: bcd-kids-built-${{ hashFiles('bcd_kids/**') }}
+
+      - name: Check build results
+        run: |
+          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.check.outputs.should-build }}" = "false" ]; then
+            echo "⏭️ Already built for this source tree — skipped." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo "- Windows: ${{ needs.export-windows.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux: ${{ needs.export-linux.result }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.export-windows.result }}" = "success" ] && \
+             [ "${{ needs.export-linux.result }}" = "success" ]; then
+            echo "✅ All builds passed!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some builds failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

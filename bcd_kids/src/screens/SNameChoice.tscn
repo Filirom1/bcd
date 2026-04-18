@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://bcd4scr0001"]
+
+[ext_resource type="Script" path="res://src/screens/SNameChoice.gd" id="1_scr"]
+
+[node name="SNameChoice" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Center" type="CenterContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="PlaceholderLabel" type="Label" parent="Center"]
+text = "Name Choice Screen - Not implemented yet"
+theme_type_variation = "LabelTitle"

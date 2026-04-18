@@ -1,0 +1,380 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: "4.6.1"
+  GODOT_SOURCE_TAG: "4.6.1-stable"
+
+jobs:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 1 : Tests
+  # ═══════════════════════════════════════════════════════════════════════════
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/unit tests/integration -v
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 2 : Build BCD serveur — Windows (PyInstaller, cross-compile impossible,
+  #          doit tourner sur windows-latest)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-bcd-windows:
+    name: Build BCD (Windows)
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -e "." pyinstaller
+
+      - name: Download UPX
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip" -OutFile "upx.zip"
+          Expand-Archive -Path upx.zip -DestinationPath .
+          Move-Item -Path upx-4.2.2-win64 -Destination upx
+
+      - name: Build with PyInstaller
+        run: pyinstaller --clean --upx-dir=upx bcd.spec
+
+      - name: Upload BCD Windows files
+        uses: actions/upload-artifact@v4
+        with:
+          name: bcd-windows-files
+          path: dist/bcd/
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 3 : Build BCD serveur — Linux (PyInstaller)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-bcd-linux:
+    name: Build BCD (Linux)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            upx-ucl \
+            python3-gi python3-gi-cairo \
+            gir1.2-gtk-3.0 gir1.2-webkit2-4.1 \
+            libwebkit2gtk-4.1-dev
+
+      - name: Install Python dependencies
+        run: pip install -e "." pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller --clean bcd.spec
+
+      - name: Upload BCD Linux files
+        uses: actions/upload-artifact@v4
+        with:
+          name: bcd-linux-files
+          path: dist/bcd/
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 4 : Compilation des templates Godot custom
+  # Durée : ~90 min la première fois, instantané ensuite (cache)
+  # ═══════════════════════════════════════════════════════════════════════════
+  compile-templates:
+    name: Compile Godot Templates
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute cache key
+        id: cache-key
+        run: |
+          echo "key=godot-templates-${{ env.GODOT_VERSION }}-${{ hashFiles('bcd_kids/custom.py') }}" \
+            >> $GITHUB_OUTPUT
+
+      - name: Restore templates from cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: custom-templates/
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Install build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential scons python3 \
+            pkg-config libx11-dev libxcursor-dev libxinerama-dev \
+            libgl1-mesa-dev libglu-dev libudev-dev libxi-dev libxrandr-dev \
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+      - name: Clone Godot source
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 \
+            --branch ${{ env.GODOT_SOURCE_TAG }} \
+            https://github.com/godotengine/godot.git godot-src
+
+      - name: Compile Windows template (MinGW)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cp bcd_kids/custom.py godot-src/custom.py
+          cd godot-src
+          scons platform=windows arch=x86_64 use_mingw=yes d3d12=no profile=custom.py
+
+      - name: Compile Linux template
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd godot-src
+          scons platform=linuxbsd arch=x86_64 d3d12=no profile=custom.py
+
+      - name: Collect compiled templates
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p custom-templates
+          cp godot-src/bin/godot.linuxbsd.template_release.x86_64 \
+             custom-templates/linux_release.x86_64
+          cp godot-src/bin/godot.windows.template_release.x86_64.exe \
+             custom-templates/windows_release_x86_64.exe
+
+      - name: Save templates to cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: custom-templates/
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Upload templates artifact (pour les jobs Docker)
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-custom-templates
+          path: custom-templates/
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 5 : Export BCD Kids — Windows (Godot)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-kids-windows:
+    name: Build BCD Kids (Windows)
+    needs: compile-templates
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Download custom templates
+        uses: actions/download-artifact@v4
+        with:
+          name: godot-custom-templates
+          path: custom-templates/
+
+      - name: Setup export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/
+          mv /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          cp custom-templates/windows_release_x86_64.exe \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/windows_release_x86_64.exe
+
+      - name: Export Windows
+        run: |
+          cd bcd_kids
+          mkdir -p builds/windows
+          godot --headless --verbose --export-release "Windows Desktop" \
+                builds/windows/BCD-Kids.exe
+
+      - name: Upload BCD Kids Windows files
+        uses: actions/upload-artifact@v4
+        with:
+          name: bcd-kids-windows-files
+          path: bcd_kids/builds/windows/
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 6 : Export BCD Kids — Linux (Godot)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-kids-linux:
+    name: Build BCD Kids (Linux)
+    needs: compile-templates
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Download custom templates
+        uses: actions/download-artifact@v4
+        with:
+          name: godot-custom-templates
+          path: custom-templates/
+
+      - name: Setup export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/
+          mv /root/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable
+          cp custom-templates/linux_release.x86_64 \
+             ~/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/linux_release.x86_64
+
+      - name: Export Linux
+        run: |
+          cd bcd_kids
+          mkdir -p builds/linux
+          godot --headless --verbose --export-release "Linux/X11" \
+                builds/linux/BCD-Kids.x86_64
+
+      - name: Upload BCD Kids Linux files
+        uses: actions/upload-artifact@v4
+        with:
+          name: bcd-kids-linux-files
+          path: bcd_kids/builds/linux/
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 7 : Assemblage des archives + GitHub Release
+  # ═══════════════════════════════════════════════════════════════════════════
+  release:
+    name: Create GitHub Release
+    needs: [build-bcd-windows, build-bcd-linux, build-kids-windows, build-kids-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      # ── Windows ZIP ────────────────────────────────────────────────────────
+      - name: Assemble Windows package
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          PKG="BCD-v${VERSION}-Windows"
+          mkdir -p "$PKG"
+
+          # BCD serveur (PyInstaller)
+          cp -r artifacts/bcd-windows-files/. "$PKG/"
+
+          # BCD Kids client (Godot)
+          cp artifacts/bcd-kids-windows-files/BCD-Kids.exe "$PKG/"
+
+          # Documentation
+          cp README.md README_FR.md INSTALL.md LICENSE "$PKG/"
+
+          printf "BCD Library Management System\nVersion: %s\nPlatform: Windows 10/11 (64-bit)\n" \
+            "$VERSION" > "$PKG/VERSION.txt"
+
+          zip -r "${PKG}.zip" "$PKG"
+          sha256sum "${PKG}.zip" > "${PKG}.zip.sha256"
+
+      # ── Linux tar.gz ───────────────────────────────────────────────────────
+      - name: Assemble Linux package
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          PKG="BCD-v${VERSION}-Linux"
+          mkdir -p "$PKG"
+
+          # BCD serveur (PyInstaller)
+          cp -r artifacts/bcd-linux-files/. "$PKG/"
+          chmod +x "$PKG/bcd"
+
+          # BCD Kids client (Godot)
+          cp artifacts/bcd-kids-linux-files/BCD-Kids.x86_64 "$PKG/"
+          chmod +x "$PKG/BCD-Kids.x86_64"
+
+          # Documentation
+          cp README.md README_FR.md INSTALL.md LICENSE "$PKG/"
+
+          printf "BCD Library Management System\nVersion: %s\nPlatform: Linux x86_64\n" \
+            "$VERSION" > "$PKG/VERSION.txt"
+
+          tar -czf "${PKG}.tar.gz" "$PKG"
+          sha256sum "${PKG}.tar.gz" > "${PKG}.tar.gz.sha256"
+
+      # ── GitHub Release ─────────────────────────────────────────────────────
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: BCD v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            # BCD v${{ steps.get_version.outputs.VERSION }}
+
+            Chaque archive contient le **serveur BCD** (API + interface web) et le **client BCD Kids** (interface élèves).
+
+            ## Téléchargements
+
+            | Plateforme | Fichier |
+            |------------|---------|
+            | Windows 10/11 | `BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip` |
+            | Linux x86_64  | `BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz` |
+
+            ## Installation Windows
+
+            1. Extraire le ZIP
+            2. Lancer `bcd.exe` pour démarrer le serveur
+            3. Lancer `BCD-Kids.exe` pour l'interface élèves
+
+            ## Installation Linux
+
+            1. `tar -xzf BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz`
+            2. `./bcd` pour démarrer le serveur
+            3. `./BCD-Kids.x86_64` pour l'interface élèves
+
+            ## Vérification des archives
+
+            ```
+            # Windows (PowerShell)
+            Get-FileHash BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip -Algorithm SHA256
+
+            # Linux
+            sha256sum -c BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz.sha256
+            ```
+
+            ---
+            **Commit** : ${{ github.sha }}
+          files: |
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip.sha256
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz
+            BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz.sha256
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

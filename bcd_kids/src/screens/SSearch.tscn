@@ -1,0 +1,97 @@
+[gd_scene format=3 uid="uid://bcd4scr0008"]
+
+[ext_resource type="Script" uid="uid://ruvvlasj52lw" path="res://src/screens/SSearch.gd" id="1_scr"]
+[ext_resource type="PackedScene" uid="uid://bcd4cmp0001" path="res://src/components/Breadcrumb.tscn" id="2_bc"]
+[ext_resource type="PackedScene" uid="uid://bcd4cmp0006" path="res://src/components/AutocompleteInput.tscn" id="3_ac"]
+[ext_resource type="PackedScene" uid="uid://bcd4cmp0007" path="res://src/components/FilterPanel.tscn" id="4_fp"]
+
+[node name="SSearch" type="Control" unique_id=2046603798]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1845094242]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainMargin" type="MarginContainer" parent="." unique_id=210040781]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Root" type="VBoxContainer" parent="MainMargin" unique_id=430965606]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="MainMargin/Root" unique_id=935925146]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="BackBtn" type="Button" parent="MainMargin/Root/Header" unique_id=851244077]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "← Retour"
+
+[node name="Breadcrumb" parent="MainMargin/Root/Header" unique_id=1699125324 instance=ExtResource("2_bc")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MainMargin/Root" unique_id=1519992319]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = "LabelTitle"
+text = "Rechercher"
+horizontal_alignment = 1
+
+[node name="SearchRow" type="HBoxContainer" parent="MainMargin/Root" unique_id=1915622344]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Autocomplete" parent="MainMargin/Root/SearchRow" unique_id=2103449026 instance=ExtResource("3_ac")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SearchBtn" type="Button" parent="MainMargin/Root/SearchRow" unique_id=1456491524]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 52)
+layout_mode = 2
+theme_type_variation = "LabelTitle"
+text = "🔍"
+
+[node name="FilterPanel" parent="MainMargin/Root" unique_id=132058743 instance=ExtResource("4_fp")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Separator" type="HSeparator" parent="MainMargin/Root" unique_id=1884989850]
+layout_mode = 2
+
+[node name="CountLabel" type="Label" parent="MainMargin/Root" unique_id=1494132936]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = "LabelMedium"
+
+[node name="ResultsScroll" type="ScrollContainer" parent="MainMargin/Root" unique_id=1066442414]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ResultsGrid" type="GridContainer" parent="MainMargin/Root/ResultsScroll" unique_id=2063113173]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 6

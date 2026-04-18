@@ -1,0 +1,277 @@
+[gd_scene format=3 uid="uid://bcd4scr0011"]
+
+[ext_resource type="Script" uid="uid://dd4h0pgs6egme" path="res://src/screens/SServerDiscovery.gd" id="1_scr"]
+
+[node name="SServerDiscovery" type="Control" unique_id=864758025]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="." unique_id=736891845]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="MainMargin" type="MarginContainer" parent="." unique_id=292151811]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Root" type="VBoxContainer" parent="MainMargin" unique_id=872918768]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="TopBar" type="HBoxContainer" parent="MainMargin/Root" unique_id=201234501]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TopSpacer" type="Control" parent="MainMargin/Root/TopBar" unique_id=201234502]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SettingsBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234503]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "⚙️"
+custom_minimum_size = Vector2(50, 40)
+
+[node name="LangSep1" type="Control" parent="MainMargin/Root/TopBar" unique_id=201234504]
+layout_mode = 2
+custom_minimum_size = Vector2(8, 0)
+
+[node name="FrBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234505]
+unique_name_in_owner = true
+layout_mode = 2
+text = "FR"
+custom_minimum_size = Vector2(60, 40)
+
+[node name="LangSep2" type="Control" parent="MainMargin/Root/TopBar" unique_id=201234506]
+layout_mode = 2
+custom_minimum_size = Vector2(8, 0)
+
+[node name="EnBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234507]
+unique_name_in_owner = true
+layout_mode = 2
+text = "EN"
+custom_minimum_size = Vector2(60, 40)
+
+[node name="TitleLabel" type="Label" parent="MainMargin/Root" unique_id=1908655512]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"LabelTitle"
+horizontal_alignment = 1
+
+[node name="Separator1" type="HSeparator" parent="MainMargin/Root" unique_id=853895144]
+layout_mode = 2
+
+[node name="StatusRow" type="HBoxContainer" parent="MainMargin/Root" unique_id=714714966]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RefreshBtn" type="Button" parent="MainMargin/Root/StatusRow" unique_id=2101556452]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 32)
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+
+[node name="ServersLabel" type="Label" parent="MainMargin/Root" unique_id=1712634694]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+
+[node name="ServersScroll" type="ScrollContainer" parent="MainMargin/Root" unique_id=1456269194]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ServersContainer" type="VBoxContainer" parent="MainMargin/Root/ServersScroll" unique_id=12880249]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Separator2" type="HSeparator" parent="MainMargin/Root" unique_id=1106031191]
+layout_mode = 2
+
+[node name="ManualRow" type="HBoxContainer" parent="MainMargin/Root" unique_id=953108353]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ManualInput" type="LineEdit" parent="MainMargin/Root/ManualRow" unique_id=76490329]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "http://localhost:8000"
+placeholder_text = "http://localhost:8000"
+
+[node name="ConnectManualBtn" type="Button" parent="MainMargin/Root/ManualRow" unique_id=1026626992]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 36)
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+
+[node name="AuthPanel" type="PanelContainer" parent="MainMargin/Root" unique_id=1868105289]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AuthContent" type="VBoxContainer" parent="MainMargin/Root/AuthPanel" unique_id=1100407728]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="AuthTitle" type="Label" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=1875129201]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"LabelMedium"
+
+[node name="UseSavedAuth" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=1311754810]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="CredsRow" type="HBoxContainer" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=643414786]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="UsernameInput" type="LineEdit" parent="MainMargin/Root/AuthPanel/AuthContent/CredsRow" unique_id=526505258]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PasswordInput" type="LineEdit" parent="MainMargin/Root/AuthPanel/AuthContent/CredsRow" unique_id=1036808498]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+secret = true
+
+[node name="AuthBottom" type="HBoxContainer" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=1704452446]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AuthSchemeBasic" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=1411072753]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Basic"
+
+[node name="AuthSchemeDigest" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=252246434]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Digest"
+
+[node name="AuthSpacer" type="Control" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=1651772276]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RetryBtn" type="Button" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=1955114295]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 32)
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+
+[node name="ClearAuthBtn" type="Button" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=632013538]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+
+[node name="SplashPanel" type="ColorRect" parent="." unique_id=500000001]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="SplashCenter" type="CenterContainer" parent="SplashPanel" unique_id=500000002]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="SplashVBox" type="VBoxContainer" parent="SplashPanel/SplashCenter" unique_id=500000003]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="SplashBook" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000014]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 72
+text = "📚"
+
+[node name="SplashTitle" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000004]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"LabelTitle"
+horizontal_alignment = 1
+text = "BCD"
+
+[node name="SplashTagline" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000005]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"LabelMedium"
+horizontal_alignment = 1
+
+[node name="SplashSep" type="Control" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000006]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+
+[node name="SplashMessage" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000007]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+theme_type_variation = &"LabelSmall"
+custom_minimum_size = Vector2(0, 32)
+modulate = Color(1, 1, 1, 0)
+
+[node name="SplashDots" type="HBoxContainer" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000008]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="Dot0" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000009]
+layout_mode = 2
+text = "●"
+theme_override_font_sizes/font_size = 28
+modulate = Color(1, 1, 1, 0.15)
+
+[node name="Dot1" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000010]
+layout_mode = 2
+text = "●"
+theme_override_font_sizes/font_size = 28
+modulate = Color(1, 1, 1, 0.15)
+
+[node name="Dot2" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000011]
+layout_mode = 2
+text = "●"
+theme_override_font_sizes/font_size = 28
+modulate = Color(1, 1, 1, 0.15)
+
+[node name="BadgeSep" type="Control" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000012]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 16)
+
+[node name="SplashBadge" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000013]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+theme_type_variation = &"LabelSmall"
+modulate = Color(1, 1, 1, 0.5)

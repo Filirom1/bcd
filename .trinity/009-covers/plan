@@ -1,0 +1,317 @@
+# 009 — Book Cover Images
+
+## Context
+
+Books in the catalog are currently displayed with a generic icon. When an ISBN is
+known, we can fetch a cover image and display it — making the catalog significantly
+more visual and useful for a school audience.
+
+This feature downloads cover images at record creation time, caches them locally on
+disk (named by ISBN), serves them through a static route, and displays them in both
+the detail modal and the card view.
+
+---
+
+## Source: Open Library Covers API
+
+**Why Open Library, not Google Books?**
+
+We tested both APIs against real records from the database and the imported CSV catalog
+(5 053 records, 2 282 with an ISBN field):
+
+| Source        | Coverage (DB sample) | Coverage (CSV sample) | Notes                          |
+|---------------|---------------------:|----------------------:|--------------------------------|
+| Google Books  |                   0% |                    0% | Finds books, but no thumbnails |
+| Open Library  |                 ~60% |                  ~28% | No API key, no rate limit      |
+
+Google Books consistently returned books in search results but with no `imageLinks`
+field for French editions. Open Library has far better coverage of older French titles.
+
+**API:**
+
+```
+GET https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false
+```
+
+- Works with both ISBN-10 and ISBN-13 (dashes stripped)
+- `?default=false` → returns HTTP 404 when no cover exists (clean detection, no placeholder image)
+- HTTP 200 → real JPEG cover, download and cache
+- No API key required, no rate limiting for reasonable use
+- Sizes: S (small), M (medium ~130×200px), L (large)
+
+**Validated behavior:**
+
+```
+2211056466  → 200  10809b  Stuart Little            (has cover)
+9782211066853 → 200   9984b  Petit prince Pouf        (has cover)
+2070391981  → 404     13b  Chanson des escargots    (no cover, clean 404)
+2884453075  → 404     13b  La rentrée               (no cover, clean 404)
+```
+
+ISBNs that are actually ISSNs (periodicals, ~496 records) return 404 gracefully.
+
+---
+
+## Data Flow
+
+```
+User creates record via Cataloging
+       │
+       ▼
+create_bibliographic_record()
+       │
+       ├── pop cover_url from db_data (Google Books artefact, not a model field)
+       │
+       ├── if isbn: _download_cover(isbn)
+       │       │
+       │       ├── check data/covers/{isbn}.jpg (cache hit → return filename)
+       │       │
+       │       └── GET covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false
+       │               ├── 200 → write to data/covers/{isbn}.jpg → return filename
+       │               └── 404 / error → return None (silent, no cover stored)
+       │
+       └── set cover_image = filename on record → commit
+                │
+                ▼
+         BiblographicRecord.cover_image = "2211056466.jpg"
+                │
+                ▼
+         API response includes cover_image field
+                │
+                ▼
+         Web UI: /covers/2211056466.jpg (StaticFiles mount)
+```
+
+---
+
+## Implementation
+
+### 1. Database — new column
+
+**`src/bcd_api/models/bibliographic_record.py`**
+
+After the `isbn` column:
+
+```python
+cover_image = Column(String(50), nullable=True)  # local filename: '{isbn}.jpg'
+```
+
+### 2. Alembic migration
+
+**New file**: `migrations/versions/<rev>_add_cover_image_to_bibliographic_record.py`
+
+```python
+def upgrade() -> None:
+    op.add_column(
+        'bibliographic_record',
+        sa.Column('cover_image', sa.String(length=50), nullable=True)
+    )
+
+def downgrade() -> None:
+    op.drop_column('bibliographic_record', 'cover_image')
+```
+
+Generate with: `alembic revision --autogenerate -m "add cover_image to bibliographic_record"`
+
+### 3. Pydantic schemas
+
+**`src/bcd_api/schemas/bibliographic_record.py`**
+
+Add to `BiblographicRecordBase` (inherited by Create/Update/Response):
+
+```python
+cover_image: Optional[str] = Field(None, max_length=50)
+```
+
+Add to `BiblographicRecordSummary` (used by catalog search / card view):
+
+```python
+cover_image: Optional[str] = None
+```
+
+### 4. Cover download helper + integration
+
+**`src/bcd_api/services/catalog_service.py`**
+
+New imports at top:
+```python
+import httpx
+from pathlib import Path
+```
+
+New private function:
+```python
+def _download_cover(isbn: str) -> Optional[str]:
+    """
+    Fetch cover from Open Library and cache locally.
+
+    Returns the filename ('{isbn}.jpg') on success, None if no cover or on error.
+    Idempotent: returns cached filename if the file already exists.
+    """
+    normalized = isbn.replace("-", "").replace(".", "").replace(" ", "")
+    dest = Path("data/covers")
+    dest.mkdir(parents=True, exist_ok=True)
+    filepath = dest / f"{normalized}.jpg"
+
+    if filepath.exists():
+        return f"{normalized}.jpg"
+
+    url = f"https://covers.openlibrary.org/b/isbn/{normalized}-M.jpg?default=false"
+    try:
+        resp = httpx.get(url, timeout=10, follow_redirects=True)
+        if resp.status_code == 200:
+            filepath.write_bytes(resp.content)
+            logger.info(f"Cover cached for ISBN {normalized}")
+            return f"{normalized}.jpg"
+    except Exception:
+        logger.warning(f"Cover download failed for ISBN {normalized}", exc_info=True)
+    return None
+```
+
+In `create_bibliographic_record()`, just before `BiblographicRecord(**db_data)`:
+
+```python
+# cover_url is a transient field from Google Books — not a model column
+db_data.pop("cover_url", None)
+
+# Download and cache cover from Open Library (best-effort, non-blocking on failure)
+if db_data.get("isbn"):
+    filename = _download_cover(db_data["isbn"])
+    if filename:
+        db_data["cover_image"] = filename
+```
+
+### 5. Serve covers via static mount
+
+**`src/bcd_api/main.py`**
+
+After the existing `_assets_dir` mount block (around line 296):
+
+```python
+_covers_dir = Path("data/covers")
+_covers_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/covers", StaticFiles(directory=str(_covers_dir)), name="covers")
+```
+
+In the `add_cache_headers` middleware, extend the 1-hour branch:
+
+```python
+elif path.startswith("/static/") or path.startswith("/locales/") or path.startswith("/covers/"):
+    response.headers["Cache-Control"] = "public, max-age=3600"
+```
+
+### 6. Web UI — RecordDetail modal
+
+**`src/bcd_web_vue/js/components/catalog/RecordDetail.js`**
+
+In `setup()`, add state and reset in `loadRecord()`:
+
+```javascript
+const coverLoadFailed = ref(false);
+
+// inside loadRecord(), after loading record:
+coverLoadFailed.value = false;
+
+// return:
+return { ..., coverLoadFailed };
+```
+
+In the template, replace the generic icon block (around line 513):
+
+```html
+<!-- Before -->
+<div class="mb-3">
+    <i class="bi bi-book display-4 text-muted"></i>
+</div>
+
+<!-- After -->
+<div class="mb-3">
+    <img
+        v-if="record.cover_image && !coverLoadFailed"
+        :src="`/covers/${record.cover_image}`"
+        :alt="record.title"
+        class="img-fluid rounded shadow-sm"
+        style="max-height: 200px; object-fit: contain;"
+        @error="coverLoadFailed = true"
+    />
+    <i v-else class="bi bi-book display-4 text-muted"></i>
+</div>
+```
+
+### 7. Web UI — SearchResults card view
+
+**`src/bcd_web_vue/js/components/catalog/SearchResults.js`**
+
+Inside each `.card.h-100.catalog-result-card` div, before `.card-body` (around line 295):
+
+```html
+<img
+    v-if="record.cover_image"
+    :src="`/covers/${record.cover_image}`"
+    :alt="record.title"
+    class="card-img-top"
+    style="height: 160px; object-fit: contain; background: #f8f9fa; padding: 8px;"
+    @error="$event.target.style.display = 'none'"
+/>
+<div v-else class="text-center py-3 bg-light" style="height: 100px;">
+    <i class="bi bi-book display-6 text-muted"></i>
+</div>
+```
+
+---
+
+## Files
+
+| File | Type | Change |
+|------|------|--------|
+| `src/bcd_api/models/bibliographic_record.py` | modify | Add `cover_image` column |
+| `migrations/versions/<rev>_add_cover_image.py` | new | Alembic migration |
+| `src/bcd_api/schemas/bibliographic_record.py` | modify | Add `cover_image` to Base + Summary |
+| `src/bcd_api/services/catalog_service.py` | modify | `_download_cover()` helper + integration |
+| `src/bcd_api/main.py` | modify | `/covers` static mount + cache header |
+| `src/bcd_web_vue/js/components/catalog/RecordDetail.js` | modify | Cover image with icon fallback |
+| `src/bcd_web_vue/js/components/catalog/SearchResults.js` | modify | Cover thumbnail in card view |
+
+No new API endpoints. No new configuration keys. No i18n strings needed (image-only change).
+
+---
+
+## Coverage Notes
+
+- ~28% of records in the imported catalog (CSV with 2 282 ISBNs) have a cover on Open Library
+- ~60% of recently-created records (newer ISBN-13 titles) have a cover
+- Records without a cover display the existing book icon — no regression, no user-visible change
+- The cover download is a best-effort network call; failure is logged and silently skipped
+- ISSNs stored in the ISBN column (periodicals) correctly return 404 and are skipped
+
+---
+
+## Verification
+
+```bash
+# 1. Apply migration
+alembic upgrade head
+
+# 2. Start server
+python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
+
+# 3. Create a record with a known ISBN that has a cover (e.g., via Cataloging page)
+#    ISBN 2211056466 = Stuart Little (confirmed cover at Open Library)
+
+# 4. Check the file was downloaded
+ls data/covers/
+# → 2211056466.jpg
+
+# 5. Check the HTTP route
+curl -I http://127.0.0.1:8000/covers/2211056466.jpg
+# → HTTP/1.1 200 OK, Content-Type: image/jpeg
+
+# 6. Open RecordDetail for the record in the Web UI
+#    → Cover image appears in the top-right card (not the generic book icon)
+
+# 7. Switch to card view in the catalog
+#    → Cover thumbnail appears at top of the card
+
+# 8. Run tests (no regressions)
+pytest tests/integration/services/ tests/unit/ -v
+```
