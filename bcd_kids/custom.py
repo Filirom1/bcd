@@ -40,6 +40,7 @@ module_mbedtls_enabled = "yes"
 # ✅ Images PNG (fonds d'écran, couvertures de livres)
 module_png_enabled             = "yes"
 module_jpg_enabled             = "yes"
+module_squish_enabled          = "yes"   # décodeur S3TC/DXT (requis si s3tc_bptc=true dans les presets)
 
 # ❌ Formats non utilisés
 module_webp_enabled            = "no"
