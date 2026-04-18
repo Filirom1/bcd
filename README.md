@@ -1,4 +1,4 @@
-# BCD — School Library Management
+# BCD — Bibliothèque que Claude a Développée
 
 > Simple, fast library management for French elementary schools
 
@@ -70,11 +70,15 @@ Scan a student's ID card to load their record, then scan each book barcode — b
 
 The borrower card shows their current loans, due dates, and any active holds ready to be fulfilled. Overdue and loan-limit warnings appear automatically.
 
+[→ Detailed help](docs/help/en/checkout.md)
+
 ### Return
 
 ![Return](docs/screenshots/02-return.png)
 
 Scan book barcodes one by one — no borrower context required. Each return is immediate. The system shows who had the book and whether it was overdue.
+
+[→ Detailed help](docs/help/en/return.md)
 
 ### Renew
 
@@ -97,6 +101,8 @@ Click any record to open the detail view with three tabs:
 - **Holds** — active reservations with borrower names and positions
 - **History** — paginated circulation history with date filters
 
+[→ Detailed help](docs/help/en/catalog.md)
+
 ---
 
 ### Add Books (Cataloging)
@@ -105,11 +111,13 @@ Click any record to open the detail view with three tabs:
 
 Three-step workflow:
 
-1. **ISBN lookup** — scan or type the ISBN; book details are fetched automatically from the French National Library (BNF). Skip this step for books without an ISBN.
+1. **ISBN / ISSN lookup** — scan or type the ISBN (books) or ISSN (magazines / journals); details are fetched automatically from the French National Library (BNF). Skip this step for items without an identifier.
 2. **Review metadata** — edit title, author, publisher, category, genre, language, audience, and other fields.
 3. **Create items** — scan each physical copy's barcode to register it. Multiple copies can be added in one session.
 
 **Bulk import**: upload a Dublin Core CSV file to import hundreds of books at once. BiblioPuce exports are also supported (automatic format detection).
+
+[→ Detailed help](docs/help/en/cataloging.md)
 
 ---
 
@@ -133,6 +141,10 @@ Browse the full borrower list, filtered by class, role, or status. Click any bor
 
 **Print**: generate print-ready student library cards (10 per A4 page) or reference sheets with barcodes, filtered by class.
 
+**GDPR note**: BCD stores last name, first name, class, and borrower number. Loan records must be deleted within 4 months of return (French CNIL deliberation n° 99-27). Use the bulk-delete action on the borrower list to purge records at end of year.
+
+[→ Detailed help](docs/help/en/borrowers.md)
+
 ---
 
 ### Classes
@@ -140,6 +152,22 @@ Browse the full borrower list, filtered by class, role, or status. Click any bor
 ![Classes](docs/screenshots/06-classes.png)
 
 Create, edit, and delete school classes. Each class stores name, grade level, academic year, and homeroom teacher. Classes are used to filter borrowers across all pages and to group overdue reports by class.
+
+[→ Detailed help](docs/help/en/classes.md)
+
+---
+
+### Inventory
+
+The Inventory page supports physical collection checks (récolement) and weeding (désherbage):
+
+- **Scan tab** — scan item barcodes one by one to mark them as physically verified; the scanner retains focus for rapid successive scans
+- **File import tab** — import a plain-text file of barcodes (one per line) from a handheld scanner
+- **Search tab** — find items using advanced filters (status, condition, never inventoried, low circulation, medium type, audience, genre, language, publication year) and add results to the working table
+
+The **working table** persists in the browser. From it you can bulk-edit items (status, condition, location, medium type, genre, level, audience), bulk-delete items and orphan records, and export an inventory report to CSV.
+
+[→ Detailed help](docs/help/en/inventory.md)
 
 ---
 
@@ -152,6 +180,10 @@ Create, edit, and delete school classes. Each class stores name, grade level, ac
 **Most Borrowed** — ranked list of the most circulated titles over any date range. Helps identify what to purchase more of.
 
 ![Most Borrowed](docs/screenshots/08-reports-most-borrowed.png)
+
+**Active Loans** — full list of all items currently on loan, with borrower, due date, and overdue status. Useful for quick library-wide checks.
+
+**Holds** — list of all active reservations with their status (waiting / ready for pickup / expired).
 
 **CREW Weeding** — systematic collection evaluation using the CREW method. Six evaluation modes:
 - **Never Borrowed** — items never checked out since acquisition
@@ -167,6 +199,18 @@ Each item receives a CREW score (0-7+) based on age in collection, physical cond
 
 All reports have a browser print button for instant printing.
 
+[→ Detailed help](docs/help/en/reports.md)
+
+---
+
+### Collections (Network Libraries)
+
+The Collections page automatically discovers other BCD libraries running on the same school network (via mDNS — no configuration needed). Each discovered library is shown as a card; click **Open Collection** to browse their catalog in a new tab.
+
+Useful for avoiding duplicate purchases across buildings and for coordinating inter-library loans.
+
+[→ Detailed help](docs/help/en/collections.md)
+
 ---
 
 ### Settings & Backup
@@ -176,6 +220,8 @@ All reports have a browser print button for instant printing.
 Configure the library system: loan duration, renewal limit, checkout limit (students and teachers), hold expiration, academic year dates, library name, barcode prefixes, language, and date format.
 
 The **Backup** section shows the date of the last backup and lists all existing backups. Create a backup, download one, restore from one, or delete old backups — all from the web interface.
+
+[→ Detailed help](docs/help/en/settings.md)
 
 ---
 

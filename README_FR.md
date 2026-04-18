@@ -1,4 +1,4 @@
-# BCD — Gestion de bibliothèque scolaire
+# BCD — Bibliothèque que Claude a Développée
 
 > Gestion simple et rapide pour les bibliothèques d'écoles élémentaires
 
@@ -18,6 +18,41 @@ python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
 ```
 Puis ouvrir **http://127.0.0.1:8000** dans le navigateur.
 
+**Client Godot** (interface pour CP-CM2) :
+- Télécharger depuis [Releases](https://github.com/user/repo/releases) (Windows/Linux)
+- Découverte automatique des serveurs BCD sur le réseau (mDNS)
+- Nécessite un serveur BCD API en cours d'exécution
+
+Voir [`bcd_kids/README.md`](bcd_kids/README.md) pour les détails.
+
+---
+
+## Clients
+
+### Interface web (par défaut)
+
+L'interface web principale s'exécute dans le navigateur et offre toutes les fonctionnalités de gestion de bibliothèque pour les bibliothécaires et le personnel.
+
+### Client Godot (enfants)
+
+![Client Godot](docs/screenshots/13-godot-client.png)
+
+Interface colorise et tactile Godot 4.6, conçue pour les élèves de primaire (6-11 ans) :
+
+**Fonctionnalités** :
+- Découverte automatique des serveurs BCD sur le réseau (mDNS)
+- Emprunter des livres (scan de code-barres)
+- Rendre des livres
+- Rechercher dans le catalogue avec filtres
+- Gérer les réservations
+- Bilingue (FR/EN)
+
+**Plateformes** : Windows (`.exe` 64 bits), Linux (`.x86_64` 64 bits)
+
+**Prérequis** : Un serveur BCD API doit être en cours d'exécution sur le réseau.
+
+**Documentation** : [`bcd_kids/README.md`](bcd_kids/README.md)
+
 ---
 
 ## Fonctionnalités
@@ -30,11 +65,15 @@ Scanner la carte d'élève pour charger sa fiche, puis scanner chaque code-barre
 
 La fiche emprunteur affiche les prêts en cours, les dates d'échéance et les réservations prêtes à être retirées. Les alertes de retard et de limite de prêt s'affichent automatiquement.
 
+[→ Aide détaillée](docs/help/fr/emprunter.md)
+
 ### Retour
 
 ![Retour](docs/screenshots/02-return.png)
 
 Scanner les codes-barres des livres un par un — sans avoir besoin de sélectionner l'emprunteur. Chaque retour est immédiat. Le système affiche qui avait le livre et s'il était en retard.
+
+[→ Aide détaillée](docs/help/fr/retourner.md)
 
 ### Renouvellement
 
@@ -57,6 +96,8 @@ Cliquer sur une notice pour ouvrir la fiche détaillée avec trois onglets :
 - **Réservations** — réservations actives avec noms et positions dans la file
 - **Historique** — historique de circulation paginé avec filtres par date
 
+[→ Aide détaillée](docs/help/fr/catalogue.md)
+
 ---
 
 ### Ajouter des livres (Catalogage)
@@ -65,11 +106,13 @@ Cliquer sur une notice pour ouvrir la fiche détaillée avec trois onglets :
 
 Flux de travail en trois étapes :
 
-1. **Recherche ISBN** — scanner ou saisir l'ISBN ; les informations sont récupérées automatiquement depuis la Bibliothèque nationale de France (BNF). Cette étape peut être ignorée pour les livres sans ISBN.
+1. **Recherche ISBN / ISSN** — scanner ou saisir l'ISBN (livres) ou l'ISSN (revues / périodiques) ; les informations sont récupérées automatiquement depuis la Bibliothèque nationale de France (BNF). Cette étape peut être ignorée pour les livres sans identifiant.
 2. **Vérifier les métadonnées** — modifier titre, auteur, éditeur, catégorie, genre, langue, public cible et autres champs.
 3. **Créer les exemplaires** — scanner le code-barres de chaque exemplaire physique pour l'enregistrer. Plusieurs exemplaires peuvent être ajoutés en une seule session.
 
 **Import en masse** : déposer un fichier CSV Dublin Core pour importer des centaines de livres en une fois. Les exports BiblioPuce sont également pris en charge (détection automatique du format).
+
+[→ Aide détaillée](docs/help/fr/catalogage.md)
 
 ---
 
@@ -93,6 +136,10 @@ Parcourir la liste complète des emprunteurs, filtrée par classe, rôle ou stat
 
 **Impression** : générer des cartes de bibliothèque prêtes à imprimer (10 par page A4) ou des fiches de référence avec codes-barres, filtrées par classe.
 
+**RGPD** : BCD stocke le nom, le prénom, la classe et le numéro d'emprunteur. Les données de prêt doivent être supprimées dans les 4 mois suivant le retour (délibération CNIL n° 99-27). Utiliser la suppression groupée dans la liste des emprunteurs pour purger les fiches en fin d'année.
+
+[→ Aide détaillée](docs/help/fr/eleves.md)
+
 ---
 
 ### Classes
@@ -100,6 +147,22 @@ Parcourir la liste complète des emprunteurs, filtrée par classe, rôle ou stat
 ![Classes](docs/screenshots/06-classes.png)
 
 Créer, modifier et supprimer les classes. Chaque classe contient le nom, le niveau scolaire, l'année en cours et le nom de l'enseignant référent. Les classes permettent de filtrer les emprunteurs sur toutes les pages et de regrouper les rapports de retard par classe.
+
+[→ Aide détaillée](docs/help/fr/classes.md)
+
+---
+
+### Inventaire
+
+La page Inventaire permet d'effectuer le récolement physique et le désherbage du fonds :
+
+- **Onglet Scanner** — scanner les codes-barres un par un pour marquer les exemplaires comme vérifiés ; le scanner garde le focus pour des scans rapides successifs
+- **Onglet Importer un fichier** — importer un fichier texte de codes-barres (un par ligne) depuis une douchette portable
+- **Onglet Rechercher** — trouver des exemplaires avec des filtres avancés (statut, état, jamais inventorié, faible rotation, type de support, public, genre, langue, année de publication) et les ajouter à la table de travail
+
+La **table de travail** persiste dans le navigateur. On peut y faire une modification groupée (statut, état, emplacement, type de support, genre, niveau, public), supprimer des exemplaires et des notices orphelines, et exporter un rapport d'inventaire en CSV.
+
+[→ Aide détaillée](docs/help/fr/inventaire.md)
 
 ---
 
@@ -112,6 +175,10 @@ Créer, modifier et supprimer les classes. Chaque classe contient le nom, le niv
 **Les plus empruntés** — classement des titres les plus circulés sur une période donnée. Aide à identifier les achats à réaliser.
 
 ![Les plus empruntés](docs/screenshots/08-reports-most-borrowed.png)
+
+**Prêts en cours** — liste complète de tous les exemplaires actuellement empruntés, avec emprunteur, date d'échéance et statut de retard. Utile pour un bilan rapide du fonds.
+
+**Réservations** — liste de toutes les réservations actives avec leur statut (en attente / prête / expirée).
 
 **CREW - Désherbage** — évaluation systématique de la collection selon la méthode CREW. Six modes d'évaluation :
 - **Jamais emprunté** — exemplaires jamais empruntés depuis leur acquisition
@@ -127,6 +194,18 @@ Chaque exemplaire reçoit un score CREW (0-7+) basé sur l'âge dans la collecti
 
 Tous les rapports ont un bouton d'impression pour une impression instantanée.
 
+[→ Aide détaillée](docs/help/fr/rapports.md)
+
+---
+
+### Fonds (bibliothèques en réseau)
+
+La page Fonds découvre automatiquement les autres bibliothèques BCD sur le même réseau scolaire (via mDNS — aucune configuration nécessaire). Chaque bibliothèque découverte s'affiche sous forme de carte ; cliquer sur **Ouvrir Fond** pour parcourir son catalogue dans un nouvel onglet.
+
+Utile pour éviter les achats en double entre bâtiments et pour coordonner les prêts inter-bibliothèques.
+
+[→ Aide détaillée](docs/help/fr/fonds.md)
+
 ---
 
 ### Paramètres et sauvegardes
@@ -136,6 +215,8 @@ Tous les rapports ont un bouton d'impression pour une impression instantanée.
 Configurer le système : durée de prêt, limite de renouvellement, limite de prêt (élèves et enseignants), expiration des réservations, dates de l'année scolaire, nom de la bibliothèque, préfixes de codes-barres, langue et format de date.
 
 La section **Sauvegardes** affiche la date de la dernière sauvegarde et liste toutes les sauvegardes existantes. Créer une sauvegarde, en télécharger une, restaurer depuis une sauvegarde ou supprimer les anciennes — tout depuis l'interface web.
+
+[→ Aide détaillée](docs/help/fr/parametres.md)
 
 ---
 
