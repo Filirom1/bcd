@@ -37,7 +37,11 @@ module_freetype_enabled = "yes"
 # ✅ TLS/HTTPS pour les appels API (HTTPRequest)
 module_mbedtls_enabled = "yes"
 
-# ❌ Pas d'images ni textures dans le projet
+# ✅ Images PNG (fonds d'écran, couvertures de livres)
+module_png_enabled             = "yes"
+module_jpg_enabled             = "yes"
+
+# ❌ Formats non utilisés
 module_webp_enabled            = "no"
 module_basis_universal_enabled = "no"
 module_svg_enabled             = "no"
