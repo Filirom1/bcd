@@ -261,6 +261,7 @@ jobs:
 
           # BCD Kids client (Godot)
           cp artifacts/bcd-kids-windows-files/BCD-Kids.exe "$PKG/"
+          cp artifacts/bcd-kids-windows-files/BCD-Kids.pck "$PKG/"
 
           # Documentation
           cp README.md README_FR.md INSTALL.md LICENSE "$PKG/"
@@ -284,6 +285,7 @@ jobs:
 
           # BCD Kids client (Godot)
           cp artifacts/bcd-kids-linux-files/BCD-Kids.x86_64 "$PKG/"
+          cp artifacts/bcd-kids-linux-files/BCD-Kids.pck "$PKG/"
           chmod +x "$PKG/BCD-Kids.x86_64"
 
           # Documentation
