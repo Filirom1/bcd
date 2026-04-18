@@ -436,9 +436,10 @@ def _run_portable_browser(host: str, port: int):
 def _run_portable_kids(host: str, port: int):
     """Run in portable mode: launch Kids client and keep server running.
 
-    Starts the API server in a background thread, then launches the Kids
-    client executable. The server keeps running until the Kids client closes
-    or the user presses Ctrl+C.
+    Launches the Kids client immediately so its splash screen is visible
+    while Alembic migrations run and the API server starts up in the
+    background.  By the time the splash ends (~1.5 s), the server is
+    usually ready to accept connections.
     """
     import subprocess
     from pathlib import Path
@@ -462,30 +463,35 @@ def _run_portable_kids(host: str, port: int):
         print("Please check your KIDS_CLIENT_PATH setting in config/.env")
         return
 
-    server, server_thread = _start_server_thread(host, port)
-    logger.info(f"API server running at http://127.0.0.1:{port}")
-
-    # Launch Kids client
+    # Launch Kids client FIRST so its splash screen is visible immediately
+    # while Alembic runs and the server starts in the background.
+    process = None
     try:
         logger.info(f"Launching Kids client: {kids_path_obj}")
         process = subprocess.Popen(
             [str(kids_path_obj)],
-            cwd=kids_path_obj.parent,  # Run in Kids client directory
+            cwd=kids_path_obj.parent,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
         logger.info(f"Kids client started (PID: {process.pid})")
-
-        # Wait for Kids client to exit
-        process.wait()
-        logger.info("Kids client closed, shutting down server...")
     except FileNotFoundError:
         logger.error(f"Failed to launch Kids client: {kids_path_obj}")
         print(f"\nERROR: Could not execute Kids client at: {kids_path_obj}")
+        return
+
+    # Run migrations and start API server while the Kids splash is showing
+    init_database_if_needed()
+    server, server_thread = _start_server_thread(host, port)
+    logger.info(f"API server running at http://127.0.0.1:{port}")
+
+    try:
+        # Wait for Kids client to exit
+        process.wait()
+        logger.info("Kids client closed, shutting down server...")
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt received, shutting down...")
     finally:
-        # Stop the server
         server.should_exit = True
         server_thread.join(timeout=5)
 
@@ -570,18 +576,21 @@ def main():
     )
     args = parser.parse_args()
 
-    # Portable mode: initialize environment, run migrations, then open window
+    # Portable mode: initialize environment, then open window
     if is_portable():
         initialize_portable_environment()
-        init_database_if_needed()
 
         ui_mode = args.ui_mode.lower()
-        if ui_mode == "webview":
+        if ui_mode == "kids":
+            # Kids mode runs migrations internally, after launching the client
+            # so the splash screen is visible immediately.
+            _run_portable_kids(args.host, args.port)
+        elif ui_mode == "webview":
+            init_database_if_needed()
             _run_portable(args.host, args.port)
         elif ui_mode == "browser":
+            init_database_if_needed()
             _run_portable_browser(args.host, args.port)
-        elif ui_mode == "kids":
-            _run_portable_kids(args.host, args.port)
         else:
             logger.error(f"Invalid UI mode: {ui_mode}")
             print(f"ERROR: Invalid UI mode '{ui_mode}'. Must be: webview, browser, or kids")

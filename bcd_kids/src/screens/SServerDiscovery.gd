@@ -109,15 +109,44 @@ func _discover_servers() -> void:
 
 	GS.base_url = previous_base_url if previous_base_url else ""
 
-	_hide_splash()
-
-	if peers.is_empty():
-		await _test_and_add_localhost()
-	else:
+	if not peers.is_empty():
+		_hide_splash()
 		_display_servers(peers)
+		_refresh_btn.disabled = false
+		_discovering = false
+		return
+
+	# No peers found — keep splash visible and retry until localhost is ready
+	# or 10 s total have elapsed (covers slow Alembic + uvicorn startup on HDD).
+	# Connection-refused is immediate so each probe costs < 50 ms.
+	var deadline := Time.get_ticks_msec() + 8500  # 1.5 s already spent above
+	while Time.get_ticks_msec() < deadline:
+		if await _check_localhost_ready():
+			_hide_splash()
+			_add_localhost_card()
+			_refresh_btn.disabled = false
+			_discovering = false
+			return
+		await get_tree().create_timer(0.5).timeout
+
+	# Time is up — hide splash and do one final check with a longer timeout
+	_hide_splash()
+	await _test_and_add_localhost()
 
 	_refresh_btn.disabled = false
 	_discovering = false
+
+func _check_localhost_ready() -> bool:
+	var http := HTTPRequest.new()
+	http.timeout = 0.8
+	add_child(http)
+	var error := http.request("http://localhost:8000/api/v1/admin/settings", [], HTTPClient.METHOD_GET)
+	if error != OK:
+		http.queue_free()
+		return false
+	var response = await http.request_completed
+	http.queue_free()
+	return response[1] >= 200 and response[1] < 500
 
 func _fetch_peers() -> Array:
 	var http := HTTPRequest.new()
