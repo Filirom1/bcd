@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/pokemon.png-dff846eb005dcc260ecb6ad01f4f6353.
 
 [params]
 
-compress/mode=1
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

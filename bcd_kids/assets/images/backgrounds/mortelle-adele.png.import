@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/mortelle-adele.png-0f2bdfcdb6b55ed084ec253ec8
 
 [params]
 
-compress/mode=1
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

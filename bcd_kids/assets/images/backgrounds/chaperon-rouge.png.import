@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/chaperon-rouge.png-fa0a542325d30cd0449fd5d7b6
 
 [params]
 
-compress/mode=1
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
