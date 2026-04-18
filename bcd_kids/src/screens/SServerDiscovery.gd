@@ -240,9 +240,14 @@ func _init_splash() -> void:
 	_splash.color = ThemeManager.BG
 	_splash_title.text = I18n.t("splash.title")
 	_splash_title.add_theme_color_override("font_color", ThemeManager.PRIMARY)
+	_splash_title.add_theme_font_size_override("font_size", 80)
 	_splash_book.add_theme_color_override("font_color", ThemeManager.SUCCESS)
+	_splash_book.add_theme_font_size_override("font_size", 90)
 	_splash_tagline.text = I18n.t("splash.tagline")
+	_splash_tagline.add_theme_font_size_override("font_size", 13)
+	_splash_tagline.modulate.a = 0.4
 	_splash_badge.text = I18n.t("splash.open_source")
+	_splash_badge.add_theme_font_size_override("font_size", 11)
 	_splash_dots = []
 	for dot in _splash_dots_container.get_children():
 		dot.add_theme_color_override("font_color", ThemeManager.PRIMARY)
@@ -257,6 +262,8 @@ func _init_splash() -> void:
 	_animate_splash_book()
 	_animate_splash_title()
 	_animate_splash_dots()
+	_splash_msg_lbl.add_theme_font_size_override("font_size", 34)
+	_splash_msg_lbl.add_theme_color_override("font_color", ThemeManager.WARNING)
 	_splash_cycling = true
 	_cycle_splash_messages()
 
