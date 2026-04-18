@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/ponti2.png-4b4d47a3564328818f24a0d53465c8d2.c
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
