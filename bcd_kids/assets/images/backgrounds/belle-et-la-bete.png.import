@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/belle-et-la-bete.png-bf25fbbde71eec93be9337b9
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

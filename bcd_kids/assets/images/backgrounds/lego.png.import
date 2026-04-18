@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/lego.png-3bb6c0bb8e80acc1cffbc3605a9c2dd0.cte
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

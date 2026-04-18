@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/sorciere.png-e8d46aa00718655734ef737525105b38
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

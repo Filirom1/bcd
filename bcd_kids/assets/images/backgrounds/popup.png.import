@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/popup.png-982742c72a1f6a8c7fbbef102b5c0e21.ct
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

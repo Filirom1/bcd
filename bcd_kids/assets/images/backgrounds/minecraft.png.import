@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/minecraft.png-3653cb1cbed1b445dc5efa299cce72b
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

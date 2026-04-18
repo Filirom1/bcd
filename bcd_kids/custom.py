@@ -42,8 +42,9 @@ module_png_enabled             = "yes"
 module_jpg_enabled             = "yes"
 module_squish_enabled          = "yes"   # décodeur S3TC/DXT (requis si s3tc_bptc=true dans les presets)
 
-# ❌ Formats non utilisés
-module_webp_enabled            = "no"
+# ✅ WebP (lossless compression pour fonds d'écran en mode=0 Lossless)
+# L'éditeur barichello/godot-ci génère du WebP lossless (pas PNG) en mode=0
+module_webp_enabled            = "yes"
 module_basis_universal_enabled = "no"
 module_svg_enabled             = "no"
 
