@@ -8,6 +8,7 @@ extends Control
 @onready var _input_lbl: Label = %InputLabel
 @onready var _barcode_input: LineEdit = %BarcodeInput
 @onready var _error_lbl: Label = %ErrorLabel
+@onready var _validate_btn: Button = %ValidateBtn
 @onready var _history_title: Label = %HistoryTitle
 @onready var _history: VBoxContainer = %HistoryContainer
 
@@ -27,6 +28,7 @@ func _ready() -> void:
 
 	_barcode_input.keep_editing_on_text_submit = true
 	_barcode_input.text_submitted.connect(func(_t): _do_return())
+	_validate_btn.pressed.connect(func(): _do_return())
 	_barcode_input.call_deferred("grab_focus")
 	visibility_changed.connect(func():
 		if visible:

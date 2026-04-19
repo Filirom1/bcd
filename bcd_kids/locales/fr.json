@@ -7,7 +7,7 @@
 	"name_input": {
 		"title": "Tape ton prénom",
 		"placeholder": "Ton prénom...",
-		"not_found": "Prénom non trouvé",
+		"not_found": "Prénom non trouvé dans cette classe",
 		"min_chars": "Tape au moins 2 lettres"
 	},
 	"name_choice": {

@@ -26,7 +26,16 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="Breadcrumb" parent="MainMargin/Root" instance=ExtResource("2_bc")]
+[node name="Header" type="HBoxContainer" parent="MainMargin/Root"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="BackBtn" type="Button" parent="MainMargin/Root/Header"]
+unique_name_in_owner = true
+text = "← Retour"
+custom_minimum_size = Vector2(120, 40)
+
+[node name="Breadcrumb" parent="MainMargin/Root/Header" instance=ExtResource("2_bc")]
 unique_name_in_owner = true
 
 [node name="FormCenter" type="CenterContainer" parent="MainMargin/Root"]

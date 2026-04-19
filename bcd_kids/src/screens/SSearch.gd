@@ -26,12 +26,17 @@ func _ready() -> void:
 	)
 
 	visibility_changed.connect(func():
-		if visible: _update_breadcrumb()
+		if visible:
+			_update_breadcrumb()
+			_clear_results()
+			_count_lbl.text = ""
+			_autocomplete.focus_input()
 	)
 
 	_update_breadcrumb()
 
 	_autocomplete.set_placeholder(I18n.t("search.placeholder"))
+	_autocomplete.focus_input()
 	_autocomplete.search_submitted.connect(func(q): _perform_search(q))
 
 	_search_btn.pressed.connect(func(): _perform_search(_autocomplete.get_text()))
@@ -60,6 +65,7 @@ func _perform_search(query: String) -> void:
 	var items = result.get("items", [])
 	_count_lbl.text = I18n.t("search.results_count", {"count": items.size()})
 	_display_results(items)
+	_autocomplete.focus_input()
 
 func _display_results(items: Array) -> void:
 	_clear_results()
@@ -73,7 +79,12 @@ func _display_results(items: Array) -> void:
 		var card := BOOK_CARD.instantiate() as BookCard
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_results_grid.add_child(card)
-		card.setup(item, I18n.t("search.reserve"), ThemeManager.SECONDARY)
+		var biblio_id := int(item.get("id", 0))
+		if GS.reserved_biblio_ids.has(biblio_id):
+			card.setup(item, I18n.t("search.reserve"), ThemeManager.RESERVED)
+			card.theme_type_variation = "PanelWarning"
+		else:
+			card.setup(item, I18n.t("search.reserve"), ThemeManager.SECONDARY)
 		card.action_clicked.connect(_on_reserve_clicked)
 
 func _clear_results() -> void:
@@ -89,14 +100,18 @@ func _on_reserve_clicked(book_data: Dictionary) -> void:
 		if result.has("detail") and result.detail is Dictionary:
 			var code: String = result.detail.get("code", "")
 			match code:
-				"borrower_blocked": error_msg = I18n.t("hold.error_blocked")
-				"hold_already_exists": error_msg = I18n.t("hold.error_duplicate")
-				"no_items_for_record": error_msg = I18n.t("hold.error_no_items")
-				"hold_limit_exceeded": error_msg = I18n.t("hold.error_limit")
+				"borrower_blocked":     error_msg = I18n.t("hold.error_blocked")
+				"hold_already_exists":  error_msg = I18n.t("hold.error_duplicate")
+				"no_items_for_record":  error_msg = I18n.t("hold.error_no_items")
+				"hold_limit_exceeded":  error_msg = I18n.t("hold.error_limit")
 		Mgr.notify(error_msg, "error")
 		return
+	GS.reserved_biblio_ids[biblio_record_id] = true
 	var holds = await API.get_holds(borrower_db_id)
 	GS.current_holds = holds
-	GS.current_class["_temp_book_data"] = book_data
-	GS.current_class["_temp_hold_result"] = result
-	Mgr.push("hold_confirm")
+	var title: String = book_data.get("title", "")
+	if title.is_empty():
+		Mgr.notify(I18n.t("hold.confirmed"), "success")
+	else:
+		Mgr.notify(I18n.t("hold.confirmed_with_title", {"title": title}), "success")
+	Mgr.pop()

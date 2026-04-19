@@ -57,6 +57,11 @@ unique_name_in_owner = true
 placeholder_text = "Ex: .00342"
 custom_minimum_size = Vector2(280, 48)
 
+[node name="ValidateBtn" type="Button" parent="MainMargin/Root/InputRow"]
+unique_name_in_owner = true
+text = "✓ Valider"
+custom_minimum_size = Vector2(130, 48)
+
 [node name="ErrorLabel" type="Label" parent="MainMargin/Root"]
 unique_name_in_owner = true
 horizontal_alignment = 1

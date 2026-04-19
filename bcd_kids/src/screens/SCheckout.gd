@@ -10,6 +10,7 @@ extends Control
 @onready var _barcode_input: LineEdit = %BarcodeInput
 @onready var _error_lbl: Label = %ErrorLabel
 @onready var _loans_list: VBoxContainer = %LoansList
+@onready var _validate_btn: Button = %ValidateBtn
 
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
@@ -26,6 +27,7 @@ func _ready() -> void:
 
 	_barcode_input.keep_editing_on_text_submit = true
 	_barcode_input.text_submitted.connect(func(_t): _do_checkout())
+	_validate_btn.pressed.connect(func(): _do_checkout())
 	_barcode_input.call_deferred("grab_focus")
 	visibility_changed.connect(func():
 		if visible:

@@ -7,6 +7,7 @@ signal search_submitted(query: String)
 @onready var _line_edit: LineEdit = %SearchInput
 
 func _ready() -> void:
+	_line_edit.keep_editing_on_text_submit = true
 	_line_edit.text_submitted.connect(_on_text_submitted)
 
 func _on_text_submitted(text: String) -> void:

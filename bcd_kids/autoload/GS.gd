@@ -12,6 +12,7 @@ var current_class := {}
 var current_borrower := {}
 var current_loans := []
 var current_holds := []
+var reserved_biblio_ids: Dictionary = {}  # IDs réservés cette session
 
 # Settings loaded from API at startup
 var settings := {}
@@ -25,6 +26,7 @@ func reset_borrower():
 	current_borrower = {}
 	current_loans = []
 	current_holds = []
+	reserved_biblio_ids = {}
 
 func parse_csv_list(csv: String) -> Array:
 	if not csv:

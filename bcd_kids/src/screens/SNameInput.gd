@@ -2,6 +2,7 @@
 extends Control
 
 @onready var _bg: ColorRect = %Background
+@onready var _back_btn: Button = %BackBtn
 @onready var _breadcrumb: Breadcrumb = %Breadcrumb
 @onready var _search_input: LineEdit = %SearchInput
 @onready var _validate_btn: Button = %ValidateBtn
@@ -10,6 +11,8 @@ extends Control
 
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
+
+	_back_btn.pressed.connect(func(): Mgr.pop())
 
 	_breadcrumb.crumb_clicked.connect(func(_screen): Mgr.pop())
 
