@@ -1,5 +1,7 @@
 # BCD — Bibliothèque que Claude a Développée
 
+**Pour la documentation en français, ça se passe ici: [`README_FR.md`](README_FR.md)**
+
 > Simple, fast library management for French elementary schools
 
 **For**: School librarians, teachers, library staff &nbsp;|&nbsp; **Languages**: French / English
@@ -12,35 +14,21 @@
 1. Download and extract `BCD-vX.X.X-Windows.zip`
 2. Double-click `bcd.exe` — the app opens automatically
 
-**Python** (all platforms):
-```bash
-python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
-```
-Then open **http://127.0.0.1:8000** in your browser.
 
-**Godot Client** (kids-friendly interface for CP-CM2):
-- Download from [Releases](https://github.com/Filirom1/bcd/releases) (Windows/Linux)
-- Auto-discovers BCD servers on the network (mDNS)
-- Requires a running BCD API server
-
-See [`bcd_kids/README.md`](bcd_kids/README.md) for details.
-
----
 
 ## Clients
 
-### Web UI (Default)
+### Web UI (Admin)
 
 The main web interface runs in your browser and provides full library management capabilities for librarians and staff.
 
-### Godot Client (Kids)
+### BCD Kids
 
-![Godot Client](docs/screenshots/13-godot-client.png)
+![BCD Kids](bcd_kids/docs/screenshots/bcd-kids-4-borrower.png)
 
-A colorful, touch-friendly Godot 4.6 client designed for elementary school students (ages 6-11):
+A colorful, Desktop application designed for elementary school students (ages 6-11):
 
 **Features**:
-- ✅ Auto-discover BCD servers on the network (mDNS)
 - ✅ Borrow books (barcode scanning)
 - ✅ Return books
 - ✅ Search catalog with filters
@@ -52,9 +40,6 @@ A colorful, touch-friendly Godot 4.6 client designed for elementary school stude
 - **Windows** (`.exe` 64-bit)
 - **Linux** (`.x86_64` 64-bit)
 
-**Download**: See [Releases](https://github.com/Filirom1/bcd/releases)
-
-**Requirements**: The Kids client requires a BCD API server running on the network (auto-discovered via mDNS).
 
 **Documentation**: [`bcd_kids/README.md`](bcd_kids/README.md)
 

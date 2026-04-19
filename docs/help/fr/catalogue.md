@@ -128,7 +128,7 @@ aucune synchronisation ou configuration supplémentaire n'est nécessaire.
 
 ## Imprimer des étiquettes de codes-barres
 
-BCD4 utilise un workflow **étiquette-d'abord** : on imprime les codes-barres avant de cataloguer les livres, puis on scanne l'étiquette lors de la catalogage pour l'attribuer à l'exemplaire.
+BCD utilise un workflow **étiquette-d'abord** : on imprime les codes-barres avant de cataloguer les livres, puis on scanne l'étiquette lors de la catalogage pour l'attribuer à l'exemplaire.
 
 ### Workflow recommandé
 

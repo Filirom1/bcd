@@ -12,35 +12,23 @@
 1. Télécharger et extraire `BCD-vX.X.X-Windows.zip`
 2. Double-cliquer sur `bcd.exe` — l'application s'ouvre automatiquement
 
-**Python** (toutes plateformes) :
-```bash
-python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
-```
-Puis ouvrir **http://127.0.0.1:8000** dans le navigateur.
-
-**Client Godot** (interface pour CP-CM2) :
-- Télécharger depuis [Releases](https://github.com/Filirom1/bcd/releases) (Windows/Linux)
-- Découverte automatique des serveurs BCD sur le réseau (mDNS)
-- Nécessite un serveur BCD API en cours d'exécution
-
-Voir [`bcd_kids/README.md`](bcd_kids/README.md) pour les détails.
+Voir [`bcd_kids/README.md`](bcd_kids/README_FR.md) pour les détails.
 
 ---
 
 ## Clients
 
-### Interface web (par défaut)
+### Interface web (Admin)
 
 L'interface web principale s'exécute dans le navigateur et offre toutes les fonctionnalités de gestion de bibliothèque pour les bibliothécaires et le personnel.
 
-### Client Godot (enfants)
+### BCD Kids (enfants)
 
-![Client Godot](docs/screenshots/13-godot-client.png)
+![BCD Kids](bcd_kids/docs/screenshots/bcd-kids-4-borrower.png)
 
-Interface colorise et tactile Godot 4.6, conçue pour les élèves de primaire (6-11 ans) :
+Application conçue pour les élèves de primaire (6-11 ans) :
 
 **Fonctionnalités** :
-- Découverte automatique des serveurs BCD sur le réseau (mDNS)
 - Emprunter des livres (scan de code-barres)
 - Rendre des livres
 - Rechercher dans le catalogue avec filtres
@@ -48,8 +36,6 @@ Interface colorise et tactile Godot 4.6, conçue pour les élèves de primaire (
 - Bilingue (FR/EN)
 
 **Plateformes** : Windows (`.exe` 64 bits), Linux (`.x86_64` 64 bits)
-
-**Prérequis** : Un serveur BCD API doit être en cours d'exécution sur le réseau.
 
 **Documentation** : [`bcd_kids/README.md`](bcd_kids/README.md)
 

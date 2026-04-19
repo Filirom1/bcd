@@ -113,7 +113,7 @@ You have records with `mystery`, `Mystery`, `Crime fiction` and want everything 
 
 ## Printing barcode labels
 
-BCD4 uses a **label-first** workflow: you print barcodes before cataloging the books, then scan the label during cataloging to assign it to the copy.
+BCD uses a **label-first** workflow: you print barcodes before cataloging the books, then scan the label during cataloging to assign it to the copy.
 
 ### Recommended workflow
 

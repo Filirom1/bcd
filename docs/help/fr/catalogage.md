@@ -108,7 +108,7 @@ Si ta bibliothèque était déjà équipée de codes-barres avec un logiciel pr�
 
 ### Reprise des codes-barres existants
 
-Le code-barres d'inventaire (`item_id`) est un champ texte libre : BCD4 accepte n'importe quel format, qu'il soit numérique pur (`00123`), préfixé (`BCD001234`), ou alphanumériques mixte. Lors du catalogage d'un exemplaire déjà équipé, scanne simplement l'ancienne étiquette — BCD4 enregistre la valeur telle quelle.
+Le code-barres d'inventaire (`item_id`) est un champ texte libre : BCD accepte n'importe quel format, qu'il soit numérique pur (`00123`), préfixé (`BCD001234`), ou alphanumériques mixte. Lors du catalogage d'un exemplaire déjà équipé, scanne simplement l'ancienne étiquette — BCD enregistre la valeur telle quelle.
 
 **Import BiblioPuce :** lors d'un import CSV BiblioPuce (Admin → Importer catalogue → format BiblioPuce), les codes d'inventaire de l'ancien logiciel sont rapatriés automatiquement. Aucune saisie manuelle n'est nécessaire.
 
@@ -120,30 +120,30 @@ Si une partie du fonds a déjà des codes-barres numeriques et tu veux continuer
 2. Dans le champ **Commencer à partir de**, saisis le numéro suivant le dernier déjà utilisé (ex : si le dernier code-barres en service est `00847`, saisis `848`)
 3. Le système génère les prochains identifiants libres à partir de ce point, en sautant ceux déjà attribués
 
-> **Conseil :** Le générateur d'étiquettes de BCD4 produit des identifiants numériques. Si tu as besoin d'un préfixe fixe sur les étiquettes (voir section ci-dessous), configure-le dans Paramètres → Codes-barres avant d'imprimer.
+> **Conseil :** Le générateur d'étiquettes de BCD produit des identifiants numériques. Si tu as besoin d'un préfixe fixe sur les étiquettes (voir section ci-dessous), configure-le dans Paramètres → Codes-barres avant d'imprimer.
 
 ### Préfixe de code-barres (convention BiblioPuce)
 
-BiblioPuce et BCD4 utilisent la même convention de préfixe pour distinguer automatiquement les codes livres des codes élèves au banc de prêt :
+BiblioPuce et BCD utilisent la même convention de préfixe pour distinguer automatiquement les codes livres des codes élèves au banc de prêt :
 
 | Type | Préfixe par défaut | Exemple scanné |
 |------|--------------------|----------------|
 | Exemplaire (livre) | `.` (point) | `.00785` |
 | Emprunteur (élève) | `%` (pourcent) | `%10234` |
 
-Lorsque la douchette lit un code, BCD4 détecte le préfixe et sait immédiatement si c'est un livre ou une carte élève — sans que l'enseignant ait à changer de champ manuellement.
+Lorsque la douchette lit un code, BCD détecte le préfixe et sait immédiatement si c'est un livre ou une carte élève — sans que l'enseignant ait à changer de champ manuellement.
 
 **Si tu migres depuis BiblioPuce :** les codes de BiblioPuce utilisent déjà cette convention. Les étiquettes existantes sont compatibles sans modification.
 
 **Si tu n'utilises pas de préfixe** (douchette qui renvoie le numéro brut, ou ancien système différent) : laisse les champs de préfixe vides dans les Paramètres. Le préfixe est configurable — voir la section Paramètres → Codes-barres.
 
-> **Conseil :** Le préfixe est imprimé sur les étiquettes générées par BCD4 (Admin → Étiquettes). Si tu changes le préfixe dans les Paramètres après avoir déjà imprimé des étiquettes, les anciennes étiquettes ne seront plus reconnues correctement.
+> **Conseil :** Le préfixe est imprimé sur les étiquettes générées par BCD (Admin → Étiquettes). Si tu changes le préfixe dans les Paramètres après avoir déjà imprimé des étiquettes, les anciennes étiquettes ne seront plus reconnues correctement.
 
 ---
 
 ## Cataloguer un lot d'exemplaires (lecture suivie)
 
-Pour une lecture suivie en classe, tu as besoin de plusieurs exemplaires du même livre. Dans BCD4, une seule notice bibliographique peut avoir autant d'exemplaires que nécessaire.
+Pour une lecture suivie en classe, tu as besoin de plusieurs exemplaires du même livre. Dans BCD, une seule notice bibliographique peut avoir autant d'exemplaires que nécessaire.
 
 **Comment procéder :**
 
@@ -157,7 +157,7 @@ Pour une lecture suivie en classe, tu as besoin de plusieurs exemplaires du mêm
 
 ## Cataloguer une revue ou un magazine (périodique)
 
-Dans BCD4, **une revue = une notice** dans le catalogue, et **chaque numéro physique reçu = un exemplaire** rattaché à cette notice. Le champ **Numérotation** de l'exemplaire identifie le numéro (ex : `274`, `Avril 2026`, `Hors-série été 2025`).
+Dans BCD, **une revue = une notice** dans le catalogue, et **chaque numéro physique reçu = un exemplaire** rattaché à cette notice. Le champ **Numérotation** de l'exemplaire identifie le numéro (ex : `274`, `Avril 2026`, `Hors-série été 2025`).
 
 ### Créer la notice d'un nouveau titre de revue
 
