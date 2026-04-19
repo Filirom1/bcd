@@ -24,9 +24,9 @@ L'interface web principale s'exécute dans le navigateur et offre toutes les fon
 
 ### BCD Kids (enfants)
 
-![BCD Kids](bcd_kids/docs/screenshots/bcd-kids-4-borrower.png)
-
 Application conçue pour les élèves de primaire (6-11 ans) :
+
+![BCD Kids](bcd_kids/docs/screenshots/bcd-kids-4-borrower.png)
 
 **Fonctionnalités** :
 - Emprunter des livres (scan de code-barres)
@@ -37,7 +37,7 @@ Application conçue pour les élèves de primaire (6-11 ans) :
 
 **Plateformes** : Windows (`.exe` 64 bits), Linux (`.x86_64` 64 bits)
 
-**Documentation** : [`bcd_kids/README.md`](bcd_kids/README.md)
+**Documentation** : [`bcd_kids/README_FR.md`](bcd_kids/README_FR.md)
 
 ---
 

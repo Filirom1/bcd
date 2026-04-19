@@ -24,9 +24,9 @@ The main web interface runs in your browser and provides full library management
 
 ### BCD Kids
 
-![BCD Kids](bcd_kids/docs/screenshots/bcd-kids-4-borrower.png)
-
 A colorful, Desktop application designed for elementary school students (ages 6-11):
+
+![BCD Kids](bcd_kids/docs/screenshots/bcd-kids-4-borrower.png)
 
 **Features**:
 - ✅ Borrow books (barcode scanning)
