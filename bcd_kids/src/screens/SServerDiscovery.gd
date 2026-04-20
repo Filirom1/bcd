@@ -22,6 +22,11 @@ const SERVER_CARD = preload("res://src/components/ServerCard.tscn")
 @onready var _retry_btn: Button = %RetryBtn
 @onready var _clear_auth_btn: Button = %ClearAuthBtn
 
+const _LOCAL_CANDIDATES := [
+	{"addr": "127.0.0.1", "host": "127.0.0.1"},
+	{"addr": "[::1]", "host": "::1"},
+]
+
 var _discovering := false
 var _last_url := ""
 var _last_name := ""
@@ -98,55 +103,108 @@ func _discover_servers() -> void:
 	_refresh_btn.disabled = true
 	_clear_servers()
 
-	# Wait for mDNS browser to collect announcements before querying
+	# Wait for mDNS browser to collect announcements and server to start
 	await get_tree().create_timer(1.5).timeout
 
-	var discovery_url := "http://localhost:8000/api/v1"
-	var previous_base_url := GS.base_url
-	GS.base_url = discovery_url
+	var manual_port := _get_port()
+	var working_locals := await _find_working_locals(manual_port, 0.8)
 
-	var peers := await _fetch_peers()
+	# Fetch mDNS peers via the first working local address
+	var peers: Array = []
+	if not working_locals.is_empty():
+		var previous_base_url := GS.base_url
+		GS.base_url = working_locals[0].url + "/api/v1"
+		peers = await _fetch_peers()
+		GS.base_url = previous_base_url if previous_base_url else ""
 
-	GS.base_url = previous_base_url if previous_base_url else ""
+	# Probe locals with any port found in mDNS peer URLs (not yet tried)
+	var tried_ports := {manual_port: true}
+	for peer in peers:
+		var p := _extract_port(peer.get("url", ""))
+		if not tried_ports.has(p):
+			tried_ports[p] = true
+			working_locals += await _find_working_locals(p, 0.8)
 
-	if not peers.is_empty():
+	# Show mDNS peers that actually respond — .local may fail when client
+	# and server are on the same machine, so we probe before adding a card
+	var shown := 0
+	for peer in peers:
+		var peer_api: String = peer.get("url", "").rstrip("/")
+		if peer_api.is_empty():
+			continue
+		if await _probe_url(peer_api + "/admin/settings", 0.8):
+			_display_servers([peer])
+			shown += 1
+
+	# Show local addresses that responded (127.0.0.1 and/or ::1)
+	for local in working_locals:
+		_add_local_card(local.url + "/api/v1", local.host)
+		shown += 1
+
+	if shown > 0:
 		_hide_splash()
-		_display_servers(peers)
 		_refresh_btn.disabled = false
 		_discovering = false
 		return
 
-	# No peers found — keep splash visible and retry until localhost is ready
-	# or 10 s total have elapsed (covers slow Alembic + uvicorn startup on HDD).
-	# Connection-refused is immediate so each probe costs < 50 ms.
+	# Nothing found yet — retry loop for slow server startup on HDD
+	# Connection-refused is instant so each probe costs < 50 ms
 	var deadline := Time.get_ticks_msec() + 8500  # 1.5 s already spent above
 	while Time.get_ticks_msec() < deadline:
-		if await _check_localhost_ready():
+		working_locals = await _find_working_locals(manual_port, 0.8)
+		if not working_locals.is_empty():
 			_hide_splash()
-			_add_localhost_card()
+			for local in working_locals:
+				_add_local_card(local.url + "/api/v1", local.host)
 			_refresh_btn.disabled = false
 			_discovering = false
 			return
 		await get_tree().create_timer(0.5).timeout
 
-	# Time is up — hide splash and do one final check with a longer timeout
 	_hide_splash()
-	await _test_and_add_localhost()
-
 	_refresh_btn.disabled = false
 	_discovering = false
 
-func _check_localhost_ready() -> bool:
+func _get_port() -> int:
+	return _extract_port(_manual_input.text.strip_edges())
+
+func _extract_port(text: String, default_port: int = 8000) -> int:
+	if text.is_empty():
+		return default_port
+	if "://" in text:
+		text = text.split("://")[1]
+	if "/" in text:
+		text = text.split("/")[0]
+	# rfind handles IPv6 brackets: [::1]:8080
+	var last_colon := text.rfind(":")
+	if last_colon == -1:
+		return default_port
+	var port_str := text.substr(last_colon + 1)
+	if port_str.is_valid_int():
+		var port := port_str.to_int()
+		if port > 0 and port <= 65535:
+			return port
+	return default_port
+
+func _probe_url(url: String, timeout: float) -> bool:
 	var http := HTTPRequest.new()
-	http.timeout = 0.8
+	http.timeout = timeout
 	add_child(http)
-	var error := http.request("http://localhost:8000/api/v1/admin/settings", [], HTTPClient.METHOD_GET)
+	var error := http.request(url, [], HTTPClient.METHOD_GET)
 	if error != OK:
 		http.queue_free()
 		return false
 	var response = await http.request_completed
 	http.queue_free()
 	return response[1] >= 200 and response[1] < 500
+
+func _find_working_locals(port: int, timeout: float) -> Array:
+	var result := []
+	for candidate in _LOCAL_CANDIDATES:
+		var base_url := "http://%s:%d" % [candidate.addr, port]
+		if await _probe_url(base_url + "/api/v1/admin/settings", timeout):
+			result.append({"url": base_url, "host": candidate.host})
+	return result
 
 func _fetch_peers() -> Array:
 	var http := HTTPRequest.new()
@@ -165,23 +223,10 @@ func _fetch_peers() -> Array:
 		return []
 	return json.data if json.data is Array else []
 
-func _test_and_add_localhost() -> void:
-	var http := HTTPRequest.new()
-	http.timeout = 2.0
-	add_child(http)
-	var error := http.request("http://localhost:8000/api/v1/admin/settings", [], HTTPClient.METHOD_GET)
-	if error != OK:
-		http.queue_free()
-		return
-	var response = await http.request_completed
-	http.queue_free()
-	if response[1] >= 200 and response[1] < 500:
-		_add_localhost_card()
-
-func _add_localhost_card() -> void:
+func _add_local_card(api_url: String, host_label: String) -> void:
 	var card := SERVER_CARD.instantiate() as ServerCard
 	_servers_container.add_child(card)
-	card.setup({"library_code": I18n.t("server_discovery.localhost_default"), "url": "http://localhost:8000/api/v1", "host": "localhost"}, true)
+	card.setup({"library_code": I18n.t("server_discovery.localhost_default"), "url": api_url, "host": host_label}, true)
 	card.connect_pressed.connect(_select_server)
 	card.admin_pressed.connect(func(url): OS.shell_open(url))
 
