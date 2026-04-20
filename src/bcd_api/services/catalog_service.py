@@ -36,38 +36,15 @@ logger = logging.getLogger(__name__)
 
 def _download_cover(isbn: str) -> Optional[str]:
     """
-    Fetch cover from Open Library and cache locally.
+    Download a cover image, trying multiple providers (Amazon, Open Library,
+    Google Books, geobib/BNF) in cascade.
 
-    Accepts identifiers with or without ``isbn:`` prefix.
-    Returns None immediately for ``issn:`` identifiers (periodicals have no covers).
-    Returns the filename ('{bare_isbn}.jpg') on success, None if no cover or on error.
+    Accepts identifiers with or without ``isbn:`` / ``issn:`` prefix.
+    Returns the filename ('{isbn}.jpg') on success, None if no cover found.
     Idempotent: returns the cached filename if the file already exists.
     """
-    if not isbn:
-        return None
-    # Skip periodicals — Open Library does not index covers by ISSN
-    if isbn.lower().startswith("issn:"):
-        return None
-    # Strip isbn: prefix (new storage format)
-    bare = isbn[5:] if isbn.lower().startswith("isbn:") else isbn
-    normalized = bare.replace("-", "").replace(".", "").replace(" ", "")
-    dest = Path("data/covers")
-    dest.mkdir(parents=True, exist_ok=True)
-    filepath = dest / f"{normalized}.jpg"
-
-    if filepath.exists():
-        return f"{normalized}.jpg"
-
-    url = f"https://covers.openlibrary.org/b/isbn/{normalized}-M.jpg?default=false"
-    try:
-        resp = httpx.get(url, timeout=10, follow_redirects=True)
-        if resp.status_code == 200:
-            filepath.write_bytes(resp.content)
-            logger.info(f"Cover cached for ISBN {normalized}")
-            return f"{normalized}.jpg"
-    except Exception:
-        logger.warning(f"Cover download failed for ISBN {normalized}", exc_info=True)
-    return None
+    from . import cover_service
+    return cover_service.download_cover(isbn, covers_dir=Path("data/covers"))
 
 
 _EAN13_PERIODICAL_RE = re.compile(r"^977(\d{7})\d{3}$")

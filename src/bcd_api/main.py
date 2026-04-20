@@ -18,6 +18,7 @@ from src.bcd_api.core.auth import DigestAuthMiddleware, is_auth_enabled
 from src.bcd_api.api.v1.router import api_router
 from src.bcd_api.core import mdns
 from src.bcd_api.services.bnf_service import configure as configure_bnf
+from src.bcd_api.services.cover_service import configure as configure_covers
 from src.bcd_api.services.google_books_service import configure as configure_google_books
 from src.bcd_api.services.sudoc_service import configure as configure_sudoc
 
@@ -83,6 +84,7 @@ async def lifespan(app: FastAPI):
         api_key=settings.google_books_api_key or None,
         rate_limit=settings.google_books_rate_limit,
     )
+    configure_covers(google_api_key=settings.google_books_api_key or None)
     configure_sudoc(url=settings.sudoc_api_url, rate_limit=settings.sudoc_rate_limit)
     await init_system_settings()
     asyncio.create_task(auto_backup_if_needed())
