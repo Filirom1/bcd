@@ -506,7 +506,24 @@ psql -U bcd_user bcd < bcd_backup_20260205.sql
 
 ### Option 1: Windows/Linux Portable Edition
 
-Database migrations run **automatically** on launch — no manual steps needed.
+#### Automatic update (recommended)
+
+BCD checks for new releases on GitHub each time it starts (requires internet access; silently skipped when offline).
+
+When a new version is available you will see a dialog in your OS language (French or English):
+
+> **Mise à jour disponible** / **Update available**
+> BCD vX.Y.Z est disponible. / BCD vX.Y.Z is available.
+> Voulez-vous mettre à jour maintenant ? / Do you want to update now?
+> [Oui / Yes] [Non / No]
+
+Click **Oui** — BCD downloads the archive, replaces all its own files (`bcd.exe` / `bcd`, `_internal/`, `BCD-Kids.exe` / `BCD-Kids.x86_64`), and restarts automatically. Your `data/` and `config/` folders are never touched.
+
+Database migrations run automatically on the restarted instance — no manual steps needed.
+
+#### Manual update (fallback)
+
+Use this if the automatic update fails or if the machine has no internet access.
 
 1. **Create a backup** (Settings page in the web UI, or copy `data/` folder)
 
@@ -520,13 +537,12 @@ Database migrations run **automatically** on launch — no manual steps needed.
    ```
    old-folder/config/  →  new-folder/config/
    old-folder/data/    →  new-folder/data/
-   old-folder/backups/ →  new-folder/backups/   (optional)
    ```
 
 6. **Launch** `bcd.exe` (Windows) or `./bcd` (Linux) from the new folder
-   - Migrations apply automatically on first launch
+   — migrations apply automatically on first launch
 
-7. **Verify** the application works correctly, then delete the old folder
+7. Verify the application works correctly, then delete the old folder
 
 ### Option 2: Python Installation
 

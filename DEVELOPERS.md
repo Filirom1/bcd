@@ -790,6 +790,77 @@ perf: optimize catalog search query with indexes
 
 ---
 
+## Auto-Update (Portable Builds)
+
+### Overview
+
+`src/bcd_api/core/updater.py` implements GitHub-based self-update for the portable (PyInstaller) build. It runs synchronously in `main()` after `initialize_portable_environment()`, before the UI starts. It is a no-op in dev mode (`is_portable()` returns `False`).
+
+### Flow
+
+```
+main() [portable only]
+  └─ check_and_apply_update(current_version, app_dir)
+       ├─ _cleanup_stale_update()          remove bcd.exe.old + update/
+       ├─ _is_online()                     socket check to api.github.com:443 (3 s timeout)
+       │    └─ False → return (no dialog)
+       ├─ check_for_update()               GET /repos/Filirom1/bcd/releases/latest
+       │    └─ None → return (up to date)
+       ├─ _show_yes_no()                   tkinter dialog: "BCD vX.Y.Z available?"
+       │    └─ No  → return
+       ├─ _download_with_progress()        urllib.request + tkinter progress window
+       └─ _apply_update_{windows,linux}()
+            ├─ extract ZIP / tar.gz to update/extracted/
+            ├─ write update.bat / update.sh
+            ├─ launch script (detached / new session)
+            └─ sys.exit(0)
+```
+
+### Windows file-locking strategy
+
+Windows locks the running executable and every DLL loaded from `_internal/`. The update script runs *after* `sys.exit(0)` closes all handles:
+
+| File | Technique |
+|------|-----------|
+| `bcd.exe` | `move bcd.exe bcd.exe.old` (rename works on open handles), then `copy` new exe |
+| `_internal/*.dll` | `robocopy /R:5 /W:2` — 5 retries × 2 s for any briefly-locked DLL |
+| `BCD-Kids.exe` + `.pck` | Plain `copy` (never locked by `bcd.exe`) |
+
+The batch script uses `ping -n 5 127.0.0.1` (~4 s wait) before touching files, giving the Python runtime time to fully exit. `bcd.exe.old` and `update/` are cleaned up on the *next* startup via `_cleanup_stale_update()`.
+
+### Linux
+
+Linux allows overwriting a running binary (the kernel keeps the old inode open until the last reference drops). A plain `cp` after `sleep 2` is sufficient. The script runs in a new session (`start_new_session=True`).
+
+### GitHub release assets
+
+The updater matches assets by suffix:
+
+| Platform | Asset |
+|----------|-------|
+| `win32` | `BCD-v{VERSION}-Windows.zip` |
+| Linux | `BCD-v{VERSION}-Linux.tar.gz` |
+
+These are produced by `.github/workflows/release.yml` on every `v*.*.*` tag.
+
+### Adding the updater to a new platform
+
+1. Add a new `_apply_update_{platform}()` function in `updater.py`
+2. Extend the `sys.platform` branch in `check_and_apply_update()`
+3. Match the correct asset suffix in `check_for_update()`
+
+### Language detection
+
+All dialog strings are localised. `_detect_lang()` calls `locale.getdefaultlocale()` which reads the OS UI language (Windows locale settings on Windows, `LANG`/`LC_ALL` on Linux). Returns `'fr'` when the locale starts with `fr`, `'en'` otherwise. Strings are defined in the `_STRINGS` dict at the top of `updater.py`; `_t(key, **kwargs)` retrieves the right one.
+
+To add a language, add a new entry to `_STRINGS` and extend `_detect_lang()`.
+
+### tkinter in the PyInstaller bundle
+
+`tkinter` and `tkinter.messagebox` are listed in `hiddenimports` in `bcd.spec` so PyInstaller includes them. No extra runtime dependency is needed — tkinter ships with every CPython 3.x distribution.
+
+---
+
 ## Deployment
 
 See [INSTALL.md](INSTALL.md) for detailed deployment instructions.

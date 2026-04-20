@@ -192,6 +192,18 @@ Key constitution rules to internalize:
 
 Web UI translations: `src/bcd_web_vue/locales/en.json` and `fr.json`. Both files must be updated together. Missing keys fall back to English.
 
+## Auto-Update (Portable Builds)
+
+`src/bcd_api/core/updater.py` — runs at startup in portable mode only.
+
+- Checks `https://api.github.com/repos/Filirom1/bcd/releases/latest` (skipped silently if offline)
+- Compares tag version with `settings.app_version`; detects OS language via `locale.getdefaultlocale()` and shows a tkinter yes/no dialog in French or English if a newer release exists
+- Downloads the platform archive (`BCD-v{VERSION}-Windows.zip` or `BCD-v{VERSION}-Linux.tar.gz`) with a progress window
+- **Windows**: writes `update.bat`, launches it fully detached (`DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`), then calls `sys.exit(0)` — the batch waits ~4 s (ping trick), renames `bcd.exe` → `bcd.exe.old`, copies new exe + uses `robocopy /R:5 /W:2` for `_internal/` (handles briefly-locked DLLs), replaces Kids client, then relaunches
+- **Linux**: writes `update.sh`, launches it in a new session, then exits — plain `cp` after `sleep 2` is safe (kernel keeps old inode open)
+- Cleans up `bcd.exe.old` and `update/` on every startup (handles interrupted updates)
+- All errors are non-fatal; startup continues normally on any failure
+
 ## External Integrations
 
 **BNF API** (French National Library): `src/bcd_api/services/bnf_service.py`. SRU protocol, XML responses, rate-limited to 1 req/s. Always mock in tests.

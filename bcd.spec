@@ -74,6 +74,9 @@ hiddenimports = [
     'webview.platforms',
     'webview.guilib',
     'webview.platforms.winforms' if is_windows else 'webview.platforms.gtk',
+    # tkinter — used by the auto-updater dialog (stdlib, must be listed explicitly)
+    'tkinter',
+    'tkinter.messagebox',
 ]
 
 # Data files to include in the bundle
