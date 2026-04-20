@@ -276,7 +276,30 @@ async def capture_screenshots(base_url: str, demo: dict, output_dir: Path) -> tu
             pass
         await shoot("catalog-02-results.png")
 
-        await navigate(f"catalog/{rec_id}", ".catalog-page")
+        # catalog-03: open a book detail modal by clicking on the first result
+        # Detail is a modal (not a separate route) — triggered by clicking a record
+        await navigate("catalog", ".catalog-page")
+        try:
+            # Clear "Emprunts en cours" filter
+            await page.evaluate("""
+                () => {
+                    const btns = Array.from(document.querySelectorAll('button'));
+                    const btn = btns.find(b => b.textContent.includes('Effacer')
+                                             || b.textContent.includes('Clear'));
+                    if (btn) btn.click();
+                }
+            """)
+            await page.wait_for_timeout(600)
+            # Type a short search to get results
+            await page.fill('input[placeholder*="auteur"]', book_title)
+            await page.wait_for_timeout(1500)
+            # Click the first record title (span.link-entity) to open the detail modal
+            await page.click('span.link-entity.fw-bold', timeout=3000)
+            # Wait for the modal to appear
+            await page.wait_for_selector('.modal.show', timeout=5000)
+            await page.wait_for_timeout(800)
+        except Exception:
+            pass
         await shoot("catalog-03-detail.png")
 
         # ── Cataloging ───────────────────────────────────────────────
@@ -358,10 +381,29 @@ async def capture_screenshots(base_url: str, demo: dict, output_dir: Path) -> tu
         await navigate("borrowers", ".borrowers-page")
         await shoot("borrowers-01-list.png")
 
-        await navigate(f"borrowers/{borrower_id}", ".borrowers-page")
+        # borrowers-02: open active borrower detail modal by searching and clicking
+        # Detail is a modal (not a separate route) — triggered by clicking a row
+        await navigate("borrowers", ".borrowers-page")
+        try:
+            await page.fill('input[placeholder*="Nom"]', borrower_id)
+            await page.wait_for_timeout(1200)
+            await page.click('span.link-entity.fw-bold', timeout=3000)
+            await page.wait_for_selector('.modal.show', timeout=5000)
+            await page.wait_for_timeout(800)
+        except Exception:
+            pass
         await shoot("borrowers-02-detail.png")
 
-        await navigate(f"borrowers/{blocked_id}", ".borrowers-page")
+        # borrowers-03: open blocked borrower detail modal
+        await navigate("borrowers", ".borrowers-page")
+        try:
+            await page.fill('input[placeholder*="Nom"]', blocked_id)
+            await page.wait_for_timeout(1200)
+            await page.click('span.link-entity.fw-bold', timeout=3000)
+            await page.wait_for_selector('.modal.show', timeout=5000)
+            await page.wait_for_timeout(800)
+        except Exception:
+            pass
         await shoot("borrowers-03-block.png")
 
         await navigate("borrowers", ".borrowers-page")
@@ -407,7 +449,7 @@ async def capture_screenshots(base_url: str, demo: dict, output_dir: Path) -> tu
         await shoot("reports-03-print.png")
 
         # CREW Weeding report - Never Borrowed method
-        await navigate("reports/crew", ".reports-page")
+        await navigate("reports/never-borrowed", ".reports-page")
         await page.wait_for_timeout(1500)
         await shoot("reports-04-crew-method.png")
 
@@ -419,14 +461,33 @@ async def capture_screenshots(base_url: str, demo: dict, output_dir: Path) -> tu
             pass
         await shoot("reports-05-crew-results.png")
 
+        # Holds report (réservations)
+        await navigate("reports/holds", ".reports-page")
+        await page.wait_for_timeout(1200)
+        await shoot("reports-06-holds.png")
+
+        # Active loans report (prêts en cours)
+        await navigate("reports/active-loans", ".reports-page")
+        await page.wait_for_timeout(1200)
+        await shoot("reports-07-active-loans.png")
+
         # ── Inventory ────────────────────────────────────────────────
         await navigate("inventory", ".inventory-page")
         await page.wait_for_timeout(1200)
         await shoot("inventory-01-scan.png")
 
-        # Switch to Search tab
+        # Switch to Search tab (tabs use Vue @click handlers, no data-bs-target)
         try:
-            await page.click('button[data-bs-target="#search-tab"]', timeout=3000)
+            await page.evaluate("""
+                () => {
+                    const links = document.querySelectorAll('.nav-pills .nav-link');
+                    const searchLink = Array.from(links).find(
+                        l => l.textContent.trim().toLowerCase().includes('recherch')
+                          || l.textContent.trim().toLowerCase().includes('search')
+                    );
+                    if (searchLink) searchLink.click();
+                }
+            """)
             await page.wait_for_timeout(800)
         except Exception:
             pass

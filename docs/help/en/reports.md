@@ -129,6 +129,8 @@ The report can also be exported as a CSV file for processing in a spreadsheet.
 
 ## Step 4 — Holds report
 
+![Holds report](../images/reports-06-holds.png)
+
 Lists all active reservations with their current status.
 
 **Available filters:**
@@ -146,6 +148,8 @@ For each hold, the report shows:
 - **Expiration date**
 
 ## Step 5 — Active loans report
+
+![Active loans report](../images/reports-07-active-loans.png)
 
 Lists all items currently on loan, grouped by class.
 

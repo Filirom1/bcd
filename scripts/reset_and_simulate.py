@@ -89,11 +89,16 @@ def create_classes(session, class_names):
     # Import Class model HERE
     from src.bcd_api.models.class_model import Class
 
+    # Average age per grade level (French primary school)
+    GRADE_AGES = {'CP': 6, 'CE1': 7, 'CE2': 8, 'CM1': 9, 'CM2': 10}
+
     classes = {}
     for class_name in sorted(set(class_names)):
+        grade = class_name.split('-')[0]
         class_obj = Class(
             name=class_name,
-            notes="Imported from students CSV"
+            notes="Imported from students CSV",
+            average_age=GRADE_AGES.get(grade),
         )
         session.add(class_obj)
         classes[class_name] = class_obj
@@ -101,6 +106,21 @@ def create_classes(session, class_names):
     session.commit()
     print(f"✓ Created {len(classes)} classes: {', '.join(sorted(classes.keys()))}")
     return classes
+
+
+def recount_student_counts(session, classes):
+    """Update the denormalized student_count on each class after bulk import."""
+    from src.bcd_api.models.borrower import Borrower
+
+    for class_obj in classes.values():
+        count = session.query(Borrower).filter(
+            Borrower.class_id == class_obj.id
+        ).count()
+        class_obj.student_count = count
+
+    session.commit()
+    total = sum(c.student_count for c in classes.values())
+    print(f"✓ Student counts updated ({total} students across {len(classes)} classes)")
 
 
 def import_students(session, classes, project_root):
@@ -377,16 +397,30 @@ def create_teachers_and_staff(session, classes):
     from src.bcd_api.models.item import Item
     from src.shared.constants import BorrowerRole
 
+    # Realistic French teacher names — one per class (sorted alphabetical class order)
+    TEACHER_DATA = [
+        ("Sophie",    "Martin",    "Mme Martin"),
+        ("Pierre",    "Bernard",   "M. Bernard"),
+        ("Claire",    "Dupont",    "Mme Dupont"),
+        ("François",  "Simon",     "M. Simon"),
+        ("Nathalie",  "Leroy",     "Mme Leroy"),
+        ("Julien",    "Moreau",    "M. Moreau"),
+        ("Marie",     "Petit",     "Mme Petit"),
+        ("Isabelle",  "Lambert",   "Mme Lambert"),
+        ("Thomas",    "Rousseau",  "M. Rousseau"),
+    ]
+
     class_list = list(classes.values())
     teachers = []
 
     for i, class_obj in enumerate(class_list):
         grade = class_obj.name.split('-')[0] if '-' in class_obj.name else class_obj.name
+        first, last, display = TEACHER_DATA[i] if i < len(TEACHER_DATA) else (f"Enseignant{i+1}", class_obj.name, f"Ens. {class_obj.name}")
         teacher = Borrower(
             borrower_id=f"T{100 + i:03d}",
-            first_name=f"Enseignant{i + 1}",
-            last_name=class_obj.name,
-            full_name=f"Enseignant{i + 1} {class_obj.name}",
+            first_name=first,
+            last_name=last.upper(),
+            full_name=f"{first} {last.upper()}",
             role=BorrowerRole.TEACHER.value,
             class_id=class_obj.id,
             grade_level=grade,
@@ -394,6 +428,8 @@ def create_teachers_and_staff(session, classes):
         )
         session.add(teacher)
         teachers.append(teacher)
+        # Update class homeroom_teacher field
+        class_obj.homeroom_teacher = display
 
     directeur = Borrower(
         borrower_id="DIR001",
@@ -628,6 +664,7 @@ def main():
         # Step 7: Import students
         print("Step 5: Importing students...")
         import_students(session, classes, project_root)
+        recount_student_counts(session, classes)
         print()
 
         # Step 8: Simulate activity

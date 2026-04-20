@@ -136,6 +136,8 @@ Le rapport peut aussi être exporté au format CSV pour un traitement dans un ta
 
 ## Étape 6 — Rapport des réservations
 
+![Rapport des réservations](../images/reports-06-holds.png)
+
 Ce rapport liste toutes les réservations enregistrées, avec leur statut.
 
 **Filtres disponibles :**
@@ -153,6 +155,8 @@ Pour chaque réservation, le rapport indique :
 - La **date d’expiration**
 
 ## Étape 7 — Rapport des prêts en cours
+
+![Rapport des prêts en cours](../images/reports-07-active-loans.png)
 
 Ce rapport liste tous les exemplaires actuellement empruntés, groupés par classe.
 
