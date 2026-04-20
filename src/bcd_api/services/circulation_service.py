@@ -98,21 +98,6 @@ def checkout_items(
             reason=borrower.blocked_reason or 'Account inactive'
         )
 
-    # Check for overdue items - borrower cannot checkout if they have overdue items
-    overdue_count = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower.id,
-            CirculationTransaction.return_date.is_(None),
-            CirculationTransaction.due_date < date.today()
-        )
-    ).count()
-
-    if overdue_count > 0:
-        raise BorrowerHasOverdueItemsException(
-            borrower_id=borrower_id,
-            overdue_count=overdue_count
-        )
-
     # Count current active loans
     current_loans = db.query(CirculationTransaction).filter(
         and_(
@@ -265,7 +250,7 @@ def checkout_items(
                 "item_id": t.item.item_id,
                 "title": t.bibliographic_record.title,
                 "call_number": t.item.call_number,
-                "display_title": _display_title(t.bibliographic_record.title, t.item.call_number),
+                "display_title": _display_title(t.bibliographic_record.title),
                 "due_date": t.due_date,
                 "cover_image": t.bibliographic_record.cover_image,
             }
@@ -377,36 +362,12 @@ def return_items(
         else:
             returned_item["hold_ready"] = None
 
-    # Check if any borrowers should be UNBLOCKED (no longer have overdue items)
-    # NOTE: Blocking happens during checkout when overdue items are detected
-    unblocked_borrowers = []
-    for borrower_id in borrowers_to_check:
-        borrower = db.query(Borrower).filter(Borrower.id == borrower_id).first()
-
-        # Only process if borrower was blocked for overdue items
-        if not borrower.active and borrower.blocked_reason and "overdue" in borrower.blocked_reason.lower():
-            # Count remaining overdue items for this borrower
-            overdue_count = db.query(CirculationTransaction).filter(
-                and_(
-                    CirculationTransaction.borrower_id == borrower_id,
-                    CirculationTransaction.return_date.is_(None),
-                    CirculationTransaction.due_date < date.today()
-                )
-            ).count()
-
-            if overdue_count == 0:
-                # Unblock borrower - all overdue items have been returned
-                borrower.active = True
-                borrower.blocked_reason = None
-                unblocked_borrowers.append(borrower.borrower_id)
-
     db.commit()
 
     return ReturnResponse(
         items_returned=len(returned_items),
         return_date=return_date,
         items=returned_items,
-        borrowers_blocked=unblocked_borrowers  # Now contains unblocked borrowers
     )
 
 
@@ -560,7 +521,7 @@ def get_borrower_current_loans(
             "bibliographic_record_id": t.bibliographic_record.id,
             "title": t.bibliographic_record.title,
             "call_number": t.item.call_number,
-            "display_title": _display_title(t.bibliographic_record.title, t.item.call_number),
+            "display_title": _display_title(t.bibliographic_record.title),
             "authors": ", ".join(json.loads(t.bibliographic_record.authors)) if t.bibliographic_record.authors else None,
             "checkout_date": t.checkout_date,
             "due_date": t.due_date,

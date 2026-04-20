@@ -75,7 +75,6 @@ class ReturnResponse(BaseModel):
     items_returned: int
     return_date: datetime
     items: list[dict] = Field(..., description="Returned items with details")
-    borrowers_blocked: list[str] = Field(..., description="Borrower IDs that were blocked due to overdue items")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -112,8 +111,7 @@ class ReturnResponse(BaseModel):
                         "days_overdue": 3,
                         "hold_ready": None
                     }
-                ],
-                "borrowers_blocked": ["102"],
+                ]
             }
         }
     )

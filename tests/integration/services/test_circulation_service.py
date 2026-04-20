@@ -333,58 +333,6 @@ class TestReturnScenarios:
         assert returned_item["was_overdue"] is True
         assert returned_item["days_overdue"] == 5
 
-        # Verify borrower was NOT blocked (no more overdue items)
-        # Note: Auto-blocking only happens if borrower still has OTHER overdue items
-        assert len(response.borrowers_blocked) == 0
-
-    def test_return_overdue_borrower_blocked_if_still_has_overdue(
-        self, db_session, test_borrower_student, test_item_available, test_item_available_2
-    ):
-        """
-        Test that borrower with overdue items cannot checkout new items
-        (Blocking happens during checkout, not during return)
-        """
-        # Arrange - Checkout 2 items
-        circulation_service.checkout_items(
-            db=db_session,
-            borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id, test_item_available_2.item_id]
-        )
-
-        # Make both overdue
-        transactions = db_session.query(CirculationTransaction).filter(
-            CirculationTransaction.borrower_id == test_borrower_student.id,
-            CirculationTransaction.return_date.is_(None)
-        ).all()
-
-        for t in transactions:
-            t.due_date = date.today() - timedelta(days=3)
-        db_session.commit()
-
-        # Act - Return only ONE overdue item (borrower still has 1 overdue)
-        response = circulation_service.return_items(
-            db=db_session,
-            item_ids=[test_item_available.item_id]
-        )
-
-        # Assert - Return does NOT block borrowers (borrowers_blocked should be empty)
-        assert len(response.borrowers_blocked) == 0
-
-        # Borrower should still be active (blocking happens during checkout, not return)
-        db_session.refresh(test_borrower_student)
-        assert test_borrower_student.active is True
-
-        # But borrower CANNOT checkout new items due to having overdue items
-        with pytest.raises(BorrowerHasOverdueItemsException) as exc_info:
-            circulation_service.checkout_items(
-                db=db_session,
-                borrower_id=test_borrower_student.borrower_id,
-                item_ids=[test_item_available.item_id]  # Try to checkout the returned item again
-            )
-
-        assert "overdue" in str(exc_info.value.detail).lower()
-        assert "1 overdue item(s)" in exc_info.value.detail
-
     def test_return_item_not_on_loan(self, db_session, test_item_available):
         """
         Edge Case: Attempt to return item that's not checked out

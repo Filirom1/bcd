@@ -1,4 +1,4 @@
-# Screen: Book Cover — shown when tapping a loan title
+# Screen: Book Cover — shown when tapping a loan thumbnail
 extends Control
 
 @onready var _bg: ColorRect = %Background
@@ -18,7 +18,11 @@ func _ready() -> void:
 	_title_lbl.text = loan.get("display_title", loan.get("title", ""))
 
 	var authors = loan.get("authors", [])
-	var authors_text := ", ".join(authors) if authors is Array and not authors.is_empty() else ""
+	var authors_text: String
+	if authors is Array:
+		authors_text = ", ".join(authors) if not authors.is_empty() else ""
+	else:
+		authors_text = str(authors) if authors != null else ""
 	_authors_lbl.text = authors_text
 	_authors_lbl.visible = not authors_text.is_empty()
 
@@ -26,16 +30,12 @@ func _ready() -> void:
 	_due_lbl.text = "⏰ " + due_date if due_date else ""
 	_due_lbl.visible = not due_date.is_empty()
 
-	# Try to fetch bibliographic record to get cover_image filename
-	var biblio_id := int(loan.get("bibliographic_record_id", 0))
-	if biblio_id > 0:
-		var record = await API.get_bibliographic_record(biblio_id)
-		if not record.has("error"):
-			var cover_file: String = str(record.get("cover_image", "")) if record.get("cover_image") != null else ""
-			if not cover_file.is_empty():
-				_load_cover(cover_file)
-				return
-	_show_no_cover()
+	# cover_image is already in the loan — no extra API call needed
+	var cover_file: String = loan.get("cover_image", "") if loan.get("cover_image") != null else ""
+	if not cover_file.is_empty():
+		_load_cover(cover_file)
+	else:
+		_show_no_cover()
 
 func _load_cover(filename: String) -> void:
 	var url := API.get_cover_url(filename)

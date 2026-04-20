@@ -119,21 +119,25 @@ func _return_item(item_id: String) -> void:
 func _renew_item(item_id: String) -> void:
 	var result = await API.renew_items(GS.current_borrower.get("borrower_id", ""), [item_id])
 	if result.has("error"):
-		Mgr.notify(I18n.t("common.error_unknown"), "error")
+		var code: String = result.get("detail", {}).get("code", "")
+		match code:
+			"no_renewable_items":
+				Mgr.notify(I18n.t("main_menu.renew_no_items"), "error")
+			_:
+				Mgr.notify(I18n.t("common.error_unknown"), "error")
 		return
 	var renewed = result.get("renewed", [])
 	if renewed.is_empty():
-		Mgr.notify(I18n.t("common.error_unknown"), "error")
+		Mgr.notify(I18n.t("main_menu.renew_no_items"), "error")
 		return
 	var new_date: String = renewed[0].get("new_due_date", "")
-	Mgr.notify("✅ Renouvelé jusqu'au %s" % new_date, "success")
+	Mgr.notify(I18n.t("main_menu.renew_success", {"date": new_date}), "success")
 	var loans_result = await API.get_current_loans(GS.current_borrower.get("borrower_id", ""))
 	if not loans_result.has("error"):
 		GS.current_loans = loans_result.get("loans", [])
 		GS.current_borrower.current_loans_count = GS.current_loans.size()
 		_refresh_loans()
 		_update_counter()
-
 func _show_book_cover(loan: Dictionary) -> void:
 	GS.current_class["_temp_loan_for_cover"] = loan
 	Mgr.push("book_cover")

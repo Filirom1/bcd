@@ -29,7 +29,9 @@
 		"return_button": "Return",
 		"no_loans": "No books borrowed",
 		"overdue": "Overdue",
-		"no_holds": "No reservations"
+		"no_holds": "No reservations",
+		"renew_no_items": "This book cannot be renewed",
+		"renew_success": "Renewed until {date}"
 	},
 	"checkout": {
 		"title": "Checkout",
