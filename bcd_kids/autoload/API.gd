@@ -76,6 +76,21 @@ func get_borrower(borrower_id: String):
 func get_current_loans(borrower_id: String):
 	return await _request("GET", "/circulation/borrower/" + borrower_id + "/items")
 
+func renew_items(borrower_id: String, item_ids: Array = []):
+	var body: Dictionary = {"borrower_id": borrower_id}
+	if not item_ids.is_empty():
+		body["item_ids"] = item_ids
+	return await _request("POST", "/circulation/renew", body)
+
+func get_bibliographic_record(biblio_id: int):
+	return await _request("GET", "/catalog/bibliographic/" + str(biblio_id))
+
+func get_cover_url(cover_filename: String) -> String:
+	var base := GS.base_url.rstrip("/")
+	if "/api/v1" in base:
+		base = base.split("/api/v1")[0]
+	return base + "/covers/" + cover_filename
+
 func checkout(borrower_id: String, item_ids: Array):
 	var body = {
 		"borrower_id": borrower_id,

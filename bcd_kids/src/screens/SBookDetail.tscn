@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://bcd4scr0021"]
+
+[ext_resource type="Script" path="res://src/screens/SBookDetail.gd" id="1_scr"]
+
+[node name="SBookDetail" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_scr")
+
+[node name="Background" type="ColorRect" parent="."]
+unique_name_in_owner = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="CoverHTTP" type="HTTPRequest" parent="."]
+unique_name_in_owner = true
+
+[node name="MainMargin" type="MarginContainer" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="Root" type="VBoxContainer" parent="MainMargin"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="BackBtn" type="Button" parent="MainMargin/Root"]
+unique_name_in_owner = true
+text = "← Retour"
+custom_minimum_size = Vector2(120, 40)
+
+[node name="Body" type="HBoxContainer" parent="MainMargin/Root"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="CoverCol" type="VBoxContainer" parent="MainMargin/Root/Body"]
+custom_minimum_size = Vector2(220, 0)
+theme_override_constants/separation = 8
+
+[node name="CoverImage" type="TextureRect" parent="MainMargin/Root/Body/CoverCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 280)
+expand_mode = 1
+stretch_mode = 5
+visible = false
+
+[node name="NoCoverLabel" type="Label" parent="MainMargin/Root/Body/CoverCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 280)
+text = "📚"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 72
+visible = false
+
+[node name="FieldsScroll" type="ScrollContainer" parent="MainMargin/Root/Body"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="FieldsContainer" type="VBoxContainer" parent="MainMargin/Root/Body/FieldsScroll"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_override_constants/separation = 10

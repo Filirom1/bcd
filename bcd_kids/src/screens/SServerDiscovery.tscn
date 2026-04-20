@@ -42,30 +42,30 @@ size_flags_horizontal = 3
 
 [node name="SettingsBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234503]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 40)
 layout_mode = 2
 size_flags_vertical = 4
 text = "⚙️"
-custom_minimum_size = Vector2(50, 40)
 
 [node name="LangSep1" type="Control" parent="MainMargin/Root/TopBar" unique_id=201234504]
-layout_mode = 2
 custom_minimum_size = Vector2(8, 0)
+layout_mode = 2
 
 [node name="FrBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234505]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 40)
 layout_mode = 2
 text = "FR"
-custom_minimum_size = Vector2(60, 40)
 
 [node name="LangSep2" type="Control" parent="MainMargin/Root/TopBar" unique_id=201234506]
-layout_mode = 2
 custom_minimum_size = Vector2(8, 0)
+layout_mode = 2
 
 [node name="EnBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234507]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 40)
 layout_mode = 2
 text = "EN"
-custom_minimum_size = Vector2(60, 40)
 
 [node name="TitleLabel" type="Label" parent="MainMargin/Root" unique_id=1908655512]
 unique_name_in_owner = true
@@ -206,22 +206,22 @@ anchor_bottom = 1.0
 
 [node name="SplashVBox" type="VBoxContainer" parent="SplashPanel/SplashCenter" unique_id=500000003]
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 20
+alignment = 1
 
 [node name="SplashBook" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000014]
 unique_name_in_owner = true
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_font_sizes/font_size = 72
 text = "📚"
+horizontal_alignment = 1
 
 [node name="SplashTitle" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000004]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"LabelTitle"
-horizontal_alignment = 1
 text = "BCD"
+horizontal_alignment = 1
 
 [node name="SplashTagline" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000005]
 unique_name_in_owner = true
@@ -230,48 +230,48 @@ theme_type_variation = &"LabelMedium"
 horizontal_alignment = 1
 
 [node name="SplashSep" type="Control" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000006]
-layout_mode = 2
 custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
 
 [node name="SplashMessage" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000007]
 unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 1
-theme_type_variation = &"LabelSmall"
-custom_minimum_size = Vector2(0, 32)
 modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+horizontal_alignment = 1
 
 [node name="SplashDots" type="HBoxContainer" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000008]
 unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 16
+alignment = 1
 
 [node name="Dot0" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000009]
-layout_mode = 2
-text = "●"
-theme_override_font_sizes/font_size = 28
 modulate = Color(1, 1, 1, 0.15)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "●"
 
 [node name="Dot1" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000010]
-layout_mode = 2
-text = "●"
-theme_override_font_sizes/font_size = 28
 modulate = Color(1, 1, 1, 0.15)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "●"
 
 [node name="Dot2" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000011]
-layout_mode = 2
-text = "●"
-theme_override_font_sizes/font_size = 28
 modulate = Color(1, 1, 1, 0.15)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "●"
 
 [node name="BadgeSep" type="Control" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000012]
-layout_mode = 2
 custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
 
 [node name="SplashBadge" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000013]
 unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 1
-theme_type_variation = &"LabelSmall"
 modulate = Color(1, 1, 1, 0.5)
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+horizontal_alignment = 1

@@ -13,9 +13,10 @@ const BOOK_CARD = preload("res://src/components/BookCard.tscn")
 @onready var _count_lbl: Label = %CountLabel
 @onready var _results_grid: GridContainer = %ResultsGrid
 
+var _last_items: Array = []
+
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
-
 	_title_lbl.text = I18n.t("search.title")
 
 	_back_btn.pressed.connect(func(): Mgr.pop())
@@ -28,16 +29,16 @@ func _ready() -> void:
 	visibility_changed.connect(func():
 		if visible:
 			_update_breadcrumb()
-			_clear_results()
-			_count_lbl.text = ""
 			_autocomplete.focus_input()
+			if not _last_items.is_empty():
+				_display_results(_last_items)
 	)
 
 	_update_breadcrumb()
 
 	_autocomplete.set_placeholder(I18n.t("search.placeholder"))
-	_autocomplete.focus_input()
 	_autocomplete.search_submitted.connect(func(q): _perform_search(q))
+	_autocomplete.focus_input()
 
 	_search_btn.pressed.connect(func(): _perform_search(_autocomplete.get_text()))
 
@@ -62,10 +63,9 @@ func _perform_search(query: String) -> void:
 		_count_lbl.text = I18n.t("common.error_network")
 		_clear_results()
 		return
-	var items = result.get("items", [])
-	_count_lbl.text = I18n.t("search.results_count", {"count": items.size()})
-	_display_results(items)
-	_autocomplete.focus_input()
+	_last_items = result.get("items", [])
+	_count_lbl.text = I18n.t("search.results_count", {"count": _last_items.size()})
+	_display_results(_last_items)
 
 func _display_results(items: Array) -> void:
 	_clear_results()
@@ -80,12 +80,22 @@ func _display_results(items: Array) -> void:
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_results_grid.add_child(card)
 		var biblio_id := int(item.get("id", 0))
-		if GS.reserved_biblio_ids.has(biblio_id):
-			card.setup(item, I18n.t("search.reserve"), ThemeManager.RESERVED)
+		# Find hold_id if already reserved
+		var hold_id := _find_hold_id_for_biblio(biblio_id)
+		if hold_id > 0:
+			card.setup(item, I18n.t("hold.cancel"), ThemeManager.ERROR)
 			card.theme_type_variation = "PanelWarning"
+			card.action_clicked.connect(func(data): _on_cancel_clicked(data, hold_id))
 		else:
 			card.setup(item, I18n.t("search.reserve"), ThemeManager.SECONDARY)
-		card.action_clicked.connect(_on_reserve_clicked)
+			card.action_clicked.connect(_on_reserve_clicked)
+		card.detail_clicked.connect(_on_detail_clicked)
+
+func _find_hold_id_for_biblio(biblio_id: int) -> int:
+	for hold in GS.current_holds:
+		if int(hold.get("bibliographic_record_id", 0)) == biblio_id:
+			return int(hold.get("id", 0))
+	return 0
 
 func _clear_results() -> void:
 	for c in _results_grid.get_children():
@@ -100,13 +110,12 @@ func _on_reserve_clicked(book_data: Dictionary) -> void:
 		if result.has("detail") and result.detail is Dictionary:
 			var code: String = result.detail.get("code", "")
 			match code:
-				"borrower_blocked":     error_msg = I18n.t("hold.error_blocked")
-				"hold_already_exists":  error_msg = I18n.t("hold.error_duplicate")
-				"no_items_for_record":  error_msg = I18n.t("hold.error_no_items")
-				"hold_limit_exceeded":  error_msg = I18n.t("hold.error_limit")
+				"borrower_blocked":    error_msg = I18n.t("hold.error_blocked")
+				"hold_already_exists": error_msg = I18n.t("hold.error_duplicate")
+				"no_items_for_record": error_msg = I18n.t("hold.error_no_items")
+				"hold_limit_exceeded": error_msg = I18n.t("hold.error_limit")
 		Mgr.notify(error_msg, "error")
 		return
-	GS.reserved_biblio_ids[biblio_record_id] = true
 	var holds = await API.get_holds(borrower_db_id)
 	GS.current_holds = holds
 	var title: String = book_data.get("title", "")
@@ -115,3 +124,19 @@ func _on_reserve_clicked(book_data: Dictionary) -> void:
 	else:
 		Mgr.notify(I18n.t("hold.confirmed_with_title", {"title": title}), "success")
 	Mgr.pop()
+
+func _on_cancel_clicked(book_data: Dictionary, hold_id: int) -> void:
+	await API.cancel_hold(hold_id)
+	var borrower_db_id := int(GS.current_borrower.get("id", 0))
+	var holds = await API.get_holds(borrower_db_id)
+	GS.current_holds = holds
+	var title: String = book_data.get("title", "")
+	if title.is_empty():
+		Mgr.notify(I18n.t("hold.cancelled"), "warning")
+	else:
+		Mgr.notify(I18n.t("hold.cancelled_with_title", {"title": title}), "warning")
+	_display_results(_last_items)
+
+func _on_detail_clicked(book_data: Dictionary) -> void:
+	GS.current_class["_temp_book_data"] = book_data
+	Mgr.push("book_detail")

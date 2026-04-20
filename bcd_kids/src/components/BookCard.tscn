@@ -25,7 +25,17 @@ theme_type_variation = "LabelSmall"
 unique_name_in_owner = true
 theme_type_variation = "LabelMedium"
 
-[node name="ActionBtn" type="Button" parent="Content"]
+[node name="BtnRow" type="HBoxContainer" parent="Content"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="DetailBtn" type="Button" parent="Content/BtnRow"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+theme_type_variation = "ButtonSmall"
+text = "🔍 Détail"
+
+[node name="ActionBtn" type="Button" parent="Content/BtnRow"]
 unique_name_in_owner = true
 size_flags_horizontal = 3
 theme_type_variation = "ButtonSmall"

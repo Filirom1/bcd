@@ -29,7 +29,13 @@
 		"return_button": "Rendre",
 		"no_loans": "Aucun livre emprunté",
 		"overdue": "En retard",
-		"no_holds": "Aucune réservation"
+		"no_holds": "Aucune réservation",
+		"renew_success": "Renouvelé jusqu'au {date}",
+		"renew_error_no_items": "Aucun livre à renouveler",
+		"renew_error_limit": "Nombre de renouvellements maximum atteint",
+		"renew_error_overdue": "Impossible de renouveler : livre en retard",
+		"renew_error_blocked": "Ton compte est bloqué",
+		"renew_error_unknown": "Impossible de renouveler ce livre"
 	},
 	"checkout": {
 		"title": "Emprunter",

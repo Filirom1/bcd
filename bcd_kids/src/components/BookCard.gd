@@ -3,11 +3,13 @@ class_name BookCard
 extends PanelContainer
 
 signal action_clicked(book_data: Dictionary)
+signal detail_clicked(book_data: Dictionary)
 
 @onready var _title_lbl: Label = %TitleLabel
 @onready var _authors_lbl: Label = %AuthorsLabel
 @onready var _status_lbl: Label = %StatusLabel
 @onready var _action_btn: Button = %ActionBtn
+@onready var _detail_btn: Button = %DetailBtn
 
 var book_data: Dictionary
 
@@ -42,3 +44,6 @@ func setup(data: Dictionary, action_label: String, action_color: Color) -> void:
 		_action_btn.add_theme_color_override("font_color", action_color)
 		_action_btn.add_theme_color_override("font_pressed_color", ThemeManager.BG_WHITE)
 		_action_btn.pressed.connect(func(): action_clicked.emit(book_data))
+
+	_detail_btn.pressed.connect(func(): detail_clicked.emit(book_data))
+	

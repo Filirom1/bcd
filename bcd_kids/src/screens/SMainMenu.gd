@@ -80,6 +80,8 @@ func _refresh_loans() -> void:
 		_loans_container.add_child(card)
 		card.setup(loan as Dictionary)
 		card.return_clicked.connect(_return_item)
+		card.renew_clicked.connect(_renew_item)
+		card.title_clicked.connect(_show_book_cover)
 
 func _return_item(item_id: String) -> void:
 	var result = await API.return_items([item_id])
@@ -113,6 +115,28 @@ func _return_item(item_id: String) -> void:
 			GS.current_borrower.current_loans_count = GS.current_loans.size()
 			_refresh_loans()
 			_update_counter()
+
+func _renew_item(item_id: String) -> void:
+	var result = await API.renew_items(GS.current_borrower.get("borrower_id", ""), [item_id])
+	if result.has("error"):
+		Mgr.notify(I18n.t("common.error_unknown"), "error")
+		return
+	var renewed = result.get("renewed", [])
+	if renewed.is_empty():
+		Mgr.notify(I18n.t("common.error_unknown"), "error")
+		return
+	var new_date: String = renewed[0].get("new_due_date", "")
+	Mgr.notify("✅ Renouvelé jusqu'au %s" % new_date, "success")
+	var loans_result = await API.get_current_loans(GS.current_borrower.get("borrower_id", ""))
+	if not loans_result.has("error"):
+		GS.current_loans = loans_result.get("loans", [])
+		GS.current_borrower.current_loans_count = GS.current_loans.size()
+		_refresh_loans()
+		_update_counter()
+
+func _show_book_cover(loan: Dictionary) -> void:
+	GS.current_class["_temp_loan_for_cover"] = loan
+	Mgr.push("book_cover")
 
 func _update_breadcrumb() -> void:
 	_breadcrumb.set_path([

@@ -33,7 +33,15 @@ unique_name_in_owner = true
 size_flags_horizontal = 3
 theme_type_variation = "LabelSmall"
 
-[node name="ReturnBtn" type="Button" parent="Row"]
+[node name="BtnRow" type="HBoxContainer" parent="Row"]
+theme_override_constants/separation = 6
+
+[node name="RenewBtn" type="Button" parent="Row/BtnRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 50)
+custom_minimum_size = Vector2(130, 44)
+theme_type_variation = "ButtonSmall"
+
+[node name="ReturnBtn" type="Button" parent="Row/BtnRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 44)
 theme_type_variation = "ButtonSmall"
