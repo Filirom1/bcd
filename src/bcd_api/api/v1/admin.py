@@ -740,7 +740,7 @@ def backfill_covers(db: Session = Depends(get_db)):
 
     updated = 0
     for record in records:
-        normalized = record.isbn.replace("-", "").replace(".", "").replace(" ", "")
+        normalized = record.isbn.replace("-", "").replace(".", "").replace(" ", "").replace("isbn:", "").replace("issn:", "").upper()
         if (covers_dir / f"{normalized}.jpg").exists():
             record.cover_image = f"{normalized}.jpg"
             updated += 1
