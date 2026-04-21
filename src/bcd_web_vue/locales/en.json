@@ -668,6 +668,8 @@
     "save": "Save",
     "save_success": "Settings saved successfully",
     "saved_successfully": "Settings saved successfully",
+    "app_version": "Version",
+    "open_source": "Open source",
     "reset": "Reset",
     "confirm_reset": "Do you really want to reset to default settings?",
     "reload_message": "The new settings are now active.",

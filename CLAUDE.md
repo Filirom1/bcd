@@ -98,9 +98,8 @@ The script:
 - Updates `pyproject.toml` (single source of truth)
 - Synchronizes `bcd_kids/export_presets.cfg` with the same version
 - Creates a git commit
-- Creates TWO annotated git tags:
-  - `v*.*.*` → triggers `.github/workflows/release-windows.yml` and `release-linux.yml`
-  - `godot-v*.*.*` → triggers `.github/workflows/release-godot.yml`
+- Creates ONE annotated git tag:
+  - `v*.*.*` → triggers `.github/workflows/release.yml` (unified: tests + Windows + Linux + Godot builds)
 - Optionally pushes to trigger GitHub Actions releases
 
 **Important**: The project uses a single version number for all components. API and Kids client versions are always synchronized.
@@ -124,16 +123,19 @@ src/
 │   ├── locales/      # i18n: en.json, fr.json
 │   └── vendor/       # Vue 3.4, vue-router, vue-i18n, Bootstrap 5.3
 ├── bcd_converters/   # One-off data migration scripts (Bibliopuce, ONDE, XLS)
-├── bcd_kids/        # Godot 4.6 client (kid-friendly, ages 6-11)
-│   ├── autoload/     # Singletons: GS (state), API (HTTP), I18n (i18n), Mgr (navigation)
-│   ├── src/
-│   │   ├── BCDTheme.gd       # Color palette + UI helpers
-│   │   ├── components/       # Reusable components (Breadcrumb, AutocompleteInput, etc.)
-│   │   └── screens/          # 9 screens (procedural UI, no .tscn files)
-│   ├── locales/      # i18n: fr.json, en.json
-│   ├── project.godot
-│   └── export_presets.cfg    # Windows/Linux/Web export configs
 └── shared/           # constants.py, validators.py, version.py
+
+bcd_kids/             # Godot 4.6 client (kid-friendly, ages 6-11) — at repo root
+├── autoload/         # Singletons: GS (state), API (HTTP), I18n (i18n), Mgr (navigation)
+├── src/
+│   ├── BCDTheme.gd       # Color palette + UI helpers
+│   ├── components/       # Reusable components (each has .tscn + .gd)
+│   └── screens/          # Screens (each has SNomEcran.tscn + SNomEcran.gd)
+├── locales/          # i18n: fr.json, en.json
+├── project.godot
+└── export_presets.cfg    # Windows/Linux export configs
+
+bcd_kids_rs/          # Legacy Rust/egui kids client (superseded by Godot client)
 ```
 
 ### Key Architectural Rules
@@ -214,26 +216,21 @@ Web UI translations: `src/bcd_web_vue/locales/en.json` and `fr.json`. Both files
 - Feature branches: `<feature-id>-<brief-description>`
 - Commits: Conventional Commits (`feat:`, `fix:`, `docs:`, etc.)
 
-## Active Technologies
-- Python 3.11 (scripts), JavaScript ES2020 (Vue 3 SPA — no transpilation) + Vue 3.4.21 (already vendored), Bootstrap 5.3.3 offcanvas (already vendored), `marked.js` v9 (vendored, ~50KB UMD global build) (001-contextual-help)
-- Help documentation — `docs/help/{en,fr}/*.md` + `docs/help/images/*.png`, served via symlink at `src/bcd_web_vue/help` → `/static/help/` (001-contextual-help)
-- Python 3.11 (backend), JavaScript ES2020 (frontend) + FastAPI 0.104+, SQLAlchemy 2.0+, Alembic (backend); Vue 3.4.21, vue-router, vue-i18n (frontend, vendored) (008-inventory-page)
-- SQLite (development), PostgreSQL-compatible (production) (008-inventory-page)
-
 ## Godot Client
 
 See [`bcd_kids/README.md`](bcd_kids/README.md) for complete documentation.
 
 **Key points**:
-- Godot 4.6 project (procedural UI, no .tscn files for screens)
+- Godot 4.6 project (each screen and component has paired `.tscn` + `.gd` files)
 - Kid-friendly interface for ages 6-11 (CP-CM2)
 - Autoload singletons: GS (state), API (HTTP client), I18n (translations), Mgr (navigation)
 - 9 screens: ServerDiscovery → ClassSelect → NameInput → MainMenu → Checkout/Return/Search/Holds
 - Export presets: Windows Desktop, Linux/X11
-- GitHub Actions: Builds on push to main/develop, releases on tags `godot-v*.*.*`
+- GitHub Actions: Continuous builds on push to main/develop; releases triggered by `v*.*.*` tags (via unified `release.yml`)
 - CI/CD workflows:
   - `.github/workflows/build-godot.yml` — continuous builds (artifacts 14 days)
-  - `.github/workflows/release-godot.yml` — versioned releases (GitHub Releases)
+  - `.github/workflows/release.yml` — unified release (tag `v*.*.*`): runs tests, builds Windows + Linux + Godot
+  - `.github/workflows/release-godot.yml` — manual Godot-only release (`workflow_dispatch`)
 
 **Architecture**:
 - All screens use `class_name S*` (e.g., `SMainMenu`, `SSearch`)
@@ -242,6 +239,13 @@ See [`bcd_kids/README.md`](bcd_kids/README.md) for complete documentation.
 - Navigation: `Mgr.push(screen)`, `Mgr.pop()`, `Mgr.replace(screen)`
 - API calls return untyped (can be Dictionary or Array) — handle both
 - Translations: `I18n.t(key)` or `I18n.t(key, params)`
+
+**UI rules (critical)**:
+- Every screen → `SNomEcran.tscn` + `SNomEcran.gd`; every component → `NomDuComposant.tscn` + `NomDuComposant.gd`
+- `.gd` contains only logic (signals, data, API calls); `.tscn` contains all visual structure (layout, sizes, colors)
+- **Zero procedural UI** in `.gd` files — no `Node.new()` or `add_child()` for layout construction
+- Shared font/theme: defined once in `theme.tres`, applied via `theme = ExtResource("theme.tres")` on root node; Labels inherit automatically — no per-Label font overrides
+- Only allowed per-Label overrides: `theme_override_font_sizes/font_size` and `theme_override_colors/font_color` when they differ from the default
 
 **Colors** (BCDTheme):
 - BG: `#F2F8FF` (light blue sky)
@@ -253,7 +257,7 @@ See [`bcd_kids/README.md`](bcd_kids/README.md) for complete documentation.
 
 **Build/Export**:
 - Local: Open project in Godot 4.6 → Project → Export
-- Release: Use `python scripts/bump_godot_version.py patch --push` (creates tag + triggers CI)
+- Release: Use `python scripts/bump_version.py patch --push` (creates `v*.*.*` tag → triggers unified `release.yml`)
 - Platforms: Windows (`.exe`), Linux (`.x86_64`)
 
 **Optimisations pour vieux PC**:
@@ -268,7 +272,3 @@ See [`bcd_kids/README.md`](bcd_kids/README.md) for complete documentation.
 - Target: 4GB RAM, HDD, Windows 10, GPU Intel HD Graphics 2000+
 
 Voir `bcd_kids/DEPLOYMENT.md` pour guide complet déploiement PC scolaires.
-
-## Recent Changes
-- 001-contextual-help: Added Python 3.11 (scripts), JavaScript ES2020 (Vue 3 SPA — no transpilation) + Vue 3.4.21 (already vendored), Bootstrap 5.3.3 offcanvas (already vendored), `marked.js` v9 (to vendor, ~50KB UMD global build)
-- Godot 4.6 client: Kid-friendly interface with mDNS discovery, barcode scanning, catalog search, holds management (Windows/Linux/Web builds via GitHub Actions)

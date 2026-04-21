@@ -86,6 +86,26 @@ def update_pyproject_toml(new_version: str) -> None:
     print(f"✅ Updated pyproject.toml: version = \"{new_version}\"")
 
 
+def update_godot_project(new_version: str) -> None:
+    """Update version in Kids client project.godot."""
+    project_path = get_project_root() / "bcd_kids" / "project.godot"
+
+    if not project_path.exists():
+        print(f"⚠️  Warning: {project_path} not found, skipping project.godot version update")
+        return
+
+    content = project_path.read_text(encoding="utf-8")
+
+    new_content = re.sub(
+        r'config/version="[^"]+"',
+        f'config/version="{new_version}"',
+        content
+    )
+
+    project_path.write_text(new_content, encoding="utf-8")
+    print(f"✅ Updated bcd_kids/project.godot: config/version = \"{new_version}\"")
+
+
 def update_godot_export_presets(new_version: str) -> None:
     """Update version in Kids client export_presets.cfg."""
     presets_path = get_project_root() / "bcd_kids" / "export_presets.cfg"
@@ -146,6 +166,10 @@ def create_version_commit(version: str) -> None:
     """Create a git commit for the version bump."""
     # Stage both files
     run_git_command(["add", "pyproject.toml"])
+
+    godot_project = get_project_root() / "bcd_kids" / "project.godot"
+    if godot_project.exists():
+        run_git_command(["add", "bcd_kids/project.godot"])
 
     godot_presets = get_project_root() / "bcd_kids" / "export_presets.cfg"
     if godot_presets.exists():
@@ -271,8 +295,9 @@ And creates TWO tags:
     else:
         print("   ✅ Auto-confirmed (non-interactive mode)")
 
-    # Update both files
+    # Update all files
     update_pyproject_toml(new_version)
+    update_godot_project(new_version)
     update_godot_export_presets(new_version)
 
     if args.no_commit:

@@ -669,6 +669,8 @@
     "save": "Enregistrer",
     "save_success": "Paramètres enregistrés avec succès",
     "saved_successfully": "Paramètres enregistrés avec succès",
+    "app_version": "Version",
+    "open_source": "Logiciel libre",
     "reset": "Réinitialiser",
     "confirm_reset": "Voulez-vous vraiment réinitialiser les paramètres par défaut ?",
     "reload_message": "Les nouveaux paramètres sont maintenant actifs.",

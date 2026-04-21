@@ -37,6 +37,7 @@ export default defineComponent({
 
         const loading = ref(true);
         const saving = ref(false);
+        const appVersion = ref('');
 
         // Match HTMX version field structure exactly
         const settings = ref({
@@ -59,9 +60,13 @@ export default defineComponent({
         const loadSettings = async () => {
             try {
                 loading.value = true;
-                const data = await apiClient.get('/admin/settings');
+                const [data, health] = await Promise.all([
+                    apiClient.get('/admin/settings'),
+                    apiClient.get('/health')
+                ]);
                 settings.value = { ...settings.value, ...data };
                 originalSettings.value = { ...settings.value };
+                appVersion.value = health.version || '';
             } catch (error) {
                 handleError(error);
             } finally {
@@ -103,6 +108,7 @@ export default defineComponent({
             loading,
             saving,
             settings,
+            appVersion,
             saveSettings,
             resetSettings,
             t
@@ -133,6 +139,9 @@ export default defineComponent({
                 <backup-section class="mt-2" />
                 <cover-section class="mt-2" />
                 <data-maintenance-section class="mt-2" />
+                <div v-if="appVersion" class="mt-3 text-muted small text-end">
+                    {{ t('settings.app_version') }} v{{ appVersion }} &mdash; <a href="https://github.com/Filirom1/bcd" target="_blank" rel="noopener">{{ t('settings.open_source') }}</a>
+                </div>
             </template>
         </div>
     `

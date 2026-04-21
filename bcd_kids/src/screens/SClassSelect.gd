@@ -16,7 +16,13 @@ func _ready() -> void:
 	_bg.color = ThemeManager.BG
 	_title_lbl.text = I18n.t("class_select.title")
 
-	var lib_name: String = GS.library_name if not GS.library_name.is_empty() else I18n.t("common.home")
+	var lib_name: String
+	if not GS.library_name.is_empty():
+		lib_name = GS.library_name
+	elif GS.base_url.contains("127.0.0.1") or GS.base_url.contains("localhost"):
+		lib_name = I18n.t("server_discovery.localhost_default")
+	else:
+		lib_name = I18n.t("common.home")
 	_server_btn.text = lib_name
 	_server_btn.pressed.connect(func(): Mgr.replace("server_discovery"))
 

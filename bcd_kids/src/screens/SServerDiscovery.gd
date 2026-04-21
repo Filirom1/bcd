@@ -320,7 +320,9 @@ func _init_splash() -> void:
 	_splash_tagline.text = I18n.t("splash.tagline")
 	_splash_tagline.add_theme_font_size_override("font_size", 13)
 	_splash_tagline.modulate.a = 0.4
-	_splash_badge.text = I18n.t("splash.open_source")
+	var _version: String = ProjectSettings.get_setting("application/config/version", "")
+	var _version_prefix: String = ("v" + _version + " — ") if not _version.is_empty() else ""
+	_splash_badge.text = _version_prefix + I18n.t("splash.open_source")
 	_splash_badge.add_theme_font_size_override("font_size", 11)
 	_splash_dots = []
 	for dot in _splash_dots_container.get_children():
