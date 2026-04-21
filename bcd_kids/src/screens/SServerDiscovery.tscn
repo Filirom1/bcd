@@ -241,6 +241,13 @@ layout_mode = 2
 theme_type_variation = &"LabelSmall"
 horizontal_alignment = 1
 
+[node name="SplashAuthor" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000015]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_type_variation = &"LabelSmall"
+horizontal_alignment = 1
+
 [node name="SplashDots" type="HBoxContainer" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000008]
 unique_name_in_owner = true
 layout_mode = 2

@@ -37,12 +37,14 @@ var _last_name := ""
 @onready var _splash_title: Label = %SplashTitle
 @onready var _splash_tagline: Label = %SplashTagline
 @onready var _splash_msg_lbl: Label = %SplashMessage
+@onready var _splash_author_lbl: Label = %SplashAuthor
 @onready var _splash_badge: Label = %SplashBadge
 @onready var _splash_dots_container: HBoxContainer = %SplashDots
 
 var _splash_dots: Array = []
 var _splash_msg_idx := 0
 var _splash_cycling := false
+var _splash_msgs_shuffled: Array = []
 
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
@@ -338,10 +340,8 @@ func _init_splash() -> void:
 	_animate_splash_book()
 	_animate_splash_title()
 	_animate_splash_dots()
-	_splash_msg_lbl.add_theme_font_size_override("font_size", 34)
-	_splash_msg_lbl.add_theme_color_override("font_color", ThemeManager.WARNING)
 	_splash_cycling = true
-	_cycle_splash_messages()
+	_shuffle_and_start()
 
 func _animate_splash_book() -> void:
 	_splash_book.scale = Vector2(0.2, 0.2)
@@ -416,22 +416,56 @@ func _spawn_floating_stars() -> void:
 			star.modulate.a = start_a
 		)
 
+func _shuffle_and_start() -> void:
+	var msgs: Array = I18n.translations.get(I18n.current_locale, {}).get("splash", {}).get("messages", [])
+	_splash_msgs_shuffled = msgs.duplicate()
+	_splash_msgs_shuffled.shuffle()
+	_splash_msg_idx = 0
+	_cycle_splash_messages()
+
 func _cycle_splash_messages() -> void:
 	if not _splash_cycling or not is_instance_valid(_splash_msg_lbl):
 		return
-	var msgs: Array = I18n.translations.get(I18n.current_locale, {}).get("splash", {}).get("messages", [])
-	if msgs.is_empty():
+	if _splash_msgs_shuffled.is_empty():
 		return
-	_splash_msg_lbl.text = str(msgs[_splash_msg_idx % msgs.size()])
+	if _splash_msg_idx >= _splash_msgs_shuffled.size():
+		_splash_msgs_shuffled.shuffle()
+		_splash_msg_idx = 0
+	var entry = _splash_msgs_shuffled[_splash_msg_idx]
 	_splash_msg_idx += 1
+
+	var msg_text: String
+	var author_text: String = ""
+	var is_citation := false
+	if entry is Dictionary:
+		msg_text = entry.get("text", "")
+		author_text = entry.get("author", "")
+		is_citation = entry.get("type", "punchline") == "citation"
+	else:
+		msg_text = str(entry)
+
+	if is_citation:
+		_splash_msg_lbl.add_theme_font_size_override("font_size", 20)
+		_splash_msg_lbl.add_theme_color_override("font_color", ThemeManager.SUCCESS)
+	else:
+		_splash_msg_lbl.add_theme_font_size_override("font_size", 34)
+		_splash_msg_lbl.add_theme_color_override("font_color", ThemeManager.WARNING)
+
+	_splash_msg_lbl.text = msg_text
+	_splash_author_lbl.text = author_text
+	_splash_author_lbl.modulate.a = 0.0
+
 	# Punch in: scale-down from big + fade in (video game style)
 	_splash_msg_lbl.modulate.a = 0.0
 	_splash_msg_lbl.scale = Vector2(1.5, 1.5)
 	var tw := _splash_msg_lbl.create_tween()
 	tw.tween_property(_splash_msg_lbl, "scale", Vector2(1.0, 1.0), 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(_splash_msg_lbl, "modulate:a", 1.0, 0.2)
+	if not author_text.is_empty():
+		tw.parallel().tween_property(_splash_author_lbl, "modulate:a", 0.6, 0.4)
 	tw.tween_interval(2.1)
 	tw.tween_property(_splash_msg_lbl, "modulate:a", 0.0, 0.28).set_trans(Tween.TRANS_SINE)
+	tw.parallel().tween_property(_splash_author_lbl, "modulate:a", 0.0, 0.28)
 	tw.tween_callback(_cycle_splash_messages)
 
 func _hide_splash() -> void:
