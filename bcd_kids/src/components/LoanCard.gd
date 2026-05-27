@@ -12,10 +12,19 @@ signal title_clicked(loan: Dictionary)
 @onready var _authors_lbl: Label = %AuthorsLabel
 @onready var _due_lbl: Label = %DueLabel
 @onready var _renew_btn: Button = %RenewBtn
-@onready var _return_btn: Button = %ReturnBtn
 @onready var _http: HTTPRequest = %CoverHTTP
 
 var _loan_data: Dictionary
+
+func _ready() -> void:
+	_renew_btn.focus_entered.connect(func():
+		_renew_btn.add_theme_stylebox_override("normal", _renew_btn.get_theme_stylebox("hover"))
+		_renew_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+	)
+	_renew_btn.focus_exited.connect(func():
+		_renew_btn.remove_theme_stylebox_override("normal")
+		_renew_btn.remove_theme_color_override("font_color")
+	)
 
 func setup(loan: Dictionary) -> void:
 	_loan_data = loan

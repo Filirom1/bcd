@@ -281,6 +281,11 @@ def parse_unimarc_xml(xml_content: bytes) -> Optional[dict]:
         if keywords:
             data["keywords"] = keywords
 
+        # Dewey classification number (676$a)
+        dewey_elem = marc_record.find('.//mxc:datafield[@tag="676"]/mxc:subfield[@code="a"]', ns)
+        if dewey_elem is not None and dewey_elem.text:
+            data["dewey_number"] = dewey_elem.text.strip()
+
         # Authors (700$a, 700$b, 701$a, 701$b)
         authors = []
 

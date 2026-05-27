@@ -38,8 +38,8 @@
       "homepage": "https://vuejs.org",
       "files": [
         {
-          "url": "https://unpkg.com/vue@3.4.21/dist/vue.global.js",
-          "dest": "js/vue.global.js"
+          "url": "https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js",
+          "dest": "js/vue.global.prod.js"
         }
       ]
     },
@@ -49,8 +49,8 @@
       "homepage": "https://router.vuejs.org",
       "files": [
         {
-          "url": "https://unpkg.com/vue-router@4.2.5/dist/vue-router.global.js",
-          "dest": "js/vue-router.global.js"
+          "url": "https://unpkg.com/vue-router@4.2.5/dist/vue-router.global.prod.js",
+          "dest": "js/vue-router.global.prod.js"
         }
       ]
     },
@@ -95,6 +95,17 @@
         {
           "url": "https://cdn.jsdelivr.net/npm/marked@9/marked.min.js",
           "dest": "js/marked.min.js"
+        }
+      ]
+    },
+    {
+      "name": "Chart.js",
+      "version": "4.4.3",
+      "homepage": "https://www.chartjs.org",
+      "files": [
+        {
+          "url": "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js",
+          "dest": "js/chart.umd.min.js"
         }
       ]
     }

@@ -6,14 +6,14 @@
 const { defineComponent, ref, computed } = Vue;
 const { useI18n } = VueI18n;
 import FilterSelect from '../ui/FilterSelect.js';
-import StickerPicker from '../ui/StickerPicker.js';
+import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 
 export default defineComponent({
     name: 'BulkEditPanel',
 
     components: {
         FilterSelect,
-        StickerPicker
+        ShelfLocationPicker
     },
 
     props: {
@@ -50,6 +50,11 @@ export default defineComponent({
             if (!str) return [];
             return str.split(',').map(s => s.trim()).filter(Boolean);
         };
+
+        const shelfLocationOptions = computed(() => {
+            try { return JSON.parse(props.settings?.catalog_shelf_locations || '[]') || []; }
+            catch { return []; }
+        });
 
         const genreSuggestions = computed(() => parseCsv(props.settings?.catalog_genres));
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));
@@ -150,6 +155,7 @@ export default defineComponent({
             itemStatus,
             loanable,
             shelfLocation,
+            shelfLocationOptions,
             genre,
             level,
             targetAudience,
@@ -222,17 +228,13 @@ export default defineComponent({
 
                     <div class="mb-2">
                         <label class="form-label small">{{ t('inventory.bulk_edit.location') }}</label>
-                        <input
-                            type="text"
+                        <shelf-location-picker
                             v-model="shelfLocation"
-                            class="form-control form-control-sm"
-                            list="bulk-shelf-location-suggestions"
+                            :locations="shelfLocationOptions"
                             :placeholder="t('inventory.bulk_edit.location_placeholder')"
-                        >
-                        <datalist id="bulk-shelf-location-suggestions">
-                            <option value="__clear__">{{ t('inventory.bulk_edit.clear_value') }}</option>
-                        </datalist>
-                        <sticker-picker v-model="shelfLocation" />
+                            :extra-options="[{ label: '__clear__', display: t('inventory.bulk_edit.clear_value') }]"
+                            input-class="form-control-sm"
+                        />
                     </div>
                 </div>
 

@@ -521,6 +521,7 @@ def get_borrower_current_loans(
             "bibliographic_record_id": t.bibliographic_record.id,
             "title": t.bibliographic_record.title,
             "call_number": t.item.call_number,
+            "shelf_location": t.item.shelf_location,
             "display_title": _display_title(t.bibliographic_record.title),
             "authors": ", ".join(json.loads(t.bibliographic_record.authors)) if t.bibliographic_record.authors else None,
             "checkout_date": t.checkout_date,

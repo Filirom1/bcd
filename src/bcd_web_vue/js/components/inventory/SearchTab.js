@@ -188,6 +188,7 @@ export default defineComponent({
                         condition: item.condition,
                         loanable: item.loanable,
                         shelf_location: item.shelf_location,
+                        call_number: item.call_number,
                         last_inventoried_at: new Date().toISOString(),
                         // Record fields (from search results JOIN)
                         title: item.title,

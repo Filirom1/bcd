@@ -456,7 +456,7 @@ export default {
                                         <strong>{{ record.title }}</strong>
                                         <div class="small text-muted">
                                             <span v-if="record.authors">{{ Array.isArray(record.authors) ? record.authors.join(', ') : record.authors }}</span>
-                                            <span v-if="record.isbn" class="ms-2">(ISBN: {{ record.isbn }})</span>
+                                            <span v-if="record.isbn" class="ms-2">(ISBN: {{ record.isbn_value }})</span>
                                         </div>
                                     </li>
                                     <li v-if="selectedCount > 10" class="list-group-item text-muted">

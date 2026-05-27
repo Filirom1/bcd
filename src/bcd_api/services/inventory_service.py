@@ -134,6 +134,7 @@ def search_items(
     never_inventoried: Optional[bool] = None,
     inventoried_before: Optional[date] = None,
     acquired_before: Optional[date] = None,
+    acquired_after: Optional[date] = None,
     medium_type: Optional[str] = None,
     target_audience: Optional[str] = None,
     genre: Optional[str] = None,
@@ -143,6 +144,7 @@ def search_items(
     publication_year_max: Optional[int] = None,
     max_borrows: Optional[int] = None,
     since_date: Optional[date] = None,
+    never_borrowed: Optional[bool] = None,
     no_limit: bool = False
 ) -> dict:
     """
@@ -157,6 +159,7 @@ def search_items(
         never_inventoried: Only items with NULL last_inventoried_at
         inventoried_before: Items not inventoried since this date
         acquired_before: Items acquired before this date (for age in collection filtering)
+        acquired_after: Items acquired after or on this date
         medium_type: Bibliographic medium type
         target_audience: child, youth, adult
         genre: Partial match on genre
@@ -187,6 +190,18 @@ def search_items(
         BiblographicRecord.medium_type,
         BiblographicRecord.publication_year
     ).join(BiblographicRecord)
+
+    # Always add subquery for all-time circulation count per item
+    circ_subquery = (
+        db.query(
+            CirculationTransaction.item_id,
+            func.count().label('circ_count')
+        )
+        .group_by(CirculationTransaction.item_id)
+        .subquery()
+    )
+    query = query.outerjoin(circ_subquery, circ_subquery.c.item_id == Item.id)
+    query = query.add_columns(func.coalesce(circ_subquery.c.circ_count, 0).label('circulation_count'))
 
     # If rotation filter is active, add LEFT JOIN subquery for loan counts
     period_loan_count_column = None
@@ -255,6 +270,14 @@ def search_items(
             )
         )
 
+    if acquired_after:
+        query = query.filter(
+            and_(
+                Item.acquisition_date.is_not(None),
+                Item.acquisition_date >= acquired_after
+            )
+        )
+
     # Apply record-level filters
     if medium_type == "__none__":
         query = query.filter(BiblographicRecord.medium_type.is_(None))
@@ -285,6 +308,10 @@ def search_items(
     if publication_year_max is not None:
         query = query.filter(BiblographicRecord.publication_year <= publication_year_max)
 
+    # Filter items never borrowed (last_borrowed_at IS NULL)
+    if never_borrowed:
+        query = query.filter(Item.last_borrowed_at.is_(None))
+
     # Get total count before limit
     total_count = query.count()
 
@@ -312,6 +339,7 @@ def search_items(
         language = result[6]  # language from BiblographicRecord
         medium_type = result[7]  # medium_type from BiblographicRecord
         publication_year = result[8]  # publication_year from BiblographicRecord
+        circulation_count = result[9]  # all-time loan count (always present)
 
         # Parse authors JSON
         try:
@@ -348,12 +376,13 @@ def search_items(
             "medium_type": medium_type,
             "publication_year": publication_year,
             # Calculated fields
-            "age_days": age_days
+            "age_days": age_days,
+            "circulation_count": circulation_count,
         }
 
         # Add period_loan_count if rotation filter was active
-        if period_loan_count_column is not None and len(result) > 9:
-            item_dict["period_loan_count"] = result[9]  # period_loan_count from subquery
+        if period_loan_count_column is not None and len(result) > 10:
+            item_dict["period_loan_count"] = result[10]  # period_loan_count from subquery
 
         items.append(item_dict)
 
@@ -490,6 +519,13 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
     for item in deletable_items:
         db.delete(item)
 
+    # Snapshot circulation_count per item before deletion (cascade will remove transactions)
+    item_circ_by_record: dict = {}
+    for item in deletable_items:
+        item_circ_by_record[item.bibliographic_record_id] = (
+            item_circ_by_record.get(item.bibliographic_record_id, 0) + item.circulation_count
+        )
+
     # Update parent record counters
     orphan_records_created = 0
     for record_id in record_ids:
@@ -498,6 +534,7 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
             # Recount items for this record
             item_count = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
             record.total_items = item_count
+            record.total_circulations = max(0, record.total_circulations - item_circ_by_record.get(record_id, 0))
 
             if item_count == 0:
                 orphan_records_created += 1

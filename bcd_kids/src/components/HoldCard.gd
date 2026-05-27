@@ -10,6 +10,19 @@ signal cancel_clicked(hold_id: int)
 @onready var _expires_lbl: Label = %ExpiresLabel
 @onready var _cancel_btn: Button = %CancelBtn
 
+func _ready() -> void:
+	_cancel_btn.focus_entered.connect(func():
+		_cancel_btn.add_theme_stylebox_override("normal", _cancel_btn.get_theme_stylebox("hover"))
+		_cancel_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+	)
+	_cancel_btn.focus_exited.connect(func():
+		_cancel_btn.remove_theme_stylebox_override("normal")
+		_cancel_btn.add_theme_color_override("font_color", ThemeManager.ERROR)
+	)
+
+func grab_first_focus() -> void:
+	_cancel_btn.grab_focus()
+
 func setup(hold: Dictionary) -> void:
 	var hold_id: int = hold.get("id", 0)
 	var status: String = hold.get("status", "")

@@ -63,6 +63,7 @@ def mark_item_inventoried_endpoint(
             condition=item.condition,
             loanable=item.loanable,
             shelf_location=item.shelf_location,
+            call_number=item.call_number,
             last_inventoried_at=item.last_inventoried_at,
             # Record fields
             title=record.title,
@@ -121,6 +122,7 @@ def search_items_endpoint(
     never_inventoried: Optional[bool] = Query(None, description="Only items with NULL last_inventoried_at"),
     inventoried_before: Optional[date] = Query(None, description="Items not inventoried since this date"),
     acquired_before: Optional[date] = Query(None, description="Items acquired before this date (for age filtering)"),
+    acquired_after: Optional[date] = Query(None, description="Items acquired after this date"),
     medium_type: Optional[str] = Query(None, description="Bibliographic medium type"),
     target_audience: Optional[str] = Query(None, description="child, youth, adult"),
     genre: Optional[str] = Query(None, description="Partial match on genre"),
@@ -130,6 +132,7 @@ def search_items_endpoint(
     publication_year_max: Optional[int] = Query(None, description="Max publication year"),
     max_borrows: Optional[int] = Query(None, description="Max loans in period (rotation filter)"),
     since_date: Optional[date] = Query(None, description="Start date for rotation filter"),
+    never_borrowed: Optional[bool] = Query(None, description="Only items with last_borrowed_at IS NULL"),
     no_limit: bool = Query(False, description="Skip result limit, return all matching items")
 ):
     """
@@ -161,6 +164,7 @@ def search_items_endpoint(
             never_inventoried=never_inventoried,
             inventoried_before=inventoried_before,
             acquired_before=acquired_before,
+            acquired_after=acquired_after,
             medium_type=medium_type,
             target_audience=target_audience,
             genre=genre,
@@ -170,6 +174,7 @@ def search_items_endpoint(
             publication_year_max=publication_year_max,
             max_borrows=max_borrows,
             since_date=since_date,
+            never_borrowed=never_borrowed,
             no_limit=no_limit
         )
         return InventorySearchResponse(**result)

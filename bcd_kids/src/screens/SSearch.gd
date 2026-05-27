@@ -140,3 +140,19 @@ func _on_cancel_clicked(book_data: Dictionary, hold_id: int) -> void:
 func _on_detail_clicked(book_data: Dictionary) -> void:
 	GS.current_class["_temp_book_data"] = book_data
 	Mgr.push("book_detail")
+
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if not _autocomplete.is_input_focused():
+		return
+	if event.keycode in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT]:
+		var cards := _results_grid.get_children()
+		if not cards.is_empty() and cards[0] is BookCard:
+			(cards[0] as BookCard).grab_first_focus()
+			accept_event()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		Mgr.pop()
+		get_viewport().set_input_as_handled()

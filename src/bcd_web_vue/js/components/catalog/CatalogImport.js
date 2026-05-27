@@ -192,7 +192,6 @@ export default {
                 {{ $t('catalog.total_rows_processed') }}: {{ importResult.total_rows }}
               </div>
             </div>
-          </div>
 
       <template #footer>
         <button

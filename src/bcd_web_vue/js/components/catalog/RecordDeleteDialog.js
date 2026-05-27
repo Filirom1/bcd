@@ -123,7 +123,7 @@ export default {
                                     </li>
                                     <li v-if="recordData.isbn">
                                         <strong>{{ t('bibliographic.isbn') }}:</strong>
-                                        {{ recordData.isbn }}
+                                        {{ recordData.isbn_value }}
                                     </li>
                                     <li>
                                         <strong>{{ t('catalog.copies') }}:</strong>

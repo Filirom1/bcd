@@ -3,7 +3,7 @@
  * Form with 14 fields matching HTMX version exactly
  */
 
-const { defineComponent, ref } = Vue;
+const { defineComponent, ref, computed } = Vue;
 const { useI18n } = VueI18n;
 
 export default defineComponent({
@@ -30,10 +30,78 @@ export default defineComponent({
             emit('reset');
         };
 
+        const DEFAULT_DEWEY_COLORS = [
+            '#000000','#9e6633','#f20000','#ff9813','#ffee00',
+            '#409d42','#0fafe9','#98238b','#d3d5d4','#ffffff'
+        ];
+
+        const deweyColorsList = computed(() => {
+            try {
+                const parsed = JSON.parse(props.settings.dewey_colors || 'null');
+                if (Array.isArray(parsed) && parsed.length === 10) return parsed;
+            } catch {}
+            return DEFAULT_DEWEY_COLORS;
+        });
+
+        const updateDeweyColor = (n, hex) => {
+            const colors = [...deweyColorsList.value];
+            colors[n] = hex;
+            props.settings.dewey_colors = JSON.stringify(colors);
+        };
+
+        const toggleDeweyColor = (n) => {
+            const colors = [...deweyColorsList.value];
+            colors[n] = colors[n] ? null : DEFAULT_DEWEY_COLORS[n];
+            props.settings.dewey_colors = JSON.stringify(colors);
+        };
+
+        const shelfLocationsList = computed(() => {
+            try {
+                const parsed = JSON.parse(props.settings.catalog_shelf_locations || 'null');
+                if (Array.isArray(parsed)) return parsed;
+            } catch {}
+            return [];
+        });
+
+        const updateShelfLocations = (list) => {
+            props.settings.catalog_shelf_locations = JSON.stringify(list);
+        };
+
+        const addShelfLocation = () => {
+            updateShelfLocations([...shelfLocationsList.value, { label: '', color: null }]);
+        };
+
+        const removeShelfLocation = (idx) => {
+            updateShelfLocations(shelfLocationsList.value.filter((_, i) => i !== idx));
+        };
+
+        const updateShelfLocationLabel = (idx, label) => {
+            updateShelfLocations(shelfLocationsList.value.map((e, i) => i === idx ? { ...e, label } : e));
+        };
+
+        const updateShelfLocationColor = (idx, color) => {
+            updateShelfLocations(shelfLocationsList.value.map((e, i) => i === idx ? { ...e, color } : e));
+        };
+
+        const toggleShelfLocationColor = (idx) => {
+            updateShelfLocations(shelfLocationsList.value.map((e, i) =>
+                i === idx ? { ...e, color: e.color ? null : '#6c757d' } : e
+            ));
+        };
+
         return {
             t,
             handleSubmit,
-            handleReset
+            handleReset,
+            deweyColorsList,
+            updateDeweyColor,
+            toggleDeweyColor,
+            shelfLocationsList,
+            addShelfLocation,
+            removeShelfLocation,
+            updateShelfLocationLabel,
+            updateShelfLocationColor,
+            toggleShelfLocationColor
         };
     },
 
@@ -367,6 +435,98 @@ export default defineComponent({
                         rows="2"
                         :placeholder="t('settings.catalog_levels_placeholder')"
                     ></textarea>
+                </div>
+
+                <!-- Dewey Colors -->
+                <div class="col-12 mt-4">
+                    <h4 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-palette"></i>
+                        {{ t('settings.dewey_colors') }}
+                    </h4>
+                    <p class="text-muted small">{{ t('settings.dewey_colors_help') }}</p>
+                </div>
+
+                <div class="col-12">
+                    <div class="d-flex flex-column gap-2">
+                        <div
+                            v-for="(color, n) in deweyColorsList"
+                            :key="n"
+                            class="d-flex align-items-center gap-2"
+                        >
+                            <input
+                                type="checkbox"
+                                class="form-check-input flex-shrink-0"
+                                :checked="!!color"
+                                @change="toggleDeweyColor(n)"
+                            />
+                            <input
+                                v-if="color"
+                                type="color"
+                                :value="color"
+                                class="form-control form-control-color flex-shrink-0"
+                                style="width:2.5rem; height:2rem; padding:2px;"
+                                @input="updateDeweyColor(n, $event.target.value)"
+                            />
+                            <span class="small text-muted">{{ n }} · {{ t('dewey.class_full.' + n) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shelf Locations (Emplacements) -->
+                <div class="col-12 mt-4">
+                    <h4 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-geo-alt"></i>
+                        {{ t('settings.shelf_locations') }}
+                    </h4>
+                    <p class="text-muted small">{{ t('settings.shelf_locations_help') }}</p>
+                </div>
+
+                <div class="col-12">
+                    <div class="d-flex flex-column gap-2">
+                        <div
+                            v-for="(loc, idx) in shelfLocationsList"
+                            :key="idx"
+                            class="d-flex align-items-center gap-2"
+                        >
+                            <input
+                                type="text"
+                                class="form-control"
+                                style="max-width: 240px;"
+                                :value="loc.label"
+                                :placeholder="t('settings.shelf_location_label_placeholder')"
+                                @input="updateShelfLocationLabel(idx, $event.target.value)"
+                            />
+                            <input
+                                type="checkbox"
+                                class="form-check-input flex-shrink-0"
+                                :checked="!!loc.color"
+                                @change="toggleShelfLocationColor(idx)"
+                            />
+                            <input
+                                v-if="loc.color"
+                                type="color"
+                                :value="loc.color"
+                                class="form-control form-control-color flex-shrink-0"
+                                style="width:2.5rem; height:2rem; padding:2px;"
+                                @input="updateShelfLocationColor(idx, $event.target.value)"
+                            />
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger flex-shrink-0"
+                                @click="removeShelfLocation(idx)"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary mt-2"
+                        @click="addShelfLocation"
+                    >
+                        <i class="bi bi-plus-circle me-1"></i>
+                        {{ t('settings.shelf_location_add') }}
+                    </button>
                 </div>
 
                 <!-- Save Button -->

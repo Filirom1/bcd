@@ -17,6 +17,8 @@ from typing import Optional
 
 import httpx
 
+from sqlalchemy.orm import Session
+
 logger = logging.getLogger(__name__)
 
 # Minimum image size — anything smaller is a placeholder / 1×1 pixel
@@ -41,6 +43,49 @@ def configure(google_api_key: Optional[str] = None) -> None:
     """Call once at startup with values from settings."""
     global _google_api_key
     _google_api_key = google_api_key or None
+
+
+def migrate_covers_to_isbn13(covers_dir: Path = Path("data/covers"),
+                              db: Optional[Session] = None) -> None:
+    """Rename any ISBN-10 cover files to their ISBN-13 equivalent.
+
+    Runs only once: a sentinel file ``covers_dir/.isbn13`` is written after
+    a successful migration so subsequent startups skip the disk scan entirely.
+    Updates cover_image in the DB when a session is provided.
+    """
+    if not covers_dir.exists():
+        return
+
+    sentinel = covers_dir / ".isbn13"
+    if sentinel.exists():
+        return
+
+    renamed = 0
+    for path in sorted(covers_dir.glob("*.jpg")):
+        stem = path.stem
+        if len(stem) != 10 or not stem[:9].isdigit():
+            continue
+        isbn13 = _isbn10_to_isbn13(stem)
+        dest = covers_dir / f"{isbn13}.jpg"
+        if dest.exists():
+            continue
+        try:
+            path.rename(dest)
+            renamed += 1
+            if db is not None:
+                from sqlalchemy import text
+                db.execute(
+                    text("UPDATE bibliographic_record SET cover_image = :new WHERE cover_image = :old"),
+                    {"new": dest.name, "old": path.name},
+                )
+        except Exception:
+            logger.debug(f"Could not rename cover {path.name} -> {dest.name}", exc_info=True)
+
+    if db is not None:
+        db.commit()
+    sentinel.write_text("")
+    if renamed:
+        logger.info(f"Migrated {renamed} cover file(s) from ISBN-10 to ISBN-13 filenames")
 
 
 # ---------------------------------------------------------------------------
@@ -154,6 +199,29 @@ def _try_geobib(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
 # Public API
 # ---------------------------------------------------------------------------
 
+def find_cached_cover(isbn: str, covers_dir: Path = Path("data/covers")) -> Optional[str]:
+    """Return the canonical cover filename if it already exists on disk, else None.
+
+    Uses the same ISBN normalisation and ISBN-13 canonical naming as
+    ``download_cover`` so the two functions always agree on filenames.
+    Does **not** attempt any network download.
+    """
+    if not isbn:
+        return None
+    isbn = isbn.strip()
+    if isbn.lower().startswith("issn:"):
+        return None
+    if isbn.lower().startswith("isbn:"):
+        isbn = isbn[5:]
+    normalized = _normalize(isbn)
+    if not normalized:
+        return None
+    _, isbn13 = _both_forms(normalized)
+    canonical = isbn13 if isbn13 else normalized
+    dest = covers_dir / f"{canonical}.jpg"
+    return dest.name if dest.exists() else None
+
+
 def download_cover(isbn: str, covers_dir: Path = Path("data/covers")) -> Optional[str]:
     """
     Download a book cover image, trying multiple providers in cascade.
@@ -180,11 +248,13 @@ def download_cover(isbn: str, covers_dir: Path = Path("data/covers")) -> Optiona
         return None
 
     covers_dir.mkdir(parents=True, exist_ok=True)
-    dest = covers_dir / f"{normalized}.jpg"
-    if dest.exists():
-        return dest.name
 
     isbn10, isbn13 = _both_forms(normalized)
+    # Always store under ISBN-13 when possible; fall back to normalized form
+    canonical = isbn13 if isbn13 else normalized
+    dest = covers_dir / f"{canonical}.jpg"
+    if dest.exists():
+        return dest.name
 
     providers = [
         ("amazon",      lambda c: _try_amazon(isbn10, c)),

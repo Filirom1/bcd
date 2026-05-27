@@ -9,6 +9,16 @@ signal class_selected(cls: Dictionary)
 
 var _cls_data: Dictionary
 
+func _ready() -> void:
+	focus_entered.connect(func():
+		add_theme_stylebox_override("normal", get_theme_stylebox("hover"))
+		add_theme_color_override("font_color", ThemeManager.TEXT)
+	)
+	focus_exited.connect(func():
+		remove_theme_stylebox_override("normal")
+		remove_theme_color_override("font_color")
+	)
+
 func setup(cls: Dictionary) -> void:
 	_cls_data = cls
 	_name_lbl.text = cls.get("name") if cls.get("name") is String else ""

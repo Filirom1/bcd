@@ -9,6 +9,8 @@ import Modal from '../ui/Modal.js';
 import LoadingSpinner from '../ui/LoadingSpinner.js';
 import AutocompleteInput from '../ui/AutocompleteInput.js';
 import Pagination from '../ui/Pagination.js';
+import { useAppState } from '../../composables/useAppState.js';
+import { useItemBadge } from '../../composables/useItemBadge.js';
 
 export default defineComponent({
     name: 'RecordDetail',
@@ -35,6 +37,8 @@ export default defineComponent({
 
     setup(props, { emit }) {
         const { t, d } = useI18n();
+        const { settings } = useAppState();
+        const { getShelfBadge, getCoteBadge } = useItemBadge(settings);
         const record = ref(null);
         const items = ref([]);
         const holds = ref([]);
@@ -395,6 +399,8 @@ export default defineComponent({
             applyItemHistoryFilter,
             clearItemHistoryFilter,
             onItemHistoryPageChange,
+            getShelfBadge,
+            getCoteBadge,
             t
         };
     },
@@ -452,8 +458,8 @@ export default defineComponent({
 
                                     <!-- Identifiers -->
                                     <tr v-if="record.isbn">
-                                        <th>{{ record.isbn && record.isbn.startsWith('issn:') ? t('catalog.issn') : t('catalog.isbn') }}</th>
-                                        <td class="font-monospace">{{ record.isbn && record.isbn.startsWith('issn:') ? record.isbn.slice(5) : record.isbn }}</td>
+                                        <th>{{ record.identifier_type === 'issn' ? t('catalog.issn') : t('catalog.isbn') }}</th>
+                                        <td class="font-monospace">{{ record.isbn_value }}</td>
                                     </tr>
 
                                     <!-- Classification -->
@@ -616,8 +622,7 @@ export default defineComponent({
                                     <tr>
                                         <th>{{ t('catalog.item_id') }}</th>
                                         <th v-if="record && record.medium_type === 'P\u00e9riodique'">{{ t('periodical.issue_number') }}</th>
-                                        <th>{{ t('catalog.shelf_location') }}</th>
-                                        <th v-if="record && record.medium_type !== 'P\u00e9riodique'">{{ t('catalog.call_number') }}</th>
+                                        <th v-if="record && record.medium_type !== 'P\u00e9riodique'">{{ t('catalog.shelf_location_call_number') }}</th>
                                         <th>{{ t('catalog.status') }}</th>
                                         <th>{{ t('catalog.due_date_borrower') }}</th>
                                         <th>{{ t('common.actions') }}</th>
@@ -629,13 +634,36 @@ export default defineComponent({
                                         <td v-if="record && record.medium_type === 'P\u00e9riodique'" class="text-muted">
                                             {{ item.call_number ? (/^\d+$/.test(item.call_number) ? 'n\u00b0 ' + item.call_number : item.call_number) : '\u2014' }}
                                         </td>
-                                        <td class="text-muted">{{ item.shelf_location || '—' }}</td>
-                                        <td v-if="record && record.medium_type !== 'P\u00e9riodique'" class="text-muted">{{ item.call_number || '—' }}</td>
+                                        <td v-if="record && record.medium_type !== 'P\u00e9riodique'">
+                                            <div class="d-flex flex-wrap align-items-center gap-1">
+                                                <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
+                                                <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
+                                                <span v-if="!item.shelf_location && !item.call_number" class="text-muted">&mdash;</span>
+                                            </div>
+                                        </td>
                                         <td>
-                                            <span :class="['badge', getStatusBadge(item).class]">
-                                                <i :class="getStatusBadge(item).icon"></i>
-                                                {{ getStatusBadge(item).text }}
-                                            </span>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <span :class="['badge', getStatusBadge(item).class]">
+                                                    <i :class="getStatusBadge(item).icon"></i>
+                                                    {{ getStatusBadge(item).text }}
+                                                </span>
+                                                <span v-if="item.condition === 'damaged'" class="badge bg-warning text-dark">
+                                                    <i class="bi bi-exclamation-triangle"></i>
+                                                    {{ t('item.condition_damaged') }}
+                                                </span>
+                                                <span v-if="item.loanable === false" class="badge bg-secondary">
+                                                    <i class="bi bi-lock"></i>
+                                                    {{ t('item.status_not_loanable') || t('catalog.loanable') }}
+                                                </span>
+                                            </div>
+                                            <div v-if="item.acquisition_date || item.funding_source" class="mt-1">
+                                                <small v-if="item.acquisition_date" class="text-muted d-block">
+                                                    <i class="bi bi-calendar3"></i> {{ formatDate(item.acquisition_date) }}
+                                                </small>
+                                                <small v-if="item.funding_source" class="text-muted d-block">
+                                                    <i class="bi bi-wallet2"></i> {{ item.funding_source }}
+                                                </small>
+                                            </div>
                                         </td>
                                         <td>
                                             <div v-if="item.current_loan">

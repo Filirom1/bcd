@@ -28,9 +28,37 @@ func _ready() -> void:
 			_update_name()
 	)
 
+	_back_btn.focus_entered.connect(func():
+		_back_btn.add_theme_stylebox_override("normal", _back_btn.get_theme_stylebox("hover"))
+		_back_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+	)
+	_back_btn.focus_exited.connect(func():
+		_back_btn.remove_theme_stylebox_override("normal")
+		_back_btn.remove_theme_color_override("font_color")
+	)
+
 	_update_breadcrumb()
 	_update_name()
 	_load_holds()
+	_back_btn.call_deferred("grab_focus")
+
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if not _back_btn.has_focus():
+		return
+	if event.keycode in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT]:
+		var cards := _holds_container.get_children()
+		if not cards.is_empty() and cards[0] is HoldCard:
+			(cards[0] as HoldCard).grab_first_focus()
+			accept_event()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		Mgr.pop()
+		get_viewport().set_input_as_handled()
 
 func _load_holds() -> void:
 	var holds = await API.get_holds(GS.current_borrower.get("id", 0))
@@ -78,4 +106,5 @@ func _cancel_hold(hold_id: int) -> void:
 	else:
 		Mgr.notify(I18n.t("hold.cancelled_with_title", {"title": hold_title}), "warning")
 
-	_load_holds()
+	await _load_holds()
+	_back_btn.call_deferred("grab_focus")

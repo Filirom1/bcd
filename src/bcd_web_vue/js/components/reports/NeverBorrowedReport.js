@@ -14,6 +14,7 @@ import { usePagination } from '../../composables/usePagination.js';
 import ReportHeader from '../ui/ReportHeader.js';
 import DataTable from '../ui/DataTable.js';
 import Pagination from '../ui/Pagination.js';
+import TauxRotationPanel from './TauxRotationPanel.js';
 
 export default defineComponent({
     name: 'NeverBorrowedReport',
@@ -21,7 +22,8 @@ export default defineComponent({
     components: {
         ReportHeader,
         DataTable,
-        Pagination
+        Pagination,
+        TauxRotationPanel,
     },
 
     setup() {
@@ -31,7 +33,8 @@ export default defineComponent({
         const { openRecord } = useGlobalModal();
 
         const allItems = ref([]); // All filtered items
-        const excludePeriodicals = ref(true); // Default: exclude periodicals from weeding report
+        const excludePeriodicals = ref(true);
+        const tauxRotationFilter = ref({ min: null, max: null }); // Default: exclude periodicals from weeding report
         const loading = ref(false);
         const searchParams = ref(null); // For inventory search
 
@@ -96,16 +99,50 @@ export default defineComponent({
             { value: 'duplicate_low_demand', label: t('reports.crew.duplicateLowDemand'), description: t('reports.crew.duplicateLowDemandDesc') }
         ];
 
-        // Define table columns
-        const columns = computed(() => [
-            { key: 'crew_score', label: t('reports.crew.score'), width: '80px' },
-            { key: 'item_id', label: t('item.item_id'), width: '100px' },
-            { key: 'title', label: t('reports.neverBorrowed.bookTitle') },
-            { key: 'condition', label: t('item.condition'), width: '100px' },
-            { key: 'shelf_location', label: t('item.shelf_location'), width: '120px' },
-            { key: 'age_days', label: t('reports.crew.ageInCollection'), width: '100px' },
-            { key: 'publication_year', label: t('reports.crew.pubYear'), width: '90px' }
+        // ── Column definitions + visibility ────────────────────────────────────
+        const COL_IDS = ['crew_score', 'item_id', 'title', 'condition', 'shelf_location', 'age_days', 'publication_year', 'total_copies', 'period_loan_count'];
+        const COL_STORAGE_KEY = 'bcd_never_borrowed_cols';
+        const loadVisibleCols = () => {
+            try {
+                const s = localStorage.getItem(COL_STORAGE_KEY);
+                if (s) return COL_IDS.filter(id => JSON.parse(s).includes(id));
+            } catch (e) {}
+            return [...COL_IDS];
+        };
+        const visibleColumns = ref(loadVisibleCols());
+        const showColDropdown = ref(false);
+        watch(visibleColumns, v => { try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(v)); } catch (e) {} });
+        const isColVisible = id => visibleColumns.value.includes(id);
+        const toggleCol = id => {
+            if (visibleColumns.value.includes(id)) visibleColumns.value = visibleColumns.value.filter(c => c !== id);
+            else visibleColumns.value = [...visibleColumns.value, id];
+        };
+        const resetCols = () => { visibleColumns.value = [...COL_IDS]; showColDropdown.value = false; };
+
+        const allColumns = computed(() => [
+            { key: 'crew_score',      label: t('reports.crew.score'),              width: '80px'  },
+            { key: 'item_id',         label: t('item.item_id'),                    width: '100px' },
+            { key: 'title',           label: t('reports.neverBorrowed.bookTitle')                 },
+            { key: 'condition',       label: t('item.condition'),                  width: '100px' },
+            { key: 'shelf_location',  label: t('item.shelf_location'),             width: '120px' },
+            { key: 'age_days',        label: t('reports.crew.ageInCollection'),    width: '100px' },
+            { key: 'publication_year',label: t('reports.crew.pubYear'),            width: '90px'  },
+            { key: 'total_copies',    label: t('reports.mostBorrowed.copies'),     width: '80px'  },
+            { key: 'period_loan_count',label: t('reports.tauxRotation.label'),     width: '170px' },
         ]);
+        const columns = computed(() => allColumns.value.filter(c => isColVisible(c.key)));
+
+        // ── Per-title copies count (from loaded items) ─────────────────────────
+        const copiesPerTitle = computed(() => {
+            const map = {};
+            allItems.value.forEach(i => {
+                map[i.bibliographic_record_id] = (map[i.bibliographic_record_id] || 0) + 1;
+            });
+            return map;
+        });
+
+        // ── Max taux for progress bar scale ────────────────────────────────────
+        const tauxMax = computed(() => Math.max(...allItems.value.map(i => i.taux_rotation ?? 0), 1));
 
         // Calculate CREW score based on item data
         const calculateCrewScore = (item) => {
@@ -239,6 +276,7 @@ export default defineComponent({
                     const crew = calculateCrewScore(item);
                     item.crew_score = crew.score;
                     item.crew_reasons = crew.reasons;
+                    item.taux_rotation = item.period_loan_count ?? item.circulation_count ?? 0;
                 });
 
                 // Method-specific post-processing filters
@@ -344,10 +382,20 @@ export default defineComponent({
 
         // Filtered items (excludes periodicals when option is enabled)
         const filteredItems = computed(() => {
+            let items = allItems.value;
             if (excludePeriodicals.value) {
-                return allItems.value.filter(item => item.medium_type !== 'P\u00e9riodique');
+                items = items.filter(item => item.medium_type !== 'Périodique');
             }
-            return allItems.value;
+            const tr = tauxRotationFilter.value;
+            if (tr.min !== null || tr.max !== null) {
+                items = items.filter(item => {
+                    const v = item.taux_rotation ?? 0;
+                    if (tr.min !== null && v < tr.min) return false;
+                    if (tr.max !== null && v > tr.max) return false;
+                    return true;
+                });
+            }
+            return items;
         });
 
         // Keep pagination total in sync with the filtered count
@@ -357,10 +405,11 @@ export default defineComponent({
 
         // Computed paginated data (sorted, from filtered items)
         const paginatedData = computed(() => {
-            const sorted = sortItems(filteredItems.value);
+            const map = copiesPerTitle.value;
+            const withCopies = filteredItems.value.map(i => ({ ...i, total_copies: map[i.bibliographic_record_id] ?? 1 }));
+            const sorted = sortItems(withCopies);
             const start = (currentPage.value - 1) * pageSize.value;
-            const end = start + pageSize.value;
-            return sorted.slice(start, end);
+            return sorted.slice(start, start + pageSize.value);
         });
 
         // Print report
@@ -408,7 +457,11 @@ export default defineComponent({
             handlePageChange,
             handlePageSizeChange,
             handleSort,
-            openRecord
+            openRecord,
+            allItems,
+            tauxRotationFilter,
+            COL_IDS, allColumns, visibleColumns, showColDropdown, isColVisible, toggleCol, resetCols,
+            copiesPerTitle, tauxMax,
         };
     },
 
@@ -544,99 +597,117 @@ export default defineComponent({
                 </div>
             </div>
 
-            <!-- Results Summary -->
-            <div v-if="!loading && totalItems > 0" class="mb-2">
-                <small class="text-muted">
-                    {{ t('reports.neverBorrowed.showing', { count: paginatedData.length, total: totalItems }) }}
-                </small>
+            <!-- Taux de rotation panel -->
+            <div class="row g-2 mb-3" v-if="!loading && allItems.length">
+                <div class="col-6 col-md-4">
+                    <taux-rotation-panel
+                        :items="allItems"
+                        :model-min="tauxRotationFilter.min"
+                        :model-max="tauxRotationFilter.max"
+                        @update:model-min="tauxRotationFilter.min = $event"
+                        @update:model-max="tauxRotationFilter.max = $event"
+                    />
+                </div>
             </div>
 
-            <!-- Custom table with sortable headers -->
+            <!-- Results Summary + column toggle -->
+            <div v-if="!loading && totalItems > 0" class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-muted">{{ t('reports.neverBorrowed.showing', { count: paginatedData.length, total: totalItems }) }}</span>
+                <div class="position-relative">
+                    <button class="btn btn-outline-secondary btn-sm" @click="showColDropdown = !showColDropdown" :title="t('reports.collectionReport.selectPanels')">
+                        <i class="bi bi-layout-three-columns"></i>
+                    </button>
+                    <div v-if="showColDropdown" class="dropdown-menu show"
+                         style="position:absolute;right:0;top:100%;margin-top:.25rem;min-width:190px;z-index:1050;" @click.stop>
+                        <h6 class="dropdown-header">{{ t('reports.collectionReport.selectPanels') }}</h6>
+                        <div class="dropdown-divider"></div>
+                        <div v-for="col in allColumns" :key="col.key" class="form-check px-3 py-1">
+                            <input type="checkbox" class="form-check-input" :id="'col-nb-' + col.key"
+                                   :checked="isColVisible(col.key)" @change="toggleCol(col.key)">
+                            <label class="form-check-label small" :for="'col-nb-' + col.key" style="cursor:pointer;">{{ col.label }}</label>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item text-primary small" @click="resetCols">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>{{ t('reports.collectionReport.resetPanels') }}
+                        </button>
+                    </div>
+                    <div v-if="showColDropdown" @click="showColDropdown = false" style="position:fixed;inset:0;z-index:1049;"></div>
+                </div>
+            </div>
+
+            <!-- Table -->
             <div class="card" v-if="!loading && totalItems > 0">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover table-striped mb-0">
                             <thead>
                                 <tr>
-                                    <th
-                                        v-for="column in columns"
-                                        :key="column.key"
+                                    <th v-for="column in columns" :key="column.key"
                                         :style="column.width ? { width: column.width } : {}"
                                         @click="handleSort(column.key)"
-                                        style="cursor: pointer; user-select: none;"
-                                        class="position-relative"
-                                    >
+                                        style="cursor:pointer;user-select:none;">
                                         {{ column.label }}
-                                        <i
-                                            v-if="sortColumn === column.key"
-                                            class="bi ms-1"
-                                            :class="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"
-                                        ></i>
+                                        <i v-if="sortColumn === column.key" class="bi ms-1"
+                                           :class="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="item in paginatedData" :key="item.item_id">
-                    <!-- CREW Score -->
-                    <td class="text-center">
-                        <span class="badge fs-6" :class="{
-                            'bg-success': item.crew_score < 3,
-                            'bg-warning text-dark': item.crew_score >= 3 && item.crew_score < 5,
-                            'bg-danger': item.crew_score >= 5
-                        }">
-                            {{ item.crew_score }}
-                        </span>
-                        <div v-if="item.crew_reasons && item.crew_reasons.length > 0" class="mt-1">
-                            <small v-for="(reason, idx) in item.crew_reasons" :key="idx" class="d-block text-muted">
-                                {{ reason }}
-                            </small>
-                        </div>
-                    </td>
-
-                    <!-- Barcode -->
-                    <td class="font-monospace">{{ item.item_id }}</td>
-
-                    <!-- Title (clickable to catalog) -->
-                    <td>
-                        <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">
-                            {{ item.title }}
-                        </a>
-                        <div v-if="item.authors && item.authors.length > 0" class="text-muted small">
-                            {{ Array.isArray(item.authors) ? item.authors.join(', ') : item.authors }}
-                        </div>
-                    </td>
-
-                    <!-- Condition -->
-                    <td>
-                        <span v-if="item.condition" class="badge" :class="{
-                            'bg-success': item.condition === 'good',
-                            'bg-warning text-dark': item.condition === 'damaged'
-                        }">
-                            {{ t('item.condition_' + item.condition) }}
-                        </span>
-                    </td>
-
-                    <!-- Shelf Location -->
-                    <td><small>{{ item.shelf_location || '—' }}</small></td>
-
-                    <!-- Age in Collection (Years) -->
-                    <td class="text-end">
-                        <span v-if="item.age_days !== null && item.age_days !== undefined && !isNaN(item.age_days)">
-                            {{ Math.floor(item.age_days / 365) }} {{ t('reports.crew.years') }}
-                        </span>
-                        <span v-else class="text-muted">—</span>
-                    </td>
-
-                    <!-- Publication Year -->
-                    <td class="text-center">
-                        <span v-if="item.publication_year" :class="{
-                            'text-danger': item.publication_year < new Date().getFullYear() - 10,
-                            'text-warning': item.publication_year >= new Date().getFullYear() - 10 && item.publication_year < new Date().getFullYear() - 5
-                        }">
-                            {{ item.publication_year }}
-                        </span>
-                        <span v-else class="text-muted">—</span>
-                    </td>
+                                    <td v-if="isColVisible('crew_score')" class="text-center">
+                                        <span class="badge fs-6" :class="{
+                                            'bg-success': item.crew_score < 3,
+                                            'bg-warning text-dark': item.crew_score >= 3 && item.crew_score < 5,
+                                            'bg-danger': item.crew_score >= 5
+                                        }">{{ item.crew_score }}</span>
+                                        <div v-if="item.crew_reasons && item.crew_reasons.length" class="mt-1">
+                                            <small v-for="(r, i) in item.crew_reasons" :key="i" class="d-block text-muted">{{ r }}</small>
+                                        </div>
+                                    </td>
+                                    <td v-if="isColVisible('item_id')" class="font-monospace small">{{ item.item_id }}</td>
+                                    <td v-if="isColVisible('title')">
+                                        <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">{{ item.title }}</a>
+                                        <div v-if="item.authors && item.authors.length" class="text-muted small">
+                                            {{ Array.isArray(item.authors) ? item.authors.join(', ') : item.authors }}
+                                        </div>
+                                    </td>
+                                    <td v-if="isColVisible('condition')">
+                                        <span v-if="item.condition" class="badge"
+                                              :class="item.condition === 'good' ? 'bg-success' : 'bg-warning text-dark'">
+                                            {{ t('item.condition_' + item.condition) }}
+                                        </span>
+                                    </td>
+                                    <td v-if="isColVisible('shelf_location')"><small>{{ item.shelf_location || '—' }}</small></td>
+                                    <td v-if="isColVisible('age_days')" class="text-end">
+                                        <span v-if="item.age_days != null && !isNaN(item.age_days)"
+                                              :class="item.age_days > 1095 ? 'text-danger' : item.age_days > 730 ? 'text-warning' : ''">
+                                            {{ Math.floor(item.age_days / 365) }} {{ t('reports.crew.years') }}
+                                        </span>
+                                        <span v-else class="text-muted">—</span>
+                                    </td>
+                                    <td v-if="isColVisible('publication_year')" class="text-center">
+                                        <span v-if="item.publication_year"
+                                              :class="item.publication_year < new Date().getFullYear() - 10 ? 'text-danger' : item.publication_year < new Date().getFullYear() - 5 ? 'text-warning' : ''">
+                                            {{ item.publication_year }}
+                                        </span>
+                                        <span v-else class="text-muted">—</span>
+                                    </td>
+                                    <td v-if="isColVisible('total_copies')" class="text-center">
+                                        <span :class="(copiesPerTitle[item.bibliographic_record_id] ?? 1) <= 1 ? 'text-danger' : ''">
+                                            {{ copiesPerTitle[item.bibliographic_record_id] ?? 1 }}
+                                        </span>
+                                    </td>
+                                    <td v-if="isColVisible('period_loan_count')">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height:16px;">
+                                                <div class="progress-bar"
+                                                     :class="(item.taux_rotation ?? 0) >= 8 ? 'bg-danger' : (item.taux_rotation ?? 0) >= 4 ? 'bg-warning' : (item.taux_rotation ?? 0) === 0 ? 'bg-secondary' : 'bg-success'"
+                                                     :style="{ width: Math.max((item.taux_rotation ?? 0) / tauxMax * 100, 4) + '%' }">
+                                                    {{ item.taux_rotation ?? 0 }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

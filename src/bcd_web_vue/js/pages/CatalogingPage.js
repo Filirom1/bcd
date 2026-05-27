@@ -67,7 +67,9 @@ export default defineComponent({
             createdRecord.value = {
                 id: record.record_id || record.id,
                 title: record.title,
-                medium_type: record.medium_type
+                medium_type: record.medium_type,
+                dewey_number: record.dewey_number || null,
+                authors: record.authors || []
             };
             state.value = 'item-creation';
         };
@@ -194,6 +196,8 @@ export default defineComponent({
                         :record-id="createdRecord.id"
                         :record-title="createdRecord.title"
                         :record-medium-type="createdRecord.medium_type"
+                        :record-dewey-number="createdRecord.dewey_number"
+                        :record-authors="createdRecord.authors"
                         @item-created="(item) => {}"
                         @done="handleItemsDone"
                     />

@@ -8,7 +8,7 @@ const { useI18n } = VueI18n;
 const { useRoute } = VueRouter;
 import OverdueReport from '../components/reports/OverdueReport.js';
 import MostBorrowedReport from '../components/reports/MostBorrowedReport.js';
-import NeverBorrowedReport from '../components/reports/NeverBorrowedReport.js';
+import CollectionReport from '../components/reports/CollectionReport.js';
 import HoldsReport from '../components/reports/HoldsReport.js';
 import ActiveLoansReport from '../components/reports/ActiveLoansReport.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
@@ -19,7 +19,7 @@ export default defineComponent({
     components: {
         OverdueReport,
         MostBorrowedReport,
-        NeverBorrowedReport,
+        CollectionReport,
         HoldsReport,
         ActiveLoansReport,
         HelpPanel
@@ -57,7 +57,7 @@ export default defineComponent({
             <!-- Report Content -->
             <overdue-report v-if="activeTab === 'overdue'" />
             <most-borrowed-report v-else-if="activeTab === 'most-borrowed'" />
-            <never-borrowed-report v-else-if="activeTab === 'never-borrowed'" />
+            <collection-report v-else-if="activeTab === 'never-borrowed'" />
             <holds-report v-else-if="activeTab === 'holds'" />
             <active-loans-report v-else-if="activeTab === 'active-loans'" />
         </div>

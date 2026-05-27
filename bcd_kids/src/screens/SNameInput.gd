@@ -29,6 +29,11 @@ func _ready() -> void:
 	_validate_btn.text = I18n.t("common.validate")
 	_validate_btn.pressed.connect(func(): _search())
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		Mgr.pop()
+		get_viewport().set_input_as_handled()
+
 func _update_breadcrumb() -> void:
 	_breadcrumb.set_path([
 		{"text": GS.library_name, "screen": "class_select", "clickable": true},

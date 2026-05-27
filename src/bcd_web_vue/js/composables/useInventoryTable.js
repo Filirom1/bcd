@@ -88,6 +88,7 @@ export function useInventoryTable() {
                         condition: item.condition,
                         loanable: item.loanable,
                         shelf_location: item.shelf_location,
+                        call_number: item.call_number,
                         last_inventoried_at: item.last_inventoried_at,
                         // Record fields
                         title: item.title,

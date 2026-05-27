@@ -57,7 +57,49 @@ Les listes de classification jouent le rôle de référentiel pour tout le fonds
 - **Vérifier régulièrement** via Catalogue → filtres avancés → genre/type de support vide ou inhabituel → corriger en édition groupée
 - Si une valeur est saisie hors liste par erreur, elle restera dans la base jusqu'à ce qu'on la corrige manuellement via l'édition groupée dans le catalogue
 
-## Étape 4 — Sauvegarder les paramètres
+## Étape 4 — Couleurs Dewey
+
+La **marguerite des couleurs** associe une couleur à chacune des 10 grandes classes Dewey (000 à 900). Ces couleurs apparaissent sur les étiquettes de cote dans le catalogue et l'inventaire pour repérer d'un coup d'œil la section d'un livre.
+
+| Classe | Thème |
+|--------|-------|
+| **000** | Généralités, dictionnaires, informatique |
+| **100** | Philosophie, psychologie |
+| **200** | Religion |
+| **300** | Sciences sociales, éducation |
+| **400** | Langues |
+| **500** | Sciences naturelles, mathématiques |
+| **600** | Technologie, médecine, cuisine |
+| **700** | Arts, musique, sport, loisirs |
+| **800** | Littérature |
+| **900** | Histoire, géographie, biographies |
+
+**Pour chaque classe, tu peux :**
+- **Activer ou désactiver** la couleur avec la case à cocher (si désactivée, la cote s'affiche sans couleur)
+- **Choisir la couleur** avec le sélecteur de couleur
+
+Les couleurs par défaut suivent la **marguerite des couleurs** utilisée dans les bibliothèques scolaires françaises.
+
+> **Conseil :** Si tu colories déjà les étiquettes physiques sur tes livres, configure ici les mêmes couleurs pour que l'affichage à l'écran corresponde à ce que les élèves voient sur les étagères.
+
+## Étape 5 — Emplacements de rayonnage
+
+Cette liste définit les **emplacements physiques** de ta bibliothèque (Romans, Albums, Bandes dessinées, Documentaires…). Chaque emplacement peut avoir une couleur distincte.
+
+Ces emplacements apparaissent comme des badges colorés dans :
+- Le **catalogue** (résultats de recherche et fiche d'un livre)
+- L'**inventaire** (liste des exemplaires)
+- Le formulaire de **catalogage** (sélecteur d'emplacement au lieu d'un champ texte libre)
+
+**Pour gérer la liste :**
+- **Ajouter** un emplacement : clique sur « + Ajouter un emplacement »
+- **Nommer** chaque emplacement dans le champ texte (ex : `Romans`, `Albums`)
+- **Colorier** (optionnel) : coche la case puis choisis une couleur avec le sélecteur
+- **Supprimer** un emplacement : clique sur l'icône corbeille
+
+> **Conseil :** Utilise les mêmes noms que les panneaux physiques sur tes étagères. Les élèves retrouveront plus facilement les livres si les noms à l'écran correspondent à ce qu'ils voient dans la bibliothèque.
+
+## Étape 6 — Sauvegarder les paramètres
 
 Clique sur **« Enregistrer »** pour appliquer tous les changements.
 Un message de confirmation apparaît en haut de l'écran.

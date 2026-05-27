@@ -399,10 +399,10 @@ class TestDownloadCover:
 
     def test_returns_cached_filename_if_file_exists(self):
         self.covers.mkdir()
-        existing = self.covers / "2211056466.jpg"
+        existing = self.covers / "9782211056465.jpg"
         existing.write_bytes(_image())
         result = download_cover("2211056466", covers_dir=self.covers)
-        assert result == "2211056466.jpg"
+        assert result == "9782211056465.jpg"
 
     def test_cascade_stops_at_amazon(self):
         data = _image()
@@ -412,7 +412,7 @@ class TestDownloadCover:
              patch("src.bcd_api.services.cover_service._try_geobib") as mock_geo, \
              patch("httpx.Client", return_value=_make_client()):
             result = download_cover("2211056466", covers_dir=self.covers)
-        assert result == "2211056466.jpg"
+        assert result == "9782211056465.jpg"
         mock_ol.assert_not_called()
         mock_g.assert_not_called()
         mock_geo.assert_not_called()
@@ -464,8 +464,8 @@ class TestDownloadCover:
         with patch("src.bcd_api.services.cover_service._try_amazon", return_value=data), \
              patch("httpx.Client", return_value=_make_client()):
             download_cover("2211056466", covers_dir=self.covers)
-        assert (self.covers / "2211056466.jpg").exists()
-        assert (self.covers / "2211056466.jpg").stat().st_size == len(data)
+        assert (self.covers / "9782211056465.jpg").exists()
+        assert (self.covers / "9782211056465.jpg").stat().st_size == len(data)
 
     def test_returns_none_for_empty_isbn(self):
         result = download_cover("", covers_dir=self.covers)

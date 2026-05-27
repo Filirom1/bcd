@@ -143,6 +143,21 @@ func _select_class(cls: Dictionary) -> void:
 	GS.current_class = cls
 	Mgr.push("name_input")
 
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
+	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if _scan_input.has_focus():
+		if event.keycode in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT]:
+			var buttons := _classes_grid.get_children()
+			if not buttons.is_empty():
+				buttons[0].grab_focus()
+				accept_event()
+	elif event.keycode == KEY_ESCAPE:
+		_scan_input.grab_focus()
+		accept_event()
+
 func _refresh_ui() -> void:
 	_title_lbl.text = I18n.t("class_select.title")
 	_scan_input.placeholder_text = I18n.t("class_select.scan_placeholder")

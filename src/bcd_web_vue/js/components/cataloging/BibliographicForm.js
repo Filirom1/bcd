@@ -70,7 +70,8 @@ export default defineComponent({
          * Normalize ISBN (remove dashes and spaces)
          */
         const normalizeISBN = (isbn) => {
-            return isbn ? isbn.replace(/[-\s]/g, '') : '';
+            if (!isbn) return '';
+            return isbn.replace(/^(isbn:|issn:)/, '').replace(/[-\s]/g, '');
         };
 
         // Auto-fill from BNF data

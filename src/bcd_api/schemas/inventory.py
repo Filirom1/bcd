@@ -17,6 +17,7 @@ class ItemInventoryResponse(BaseModel):
     condition: str = Field(..., description="Item condition")
     loanable: bool = Field(..., description="Whether item can be loaned")
     shelf_location: Optional[str] = Field(None, description="Physical location")
+    call_number: Optional[str] = Field(None, description="Call number")
     last_inventoried_at: datetime = Field(..., description="Timestamp when item was marked")
 
     # Record fields (for display in working table)
@@ -82,7 +83,8 @@ class InventoryItemResult(BaseModel):
     # Calculated fields
     age_days: Optional[int] = Field(default=None, description="Age in collection (days since acquisition)")
 
-    # Rotation filter field
+    # Calculated loan fields
+    circulation_count: Optional[int] = Field(default=None, description="Total all-time loan count")
     period_loan_count: Optional[int] = Field(default=None, description="Loans in specified period (rotation filter)")
 
     model_config = ConfigDict(from_attributes=True)

@@ -88,12 +88,12 @@ func _build_notif_layer() -> void:
 
 func push(name: String) -> void:
 	if not _stack.is_empty():
-		(_stack.back() as Control).hide()
+		_hide_screen(_stack.back() as Control)
 	var scr := _make(name)
 	_stack.append(scr)
 	if not scr.is_inside_tree():
 		add_child(scr)
-	scr.show()
+	_show_screen(scr)
 
 func pop() -> void:
 	if _stack.size() <= 1:
@@ -103,8 +103,8 @@ func pop() -> void:
 	if not is_cached:
 		old_screen.queue_free()
 	else:
-		old_screen.hide()
-	(_stack.back() as Control).show()
+		_hide_screen(old_screen)
+	_show_screen(_stack.back() as Control)
 
 func replace(name: String) -> void:
 	if not _stack.is_empty():
@@ -113,8 +113,16 @@ func replace(name: String) -> void:
 		if not is_cached:
 			old_screen.queue_free()
 		else:
-			old_screen.hide()
+			_hide_screen(old_screen)
 	push(name)
+
+func _hide_screen(scr: Control) -> void:
+	scr.hide()
+	scr.process_mode = Node.PROCESS_MODE_DISABLED
+
+func _show_screen(scr: Control) -> void:
+	scr.process_mode = Node.PROCESS_MODE_INHERIT
+	scr.show()
 
 func _make(name: String) -> Control:
 	if _screen_cache.has(name):
@@ -133,7 +141,6 @@ func _make(name: String) -> Control:
 		"search":           scr = preload("res://src/screens/SSearch.tscn").instantiate()
 		"hold_confirm":     scr = preload("res://src/screens/SHoldConfirm.tscn").instantiate()
 		"hold_ready":       scr = preload("res://src/screens/SHoldReady.tscn").instantiate()
-		"book_cover":   	scr = preload("res://src/screens/SBookCover.tscn").instantiate()
 		"book_detail":  	scr = preload("res://src/screens/SBookDetail.tscn").instantiate()
 		"my_holds":         scr = preload("res://src/screens/SMyHolds.tscn").instantiate()
 		"settings":         scr = preload("res://src/screens/SSettings.tscn").instantiate()

@@ -222,21 +222,6 @@ def search_bibliographic_records(
         if item.bibliographic_record_id not in first_item_by_record:
             first_item_by_record[item.bibliographic_record_id] = item
 
-    # Batch query: distinct shelf locations per record
-    shelf_rows = (
-        db.query(Item.bibliographic_record_id, Item.shelf_location)
-        .filter(
-            Item.bibliographic_record_id.in_(record_ids),
-            Item.shelf_location.isnot(None),
-            Item.shelf_location != "",
-        )
-        .distinct()
-        .all()
-    )
-    shelf_locations_by_record: dict = {}
-    for rec_id, loc in shelf_rows:
-        shelf_locations_by_record.setdefault(rec_id, []).append(loc)
-
     records_with_availability = []
     for r in records:
         counts = counts_by_record.get(r.id)
@@ -245,7 +230,6 @@ def search_bibliographic_records(
         active_holds_count = holds_by_record.get(r.id, 0)
 
         first_item = first_item_by_record.get(r.id)
-        shelf_locations = sorted(shelf_locations_by_record.get(r.id, []))
 
         # Deserialize authors if it's a JSON string
         authors = r.authors
@@ -262,6 +246,8 @@ def search_bibliographic_records(
             "id": r.id,
             "record_id": r.id,
             "isbn": r.isbn,
+            "isbn_value": r.isbn_value,
+            "identifier_type": r.identifier_type,
             "title": r.title,
             "subtitle": r.subtitle,
             "authors": authors,
@@ -283,7 +269,7 @@ def search_bibliographic_records(
             "active_holds_count": active_holds_count,
             "cover_image": r.cover_image,
             "first_item_id": first_item.item_id if first_item else None,
-            "shelf_locations": shelf_locations,
+            "shelf_location": first_item.shelf_location if first_item else None,
             "call_number": first_item.call_number if first_item else None,
         }
         records_with_availability.append(record_dict)

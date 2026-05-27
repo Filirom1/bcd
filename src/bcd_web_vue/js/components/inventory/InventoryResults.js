@@ -7,6 +7,8 @@
 const { defineComponent, computed, ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import DataTable from '../ui/DataTable.js';
+import { useAppState } from '../../composables/useAppState.js';
+import { useItemBadge } from '../../composables/useItemBadge.js';
 
 export default defineComponent({
     name: 'InventoryResults',
@@ -38,6 +40,8 @@ export default defineComponent({
 
     setup(props, { emit }) {
         const { t } = useI18n();
+        const { settings } = useAppState();
+        const { getShelfBadge, getCoteBadge } = useItemBadge(settings);
 
         const recentlyAddedId = ref(null);
 
@@ -179,7 +183,9 @@ export default defineComponent({
             isSelected,
             getRowClass,
             formatDate,
-            headerCheckboxRef
+            headerCheckboxRef,
+            getShelfBadge,
+            getCoteBadge
         };
     },
 
@@ -272,7 +278,8 @@ export default defineComponent({
 
                 <!-- Call Number -->
                 <td v-if="isColumnVisible('call_number')" :class="getRowClass(item)">
-                    <small>{{ item.call_number || '—' }}</small>
+                    <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
+                    <span v-else class="text-muted">—</span>
                 </td>
 
                 <!-- Loanable -->
@@ -282,7 +289,8 @@ export default defineComponent({
 
                 <!-- Shelf Location -->
                 <td v-if="isColumnVisible('shelf_location')" :class="getRowClass(item)">
-                    <small>{{ item.shelf_location || '—' }}</small>
+                    <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
+                    <span v-else class="text-muted">—</span>
                 </td>
 
                 <!-- Genre -->

@@ -76,9 +76,11 @@ func _do_return() -> void:
 			var days_overdue: int = item.get("days_overdue", 0)
 			var borrower_name: String = item.get("borrower_name", "")
 			var title: String = item.get("display_title", item.get("title", ""))
-			var status_text := I18n.t("return.late", {"days": days_overdue}) if was_overdue else I18n.t("return.on_time")
-			var msg := "✅ %s - %s - %s" % [title, borrower_name, status_text]
-			_add_to_history(msg, was_overdue)
+			var _sl = item.get("shelf_location")
+			var _cn = item.get("call_number")
+			var shelf: String = (str(_sl) if _sl != null else "").strip_edges()
+			var call_num: String = (str(_cn) if _cn != null else "").strip_edges()
+			_add_to_history(title, borrower_name, was_overdue, days_overdue, shelf, call_num)
 
 			if title.is_empty():
 				Mgr.notify(I18n.t("return.success"), "success")
@@ -96,6 +98,10 @@ func _do_return() -> void:
 				Mgr.push("hold_ready")
 
 			ThemeManager.animate_success_flash(_barcode_input)
+			var loans_result = await API.get_current_loans(GS.current_borrower.get("borrower_id", ""))
+			if not loans_result.has("error"):
+				GS.current_loans = loans_result.get("loans", [])
+				GS.current_borrower.current_loans_count = GS.current_loans.size()
 			_barcode_input.grab_focus()
 
 func _handle_error(result: Dictionary) -> void:
@@ -115,9 +121,45 @@ func _update_breadcrumb() -> void:
 		{"text": I18n.t("return.title"), "screen": "", "clickable": false}
 	])
 
-func _add_to_history(text: String, was_late: bool) -> void:
-	if _history.get_child_count() == 1:
+func _add_to_history(
+	title: String,
+	borrower_name: String,
+	was_late: bool,
+	days_overdue: int,
+	shelf: String,
+	call_num: String
+) -> void:
+	if _history.get_child_count() == 1 and _history.get_child(0) is Label:
 		_history.get_child(0).queue_free()
+
+	var entry := VBoxContainer.new()
+	entry.add_theme_constant_override("separation", 2)
+	_history.add_child(entry)
+
+	# Status line
+	var status_text := I18n.t("return.late", {"days": days_overdue}) if was_late else I18n.t("return.on_time")
+	var icon := "⚠️" if was_late else "✅"
 	var lbl := Label.new()
-	lbl.text = text
-	_history.add_child(lbl)
+	lbl.text = "%s %s · %s · %s" % [icon, title, borrower_name, status_text]
+	entry.add_child(lbl)
+
+	# Location badges
+	if not shelf.is_empty() or not call_num.is_empty():
+		var loc_row := HBoxContainer.new()
+		loc_row.add_theme_constant_override("separation", 6)
+		entry.add_child(loc_row)
+
+		var loc_lbl := Label.new()
+		loc_lbl.text = I18n.t("return.ranger_a")
+		loc_lbl.theme_type_variation = "LabelSmall"
+		loc_row.add_child(loc_lbl)
+
+		var badges := HBoxContainer.new()
+		badges.add_theme_constant_override("separation", 4)
+		loc_row.add_child(badges)
+		BadgeHelper.populate_badges(badges, shelf, call_num)
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		Mgr.pop()
+		get_viewport().set_input_as_handled()

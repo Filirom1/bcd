@@ -493,6 +493,8 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
 
     # Create item (barcode is auto-computed from item_id via property)
     item_dict = item_data.model_dump()
+    if item_dict.get('acquisition_date') is None:
+        item_dict['acquisition_date'] = date.today()
     db_item = Item(**item_dict)
     db.add(db_item)
 

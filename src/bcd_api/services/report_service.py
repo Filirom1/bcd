@@ -8,7 +8,7 @@ import json
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, desc
+from sqlalchemy import func, and_, or_, desc, case
 
 from ..models.circulation import CirculationTransaction
 from ..models.borrower import Borrower
@@ -27,6 +27,173 @@ def _deserialize_authors(authors) -> str:
         except (json.JSONDecodeError, TypeError):
             return None
     return None
+
+
+def get_collection_stats(
+    db: Session,
+    crew_method: str = "never_borrowed",
+    min_age_years: float = 0.0,
+    exclude_periodicals: bool = True,
+    genre: Optional[str] = None,
+    medium_type: Optional[str] = None,
+    target_audience: Optional[str] = None,
+    condition: Optional[str] = None,
+    pub_year_min: Optional[int] = None,
+    pub_year_max: Optional[int] = None,
+    acq_year_min: Optional[int] = None,
+    acq_year_max: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Compute aggregation stats for the collection report (breakdowns + histograms).
+
+    Returns GROUP BY counts by genre, medium_type, target_audience, condition,
+    plus histograms by publication_year and acquisition_year.
+
+    Args:
+        db: Database session
+        crew_method: 'never_borrowed' or 'low_circulation' or 'damaged_old' etc.
+        min_age_years: Minimum age in collection (years); 0 = no filter
+        exclude_periodicals: Exclude items with medium_type = 'Périodique'
+        genre: Cross-filter by genre
+        medium_type: Cross-filter by medium_type
+        target_audience: Cross-filter by target_audience
+        condition: Cross-filter by condition
+        pub_year_min: Cross-filter by publication_year (min)
+        pub_year_max: Cross-filter by publication_year (max)
+        acq_year_min: Cross-filter by acquisition year (min)
+        acq_year_max: Cross-filter by acquisition year (max)
+
+    Returns:
+        dict with breakdowns and histograms
+    """
+    today = date.today()
+
+    def _base_query(db, exclude_genre=False, exclude_medium_type=False,
+                    exclude_target_audience=False, exclude_condition=False,
+                    exclude_pub_year=False, exclude_acq_year=False):
+        """Build the base filtered query for aggregations."""
+        q = db.query(Item, BiblographicRecord).join(
+            BiblographicRecord, Item.bibliographic_record_id == BiblographicRecord.id
+        )
+
+        # CREW method filter
+        if crew_method == "never_borrowed":
+            q = q.filter(Item.last_borrowed_at.is_(None))
+        elif crew_method == "low_circulation":
+            since = date(today.year - 2, today.month, today.day)
+            loan_counts = (
+                db.query(CirculationTransaction.item_id, func.count().label("cnt"))
+                .filter(CirculationTransaction.checkout_date >= since)
+                .group_by(CirculationTransaction.item_id)
+                .subquery()
+            )
+            q = q.outerjoin(loan_counts, loan_counts.c.item_id == Item.id)
+            q = q.filter(func.coalesce(loan_counts.c.cnt, 0) <= 2)
+        elif crew_method == "damaged_old":
+            q = q.filter(Item.condition == "damaged")
+            if min_age_years <= 0:
+                cutoff = date(today.year - 3, today.month, today.day)
+                q = q.filter(Item.acquisition_date <= cutoff)
+        elif crew_method == "never_inventoried":
+            q = q.filter(Item.last_inventoried_at.is_(None))
+
+        # Ancienneté filter (skip if already applied by damaged_old)
+        if min_age_years > 0 and crew_method != "damaged_old":
+            days = int(min_age_years * 365.25)
+            cutoff = today - timedelta(days=days)
+            q = q.filter(Item.acquisition_date.isnot(None))
+            q = q.filter(Item.acquisition_date <= cutoff)
+
+        # Exclude periodicals
+        if exclude_periodicals:
+            q = q.filter(BiblographicRecord.medium_type != "Périodique")
+
+        # Cross-filters (each excluded for its own breakdown query)
+        if genre and not exclude_genre:
+            q = q.filter(BiblographicRecord.genre == genre)
+        if medium_type and not exclude_medium_type:
+            q = q.filter(BiblographicRecord.medium_type == medium_type)
+        if target_audience and not exclude_target_audience:
+            q = q.filter(BiblographicRecord.target_audience == target_audience)
+        if condition and not exclude_condition:
+            q = q.filter(Item.condition == condition)
+        if pub_year_min is not None and not exclude_pub_year:
+            q = q.filter(BiblographicRecord.publication_year >= pub_year_min)
+        if pub_year_max is not None and not exclude_pub_year:
+            q = q.filter(BiblographicRecord.publication_year <= pub_year_max)
+        if acq_year_min is not None and not exclude_acq_year:
+            q = q.filter(func.strftime("%Y", Item.acquisition_date) >= str(acq_year_min))
+        if acq_year_max is not None and not exclude_acq_year:
+            q = q.filter(func.strftime("%Y", Item.acquisition_date) <= str(acq_year_max))
+
+        return q
+
+    def _breakdown(q, group_col, label_col=None):
+        """Run a GROUP BY count + damaged_count on the query."""
+        col = label_col or group_col
+        rows = (
+            q.with_entities(
+                col,
+                func.count(Item.id).label("count"),
+                func.sum(case((Item.condition == "damaged", 1), else_=0)).label("damaged_count"),
+            )
+            .filter(col.isnot(None))
+            .group_by(col)
+            .order_by(func.count(Item.id).desc())
+            .all()
+        )
+        return [{"value": r[0], "count": r[1], "damaged_count": r[2] or 0} for r in rows]
+
+    # Each breakdown excludes its own filter so the full distribution is visible
+    genre_rows = _breakdown(_base_query(db, exclude_genre=True), BiblographicRecord.genre)
+    medium_rows = _breakdown(_base_query(db, exclude_medium_type=True), BiblographicRecord.medium_type)
+    audience_rows = _breakdown(_base_query(db, exclude_target_audience=True), BiblographicRecord.target_audience)
+    condition_rows = _breakdown(_base_query(db, exclude_condition=True), Item.condition)
+
+    # Publication year histogram (pub_year is INTEGER — direct GROUP BY)
+    pub_q = _base_query(db, exclude_pub_year=True)
+    pub_rows = (
+        pub_q.with_entities(
+            BiblographicRecord.publication_year,
+            func.count(Item.id).label("count"),
+            func.sum(case((Item.condition == "damaged", 1), else_=0)).label("damaged_count"),
+        )
+        .filter(BiblographicRecord.publication_year.isnot(None))
+        .group_by(BiblographicRecord.publication_year)
+        .order_by(BiblographicRecord.publication_year)
+        .all()
+    )
+    pub_histogram = [{"year": r[0], "count": r[1], "damaged_count": r[2] or 0} for r in pub_rows]
+
+    # Acquisition year histogram (acquisition_date is Date — use strftime)
+    acq_q = _base_query(db, exclude_acq_year=True)
+    acq_rows = (
+        acq_q.with_entities(
+            func.strftime("%Y", Item.acquisition_date).label("acq_year"),
+            func.count(Item.id).label("count"),
+            func.sum(case((Item.condition == "damaged", 1), else_=0)).label("damaged_count"),
+        )
+        .filter(Item.acquisition_date.isnot(None))
+        .group_by("acq_year")
+        .order_by("acq_year")
+        .all()
+    )
+    acq_histogram = [{"year": int(r[0]), "count": r[1], "damaged_count": r[2] or 0} for r in acq_rows]
+
+    # Total count (all filters applied)
+    total = _base_query(db).count()
+
+    return {
+        "total_count": total,
+        "breakdowns": {
+            "genre": genre_rows,
+            "medium_type": medium_rows,
+            "target_audience": audience_rows,
+            "condition": condition_rows,
+        },
+        "pub_year_histogram": pub_histogram,
+        "acq_year_histogram": acq_histogram,
+    }
 
 
 def get_overdue_items(
@@ -262,6 +429,8 @@ def get_most_borrowed_titles(
     period: str = "year",  # "month", "year", "all-time"
     limit: int = 20,
     medium_type: Optional[str] = None,
+    genre: Optional[str] = None,
+    target_audience: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Get most borrowed titles by circulation count.
@@ -294,6 +463,8 @@ def get_most_borrowed_titles(
         BiblographicRecord.publisher,
         BiblographicRecord.publication_year,
         BiblographicRecord.medium_type,
+        BiblographicRecord.genre,
+        BiblographicRecord.target_audience,
         func.count(CirculationTransaction.id).label("checkout_count"),
     ).join(
         Item, BiblographicRecord.id == Item.bibliographic_record_id
@@ -307,6 +478,12 @@ def get_most_borrowed_titles(
     if medium_type:
         query = query.filter(BiblographicRecord.medium_type == medium_type)
 
+    if genre:
+        query = query.filter(BiblographicRecord.genre == genre)
+
+    if target_audience:
+        query = query.filter(BiblographicRecord.target_audience == target_audience)
+
     query = query.group_by(
         BiblographicRecord.id,
         BiblographicRecord.title,
@@ -314,6 +491,8 @@ def get_most_borrowed_titles(
         BiblographicRecord.publisher,
         BiblographicRecord.publication_year,
         BiblographicRecord.medium_type,
+        BiblographicRecord.genre,
+        BiblographicRecord.target_audience,
     ).order_by(
         desc("checkout_count")
     ).limit(limit)
@@ -321,7 +500,7 @@ def get_most_borrowed_titles(
     results = query.all()
 
     most_borrowed = []
-    for biblio_id, title, authors, publisher, pub_year, med_type, count in results:
+    for biblio_id, title, authors, publisher, pub_year, med_type, genre_val, audience_val, count in results:
         # Count total copies for this bibliographic record
         total_copies = db.query(func.count(Item.id)).filter(
             Item.bibliographic_record_id == biblio_id
@@ -334,6 +513,8 @@ def get_most_borrowed_titles(
             "publisher": publisher,
             "publication_year": pub_year,
             "medium_type": med_type,
+            "genre": genre_val,
+            "target_audience": audience_val,
             "checkout_count": count,
             "total_copies": total_copies,
             "rank": len(most_borrowed) + 1,

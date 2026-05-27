@@ -63,10 +63,16 @@ class SystemSettings(Base):
     library_code = Column(String(50), nullable=True)
 
     # Catalog vocabulary lists (CSV strings)
-    catalog_medium_types = Column(Text, nullable=True, default="Livre, Album illustré, Périodique, Bande dessinée, Manga, DVD, CD, Autre")
+    catalog_medium_types = Column(Text, nullable=True, default="Livre, Album illustré, Conte, Poème, Périodique, Bande dessinée, Manga, DVD, CD, Autre")
     catalog_genres = Column(Text, nullable=True, default="Aventure, Fantastique, Policier, Science-fiction, Historique, Biographie, Poésie, Théâtre, Autre")
     catalog_languages = Column(Text, nullable=True, default="fr, en, es, de, ar")
     catalog_levels = Column(Text, nullable=True, default="CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, Lycée, Adulte")
+
+    # Dewey classification colors (JSON array of 10 hex strings, index = class 0–9)
+    dewey_colors = Column(Text, nullable=True, default='["#000000","#9e6633","#f20000","#ff9813","#ffee00","#409d42","#0fafe9","#98238b","#d3d5d4","#ffffff"]')
+
+    # Shelf locations (JSON array of {label, color|null})
+    catalog_shelf_locations = Column(Text, nullable=True, default='[{"label":"Romans","color":"#c0392b"},{"label":"Albums","color":"#e67e22"},{"label":"Bandes dessinées","color":"#2980b9"},{"label":"Documentaires","color":"#27ae60"},{"label":"Périodiques","color":"#16a085"},{"label":"Contes","color":"#f39c12"},{"label":"Poésie","color":"#8e44ad"}]')
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

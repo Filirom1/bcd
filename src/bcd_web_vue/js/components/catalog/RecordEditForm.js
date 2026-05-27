@@ -123,7 +123,7 @@ export default {
     watch(() => props.record, (newRecord) => {
       if (newRecord) {
         formData.value = {
-          isbn: newRecord.isbn || '',
+          isbn: newRecord.isbn_value || '',
           title: newRecord.title || '',
           subtitle: newRecord.subtitle || '',
           authors: Array.isArray(newRecord.authors) ? newRecord.authors : [],
@@ -483,7 +483,7 @@ export default {
               <h6 class="mb-1"><strong>{{ record.title }}</strong></h6>
               <p class="mb-0 small text-muted">
                 <span v-if="record.authors">{{ Array.isArray(record.authors) ? record.authors.join(', ') : record.authors }}</span>
-                <span v-if="record.isbn" class="ms-2">(ISBN: {{ record.isbn }})</span>
+                <span v-if="record.isbn" class="ms-2">(ISBN: {{ record.isbn_value }})</span>
               </p>
             </div>
 
@@ -1032,7 +1032,7 @@ export default {
     <record-delete-dialog
       v-if="record"
       :show="showDeleteDialog"
-      :record-data="{ id: record.id, title: record.title, authors: record.authors, isbn: record.isbn, items: items }"
+      :record-data="{ id: record.id, title: record.title, authors: record.authors, isbn: record.isbn, isbn_value: record.isbn_value, items: items }"
       @close="showDeleteDialog = false"
       @confirm="handleDeleteConfirm"
     />

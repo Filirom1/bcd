@@ -30,6 +30,7 @@ func _ready() -> void:
 	_setup_carousel()
 
 	_back_btn.pressed.connect(_on_back)
+	_back_btn.call_deferred("grab_focus")
 	_theme_prev_btn.pressed.connect(_on_carousel_prev)
 	_theme_next_btn.pressed.connect(_on_carousel_next)
 	_theme_apply_btn.pressed.connect(_on_carousel_apply)
@@ -109,3 +110,8 @@ func _on_back() -> void:
 	if ThemeManager.current_theme_name != _original_theme:
 		ThemeManager.set_theme(_original_theme)
 	Mgr.pop()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back()
+		get_viewport().set_input_as_handled()

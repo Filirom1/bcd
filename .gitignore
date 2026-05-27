@@ -93,5 +93,7 @@ bcd_kids/.claude/settings.local.json
 
 bcd_kids_rs
 
+tmp/
+
 # Windows Zone.Identifier alternate data streams (invalid path on Windows)
 *:Zone.Identifier

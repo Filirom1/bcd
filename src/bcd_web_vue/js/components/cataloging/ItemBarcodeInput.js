@@ -3,17 +3,19 @@
  * Creates physical items (copies) for a bibliographic record
  */
 
-const { defineComponent, ref, computed } = Vue;
+const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
-import StickerPicker from '../ui/StickerPicker.js';
+import { useAppState } from '../../composables/useAppState.js';
+import DeweyPicker from '../ui/DeweyPicker.js';
+import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 
 export default defineComponent({
     name: 'ItemBarcodeInput',
 
-    components: { StickerPicker },
+    components: { DeweyPicker, ShelfLocationPicker },
 
     props: {
         recordId: {
@@ -27,6 +29,14 @@ export default defineComponent({
         recordMediumType: {
             type: String,
             default: ''
+        },
+        recordDeweyNumber: {
+            type: String,
+            default: null
+        },
+        recordAuthors: {
+            type: Array,
+            default: () => []
         }
     },
 
@@ -36,6 +46,17 @@ export default defineComponent({
         const { t } = useI18n();
         const { success, error: showError } = useNotification();
         const { handleError } = useErrorHandler(t);
+        const { settings } = useAppState();
+
+        const deweyColors = computed(() => {
+            try { return JSON.parse(settings.value?.dewey_colors || 'null') || undefined; }
+            catch { return undefined; }
+        });
+
+        const shelfLocationOptions = computed(() => {
+            try { return JSON.parse(settings.value?.catalog_shelf_locations || '[]') || []; }
+            catch { return []; }
+        });
 
         // State
         const barcode = ref('');
@@ -45,8 +66,38 @@ export default defineComponent({
         const shelfLocation = ref('');
         const loading = ref(false);
         const createdItems = ref([]);
+        const showOptional = ref(false);
+        const acquisitionDate = ref(new Date().toISOString().slice(0, 10));
+        const fundingSource = ref('');
+        const condition = ref('good');
+        const loanable = ref(true);
 
         const isPeriodical = computed(() => props.recordMediumType === 'P\u00e9riodique');
+
+        // AUT3: first 3 uppercase letters of author's last name (NFD-normalized, no accents)
+        function computeAut3(authors) {
+            if (!authors || !authors.length) return '';
+            const first = authors[0];
+            const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
+            return lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().slice(0, 3);
+        }
+
+        // Suggested call number = "[dewey_number] [AUT3]" (skipped for periodicals)
+        const suggestedCallNumber = computed(() => {
+            if (isPeriodical.value) return '';
+            const aut3 = computeAut3(props.recordAuthors);
+            if (props.recordDeweyNumber && aut3) return `${props.recordDeweyNumber} ${aut3}`;
+            if (props.recordDeweyNumber) return props.recordDeweyNumber;
+            if (aut3) return aut3;
+            return '';
+        });
+
+        // Pre-fill call number only when it is still empty
+        watch(suggestedCallNumber, (val) => {
+            if (val && !callNumber.value.trim()) {
+                callNumber.value = val;
+            }
+        }, { immediate: true });
 
         /**
          * Create item with barcode
@@ -83,6 +134,11 @@ export default defineComponent({
 
                 const sl = shelfLocation.value.trim();
                 if (sl) itemData.shelf_location = sl;
+
+                if (acquisitionDate.value) itemData.acquisition_date = acquisitionDate.value;
+                if (fundingSource.value.trim()) itemData.funding_source = fundingSource.value.trim();
+                itemData.condition = condition.value;
+                itemData.loanable = loanable.value;
 
                 const item = await apiClient.post('/catalog/items', itemData);
 
@@ -152,6 +208,13 @@ export default defineComponent({
             createdItems,
             itemCount,
             isPeriodical,
+            deweyColors,
+            shelfLocationOptions,
+            showOptional,
+            acquisitionDate,
+            fundingSource,
+            condition,
+            loanable,
             createItem,
             handleKeypress,
             finish
@@ -196,22 +259,17 @@ export default defineComponent({
                 <div v-if="!isPeriodical" class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label">{{ $t('catalog.shelf_location') }}</label>
-                        <input
+                        <shelf-location-picker
                             v-model="shelfLocation"
-                            type="text"
-                            class="form-control"
-                            :placeholder="$t('catalog.shelf_location')"
+                            :locations="shelfLocationOptions"
                             :disabled="loading"
                         />
-                        <sticker-picker v-model="shelfLocation" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">{{ $t('catalog.call_number') }}</label>
-                        <input
+                        <dewey-picker
                             v-model="callNumber"
-                            type="text"
-                            class="form-control"
-                            placeholder="ex: 843.91 DUP"
+                            :colors="deweyColors"
                             :disabled="loading"
                         />
                     </div>
@@ -253,6 +311,61 @@ export default defineComponent({
                         </button>
                     </div>
                 </div>
+
+                <!-- Optional fields toggle -->
+                <div class="mt-3">
+                    <button
+                        type="button"
+                        class="btn btn-link btn-sm p-0 text-muted"
+                        @click="showOptional = !showOptional"
+                    >
+                        <i :class="showOptional ? 'bi-chevron-up' : 'bi-chevron-down'" class="me-1"></i>
+                        {{ $t('cataloging.optional_fields') }}
+                    </button>
+                </div>
+
+                <div v-if="showOptional" class="row g-3 mt-1">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ $t('catalog.acquisition_date') }}</label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            v-model="acquisitionDate"
+                            :disabled="loading"
+                        />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ $t('catalog.funding_source') }}</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            v-model="fundingSource"
+                            :placeholder="$t('catalog.placeholder_funding_source')"
+                            :disabled="loading"
+                        />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">{{ $t('catalog.condition') }}</label>
+                        <select class="form-select" v-model="condition" :disabled="loading">
+                            <option value="good">{{ $t('item.condition_good') }}</option>
+                            <option value="damaged">{{ $t('item.condition_damaged') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input
+                                type="checkbox"
+                                class="form-check-input"
+                                id="item-loanable"
+                                v-model="loanable"
+                                :disabled="loading"
+                            />
+                            <label class="form-check-label" for="item-loanable">
+                                {{ $t('catalog.loanable') }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </form>
 
             <!-- Created Items List -->
@@ -281,6 +394,18 @@ export default defineComponent({
                         </span>
                     </li>
                 </ul>
+            </div>
+
+            <!-- New Record Button -->
+            <div class="mt-4 d-flex justify-content-end">
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    @click="finish"
+                >
+                    <i class="bi bi-plus-circle me-2"></i>
+                    {{ $t('cataloging.catalog_another') }}
+                </button>
             </div>
         </div>
     `

@@ -76,6 +76,7 @@ export default defineComponent({
                     condition: response.condition,
                     loanable: response.loanable,
                     shelf_location: response.shelf_location,
+                    call_number: response.call_number,
                     last_inventoried_at: response.last_inventoried_at,
                     // Record fields
                     title: response.title,

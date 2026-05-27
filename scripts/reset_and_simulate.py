@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
-Reset database and simulate 9 months of library activity.
+Reset database and simulate 5 years of library activity.
 
 This script:
 1. Resets database using Alembic migrations
 2. Imports catalog from catalog_dublin_core.csv
 3. Imports students from students_import.csv
-4. Simulates 9 months of activity (Sep 2024 - May 2025)
+4. Simulates 5 school years of activity (Sep 2021 - Apr 2026)
+
+Scheduling: two groups (petits: CP/CE1, grands: CE2/CM1/CM2) alternate weekly,
+so each class visits every ~15 days as a whole group. Max 2 books per student.
 
 Uses function-scoped imports to avoid SQLAlchemy metadata conflicts.
 """
@@ -47,7 +50,7 @@ def initialize_system_settings(session):
         loan_duration_days=14,
         loan_limit_default=2,
         loan_limit_teacher=10,
-        academic_year_current="2024-2025",
+        academic_year_current="2025-2026",
         id_format="numeric",
         id_validation_regex=r"^\d{3,6}$"
     )
@@ -165,40 +168,28 @@ def import_students(session, classes, project_root):
     return borrowers
 
 
-def simulate_activity(session, start_date, months=9):
-    """Simulate library activity over 9 months."""
+def simulate_activity(session, start_date, years=5):
+    """Simulate library activity over N school years.
+
+    Scheduling: classes are split into two groups (petits: CP/CE1, grands: CE2/CM1/CM2).
+    The two groups alternate weekly so each class visits every ~15 days as a whole.
+    Max 2 books per student per loan period.
+    Summer (July-August) is skipped.
+    """
     # Import models HERE
     from src.bcd_api.models.borrower import Borrower
     from src.bcd_api.models.class_model import Class
     from src.bcd_api.models.item import Item
     from src.bcd_api.models.circulation import CirculationTransaction
 
-    print(f"\nℹ Starting simulation from {start_date} for {months} months...")
+    print(f"\nSimulation from {start_date} for {years} school years...")
     print("=" * 60)
 
-    # Statistics tracking
-    stats = {
-        'checkouts': 0,
-        'returns': 0,
-        'late_returns': 0,
-        'renewals': 0
-    }
-
-    # Get all Fridays in period
-    fridays = []
-    current = start_date
-    end = start_date + timedelta(days=months * 30)
-    while current <= end:
-        if current.weekday() == 4:  # Friday
-            fridays.append(current)
-        current += timedelta(days=1)
-
-    print(f"ℹ Generated {len(fridays)} Fridays for simulation")
+    stats = {'checkouts': 0, 'returns': 0, 'late_returns': 0, 'renewals': 0}
 
     # Group students by class
     students_by_class = {}
     all_classes = session.query(Class).order_by(Class.name).all()
-
     for class_obj in all_classes:
         students = session.query(Borrower).filter(
             Borrower.class_id == class_obj.id,
@@ -208,54 +199,78 @@ def simulate_activity(session, start_date, months=9):
             students_by_class[class_obj.name] = students
 
     class_names = sorted(students_by_class.keys())
-    print(f"ℹ Active classes: {', '.join(class_names)}")
-    print(f"ℹ Total active students: {sum(len(s) for s in students_by_class.values())}")
+    print(f"Active classes: {', '.join(class_names)}")
+    print(f"Total active students: {sum(len(s) for s in students_by_class.values())}")
 
-    # Get all available items at start
     total_items = session.query(Item).filter(Item.loanable == True).count()
-    print(f"ℹ Total loanable items: {total_items}")
+    print(f"Total loanable items: {total_items}")
+
+    # Split classes into two groups that alternate weekly:
+    # petits (CP, CE1) one week, grands (CE2, CM1, CM2) the next.
+    PETITS_PREFIXES = ('CP', 'CE1')
+    petits = [c for c in class_names if any(c.startswith(p) for p in PETITS_PREFIXES)]
+    grands = [c for c in class_names if not any(c.startswith(p) for p in PETITS_PREFIXES)]
+
+    # Fallback: if the class naming doesn't match, split alphabetically
+    if not petits or not grands:
+        mid = max(1, len(class_names) // 2)
+        petits = class_names[:mid]
+        grands = class_names[mid:]
+
+    print(f"Petits (week A): {', '.join(petits) or '(none)'}")
+    print(f"Grands (week B): {', '.join(grands) or '(none)'}")
     print("=" * 60)
 
-    # Simulate each Friday
+    # Generate Fridays for the simulation period, skipping summer
+    fridays = []
+    current = start_date
+    end = start_date + timedelta(days=years * 365)
+    while current <= end:
+        if current.weekday() == 4 and current.month not in (7, 8):  # Friday, not summer
+            fridays.append(current)
+        current += timedelta(days=1)
+
+    print(f"Total Fridays (excluding summer): {len(fridays)}")
+    print("=" * 60)
+
+    current_year = None
+
     for week_idx, friday in enumerate(fridays):
-        # Determine visiting class (rotate every 2 weeks)
-        class_idx = (week_idx // 2) % len(class_names)
-        class_name = class_names[class_idx]
+        # Print yearly progress header
+        if friday.year != current_year:
+            current_year = friday.year
+            active_count = session.query(CirculationTransaction).filter(
+                CirculationTransaction.return_date.is_(None)
+            ).count()
+            print(f"--- {friday.year} --- active loans: {active_count}, "
+                  f"checkouts so far: {stats['checkouts']}")
 
-        # Determine visiting half (alternate weekly)
-        half = week_idx % 2
-        students = students_by_class[class_name]
-        half_size = len(students) // 2
-        visiting = students[:half_size] if half == 0 else students[half_size:]
+        # Alternate groups: even weeks = petits, odd weeks = grands
+        visiting_classes = petits if week_idx % 2 == 0 else grands
 
-        # === RETURNS: Process due items ===
+        # === RETURNS: Process all loans due by this Friday ===
         active_loans = session.query(CirculationTransaction).filter(
             CirculationTransaction.return_date.is_(None),
             CirculationTransaction.due_date <= friday
         ).all()
 
         for loan in active_loans:
-            if random.random() < 0.90:  # 90% on time
-                # Return on due date or 1-2 days early
+            if random.random() < 0.90:  # 90% return on time
                 days_early = random.randint(0, 2)
                 return_date = loan.due_date - timedelta(days=days_early)
             else:  # 10% late
-                # Return 1-7 days late
                 days_late = random.randint(1, 7)
                 return_date = loan.due_date + timedelta(days=days_late)
                 stats['late_returns'] += 1
-
             loan.return_date = return_date
             loan.returned_by = "Librarian"
-
-            # Update item status
             item = session.get(Item, loan.item_id)
             item.status = "available"
             stats['returns'] += 1
 
         session.commit()
 
-        # === RENEWALS: 15% of items due in next 7 days ===
+        # === RENEWALS: 15% of loans due in the next 7 days ===
         upcoming = session.query(CirculationTransaction).filter(
             CirculationTransaction.return_date.is_(None),
             CirculationTransaction.due_date > friday,
@@ -270,93 +285,74 @@ def simulate_activity(session, start_date, months=9):
 
         session.commit()
 
-        # === CHECKOUTS: 80% of visiting students borrow 1-2 books ===
+        # === CHECKOUTS: Whole class visits — 80% of students borrow 1-2 books ===
         available = session.query(Item).filter(
             Item.loanable == True,
             Item.status == "available"
         ).all()
 
         if not available:
-            print(f"Week {week_idx + 1} ({friday}): {class_name} (half {half + 1}) - No books available!")
             continue
 
-        for student in visiting:
-            # 80% chance student borrows
-            if random.random() > 0.80:
-                continue
+        for class_name in visiting_classes:
+            for student in students_by_class.get(class_name, []):
+                if random.random() > 0.80:
+                    continue
 
-            # Check how many books student currently has out
-            current_loans = session.query(CirculationTransaction).filter(
-                CirculationTransaction.borrower_id == student.id,
-                CirculationTransaction.return_date.is_(None)
-            ).count()
+                # Check current loans — max 2 books per student
+                current_loans = session.query(CirculationTransaction).filter(
+                    CirculationTransaction.borrower_id == student.id,
+                    CirculationTransaction.return_date.is_(None)
+                ).count()
 
-            # Respect loan limit (default 2)
-            max_to_borrow = 2 - current_loans
-            if max_to_borrow <= 0:
-                continue
+                max_to_borrow = 2 - current_loans
+                if max_to_borrow <= 0:
+                    continue
 
-            # Random 1-2 books (respecting limit)
-            num_to_borrow = min(random.randint(1, 2), max_to_borrow)
+                num_to_borrow = min(random.randint(1, 2), max_to_borrow, len(available))
+                if num_to_borrow == 0:
+                    continue
 
-            if len(available) < num_to_borrow:
-                num_to_borrow = len(available)
+                # Popular books (first 20% of available list) chosen 60% of the time
+                popular_threshold = max(1, len(available) // 5)
+                borrowed = []
 
-            if num_to_borrow == 0:
-                continue
+                for _ in range(num_to_borrow):
+                    if not available:
+                        break
+                    if random.random() < 0.60 and len(available) >= popular_threshold:
+                        idx = random.randint(0, min(popular_threshold - 1, len(available) - 1))
+                        item = available[idx]
+                    else:
+                        item = random.choice(available)
+                    borrowed.append(item)
+                    available.remove(item)
 
-            # Select items (popular books 60% of the time)
-            # Popular = first 20% of available list
-            popular_threshold = max(1, len(available) // 5)
-            borrowed = []
-
-            for _ in range(num_to_borrow):
-                if random.random() < 0.60 and len(available) >= popular_threshold:
-                    # Pick from popular books
-                    idx = random.randint(0, min(popular_threshold - 1, len(available) - 1))
-                    item = available[idx]
-                else:
-                    # Pick random book
-                    item = random.choice(available)
-
-                borrowed.append(item)
-                available.remove(item)
-
-            # Create transactions
-            for item in borrowed:
-                due_date = friday + timedelta(days=14)
-                transaction = CirculationTransaction(
-                    borrower_id=student.id,
-                    item_id=item.id,
-                    bibliographic_record_id=item.bibliographic_record_id,
-                    checkout_date=friday,
-                    due_date=due_date,
-                    checked_out_by="Librarian",
-                    status="active",
-                    renewal_count=0
-                )
-                session.add(transaction)
-                item.status = "on_loan"
-                stats['checkouts'] += 1
+                for item in borrowed:
+                    transaction = CirculationTransaction(
+                        borrower_id=student.id,
+                        item_id=item.id,
+                        bibliographic_record_id=item.bibliographic_record_id,
+                        checkout_date=friday,
+                        due_date=friday + timedelta(days=14),
+                        checked_out_by="Librarian",
+                        status="active",
+                        renewal_count=0
+                    )
+                    session.add(transaction)
+                    item.status = "on_loan"
+                    stats['checkouts'] += 1
 
         session.commit()
 
-        # Print progress
-        active_count = session.query(CirculationTransaction).filter(
-            CirculationTransaction.return_date.is_(None)
-        ).count()
-
-        print(f"Week {week_idx + 1:2d} ({friday}): {class_name:6s} (half {half + 1}) - "
-              f"Active loans: {active_count:3d}, Available: {len(available):4d}")
-
     # === FINAL STATISTICS ===
     print("\n" + "=" * 60)
-    print("📊 SIMULATION COMPLETE")
+    print("SIMULATION COMPLETE")
     print("=" * 60)
-    print(f"Total checkouts:  {stats['checkouts']:4d}")
-    print(f"Total returns:    {stats['returns']:4d}")
-    print(f"Late returns:     {stats['late_returns']:4d} ({stats['late_returns']/max(stats['returns'],1)*100:.1f}%)")
-    print(f"Renewals:         {stats['renewals']:4d}")
+    print(f"Total checkouts:  {stats['checkouts']:5d}")
+    print(f"Total returns:    {stats['returns']:5d}")
+    print(f"Late returns:     {stats['late_returns']:5d} ({stats['late_returns']/max(stats['returns'],1)*100:.1f}%)")
+    print(f"Renewals:         {stats['renewals']:5d}")
 
     active = session.query(CirculationTransaction).filter(
         CirculationTransaction.return_date.is_(None)
@@ -369,7 +365,6 @@ def simulate_activity(session, start_date, months=9):
     ).count()
     print(f"Currently overdue: {overdue}")
 
-    # Most borrowed books
     from sqlalchemy import func
     top_books = session.query(
         Item.item_id,
@@ -668,9 +663,9 @@ def main():
         print()
 
         # Step 8: Simulate activity
-        print("Step 6: Simulating 9 months of library activity...")
-        start_date = date(2024, 9, 6)  # First Friday in September 2024
-        simulate_activity(session, start_date, months=9)
+        print("Step 6: Simulating 5 years of library activity...")
+        start_date = date(2021, 9, 3)  # First Friday in September 2021
+        simulate_activity(session, start_date, years=5)
         print()
 
         # Step 9: Add teachers, staff, and blocked borrowers

@@ -11,6 +11,8 @@ import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { useBarcodeUtils } from '../composables/useBarcodeUtils.js';
 import { useBlockReasonTranslation } from '../composables/useBlockReasonTranslation.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
+import { useAppState } from '../composables/useAppState.js';
+import { useItemBadge } from '../composables/useItemBadge.js';
 import BorrowerCard from '../components/circulation/BorrowerCard.js';
 import ItemScanner from '../components/circulation/ItemScanner.js';
 import ClassRosterPanel from '../components/circulation/ClassRosterPanel.js';
@@ -37,6 +39,8 @@ export default defineComponent({
     setup(props) {
         const { t, d } = useI18n();
         const { openRecord } = useGlobalModal();
+        const { settings: appSettings } = useAppState();
+        const { getShelfBadge, getCoteBadge } = useItemBadge(appSettings);
         const { success, error: showError, warning } = useNotification();
         const { handleError } = useErrorHandler(t);
         const { stripBarcodePrefix, fetchSettings } = useBarcodeUtils();
@@ -508,6 +512,8 @@ export default defineComponent({
             borrower,
             borrowerLoading,
             helpSection,
+            getShelfBadge,
+            getCoteBadge,
             borrowerLoaded,
             borrowerInitials,
             borrowerHolds,
@@ -703,10 +709,10 @@ export default defineComponent({
                                                 <span v-if="item.was_overdue" class="badge bg-danger ms-1">
                                                     {{ t('circulation.overdue_label') }}
                                                 </span>
-                                                <small v-if="item.shelf_location" class="d-block text-primary-emphasis mt-1">
-                                                    {{ item.shelf_location }}
-                                                    <span v-if="item.call_number" class="text-muted ms-1">· {{ item.call_number }}</span>
-                                                </small>
+                                                <div v-if="item.shelf_location || item.call_number" class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                                    <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
+                                                    <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
+                                                </div>
                                                 <div v-if="item.hold_ready" class="alert alert-warning mt-2 mb-0 py-2 px-3">
                                                     <div class="d-flex align-items-center">
                                                         <i class="bi bi-bookmark-star-fill fs-5 me-2"></i>

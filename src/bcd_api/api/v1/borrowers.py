@@ -381,7 +381,8 @@ def get_borrower(
     Includes current loans count, total checkouts, and overdue count.
 
     **Query Parameters**:
-    - detail: If true, return detailed view with circulation history
+    - detail: If true, includes current loans (current_loans).
+              Full paginated history is available via GET /circulation/borrower/{id}/history
 
     **Errors**:
     - 404: Borrower not found
@@ -413,17 +414,15 @@ def get_borrower(
         homeroom_teacher=homeroom_teacher,
     )
 
-    # If detail requested, include current loans and circulation history
+    # If detail requested, include current loans only.
+    # Full paginated history is available via GET /circulation/borrower/{id}/history
     if detail:
         from ...services import circulation_service
         current_loans = circulation_service.get_borrower_current_loans(db, borrower_id)
-        circulation_data = circulation_service.get_borrower_circulation_history(db, borrower_id)
 
-        # Return borrower with additional detail
         return {
             **borrower_detailed.model_dump(mode='json'),
             "current_loans": current_loans,
-            "circulation_history": [h.model_dump(mode='json') for h in circulation_data.history]
         }
 
     return borrower_detailed

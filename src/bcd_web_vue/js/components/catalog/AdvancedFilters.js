@@ -235,17 +235,6 @@ export default defineComponent({
                         </datalist>
                     </div>
 
-                    <!-- Shelf Location -->
-                    <div v-if="locationOptions.length" class="col-md-3">
-                        <label class="form-label">{{ t('catalog.filter_location') }}</label>
-                        <filter-select
-                            :model-value="filters.shelf_location"
-                            :options="locationOptions"
-                            :placeholder="t('catalog.all_items')"
-                            :show-placeholder="true"
-                            @update:model-value="updateFilter('shelf_location', $event)"
-                        />
-                    </div>
                 </div>
             </div>
         </div>

@@ -30,6 +30,7 @@ class BiblographicRecordBase(BaseModel):
     target_audience: Optional[TargetAudience] = Field(None, description="Target audience")
     keywords: Optional[list[str]] = Field(None, description="Keywords")
     description: Optional[str] = Field(None, description="Description/summary")
+    dewey_number: Optional[str] = Field(None, description="Dewey classification number from BnF 676$a")
     page_count: Optional[int] = Field(None, ge=0, description="Number of pages")
     has_illustrations: Optional[bool] = Field(None, description="Has illustrations?")
     dimensions: Optional[str] = Field(None, max_length=50, description="Dimensions")
@@ -39,6 +40,21 @@ class BiblographicRecordBase(BaseModel):
 
 class BiblographicRecordCreate(BiblographicRecordBase):
     """Schema for creating a new bibliographic record."""
+
+    @field_validator('isbn', mode='before')
+    @classmethod
+    def normalize_isbn(cls, v):
+        """Ensure isbn/issn are stored with their prefix."""
+        if v is None:
+            return v
+        v = str(v).strip()
+        if v.startswith('isbn:') or v.startswith('issn:'):
+            return v
+        # Strip hyphens/spaces to check length
+        digits = v.replace('-', '').replace(' ', '')
+        if len(digits) == 8 or '-' in v and v.count('-') >= 2 and len(digits) < 13:
+            return f'issn:{v}'
+        return f'isbn:{v}'
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -61,6 +77,20 @@ class BiblographicRecordUpdate(BaseModel):
     """Schema for updating a bibliographic record."""
 
     isbn: Optional[str] = Field(None, max_length=22)
+
+    @field_validator('isbn', mode='before')
+    @classmethod
+    def normalize_isbn(cls, v):
+        """Ensure isbn/issn are stored with their prefix."""
+        if v is None:
+            return v
+        v = str(v).strip()
+        if v.startswith('isbn:') or v.startswith('issn:'):
+            return v
+        digits = v.replace('-', '').replace(' ', '')
+        if len(digits) == 8 or '-' in v and v.count('-') >= 2 and len(digits) < 13:
+            return f'issn:{v}'
+        return f'isbn:{v}'
     title: Optional[str] = Field(None, min_length=1, max_length=500)
     subtitle: Optional[str] = Field(None, max_length=500)
     authors: Optional[list[str]] = None
@@ -82,6 +112,7 @@ class BiblographicRecordUpdate(BaseModel):
     has_illustrations: Optional[bool] = None
     dimensions: Optional[str] = Field(None, max_length=50)
     physical_size: Optional[str] = Field(None, max_length=100)
+    dewey_number: Optional[str] = None
 
 
 class BiblographicRecordResponse(BiblographicRecordBase, TimestampMixin):
@@ -91,6 +122,8 @@ class BiblographicRecordResponse(BiblographicRecordBase, TimestampMixin):
     total_items: int
     total_circulations: int
     last_borrowed_at: Optional[datetime]
+    isbn_value: Optional[str] = None
+    identifier_type: str = 'isbn'
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -111,6 +144,8 @@ class BiblographicRecordSummary(BaseModel):
 
     id: int
     isbn: Optional[str]
+    isbn_value: Optional[str] = None
+    identifier_type: str = 'isbn'
     title: str
     authors: Optional[list[str]]
     publication_year: Optional[int]

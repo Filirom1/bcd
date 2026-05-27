@@ -57,7 +57,49 @@ The classification lists act as a reference for the entire collection. The more 
 - **Check regularly** via Catalog → advanced filters → genre/medium type empty or unusual → fix with bulk edit
 - If a value is entered outside the list by mistake, it stays in the database until you correct it manually via bulk edit in the catalog
 
-## Step 4 — Save settings
+## Step 4 — Dewey colors
+
+The **color daisy** (marguerite des couleurs) assigns a color to each of the 10 main Dewey classes (000 to 900). These colors appear on call-number badges in the catalog and inventory, making it easy to spot a book's section at a glance.
+
+| Class | Theme |
+|-------|-------|
+| **000** | General works, dictionaries, computing |
+| **100** | Philosophy, psychology |
+| **200** | Religion |
+| **300** | Social sciences, education |
+| **400** | Language |
+| **500** | Natural sciences, mathematics |
+| **600** | Technology, medicine, cookery |
+| **700** | Arts, music, sport, leisure |
+| **800** | Literature |
+| **900** | History, geography, biographies |
+
+**For each class you can:**
+- **Enable or disable** the color with the checkbox (if disabled, the call number is shown without a color badge)
+- **Pick the color** using the color picker
+
+The default colors follow the **marguerite des couleurs** standard used in French school libraries.
+
+> **Tip:** If you already color-code the physical labels on your books, configure the same colors here so the on-screen display matches what students see on the shelves.
+
+## Step 5 — Shelf locations
+
+This list defines the **physical locations** in your library (Fiction, Picture books, Comics, Non-fiction…). Each location can have its own color.
+
+These locations appear as colored badges in:
+- The **catalog** (search results and book records)
+- The **inventory** (item list)
+- The **cataloging** form (location picker instead of a free-text field)
+
+**Managing the list:**
+- **Add** a location: click "+ Add a location"
+- **Name** each location in the text field (e.g., `Fiction`, `Picture books`)
+- **Color** (optional): tick the checkbox then pick a color
+- **Delete** a location: click the bin icon
+
+> **Tip:** Use the same names as the physical signs on your shelves. Students will find books more easily if the on-screen names match what they see in the library.
+
+## Step 6 — Save settings
 
 Click **"Save"** to apply all changes.
 A confirmation message appears at the top of the screen.

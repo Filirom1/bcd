@@ -378,12 +378,13 @@ export default {
 
                                     <!-- Pagination -->
                                     <pagination
-                                        v-if="historyPagination && historyPagination.total_pages > 1"
+                                        v-if="historyPagination"
                                         :current-page="historyPagination.page"
                                         :total-pages="historyPagination.total_pages"
-                                        :page-size="historyPagination.page_size"
+                                        :page-size="historyPageSize"
                                         :total-items="historyPagination.total_items"
                                         @page-change="onHistoryPageChange"
+                                        @page-size-change="onHistoryPageSizeChange"
                                     ></pagination>
                                 </div>
 
@@ -438,6 +439,7 @@ export default {
         const historyItems = Vue.ref([]);
         const historyPagination = Vue.ref(null);
         const historyPage = Vue.ref(1);
+        const historyPageSize = Vue.ref(10);
         const historyLoading = Vue.ref(false);
         const historyDateFrom = Vue.ref('');
         const historyDateTo = Vue.ref('');
@@ -565,7 +567,7 @@ export default {
             try {
                 const params = new URLSearchParams({
                     page: historyPage.value,
-                    page_size: 20,
+                    page_size: historyPageSize.value,
                 });
                 if (historyDateFrom.value) params.set('date_from', historyDateFrom.value);
                 if (historyDateTo.value) params.set('date_to', historyDateTo.value);
@@ -597,6 +599,12 @@ export default {
 
         const onHistoryPageChange = (page) => {
             historyPage.value = page;
+            loadHistory();
+        };
+
+        const onHistoryPageSizeChange = (size) => {
+            historyPageSize.value = size;
+            historyPage.value = 1;
             loadHistory();
         };
 
@@ -645,6 +653,7 @@ export default {
             holdFormMessage,
             historyItems,
             historyPagination,
+            historyPageSize,
             historyLoading,
             historyDateFrom,
             historyDateTo,
@@ -656,6 +665,7 @@ export default {
             applyHistoryFilter,
             clearHistoryFilter,
             onHistoryPageChange,
+            onHistoryPageSizeChange,
             viewItem,
             translateBlockReason,
             close

@@ -17,6 +17,45 @@ from ...services import report_service
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
+@router.get("/collection-stats")
+def get_collection_stats(
+    crew_method: str = Query("never_borrowed"),
+    min_age_years: float = Query(0.0, ge=0),
+    exclude_periodicals: bool = Query(True),
+    genre: Optional[str] = Query(None),
+    medium_type: Optional[str] = Query(None),
+    target_audience: Optional[str] = Query(None),
+    condition: Optional[str] = Query(None),
+    pub_year_min: Optional[int] = Query(None),
+    pub_year_max: Optional[int] = Query(None),
+    acq_year_min: Optional[int] = Query(None),
+    acq_year_max: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Aggregation stats for the collection report (breakdowns + histograms).
+
+    Returns GROUP BY counts by genre, medium_type, target_audience, condition,
+    and histograms by publication_year and acquisition_year.
+    Cross-filter params (genre, medium_type, etc.) restrict the base dataset;
+    each breakdown excludes its own filter to show the full distribution.
+    """
+    return report_service.get_collection_stats(
+        db,
+        crew_method=crew_method,
+        min_age_years=min_age_years,
+        exclude_periodicals=exclude_periodicals,
+        genre=genre,
+        medium_type=medium_type,
+        target_audience=target_audience,
+        condition=condition,
+        pub_year_min=pub_year_min,
+        pub_year_max=pub_year_max,
+        acq_year_min=acq_year_min,
+        acq_year_max=acq_year_max,
+    )
+
+
 @router.get("/overdue")
 def get_overdue_report(
     class_name: Optional[str] = Query(None, description="Filter by class name"),
@@ -134,9 +173,11 @@ def get_never_borrowed_report(
 @router.get("/most-borrowed")
 def get_most_borrowed_report(
     period: str = Query("year", pattern="^(week|month|year|all|all-time)$"),
-    limit: int = Query(default=20, ge=1, le=100, description="Number of items per page"),
+    limit: int = Query(default=20, ge=1, le=500, description="Number of items per page"),
     offset: int = Query(default=0, ge=0, description="Number of items to skip"),
     medium_type: Optional[str] = Query(None, description="Filter by medium type"),
+    genre: Optional[str] = Query(None, description="Filter by genre"),
+    target_audience: Optional[str] = Query(None, description="Filter by target audience"),
     db: Session = Depends(get_db),
 ):
     """
@@ -152,9 +193,9 @@ def get_most_borrowed_report(
     Returns:
         List of most borrowed titles with circulation counts
     """
-    # Get all titles for total count (most-borrowed rarely exceeds 100)
     all_titles = report_service.get_most_borrowed_titles(
-        db, period=period, limit=100, medium_type=medium_type
+        db, period=period, limit=limit, medium_type=medium_type,
+        genre=genre, target_audience=target_audience,
     )
     total_count = len(all_titles)
 

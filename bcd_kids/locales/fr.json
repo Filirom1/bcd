@@ -61,7 +61,8 @@
 		"hold_ready_title": "📌 Réservation à traiter !",
 		"hold_ready_instruction": "Mettre ce livre de côté pour cet élève.",
 		"returned_today": "Livres rendus aujourd'hui:",
-		"scan_books_placeholder": "Scannez des livres..."
+		"scan_books_placeholder": "Scannez des livres...",
+		"ranger_a": "ranger à"
 	},
 	"search": {
 		"title": "Rechercher",
@@ -80,6 +81,9 @@
 		"status_reserved": "Réservé",
 		"return_due": "Retour prévu: {date}",
 		"reserve": "Réserver"
+	},
+	"book_detail": {
+		"location_label": "Emplacement"
 	},
 	"hold": {
 		"title": "Réservation",

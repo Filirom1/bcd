@@ -74,8 +74,8 @@ class TestCascadeHappyPaths:
         with patch("httpx.Client", return_value=client):
             result = download_cover("2211056466", covers_dir=covers_dir)
 
-        assert result == "2211056466.jpg"
-        assert (covers_dir / "2211056466.jpg").read_bytes() == data
+        assert result == "9782211056465.jpg"
+        assert (covers_dir / "9782211056465.jpg").read_bytes() == data
         # Open Library URL should never have been requested
         openlibrary_calls = [
             c for c in client.get.call_args_list
@@ -202,7 +202,7 @@ class TestIdempotency:
             r1 = download_cover("2211056466", covers_dir=covers_dir)
             r2 = download_cover("2211056466", covers_dir=covers_dir)
 
-        assert r1 == r2 == "2211056466.jpg"
+        assert r1 == r2 == "9782211056465.jpg"
 
 
 # ---------------------------------------------------------------------------
@@ -217,8 +217,8 @@ class TestIsbnNormalisation:
 
         with patch("httpx.Client", return_value=client):
             r10 = download_cover("2211056466", covers_dir=covers_dir)
-        assert r10 == "2211056466.jpg"
-        assert (covers_dir / "2211056466.jpg").exists()
+        assert r10 == "9782211056465.jpg"
+        assert (covers_dir / "9782211056465.jpg").exists()
 
     def test_hyphened_isbn13_normalised(self, covers_dir):
         data = _image()
@@ -232,7 +232,7 @@ class TestIsbnNormalisation:
         client = _mock_httpx_client({"ssl-images-amazon.com": data})
         with patch("httpx.Client", return_value=client):
             result = download_cover("isbn:2211056466", covers_dir=covers_dir)
-        assert result == "2211056466.jpg"
+        assert result == "9782211056465.jpg"
 
     def test_issn_skipped_immediately(self, covers_dir):
         client = MagicMock()

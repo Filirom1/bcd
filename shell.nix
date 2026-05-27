@@ -76,15 +76,6 @@ pkgs.mkShell {
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
 
-    echo ""
-    echo "Available commands:"
-    echo "  python - Python 3.13"
-    echo "  pytest - Run tests"
-    echo "  black - Code formatter"
-    echo "  alembic - Database migrations"
-    echo "  sqlite3 - SQLite CLI"
-    echo ""
-
     # Set up Python path to include src directory
     export PYTHONPATH="${toString ./.}/src:$PYTHONPATH"
 

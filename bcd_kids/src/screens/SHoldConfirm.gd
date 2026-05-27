@@ -39,8 +39,14 @@ func _ready() -> void:
 
 	_ok_btn.text = I18n.t("common.ok")
 	_ok_btn.pressed.connect(_go_back)
+	_ok_btn.call_deferred("grab_focus")
 
 	get_tree().create_timer(3.0).timeout.connect(_go_back)
 
 func _go_back() -> void:
 	Mgr.pop()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_accept"):
+		_go_back()
+		get_viewport().set_input_as_handled()

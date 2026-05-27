@@ -135,3 +135,8 @@ func _refresh_list() -> void:
 		var display_title: String = l.get("display_title", l.get("title", ""))
 		lbl.text = "\u2705 %s - %s" % [display_title, l.get("due_date", "")]
 		_loans_list.add_child(lbl)
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		Mgr.pop()
+		get_viewport().set_input_as_handled()

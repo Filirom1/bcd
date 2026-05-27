@@ -42,17 +42,35 @@ func _ready() -> void:
 	_return_btn.pressed.connect(func(): Mgr.push("return_scan"))
 	_holds_btn.pressed.connect(func(): Mgr.push("my_holds"))
 
+	_checkout_btn.focus_entered.connect(func(): _apply_focus_style(_checkout_btn))
+	_checkout_btn.focus_exited.connect(func(): _remove_focus_style(_checkout_btn))
+	_search_btn.focus_entered.connect(func(): _apply_focus_style(_search_btn))
+	_search_btn.focus_exited.connect(func(): _remove_focus_style(_search_btn))
+	_return_btn.focus_entered.connect(func(): _apply_focus_style(_return_btn))
+	_return_btn.focus_exited.connect(func(): _remove_focus_style(_return_btn))
+	_holds_btn.focus_entered.connect(func(): _apply_focus_style(_holds_btn))
+	_holds_btn.focus_exited.connect(func(): _remove_focus_style(_holds_btn))
+
 	visibility_changed.connect(func():
 		if visible:
 			_update_breadcrumb()
 			_update_name()
 			_update_counter()
+			_refresh_loans()
+			_checkout_btn.call_deferred("grab_focus")
 	)
 
 	_update_breadcrumb()
 	_update_name()
 	_update_counter()
 	_load_data()
+	_checkout_btn.call_deferred("grab_focus")
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		GS.reset_borrower()
+		Mgr.replace("class_select")
+		get_viewport().set_input_as_handled()
 
 func _load_data() -> void:
 	var loans_result = await API.get_current_loans(GS.current_borrower.get("borrower_id", ""))
@@ -115,6 +133,7 @@ func _return_item(item_id: String) -> void:
 			GS.current_borrower.current_loans_count = GS.current_loans.size()
 			_refresh_loans()
 			_update_counter()
+			_checkout_btn.call_deferred("grab_focus")
 
 func _renew_item(item_id: String) -> void:
 	var result = await API.renew_items(GS.current_borrower.get("borrower_id", ""), [item_id])
@@ -138,9 +157,12 @@ func _renew_item(item_id: String) -> void:
 		GS.current_borrower.current_loans_count = GS.current_loans.size()
 		_refresh_loans()
 		_update_counter()
+		_checkout_btn.call_deferred("grab_focus")
 func _show_book_cover(loan: Dictionary) -> void:
-	GS.current_class["_temp_loan_for_cover"] = loan
-	Mgr.push("book_cover")
+	var book_data := loan.duplicate()
+	book_data["id"] = loan.get("bibliographic_record_id", 0)
+	GS.current_class["_temp_book_data"] = book_data
+	Mgr.push("book_detail")
 
 func _update_breadcrumb() -> void:
 	_breadcrumb.set_path([
@@ -156,3 +178,11 @@ func _update_counter() -> void:
 	var current := int(GS.current_borrower.get("current_loans_count", 0))
 	var limit := int(GS.current_borrower.get("loan_limit", 3))
 	_count_lbl.text = I18n.t("main_menu.books_count", {"current": current, "limit": limit})
+
+func _apply_focus_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", btn.get_theme_stylebox("hover"))
+	btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+
+func _remove_focus_style(btn: Button) -> void:
+	btn.remove_theme_stylebox_override("normal")
+	btn.remove_theme_color_override("font_color")

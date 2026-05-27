@@ -4,12 +4,23 @@ Settings Service
 Business logic for managing system settings.
 """
 
+import json
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 from datetime import datetime
 
 from ..models.system_settings import SystemSettings
 from ..core.exceptions import NotFoundError
+
+DEFAULT_SHELF_LOCATIONS = json.dumps([
+    {"label": "Romans",           "color": "#c0392b"},
+    {"label": "Albums",           "color": "#e67e22"},
+    {"label": "Bandes dessinées", "color": "#2980b9"},
+    {"label": "Documentaires",    "color": "#27ae60"},
+    {"label": "Périodiques",      "color": "#16a085"},
+    {"label": "Contes",           "color": "#f39c12"},
+    {"label": "Poésie",           "color": "#8e44ad"},
+])
 
 
 def initialize_default_settings(db: Session) -> SystemSettings:
@@ -48,6 +59,7 @@ def initialize_default_settings(db: Session) -> SystemSettings:
         id_validation_regex=r"^\d+$",
         id_length_min=4,
         id_length_max=10,
+        catalog_shelf_locations=DEFAULT_SHELF_LOCATIONS,
         created_at=datetime.now(),
         updated_at=datetime.now(),
     )
@@ -119,6 +131,13 @@ def update_settings(
         "id_validation_regex",
         "id_length_min",
         "id_length_max",
+        "catalog_medium_types",
+        "catalog_genres",
+        "catalog_languages",
+        "catalog_levels",
+        "inventory_search_result_limit",
+        "dewey_colors",
+        "catalog_shelf_locations",
     }
 
     for key, value in updates.items():

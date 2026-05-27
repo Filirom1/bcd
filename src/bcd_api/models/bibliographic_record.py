@@ -1,6 +1,7 @@
 """BiblographicRecord model - represents the intellectual content/metadata of a title."""
 
 from datetime import datetime, timezone
+from typing import Optional
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, CheckConstraint
 from sqlalchemy.orm import relationship
 
@@ -43,6 +44,9 @@ class BiblographicRecord(Base):
     level = Column(String(50), nullable=True)
     medium_type = Column(String(50), nullable=False, index=True)
     target_audience = Column(String(20), nullable=True, index=True)
+
+    # Dewey classification (from BnF 676$a)
+    dewey_number = Column(Text, nullable=True)
 
     # Subject and description
     keywords = Column(Text, nullable=True)  # JSON array
@@ -89,6 +93,22 @@ class BiblographicRecord(Base):
         cascade="all, delete-orphan"
     )
     holds = relationship("Hold", back_populates="bibliographic_record", cascade="all, delete-orphan")
+
+    @property
+    def isbn_value(self) -> Optional[str]:
+        """ISBN/ISSN value without prefix (isbn: or issn:)."""
+        if self.isbn is None:
+            return None
+        if self.isbn.startswith('isbn:') or self.isbn.startswith('issn:'):
+            return self.isbn[5:]
+        return self.isbn
+
+    @property
+    def identifier_type(self) -> str:
+        """Type of identifier: 'issn' for periodicals, 'isbn' otherwise."""
+        if self.isbn and self.isbn.startswith('issn:'):
+            return 'issn'
+        return 'isbn'
 
     def __repr__(self):
         return f"<BiblographicRecord(id={self.id}, isbn={self.isbn}, title={self.title})>"

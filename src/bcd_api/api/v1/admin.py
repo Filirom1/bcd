@@ -726,10 +726,14 @@ def backfill_covers(db: Session = Depends(get_db)):
     Scans records that have an ISBN but no cover_image set, checks if a
     matching .jpg exists in data/covers/, and updates the column.
 
+    Uses the same ISBN-13 canonical naming as download_cover so ISBN-10
+    records are correctly matched to their renamed cover files.
+
     Returns:
         {"updated": N, "scanned": M}
     """
     from ...models.bibliographic_record import BiblographicRecord
+    from ...services.cover_service import find_cached_cover
 
     covers_dir = Path("data/covers")
     records = db.query(BiblographicRecord).filter(
@@ -740,9 +744,9 @@ def backfill_covers(db: Session = Depends(get_db)):
 
     updated = 0
     for record in records:
-        normalized = record.isbn.replace("-", "").replace(".", "").replace(" ", "").replace("isbn:", "").replace("issn:", "").upper()
-        if (covers_dir / f"{normalized}.jpg").exists():
-            record.cover_image = f"{normalized}.jpg"
+        fname = find_cached_cover(record.isbn, covers_dir=covers_dir)
+        if fname:
+            record.cover_image = fname
             updated += 1
 
     if updated:

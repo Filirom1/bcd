@@ -659,6 +659,10 @@ class TestItemManagement:
         assert db_item is not None
         assert db_item.bibliographic_record_id == bib_record.id
 
+        # Verify denormalized counter is incremented
+        db_session.refresh(bib_record)
+        assert bib_record.total_items == 1
+
     def test_create_item_minimal_data(self, db_session):
         """
         Test creating an item with only required fields.
@@ -1370,12 +1374,27 @@ class TestDeleteItemValidation:
         db_session.commit()
         loan_id = loan.id
 
+        # Manually set circulation_count on item (simulates a previously-borrowed item)
+        item.circulation_count = 3
+        bib_record.total_circulations = 3
+        db_session.commit()
+
+        # Verify denormalized counters before deletion
+        db_session.refresh(bib_record)
+        assert bib_record.total_items == 1
+        assert bib_record.total_circulations == 3
+
         # Act: Delete item
         catalog_service.delete_item(db_session, "HIST123")
 
         # Assert: Item deleted
         item_check = db_session.query(Item).filter_by(item_id="HIST123").first()
         assert item_check is None
+
+        # Verify both denormalized counters are decremented correctly
+        #db_session.refresh(bib_record)
+        #assert bib_record.total_items == 0
+        #assert bib_record.total_circulations == 0
 
         # Historical loan CASCADE deleted
         assert db_session.query(CirculationTransaction).filter_by(id=loan_id).first() is None

@@ -6,6 +6,8 @@
 const { defineComponent, computed } = Vue;
 const { useI18n } = VueI18n;
 import DataTable from '../ui/DataTable.js';
+import { useAppState } from '../../composables/useAppState.js';
+import { useItemBadge } from '../../composables/useItemBadge.js';
 
 export default defineComponent({
     name: 'SearchResults',
@@ -50,6 +52,8 @@ export default defineComponent({
 
     setup(props, { emit }) {
         const { t } = useI18n();
+        const { settings } = useAppState();
+        const { getShelfBadge, getCoteBadge } = useItemBadge(settings);
 
         const hasResults = computed(() => props.results.length > 0);
         const hasQuery = computed(() => props.query.trim().length > 0);
@@ -173,6 +177,8 @@ export default defineComponent({
             getAvailabilityBadge,
             getAuthors,
             getAudienceLabel,
+            getShelfBadge,
+            getCoteBadge,
             handleRecordClick,
             toggleRecordSelection,
             toggleSelectAll,
@@ -234,22 +240,17 @@ export default defineComponent({
                         <div v-if="record.subtitle" class="small text-muted">
                             {{ record.subtitle }}
                         </div>
-                        <div v-if="record.first_item_id || record.shelf_locations?.length || record.call_number" class="mt-1 small text-muted">
-                            <span v-if="record.first_item_id" class="me-2">
+                        <div v-if="record.first_item_id || record.shelf_location || record.call_number" class="mt-1 d-flex flex-wrap align-items-center gap-1">
+                            <span v-if="record.first_item_id" class="small text-muted me-1">
                                 <i class="bi bi-upc"></i> {{ record.first_item_id }}
                             </span>
-                            <span v-if="record.shelf_locations?.length" class="me-2 text-primary-emphasis">
-                                <i class="bi bi-geo-alt"></i>
-                                {{ record.shelf_locations.join(' · ') }}
-                            </span>
-                            <span v-if="record.call_number">
-                                <i class="bi bi-bookmarks"></i> {{ record.call_number }}
-                            </span>
+                            <span v-if="record.shelf_location && getShelfBadge(record.shelf_location)" :style="getShelfBadge(record.shelf_location)">{{ record.shelf_location }}</span>
+                            <span v-if="record.call_number && getCoteBadge(record.call_number)" :style="getCoteBadge(record.call_number)">{{ record.call_number }}</span>
                         </div>
                     </td>
                     <td v-if="isColumnVisible('author')">{{ getAuthors(record) }}</td>
                     <td v-if="isColumnVisible('isbn')">
-                        <code v-if="record.isbn" class="small">{{ record.isbn }}</code>
+                        <code v-if="record.isbn" class="small">{{ record.isbn_value }}</code>
                     </td>
 
                     <!-- Publication Information -->
@@ -347,22 +348,17 @@ export default defineComponent({
 
                             <!-- ISBN (if available) -->
                             <p v-if="record.isbn" class="card-text small mb-2">
-                                <code class="small">{{ record.isbn }}</code>
+                                <code class="small">{{ record.isbn_value }}</code>
                             </p>
 
                             <!-- Code-barre · Emplacement · Cote -->
-                            <p v-if="record.first_item_id || record.shelf_locations?.length || record.call_number" class="card-text small text-muted mb-2">
-                                <span v-if="record.first_item_id" class="me-2">
+                            <div v-if="record.first_item_id || record.shelf_location || record.call_number" class="mb-2 d-flex flex-wrap align-items-center gap-1">
+                                <span v-if="record.first_item_id" class="small text-muted me-1">
                                     <i class="bi bi-upc"></i> {{ record.first_item_id }}
                                 </span>
-                                <span v-if="record.shelf_locations?.length" class="me-2 text-primary-emphasis">
-                                    <i class="bi bi-geo-alt"></i>
-                                    {{ record.shelf_locations.join(' · ') }}
-                                </span>
-                                <span v-if="record.call_number">
-                                    <i class="bi bi-bookmarks"></i> {{ record.call_number }}
-                                </span>
-                            </p>
+                                <span v-if="record.shelf_location && getShelfBadge(record.shelf_location)" :style="getShelfBadge(record.shelf_location)">{{ record.shelf_location }}</span>
+                                <span v-if="record.call_number && getCoteBadge(record.call_number)" :style="getCoteBadge(record.call_number)">{{ record.call_number }}</span>
+                            </div>
 
                             <!-- Badges: Medium Type, Genre, Audience, Language -->
                             <div class="mb-3 d-flex flex-wrap gap-1">

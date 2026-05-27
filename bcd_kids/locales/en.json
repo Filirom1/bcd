@@ -61,7 +61,8 @@
 		"hold_ready_title": "📌 Hold ready!",
 		"hold_ready_instruction": "Please set this book aside for this borrower.",
 		"returned_today": "Books returned today:",
-		"scan_books_placeholder": "Scan books..."
+		"scan_books_placeholder": "Scan books...",
+		"ranger_a": "shelve at"
 	},
 	"search": {
 		"title": "Search",
@@ -80,6 +81,9 @@
 		"status_reserved": "Reserved",
 		"return_due": "Return due: {date}",
 		"reserve": "Reserve"
+	},
+	"book_detail": {
+		"location_label": "Location"
 	},
 	"hold": {
 		"title": "Hold",

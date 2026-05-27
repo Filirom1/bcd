@@ -486,6 +486,7 @@ export default defineComponent({
                     condition: freshItem.condition,
                     loanable: freshItem.loanable,
                     shelf_location: freshItem.shelf_location,
+                    call_number: freshItem.call_number,
                     last_inventoried_at: freshItem.last_inventoried_at,
                     // Record fields
                     title: freshItem.title,

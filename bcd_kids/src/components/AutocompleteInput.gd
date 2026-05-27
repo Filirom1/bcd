@@ -24,3 +24,6 @@ func clear() -> void:
 
 func focus_input() -> void:
 	_line_edit.call_deferred("grab_focus")
+
+func is_input_focused() -> bool:
+	return _line_edit.has_focus()

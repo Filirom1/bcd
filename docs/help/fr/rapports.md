@@ -1,176 +1,259 @@
 # Rapports
 
-Cette page te permet de consulter les rapports pour suivre l'activité de la bibliothèque et gérer les retards.
+Les rapports permettent de piloter la bibliothèque : suivre les retards, identifier les livres porteurs, démarrer un désherbage méthodique. Cette page est destinée aux **enseignants référents BCD**.
 
 ---
 
-## Étape 1 — Choisir un type de rapport
+## Rapports disponibles
 
-Trois rapports sont disponibles dans les onglets en haut de la page :
-- **Retards** : liste des livres non rendus à temps, groupée par classe
-- **Livres les plus empruntés** : classement des titres les plus populaires
-- **CREW - Désherbage** : évaluation systématique pour le désherbage selon la méthode CREW
-- **Réservations** : liste des réservations en cours et leur statut
-- **Prêts en cours** : liste de tous les exemplaires actuellement empruntés
+| Rapport | À quoi ça sert |
+|---------|---------------|
+| **Retards** | Livres non rendus à temps, groupés par classe |
+| **Plus empruntés** | Titres les plus populaires — aide aux réacquisitions |
+| **CREW - Désherbage** | Candidats au retrait par méthode systématique |
+| **Jamais empruntés** | Exemplaires sans aucun emprunt |
+| **Réservations** | File d'attente en cours |
+| **Prêts en cours** | Tous les exemplaires actuellement empruntés |
 
-![Onglets de sélection des rapports](../images/reports-01-tabs.png)
+---
 
-## Étape 2 — Rapport des retards
+## Rapport "Plus empruntés"
 
-Le rapport des retards affiche tous les emprunts dont la date de retour est dépassée.
-Les emprunts sont groupés par classe pour faciliter les relances enseignant par enseignant.
+Ce rapport classe les **titres** (fiches bibliographiques) par nombre d'emprunts sur une période choisie. Il sert autant à repérer les succès qu'à décider des réacquisitions.
 
-Pour chaque emprunt en retard, le rapport indique :
-- Le nom et numéro de l'élève
-- Le titre et numéro d'inventaire du livre
-- La date d'emprunt
-- La date de retour prévue
-- Le nombre de jours de retard
-
-![Rapport des retards groupé par classe](../images/reports-02-overdue.png)
-
-> **Conseil :** Clique sur le nom d'un élève pour ouvrir directement sa fiche dans la page Emprunteurs.
-
-## Étape 3 — Rapport des livres les plus empruntés
-
-Ce rapport classe les titres par nombre d'emprunts sur une période donnée.
-Il est utile pour identifier les succès et pour les décisions de réacquisition.
-
-**Filtres disponibles :**
-- **Période** : 30 derniers jours, 1 an, ou depuis toujours
-- **Nombre de résultats** : limiter aux 10, 25 ou 50 premiers titres
-
-Pour chaque titre, le rapport indique :
-- Le rang (médaille or/argent/bronze pour le podium)
-- Le titre et l'auteur (cliquable vers la fiche catalogue)
-- Le nombre total d'emprunts, avec une barre visuelle proportionnelle
-
-> **Astuce acquisitions** : Utilise ce rapport conjointement avec le rapport CREW. Le désherbage libère de la place et du budget ; les titres les plus empruntés révèlent les genres et thèmes en demande — achats ciblés dans ces catégories pour maximiser l'usage du fonds.
-
-## Étape 4 — Rapport CREW - Désherbage
-
-Le rapport CREW t'aide à identifier les livres à retirer du fonds de façon systématique et objective. Il attribue un **score** à chaque exemplaire en combinant plusieurs critères (âge, état, popularité).
-
-> **Pour les enseignants** : Ce rapport facilite le tri annuel de la bibliothèque en identifiant les livres abîmés, jamais empruntés ou en trop grand nombre. L'objectif : libérer de l'espace pour de nouveaux livres qui plairont davantage aux élèves.
-
-![Sélection de méthode CREW](../images/reports-04-crew-method.png)
-
-### Méthodes d'évaluation
+### Méthodes d'analyse
 
 Choisis une méthode selon ton objectif :
 
+| Méthode | Ce qu'elle montre |
+|---------|------------------|
+| **Tous** | L'ensemble des titres empruntés, triés par popularité |
+| **Plus empruntés** | Classement brut par nombre d'emprunts |
+| **Taux de rotation** | ISO 11620 : emprunts ÷ exemplaires — identifie les titres sous-dotés |
+| **Exemplaires rares + fort taux** | Titres avec ≤ 2 exemplaires ET fort taux → priorité d'achat |
+
+### Période
+
+Filtre par **semaine / mois / an / depuis toujours** pour observer les tendances saisonnières ou les succès récents.
+
+### Colonnes du tableau
+
+| Colonne | Lecture |
+|---------|---------|
+| **#** | Rang dans le classement |
+| **Titre** | Cliquable → fiche catalogue |
+| **Emprunts** | Barre proportionnelle bleue — plus la barre est longue, plus le titre circule |
+| **Exemplaires** | Nombre de copies — rouge si 1 seul exemplaire |
+| **Taux de rotation** | Emprunts ÷ exemplaires. Barre colorée : vert (< 4), orange (4–8), rouge (≥ 8) |
+
+### Interpréter le taux de rotation
+
+Le taux de rotation est l'indicateur ISO 11620 de performance d'une collection. Il se calcule : **total des emprunts ÷ nombre d'exemplaires**.
+
+| Taux | Interprétation | Action recommandée |
+|------|---------------|--------------------|
+| **< 1** | Collection très peu utilisée | Signal fort de désherbage ou de réorientation du fonds |
+| **1 à 3** | Fonds peu mobilisé | Analyser par segment (albums, docs, fiction séparément) |
+| **3 à 9** | Usage normal | Comparer d'une année à l'autre |
+| **> 9** | Demande supérieure à l'offre | Racheter des exemplaires supplémentaires |
+
+> **Bon à savoir** : un taux de rotation global faible peut masquer un segment fiction très actif et un fonds documentaire inerte. Utilise les panneaux de filtre pour calculer le taux par type de support.
+
+### Panneaux de filtres statistiques
+
+Les panneaux (histogrammes + sliders) permettent de croiser les données :
+- **Par support** : albums, romans, documentaires, BD, etc.
+- **Par genre** : aventure, fantastique, etc.
+- **Par public** : enfant, ado, adulte
+- **Taux de rotation** : slider pour filtrer une plage (ex : afficher seulement les titres avec taux > 8)
+- **Année de publication** : histogramme coloré — rouge (> 20 ans), orange (10–20 ans), bleu (< 10 ans)
+
+### Afficher / masquer des colonnes ou des panneaux
+
+La barre de méthode contient deux boutons à droite :
+
+- **⊞ (tableau)** — choisit quelles colonnes afficher dans le tableau de résultats
+- **⊟ (colonnes)** — choisit quels panneaux statistiques afficher
+
+Tes choix sont mémorisés pour les prochaines visites.
+
+---
+
+## Rapport CREW — Désherbage
+
+Le désherbage est le **retrait méthodique des documents détériorés, obsolètes ou inutilisés**. Une BCD bien désherbée circule mieux : les élèves trouvent plus facilement, les étagères respirent, le budget est concentré sur des acquisitions utiles.
+
+> **Règle pratique** : vise à désherber environ **5 % du fonds chaque année**, ce qui correspond à un renouvellement complet sur 20 ans.
+
+### Méthodes CREW disponibles
+
 **1. Jamais emprunté**
-- Livres jamais empruntés depuis leur achat
-- **Utilité** : repérer les livres qui n'intéressent pas les élèves (thème inadapté, couverture peu attractive, mal rangés)
-- Filtre par ancienneté : 6 mois, 1 an, 2 ans, 3 ans
+Exemplaires sans aucun emprunt depuis l'achat. C'est la méthode de départ la plus révélatrice : pourquoi ce livre n'est-il jamais pris ? Couverture peu attractive, mauvais emplacement, thème inadapté ?
 
 **2. Faible rotation**
-- Livres empruntés 2 fois ou moins sur les 2 dernières années
-- **Utilité** : identifier les livres qui ne circulent plus et libérer de l'espace
-- Pratique avant de faire de nouveaux achats
+Exemplaires empruntés 2 fois ou moins sur les 2 dernières années. Libère de la place avant de nouveaux achats.
 
 **3. Abîmés + anciens**
-- Livres en mauvais état ET présents depuis 3 ans ou plus
-- **Utilité** : priorité absolue pour le désherbage (état + ancienneté)
-- Remplacer par des exemplaires neufs des mêmes titres si populaires
+Exemplaires en mauvais état ET présents depuis 3 ans ou plus. Priorité absolue : état physique + ancienneté cumulent des points de score.
 
-**4. Score élevé (≥5)**
-- Vue d'ensemble de TOUS les candidats prioritaires au retrait
-- **Utilité** : démarrer rapidement le tri sans choisir de critère précis
-- Combine automatiquement : âge, état physique et popularité
+**4. Score élevé (≥ 5)**
+Vue d'ensemble de tous les candidats urgents, tous critères confondus. Bon point de départ pour une première session de désherbage.
 
 **5. Jamais inventorié**
-- Livres jamais vérifiés physiquement lors des inventaires annuels
-- **Utilité** : repérer les livres potentiellement perdus ou volés
-- Minimum 1 an d'ancienneté (les nouveautés sont exclues)
+Exemplaires jamais vérifiés physiquement (minimum 1 an d'ancienneté). Repère les livres potentiellement perdus ou égarés.
 
 **6. Doublons peu demandés**
-- Titres avec 3 exemplaires ou plus ET peu empruntés (moyenne <2 emprunts/livre sur 2 ans)
-- **Utilité** : réduire les doublons des titres impopulaires
-- Exemple : garder 1-2 exemplaires, retirer le reste pour gagner de la place
+Titres avec 3 exemplaires ou plus ET faible demande (< 2 emprunts/exemplaire sur 2 ans). Garder 1–2 exemplaires, retirer le reste.
 
-### Le score : comment ça marche ?
+### Le score CREW
 
-Chaque livre reçoit un **score automatique de 0 à 7+** :
-- 🟢 **Score 0-2** : À garder — livre récent ou en bon état
-- 🟠 **Score 3-4** : À vérifier — regarder le livre physiquement avant de décider
-- 🔴 **Score 5+** : À retirer en priorité — cumule plusieurs problèmes
+Chaque exemplaire reçoit un score automatique cumulant plusieurs critères :
 
-**Le score se calcule en additionnant :**
-- **Ancienneté** : +1 à +3 points (dans le fonds depuis 1 an = +1, 2 ans = +2, 3+ ans = +3)
-- **État physique** : +2 points si abîmé
-- **Infos dépassées** (documentaires seulement) : +1 à +2 points si publié il y a >5 ans ou >10 ans
-- **Jamais emprunté** : +2 points
-- **Peu emprunté** : +1 point si seulement 1 emprunt
+| Critère | Points |
+|---------|--------|
+| Dans le fonds depuis 1 an | +1 |
+| Dans le fonds depuis 2 ans | +2 |
+| Dans le fonds depuis 3 ans ou plus | +3 |
+| État abîmé | +2 |
+| Documentaire publié il y a > 5 ans | +1 |
+| Documentaire publié il y a > 10 ans | +2 |
+| Jamais emprunté | +2 |
+| Emprunté 1 seule fois | +1 |
 
-### Filtres avancés
+| Score | Couleur | Décision |
+|-------|---------|----------|
+| 0–2 | 🟢 Vert | Garder |
+| 3–4 | 🟠 Orange | Vérifier physiquement |
+| ≥ 5 | 🔴 Rouge | Candidat prioritaire au retrait |
 
-Affine ta recherche avec les filtres :
-- **Type de support** : Livre, CD, DVD, etc.
-- **Genre** : Aventure, Fantastique, Policier, etc.
-- **Niveau** : CP, CE1, CE2, CM1, CM2, etc.
-- **Public cible** : Enfant, Ado, Adulte
-- **Âge minimum** : Limite aux exemplaires acquis il y a plus de X mois
+> **Le score est une aide, pas une sentence.** Un livre avec un score élevé mais très populaire mérite d'être racheté plutôt que retiré. Vérifie toujours physiquement avant de décider.
 
-### Informations affichées
+### Critères CREW par type de document
 
-Pour chaque exemplaire, le rapport indique :
-- **Score CREW** avec badge de couleur
-- **Raisons du score** (âge, condition, circulation, etc.)
-- **Code-barres** et **titre** (cliquable vers la fiche catalogue)
-- **Type de support** et **condition physique**
-- **Emplacement** sur l'étagère
-- **Âge dans la collection** (en années et jours)
-- **Année de publication**
+Les seuils ci-dessous sont issus du manuel CREW (Texas State Library) et des préconisations du Réseau Canopé / SavoirsCDI.
 
-![Résultats CREW avec scores](../images/reports-05-crew-results.png)
+#### Fiction (romans, albums, BD)
 
-> **Conseil pratique pour les enseignants** : Commence par la méthode "Score élevé (≥5)" pour une vue d'ensemble rapide. Vérifie toujours physiquement le livre avant de le retirer : le score est une aide, pas une décision automatique. Un livre populaire avec un score élevé peut mériter d'être gardé ou remplacé par un exemplaire neuf.
+Pour la **fiction jeunesse**, l'âge de publication n'est pas en soi un critère de désherbage. Ce qui compte : la circulation et l'état physique.
 
-## Étape 5 — Imprimer ou exporter
 
-Clique sur le bouton « Imprimer » pour ouvrir la vue d'impression optimisée.
-Le rapport peut aussi être exporté au format CSV pour un traitement dans un tableur.
+**Exceptions à conserver malgré une faible circulation :**
+- Titres des listes de référence Éduscol (cycles 2 et 3)
+- Prix littéraires reconnus (Prix Sorcières, Pépite, etc.)
+- Classiques du fonds (Babar, Petit Prince, etc.)
 
-![Bouton d'impression du rapport](../images/reports-03-print.png)
+#### Documentaires — seuils d'ancienneté par domaine Dewey
 
-## Étape 6 — Rapport des réservations
+Les documentaires accessibles aux élèves de 6–11 ans doivent être **factuellement exacts**. Un documentaire périmé qui affirme que "l'URSS est la première puissance mondiale" ou donne les planètes du système solaire sans Pluton peut induire les élèves en erreur.
 
-![Rapport des réservations](../images/reports-06-holds.png)
+| Domaine | Seuil d'ancienneté |
+|---------|--------------------|
+| Informatique (004) | 2–3 ans |
+| Médecine, santé (610) | 5 ans |
+| Géographie, pays | 5–10 ans (selon l'actualité géopolitique) |
+| Sciences (500) | 10 ans (sauf biographies et fondements) |
+| Sciences sociales, économie | 10 ans |
+| Arts | Priorité à l'état physique — moins strict sur l'âge |
+| Histoire | Moins strict — vérifier l'exactitude du contenu |
+| Dictionnaires, grammaires | 15 ans |
 
-Ce rapport liste toutes les réservations enregistrées, avec leur statut.
+### Critères IOUPI (adaptation française de MUSTIE)
 
-**Filtres disponibles :**
-- **Classe** : filtrer par classe pour voir les réservations d'un groupe
+Lors de l'inspection physique, applique les critères IOUPI :
 
-Pour chaque réservation, le rapport indique :
-- Le nom et la classe de l’emprunteur
-- Le titre du livre réservé
-- Le **statut** de la réservation (codé par couleur) :
-  - 🟦 **En attente** — la réservation est dans la file d’attente
-  - 🟢 **Prête** — le livre est disponible, l’emprunteur peut venir le chercher
-  - 🔴 **Expirée** — la réservation n’a pas été honorée dans les délais
-  - ⚪ **Annulée / Honorée** — réservation terminée
-- La **position dans la file** d’attente
-- La **date d’expiration**
+| Lettre | Signification | Exemple concret |
+|--------|--------------|-----------------|
+| **I** | **Incorrect** | Information factuellement erronée ou périmée |
+| **O** | **Ordinaire** | Contenu sans intérêt particulier, superficiel |
+| **U** | **Usé** | Pages déchirées, couverture arrachée, taches, moisissures |
+| **P** | **Périmé** | Thème daté, édition remplacée par une version plus récente |
+| **I** | **Inapproprié** | Ne correspond pas au lectorat ou au projet pédagogique |
 
-## Étape 7 — Rapport des prêts en cours
+Un seul critère IOUPI suffit à justifier le retrait, indépendamment du score.
 
-![Rapport des prêts en cours](../images/reports-07-active-loans.png)
+### Colonnes et filtres du tableau CREW
 
-Ce rapport liste tous les exemplaires actuellement empruntés, groupés par classe.
+**Colonnes disponibles** (toggle ⊞ en haut à droite) :
+- **Score** : badge rouge/orange/vert avec les raisons détaillées
+- **Cote** : code-barres de l'exemplaire
+- **Titre** : cliquable vers la fiche catalogue
+- **État** : bon / abîmé
+- **Emplacement** : localisation sur l'étagère
+- **Ancienneté** : années dans la collection (rouge si > 3 ans)
+- **Année de pub.** : rouge si > 20 ans, orange si > 10 ans
+- **Exemplaires** : nombre de copies du même titre dans le lot analysé
+- **Taux de rotation** : barre de progression — vert (< 4), orange (4–8), rouge (≥ 8), gris (0)
 
-**Filtres disponibles :**
-- **Classe** : filtrer par classe pour n’afficher qu’un groupe
+**Panneaux de filtre** (toggle ⊟ en haut à droite) :
+- **Distribution des scores CREW** : histogramme par valeur de score (0–5+) avec slider — filtre les exemplaires par plage de score
+- Histogrammes cliquables par support, genre, public, état
+- Histogramme taux de rotation avec slider min/max
+- Histogrammes d'année de publication et d'acquisition avec sliders
 
-Pour chaque prêt, le rapport indique :
-- Le nom de l’emprunteur
-- Le titre du livre
-- La **date d’emprunt**
-- La **date de retour prévue**
-- Le **nombre de jours restants** (badge vert si ≥4 jours, orange si ≤3 jours, rouge si en retard)
+### Workflow de désherbage recommandé
 
-> **Conseil :** Ce rapport est utile pour anticiper les retours — filtre par classe pour prévenir un enseignant que certains livres de sa classe reviennent bientôt.
+1. **Rapport → Score élevé (≥ 5)** — vue d'ensemble des urgences
+2. **Filtrer** par type de support si le fonds est grand
+3. **Imprimer** ou noter les codes-barres des candidats
+4. **Inspection physique** de chaque livre flaggué (critères IOUPI)
+5. **Décision** : retirer / réparer / racheter exemplaire neuf
+6. **Retrait du système** : via la page Inventaire → modifier l'état ou supprimer l'exemplaire
+7. **Estampiller** les livres retirés "RETIRÉ" et les écarter physiquement
+8. **Acquisition compensatrice** : pour chaque lot retiré, prévoir des achats dans les segments identifiés comme populaires (rapport "Plus empruntés")
+
+> **Conseil** : le rapport "Plus empruntés" et le rapport CREW fonctionnent en binôme. Le désherbage libère de la place et du budget ; les titres les plus empruntés révèlent les genres en demande. Acheter ciblé dans ces catégories maximise l'usage de la BCD.
+
+---
+
+## Rapport "Jamais empruntés"
+
+Variante du CREW centrée sur les exemplaires **sans aucun emprunt**. Utilise le même tableau et les mêmes filtres que le rapport CREW, avec en plus un histogramme de taux de rotation pour filtrer par plage.
+
+Ce rapport est utile en début d'année pour repérer les acquisitions de l'année précédente qui n'ont jamais circulé.
+
+---
+
+## Rapport des retards
+
+Liste tous les emprunts dont la date de retour est dépassée, groupés par classe.
+
+Pour chaque retard :
+- Nom et numéro de l'élève (cliquable vers sa fiche)
+- Titre et code-barres du livre
+- Date d'emprunt et date prévue de retour
+- Nombre de jours de retard
+
+> **Conseil** : filtre par classe et transmets la liste à l'enseignant concerné pour une relance directe.
+
+---
+
+## Rapport des réservations
+
+Liste toutes les réservations enregistrées avec leur statut :
+
+| Statut | Signification |
+|--------|--------------|
+| 🟦 **En attente** | Dans la file d'attente |
+| 🟢 **Prête** | Exemplaire disponible — à remettre à l'élève |
+| 🔴 **Expirée** | Non honorée dans les délais |
+| ⚪ **Annulée / Honorée** | Réservation terminée |
+
+---
+
+## Rapport des prêts en cours
+
+Liste tous les exemplaires actuellement empruntés, groupés par classe.
+
+Le badge de jours restants indique :
+- 🟢 **Vert** : 4 jours ou plus
+- 🟠 **Orange** : 3 jours ou moins
+- 🔴 **Rouge** : en retard
+
+---
+
+## Imprimer ou exporter
+
+Chaque rapport dispose d'un bouton **Imprimer** (en haut à droite de la page) qui ouvre une vue optimisée pour l'impression.
 
 ---
 
@@ -178,8 +261,10 @@ Pour chaque prêt, le rapport indique :
 
 | Problème | Solution |
 |----------|----------|
-| Le rapport des retards est vide | Aucun emprunt n'est actuellement en retard — c'est une bonne nouvelle ! |
-| Un livre apparaît encore en retard alors qu'il a été rendu | Vérifie dans la fiche du livre que le retour a bien été enregistré. |
-| Le rapport CREW affiche trop de résultats | Augmente l'âge minimum (ex: 2 ans au lieu de 6 mois) ou filtre par catégorie. Commence avec les scores ≥5. |
-| Un bon livre a un score CREW élevé | Le score est indicatif. Si un livre est populaire ou pertinent, conserve-le même avec un score élevé. |
-| Comment désherber physiquement ? | Note les codes-barres, retire les livres des étagères, tamponne-les "retiré", et retire-les du système via l'inventaire. |
+| Le rapport des retards est vide | Aucun emprunt n'est en retard — bonne nouvelle ! |
+| Un livre rendu apparaît encore en retard | Vérifie que le retour a bien été enregistré dans la page Retours. |
+| Le rapport CREW affiche des centaines de résultats | Commence par "Score élevé (≥ 5)" + filtre par type de support. Augmente l'ancienneté minimale. |
+| Un bon livre a un score élevé | Le score est indicatif. Si le livre est populaire, conserve-le ou rachète un exemplaire neuf. |
+| Un livre de la liste Éduscol a un score élevé | Les listes de référence Éduscol sont exemptées des critères d'âge — vérifie seulement l'état physique. |
+| Taux de rotation < 1 sur tout le fonds | Signal de désherbage ou d'inadéquation du fonds au lectorat — consulter le rapport "Plus empruntés" pour identifier ce qui fonctionne. |
+| Taux de rotation > 9 sur un titre | Racheter des exemplaires supplémentaires ou des titres similaires. |

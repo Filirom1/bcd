@@ -12,12 +12,14 @@
 
 const { ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
-import StickerPicker from '../ui/StickerPicker.js';
+import DeweyPicker from '../ui/DeweyPicker.js';
+import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import Modal from '../ui/Modal.js';
+import { useAppState } from '../../composables/useAppState.js';
 
 export default {
   name: 'ItemEditForm',
-  components: { StickerPicker, Modal },
+  components: { DeweyPicker, ShelfLocationPicker, Modal },
   props: {
     item: {
       type: Object,
@@ -31,6 +33,17 @@ export default {
   emits: ['update:show', 'saved'],
   setup(props, { emit }) {
     const { t } = useI18n();
+    const { settings } = useAppState();
+
+    const deweyColors = computed(() => {
+      try { return JSON.parse(settings.value?.dewey_colors || 'null') || undefined; }
+      catch { return undefined; }
+    });
+
+    const shelfLocationOptions = computed(() => {
+      try { return JSON.parse(settings.value?.catalog_shelf_locations || '[]') || []; }
+      catch { return []; }
+    });
 
     // Form data
     const formData = ref({
@@ -179,6 +192,8 @@ export default {
       isSubmitting,
       statusOptions,
       conditionOptions,
+      deweyColors,
+      shelfLocationOptions,
       handleSubmit,
       handleCancel,
       t
@@ -225,39 +240,26 @@ export default {
 
               <!-- Call Number -->
               <div class="mb-3">
-                <label for="call-number" class="form-label">
-                  {{ t('catalog.call_number') }}
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.call_number }"
-                  id="call-number"
-                  data-testid="input-call-number"
+                <label class="form-label">{{ t('catalog.call_number') }}</label>
+                <dewey-picker
                   v-model="formData.call_number"
-                  placeholder="e.g., 843.91 DUP"
+                  :colors="deweyColors"
+                  data-testid="input-call-number"
                 />
-                <div v-if="errors.call_number" class="invalid-feedback" data-testid="error-call-number">
+                <div v-if="errors.call_number" class="text-danger small mt-1" data-testid="error-call-number">
                   {{ errors.call_number }}
                 </div>
               </div>
 
               <!-- Shelf Location -->
               <div class="mb-3">
-                <label for="shelf-location" class="form-label">
-                  {{ t('catalog.shelf_location') }}
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.shelf_location }"
-                  id="shelf-location"
-                  data-testid="input-shelf-location"
+                <label class="form-label">{{ t('catalog.shelf_location') }}</label>
+                <shelf-location-picker
                   v-model="formData.shelf_location"
-                  placeholder="e.g., 🔴 Romans ado"
+                  :locations="shelfLocationOptions"
+                  data-testid="input-shelf-location"
                 />
-                <sticker-picker v-model="formData.shelf_location" />
-                <div v-if="errors.shelf_location" class="invalid-feedback" data-testid="error-shelf-location">
+                <div v-if="errors.shelf_location" class="text-danger small mt-1" data-testid="error-shelf-location">
                   {{ errors.shelf_location }}
                 </div>
               </div>
