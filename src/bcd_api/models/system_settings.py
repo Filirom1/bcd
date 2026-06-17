@@ -27,7 +27,7 @@ class SystemSettings(Base):
 
     # ID format configuration
     id_format = Column(String(20), nullable=False, default=IDFormat.NUMERIC.value)
-    id_validation_regex = Column(String(200), nullable=False, default=r"^\d+$")
+    id_validation_regex = Column(String(200), nullable=False, default=r"^\d{1,6}$")
     id_length_min = Column(Integer, nullable=False, default=1)
     id_length_max = Column(Integer, nullable=False, default=10)
 
