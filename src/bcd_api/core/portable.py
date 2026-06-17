@@ -92,14 +92,25 @@ def get_bundled_resource(resource_path: str) -> Optional[Path]:
     """
     if is_portable() and hasattr(sys, '_MEIPASS'):
         # PyInstaller extracts bundled files to _MEIPASS temporary directory
-        resource = Path(sys._MEIPASS) / resource_path
+        meipass_path = Path(sys._MEIPASS)
+        resource = meipass_path / resource_path
         if resource.exists():
             return resource
+
+        # Fallback for newer PyInstaller onedir layout where datas are inside _internal
+        resource_internal = meipass_path / "_internal" / resource_path
+        if resource_internal.exists():
+            return resource_internal
 
     # Development mode or resource not in _MEIPASS
     resource = get_app_dir() / resource_path
     if resource.exists():
         return resource
+
+    # Fallback to _internal directory (useful for onedir Linux/Windows layouts)
+    resource_internal = get_app_dir() / "_internal" / resource_path
+    if resource_internal.exists():
+        return resource_internal
 
     return None
 
