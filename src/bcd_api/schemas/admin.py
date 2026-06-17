@@ -6,6 +6,7 @@ Provides request/response models for bulk borrower and catalog operations.
 
 from typing import List, Optional
 from pydantic import BaseModel, Field
+from src.shared.constants import BindingType
 
 
 class BulkChangeClassRequest(BaseModel):
@@ -74,6 +75,10 @@ class BulkEditRecordsRequest(BaseModel):
         None,
         description="Genre to set (null = no change)"
     )
+    level: Optional[str] = Field(
+        None,
+        description="Reading level to set (null = no change)"
+    )
     target_audience: Optional[str] = Field(
         None,
         description="Target audience to set (null = no change)"
@@ -85,6 +90,18 @@ class BulkEditRecordsRequest(BaseModel):
     medium_type: Optional[str] = Field(
         None,
         description="Medium type to set (null = no change)"
+    )
+    publisher: Optional[str] = Field(
+        None,
+        description="Publisher to set (null = no change)"
+    )
+    collection: Optional[str] = Field(
+        None,
+        description="Collection/Series to set (null = no change)"
+    )
+    binding_type: Optional[BindingType] = Field(
+        None,
+        description="Binding type to set (null = no change)"
     )
 
 

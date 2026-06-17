@@ -597,9 +597,13 @@ def bulk_edit_records(
     db: Session,
     record_ids: list[int],
     genre: Optional[str] = None,
+    level: Optional[str] = None,
     target_audience: Optional[str] = None,
     language: Optional[str] = None,
-    medium_type: Optional[str] = None
+    medium_type: Optional[str] = None,
+    publisher: Optional[str] = None,
+    collection: Optional[str] = None,
+    binding_type: Optional[str] = None
 ) -> dict:
     """
     Bulk edit bibliographic records (US5).
@@ -611,9 +615,13 @@ def bulk_edit_records(
         db: Database session
         record_ids: List of record IDs to update
         genre: Genre to set (null = no change)
+        level: Reading level to set (null = no change)
         target_audience: Target audience to set (null = no change)
         language: Language to set (null = no change)
         medium_type: Medium type to set (null = no change)
+        publisher: Publisher to set (null = no change)
+        collection: Collection/Series to set (null = no change)
+        binding_type: Binding type to set (null = no change)
 
     Returns:
         Operation result with counts
@@ -628,12 +636,20 @@ def bulk_edit_records(
     updates = {}
     if genre is not None:
         updates["genre"] = genre
+    if level is not None:
+        updates["level"] = level
     if target_audience is not None:
         updates["target_audience"] = target_audience
     if language is not None:
         updates["language"] = language
     if medium_type is not None:
         updates["medium_type"] = medium_type
+    if publisher is not None:
+        updates["publisher"] = publisher
+    if collection is not None:
+        updates["collection"] = collection
+    if binding_type is not None:
+        updates["binding_type"] = binding_type
 
     if not updates:
         raise ValidationError("No fields to update (all values are null)")

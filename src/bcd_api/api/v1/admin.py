@@ -577,9 +577,13 @@ def bulk_edit_records_endpoint(
             db=db,
             record_ids=request.record_ids,
             genre=request.genre,
+            level=request.level,
             target_audience=request.target_audience,
             language=request.language,
-            medium_type=request.medium_type
+            medium_type=request.medium_type,
+            publisher=request.publisher,
+            collection=request.collection,
+            binding_type=request.binding_type
         )
         return BulkOperationResult(**result)
 

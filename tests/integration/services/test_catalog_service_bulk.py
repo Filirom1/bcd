@@ -46,7 +46,11 @@ class TestBulkEditRecords:
             db=db_session,
             record_ids=record_ids,
             genre="Biography",
-            language="fr"
+            level="CP",
+            language="fr",
+            publisher="New Pub",
+            collection="Cool Series",
+            binding_type="paperback"
         )
 
         # ASSERT - All records updated
@@ -61,7 +65,11 @@ class TestBulkEditRecords:
                 BiblographicRecord.id == record_id
             ).first()
             assert record.genre == "Biography"
+            assert record.level == "CP"
             assert record.language == "fr"
+            assert record.publisher == "New Pub"
+            assert record.collection == "Cool Series"
+            assert record.binding_type == "paperback"
 
     def test_bulk_edit_records_null_values_unchanged(self, db_session: Session):
         """Test that null values in update mean 'no change'."""
@@ -136,9 +144,13 @@ class TestBulkEditRecords:
                 db=db_session,
                 record_ids=[record.id],
                 genre=None,
+                level=None,
                 target_audience=None,
                 language=None,
-                medium_type=None
+                medium_type=None,
+                publisher=None,
+                collection=None,
+                binding_type=None
             )
 
         assert "No fields to update" in str(exc.value)

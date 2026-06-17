@@ -48,9 +48,13 @@ export default {
         // Bulk edit fields
         const fields = ref({
             genre: '',
+            level: '',
             target_audience: '',
             language: '',
-            medium_type: ''
+            medium_type: '',
+            publisher: '',
+            collection: '',
+            binding_type: ''
         });
 
         // Operation types
@@ -65,6 +69,7 @@ export default {
         };
 
         const genreSuggestions = computed(() => parseCsv(props.settings?.catalog_genres));
+        const levelSuggestions = computed(() => parseCsv(props.settings?.catalog_levels));
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));
         const mediumTypeSuggestions = computed(() => parseCsv(props.settings?.catalog_medium_types));
 
@@ -72,6 +77,13 @@ export default {
             { value: 'child', label: t('bibliographic.audience_child') },
             { value: 'youth', label: t('bibliographic.audience_youth') },
             { value: 'adult', label: t('bibliographic.audience_adult') }
+        ];
+
+        const bindingTypeOptions = [
+            { value: 'hardcover', label: t('bibliographic.binding_hardcover') },
+            { value: 'paperback', label: t('bibliographic.binding_paperback') },
+            { value: 'spiral', label: t('bibliographic.binding_spiral') },
+            { value: 'other', label: t('bibliographic.binding_other') }
         ];
 
         // Selected count
@@ -109,6 +121,19 @@ export default {
             if (fields.value.genre) {
                 summary.push(`${t('admin.genre')}: ${fields.value.genre}`);
             }
+            if (fields.value.level) {
+                summary.push(`${t('admin.level')}: ${fields.value.level}`);
+            }
+            if (fields.value.publisher) {
+                summary.push(`${t('admin.publisher')}: ${fields.value.publisher}`);
+            }
+            if (fields.value.collection) {
+                summary.push(`${t('admin.collection')}: ${fields.value.collection}`);
+            }
+            if (fields.value.binding_type) {
+                const binding = bindingTypeOptions.find(b => b.value === fields.value.binding_type);
+                summary.push(`${t('admin.binding_type')}: ${binding?.label || fields.value.binding_type}`);
+            }
             if (fields.value.target_audience) {
                 const audience = audienceOptions.find(a => a.value === fields.value.target_audience);
                 summary.push(`${t('admin.target_audience')}: ${audience?.label || fields.value.target_audience}`);
@@ -128,9 +153,13 @@ export default {
             selectedOperation.value = null;
             fields.value = {
                 genre: '',
+                level: '',
                 target_audience: '',
                 language: '',
-                medium_type: ''
+                medium_type: '',
+                publisher: '',
+                collection: '',
+                binding_type: ''
             };
         };
 
@@ -195,7 +224,9 @@ export default {
             selectedOperation,
             fields,
             genreSuggestions,
+            levelSuggestions,
             audienceOptions,
+            bindingTypeOptions,
             languageSuggestions,
             mediumTypeSuggestions,
             selectedCount,
@@ -354,6 +385,24 @@ export default {
                                     <small class="form-text text-muted">{{ t('admin.genre_hint') || 'Type any value or select from suggestions' }}</small>
                                 </div>
 
+                                <!-- Level -->
+                                <div class="mb-3">
+                                    <label class="form-label">{{ t('admin.level') }}</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        v-model="fields.level"
+                                        list="bulk-level-suggestions"
+                                        :placeholder="t('admin.level_placeholder') || 'e.g., CP, CE1, CM2'"
+                                    />
+                                    <datalist id="bulk-level-suggestions">
+                                        <option v-for="lvl in levelSuggestions" :key="lvl" :value="lvl">
+                                            {{ lvl }}
+                                        </option>
+                                    </datalist>
+                                    <small class="form-text text-muted">{{ t('admin.level_hint') || 'Type any value or select from suggestions' }}</small>
+                                </div>
+
                                 <!-- Target Audience -->
                                 <div class="mb-3">
                                     <label class="form-label">{{ t('admin.target_audience') }}</label>
@@ -397,6 +446,41 @@ export default {
                                         </option>
                                     </datalist>
                                     <small class="form-text text-muted">{{ t('admin.medium_type_hint') || 'Type any value or select from suggestions' }}</small>
+                                </div>
+
+                                <!-- Publisher -->
+                                <div class="mb-3">
+                                    <label class="form-label">{{ t('admin.publisher') }}</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        v-model="fields.publisher"
+                                        :placeholder="t('admin.publisher_placeholder') || 'e.g., Gallimard, Hachette'"
+                                    />
+                                    <small class="form-text text-muted">{{ t('admin.publisher_hint') || 'Publisher name' }}</small>
+                                </div>
+
+                                <!-- Collection -->
+                                <div class="mb-3">
+                                    <label class="form-label">{{ t('admin.collection') }}</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        v-model="fields.collection"
+                                        :placeholder="t('admin.collection_placeholder') || 'e.g., Castor Poche, Max et Lili'"
+                                    />
+                                    <small class="form-text text-muted">{{ t('admin.collection_hint') || 'Collection or series name' }}</small>
+                                </div>
+
+                                <!-- Binding Type -->
+                                <div class="mb-3">
+                                    <label class="form-label">{{ t('admin.binding_type') }}</label>
+                                    <select class="form-select" v-model="fields.binding_type">
+                                        <option value="">— {{ t('common.no') }} {{ t('common.change') }} —</option>
+                                        <option v-for="binding in bindingTypeOptions" :key="binding.value" :value="binding.value">
+                                            {{ binding.label }}
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
 
