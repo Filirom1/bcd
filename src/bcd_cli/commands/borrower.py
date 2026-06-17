@@ -34,7 +34,7 @@ def borrower():
 @click.option("--notes", help="Additional notes")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -95,7 +95,7 @@ def add_borrower(
 @click.option("--limit", default=100, help="Maximum results")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -163,7 +163,7 @@ def list_borrowers(
 @click.argument("borrower_id")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -223,7 +223,7 @@ Status: {'[green]Active[/green]' if data['active'] else '[red]Blocked[/red]'}
 @click.option("--reason", required=True, help="Reason for blocking")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -254,7 +254,7 @@ def block_borrower(borrower_id: str, reason: str, api_url: str):
 @click.argument("borrower_id")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

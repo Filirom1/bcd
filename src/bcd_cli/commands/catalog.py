@@ -40,7 +40,7 @@ def catalog():
 @click.option("--limit", default=20, help="Maximum results to show")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -209,7 +209,7 @@ def transform_csv(input_file: str, output_file: str, format: str):
 @click.argument("file_path", type=click.Path(exists=True))
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -235,7 +235,7 @@ def import_dublin_core(file_path: str, api_url: str, yes: bool):
     \b
     Examples:
         bcd-cli catalog import-dc catalog_dublin_core.csv
-        bcd-cli catalog import-dc ~/Downloads/catalog_dc.csv --api-url http://server:8000
+        bcd-cli catalog import-dc ~/Downloads/catalog_dc.csv --api-url http://server:8888
     """
     try:
         client = get_client(base_url=api_url)
@@ -334,7 +334,7 @@ def import_dublin_core(file_path: str, api_url: str, yes: bool):
 @click.option("--genre", help="Genre")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

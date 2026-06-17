@@ -127,7 +127,7 @@ Le bouton **← Retour** est présent sur chaque écran. En dernier recours, fer
 
 Si la connexion automatique échoue :
 1. Depuis l'écran de connexion, remplissez le champ **« Ou tape l'adresse de ta bibliothèque »**
-2. Entrez l'adresse fournie par votre technicien, par exemple : `http://192.168.1.100:8000`
+2. Entrez l'adresse fournie par votre technicien, par exemple : `http://192.168.1.100:8888`
 3. Cliquez sur **Se connecter**
 
 > 💡 Si vous n'avez pas l'adresse, contactez le support informatique de votre école.

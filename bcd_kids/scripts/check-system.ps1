@@ -101,9 +101,9 @@ $serverIP = Read-Host "  Entrer l'IP du serveur BCD (ou appuyer sur Entrée pour
 
 if ($serverIP) {
     try {
-        $test = Test-NetConnection -ComputerName $serverIP -Port 8000 -WarningAction SilentlyContinue
+        $test = Test-NetConnection -ComputerName $serverIP -Port 8888 -WarningAction SilentlyContinue
         if ($test.TcpTestSucceeded) {
-            Write-Host "  ✓ Serveur BCD joignable sur $serverIP`:8000" -ForegroundColor Green
+            Write-Host "  ✓ Serveur BCD joignable sur $serverIP`:8888" -ForegroundColor Green
         } else {
             Write-Host "  ✗ Serveur BCD non joignable (vérifier pare-feu)" -ForegroundColor Red
         }

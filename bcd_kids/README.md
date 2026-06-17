@@ -127,7 +127,7 @@ The **← Back** button is available on every screen. As a last resort, close an
 
 If automatic connection fails:
 1. On the connection screen, fill in the **"Or type your library's address"** field
-2. Enter the address provided by your IT support, e.g. `http://192.168.1.100:8000`
+2. Enter the address provided by your IT support, e.g. `http://192.168.1.100:8888`
 3. Click **Connect**
 
 > 💡 If you don't have the address, contact your school's IT support.

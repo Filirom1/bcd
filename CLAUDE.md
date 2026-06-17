@@ -31,8 +31,8 @@ alembic upgrade head
 ```bash
 # Start server (API + Web UI)
 python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
-# Web UI: http://127.0.0.1:8000
-# API docs: http://127.0.0.1:8000/api/v1/docs
+# Web UI: http://127.0.0.1:8888
+# API docs: http://127.0.0.1:8888/api/v1/docs
 
 # CLI
 python -m src.bcd_cli.main checkout
@@ -41,7 +41,7 @@ python -m src.bcd_cli.main catalog import data/sample_bibliographic.csv
 # Godot Client (kids interface)
 # 1. Open bcd_kids/project.godot in Godot 4.6
 # 2. Press F5 to run
-# Auto-discovers the server via mDNS on localhost:8000
+# Auto-discovers the server via mDNS on localhost:8888
 ```
 
 ### Testing

@@ -417,9 +417,9 @@ class TestBackupCommandsIntegration:
         result = runner.invoke(
             admin,
             ['backup'],
-            env={'BCD_API_URL': 'http://env-api:8000'}
+            env={'BCD_API_URL': 'http://env-api:8888'}
         )
 
         assert result.exit_code == 0
         # Should use env var URL
-        mock_client.assert_called_with(base_url='http://env-api:8000')
+        mock_client.assert_called_with(base_url='http://env-api:8888')

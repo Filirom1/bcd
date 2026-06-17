@@ -435,7 +435,7 @@ def checkout_item(db: Session, borrower_id: str, item_id: str):
        return circulation_service.checkout_item(db, data.borrower_id, data.item_id)
    ```
 
-5. **Test API** using Swagger UI at http://127.0.0.1:8000/api/v1/docs
+5. **Test API** using Swagger UI at http://127.0.0.1:8888/api/v1/docs
 
 ---
 
@@ -921,8 +921,8 @@ See [INSTALL.md](INSTALL.md) for detailed deployment instructions.
 - Alembic: https://alembic.sqlalchemy.org/
 
 **API Documentation**:
-- Swagger UI: http://127.0.0.1:8000/api/v1/docs
-- ReDoc: http://127.0.0.1:8000/api/v1/redoc
+- Swagger UI: http://127.0.0.1:8888/api/v1/docs
+- ReDoc: http://127.0.0.1:8888/api/v1/redoc
 
 ---
 

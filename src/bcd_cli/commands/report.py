@@ -30,7 +30,7 @@ def report():
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -144,7 +144,7 @@ def overdue_report(class_name: Optional[str], academic_year: Optional[str], api_
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -232,7 +232,7 @@ def never_borrowed_report(academic_year: Optional[str], limit: int, api_url: str
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -311,7 +311,7 @@ def most_borrowed_report(period: str, limit: int, api_url: str):
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

@@ -688,7 +688,7 @@ def main():
         print("\nNext steps:")
         print("  1. Start API server: uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000")
         print("  2. Start web UI: python -m src.bcd_web.server")
-        print("  3. Open browser: http://localhost:8000/")
+        print("  3. Open browser: http://localhost:8888/")
 
     except Exception as e:
         print(f"\n✗ Error: {e}")

@@ -22,7 +22,7 @@ def item():
 @click.argument("item_id", required=True)
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -148,7 +148,7 @@ def status(item_id: str, api_url: str):
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

@@ -16,7 +16,7 @@ class BCDAPIClient:
 
     def __init__(
         self,
-        base_url: str = "http://localhost:8000",
+        base_url: str = "http://localhost:8888",
         timeout: int = 30,
         auth_username: Optional[str] = None,
         auth_password: Optional[str] = None,
@@ -243,7 +243,7 @@ _client: Optional[BCDAPIClient] = None
 
 
 def get_client(
-    base_url: str = "http://localhost:8000",
+    base_url: str = "http://localhost:8888",
     auth_username: Optional[str] = None,
     auth_password: Optional[str] = None,
 ) -> BCDAPIClient:

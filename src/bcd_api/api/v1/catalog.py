@@ -489,10 +489,10 @@ async def import_catalog(
 
     **Example:**
     ```bash
-    curl -X POST "http://localhost:8000/api/v1/catalog/import" \\
+    curl -X POST "http://localhost:8888/api/v1/catalog/import" \\
       -F "file=@catalog_dublin_core.csv"
 
-    curl -X POST "http://localhost:8000/api/v1/catalog/import?format=bcdi" \\
+    curl -X POST "http://localhost:8888/api/v1/catalog/import?format=bcdi" \\
       -F "file=@bcdi_export.csv"
     ```
     """

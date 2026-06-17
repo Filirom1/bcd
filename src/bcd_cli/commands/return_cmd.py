@@ -23,7 +23,7 @@ from ..utils.scanner import read_barcode_input
 @click.argument("item_ids", nargs=-1, required=False)
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

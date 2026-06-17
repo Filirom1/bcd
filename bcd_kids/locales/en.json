@@ -117,7 +117,7 @@
 		"connection_failed": "Cannot connect to {name}",
 		"connected": "Connected to {name}",
 		"connection_error": "Connection failed. Ask your teacher for help.",
-		"enter_url": "Type the address (eg: http://192.168.1.10:8000)"
+		"enter_url": "Type the address (eg: http://192.168.1.10:8888)"
 	},
 	"auth": {
 		"title": "Authentication",

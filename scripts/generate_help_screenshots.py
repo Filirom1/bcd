@@ -9,7 +9,7 @@ Usage:
     python scripts/generate_help_screenshots.py [--base-url URL] [--db-path PATH]
 
 Requirements:
-    - BCD server must be running (default: http://127.0.0.1:8000)
+    - BCD server must be running (default: http://127.0.0.1:8888)
     - Run `python scripts/reset_and_simulate.py` first for realistic data
     - Playwright must be installed: pip install playwright && playwright install chromium
 
@@ -525,8 +525,8 @@ Examples:
     )
     parser.add_argument(
         "--base-url",
-        default="http://127.0.0.1:8000",
-        help="Base URL of the running BCD server (default: http://127.0.0.1:8000)",
+        default="http://127.0.0.1:8888",
+        help="Base URL of the running BCD server (default: http://127.0.0.1:8888)",
     )
     parser.add_argument(
         "--db-path",

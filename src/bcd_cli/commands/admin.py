@@ -27,7 +27,7 @@ def admin():
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -149,7 +149,7 @@ def manage_settings(settings: tuple, api_url: str):
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -209,7 +209,7 @@ def create_backup(output: Optional[str], api_url: str):
 @admin.command(name="list-backups")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -286,7 +286,7 @@ def list_backups(api_url: str):
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -389,7 +389,7 @@ def restore_backup(backup_file: str, confirm: bool, api_url: str):
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -519,7 +519,7 @@ def archive_transactions(older_than: int, dry_run: bool, stats: bool, api_url: s
 @admin.command(name="health")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

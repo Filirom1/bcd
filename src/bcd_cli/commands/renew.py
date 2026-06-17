@@ -25,7 +25,7 @@ from ..utils.scanner import read_barcode_input, read_selection_from_list
 @click.option("--all", "renew_all", is_flag=True, help="Renew all eligible items")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

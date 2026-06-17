@@ -170,7 +170,7 @@ func _discover_servers() -> void:
 func _get_port() -> int:
 	return _extract_port(_manual_input.text.strip_edges())
 
-func _extract_port(text: String, default_port: int = 8000) -> int:
+func _extract_port(text: String, default_port: int = 8888) -> int:
 	if text.is_empty():
 		return default_port
 	if "://" in text:

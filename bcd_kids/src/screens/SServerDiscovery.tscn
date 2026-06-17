@@ -117,8 +117,8 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "http://localhost:8000"
-placeholder_text = "http://localhost:8000"
+text = "http://localhost:8888"
+placeholder_text = "http://localhost:8888"
 
 [node name="ConnectManualBtn" type="Button" parent="MainMargin/Root/ManualRow" unique_id=1026626992]
 unique_name_in_owner = true

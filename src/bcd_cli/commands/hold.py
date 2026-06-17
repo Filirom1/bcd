@@ -38,7 +38,7 @@ def hold():
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -179,7 +179,7 @@ def add_hold(
 )
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -262,7 +262,7 @@ def list_holds(borrower_id: str, include_fulfilled: bool, api_url: str):
 @click.argument("biblio_id", type=int, required=True)
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -343,7 +343,7 @@ def list_for_title(biblio_id: int, api_url: str):
 @click.argument("hold_id", type=int, required=True)
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )
@@ -396,7 +396,7 @@ def cancel_hold(hold_id: int, api_url: str):
 @hold.command(name="ready")
 @click.option(
     "--api-url",
-    default="http://localhost:8000",
+    default="http://localhost:8888",
     help="API server URL",
     envvar="BCD_API_URL",
 )

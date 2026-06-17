@@ -84,7 +84,7 @@ If you see "Windows protected your PC":
 1. Edit `config/.env` and set `API_HOST=0.0.0.0`
 2. Find your IP with `ipconfig` command
 3. Allow port 8000 when Windows Firewall prompts
-4. Access from other computers: `http://YOUR-IP:8000`
+4. Access from other computers: `http://YOUR-IP:8888`
 
 **Backup** (Windows Portable):
 - Close the application first
@@ -169,13 +169,13 @@ You should see:
 ```
 Starting BCD API + Web UI Server (Vue 3)
 Serving web UI from: src/bcd_web_vue
-Web UI: http://127.0.0.1:8000
-API Docs: http://127.0.0.1:8000/api/v1/docs
+Web UI: http://127.0.0.1:8888
+API Docs: http://127.0.0.1:8888/api/v1/docs
 ```
 
 ### Step 7: Access BCD
 
-Open your browser and go to: **http://127.0.0.1:8000**
+Open your browser and go to: **http://127.0.0.1:8888**
 
 **Success!** You should see the BCD library interface.
 
@@ -301,7 +301,7 @@ To allow access from other computers on your network:
    Look for something like `192.168.1.100`
 
 3. **Access from other computers**:
-   Open browser and go to: `http://192.168.1.100:8000`
+   Open browser and go to: `http://192.168.1.100:8888`
 
 **Firewall**:
 - Linux: `sudo ufw allow 8000`
@@ -331,7 +331,7 @@ StudentID,FirstName,LastName,Class
 
 Or via CLI (Python installation only):
 ```bash
-bcd-cli borrower import students.csv --api-url http://localhost:8000
+bcd-cli borrower import students.csv --api-url http://localhost:8888
 ```
 
 ### Import Books
@@ -347,7 +347,7 @@ dc.title,dc.creator,dc.identifier,dc.publisher,dc.date,dc.language,item.id
 
 2. Import via the **Cataloging** page in the web interface, or via CLI (Python installation only):
 ```bash
-bcd-cli catalog import-dc books.csv --api-url http://localhost:8000
+bcd-cli catalog import-dc books.csv --api-url http://localhost:8888
 ```
 
 ---
@@ -457,7 +457,7 @@ cp -r data/ backup_data/
 bcd-cli admin backup
 
 # API endpoint
-curl -X POST http://127.0.0.1:8000/api/v1/admin/backup
+curl -X POST http://127.0.0.1:8888/api/v1/admin/backup
 ```
 
 **List backups**:
@@ -616,7 +616,7 @@ Use this if the automatic update fails or if the machine has no internet access.
 **Documentation**:
 - [README.md](README.md) - User guide
 - [DEVELOPERS.md](DEVELOPERS.md) - Developer documentation
-- API Documentation: http://localhost:8000/api/v1/docs
+- API Documentation: http://localhost:8888/api/v1/docs
 
 **Support**:
 - Check existing issues on GitHub

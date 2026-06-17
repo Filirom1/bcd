@@ -17,7 +17,7 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 
 # Default configuration
 DEFAULT_CONFIG = {
-    "api_url": "http://localhost:8000",
+    "api_url": "http://localhost:8888",
     "language": "fr",
     "timeout": 30,
 }
@@ -78,7 +78,7 @@ def set_config(key: str, value: str):
 
     \b
     Usage:
-        bcd config set api_url http://localhost:8000
+        bcd config set api_url http://localhost:8888
         bcd config set language en
         bcd config set timeout 60
     """

@@ -9,7 +9,7 @@ Usage:
     python scripts/take_screenshots.py
 
 Requirements:
-    - BCD server must be running on http://127.0.0.1:8000
+    - BCD server must be running on http://127.0.0.1:8888
     - Playwright must be installed: pip install playwright
     - Playwright browsers: playwright install chromium
 
@@ -23,7 +23,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 
-async def take_screenshots(base_url="http://127.0.0.1:8000"):
+async def take_screenshots(base_url="http://127.0.0.1:8888"):
     """Take screenshots of all BCD pages.
 
     Args:

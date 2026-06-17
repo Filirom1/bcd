@@ -7,7 +7,7 @@ system.
 
 1. Open the project in **Godot 4.6+**
 2. Launch `main.tscn`
-3. The BCD API must be running on `localhost:8000`
+3. The BCD API must be running on `localhost:8888`
 
 ## Architecture
 

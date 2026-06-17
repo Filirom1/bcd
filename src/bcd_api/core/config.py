@@ -53,10 +53,10 @@ class Settings(BaseSettings):
 
     # API Server
     api_host: str = "127.0.0.1"
-    api_port: int = 8000
+    api_port: int = 8888
 
     # CORS
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8888"]
     cors_allow_credentials: bool = True
     cors_allow_methods: List[str] = ["*"]
     cors_allow_headers: List[str] = ["*"]

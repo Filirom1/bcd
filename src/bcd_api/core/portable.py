@@ -153,7 +153,7 @@ def create_default_env_file(env_path: Path) -> None:
 
 # API Server
 API_HOST=127.0.0.1
-API_PORT=8000
+API_PORT=8888
 
 # Logging: DEBUG, INFO, WARNING, ERROR
 LOG_LEVEL=INFO
