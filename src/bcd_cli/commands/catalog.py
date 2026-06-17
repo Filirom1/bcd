@@ -268,7 +268,7 @@ def import_dublin_core(file_path: str, api_url: str, yes: bool):
         # Upload file
         with open(file_path_obj, "rb") as f:
             files = {"file": (file_path_obj.name, f, "text/csv")}
-            response = client.post("/api/v1/catalog/import-dc", files=files)
+            response = client.post("/api/v1/catalog/import", files=files)
 
         if response.status_code != 200:
             print_error(f"Import failed: {response.status_code}")
