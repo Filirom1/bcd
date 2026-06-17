@@ -360,7 +360,6 @@ export default defineComponent({
                         id="borrower_barcode_prefix"
                         v-model="settings.borrower_barcode_prefix"
                         maxlength="10"
-                        required
                     />
                     <small class="form-text text-muted">
                         {{ t('settings.borrower_barcode_prefix_help') }}
@@ -377,7 +376,6 @@ export default defineComponent({
                         id="item_barcode_prefix"
                         v-model="settings.item_barcode_prefix"
                         maxlength="10"
-                        required
                     />
                     <small class="form-text text-muted">
                         {{ t('settings.item_barcode_prefix_help') }}

@@ -53,8 +53,8 @@ func _handle_scan(text: String) -> void:
 	_scan_input.call_deferred("grab_focus")
 	if t.is_empty():
 		return
-	var item_pfx: String = GS.settings.get("item_barcode_prefix", ".")
-	var borrower_pfx: String = GS.settings.get("borrower_barcode_prefix", "%")
+	var item_pfx: String = str(GS.settings.get("item_barcode_prefix", ".")).strip_edges() if GS.settings.get("item_barcode_prefix", ".") != null else "."
+	var borrower_pfx: String = str(GS.settings.get("borrower_barcode_prefix", "%")).strip_edges() if GS.settings.get("borrower_barcode_prefix", "%") != null else "%"
 	
 	if not borrower_pfx.is_empty() and t.begins_with(borrower_pfx):
 		_login_by_card(t.substr(borrower_pfx.length()))
