@@ -596,8 +596,9 @@ def main():
     if is_portable():
         initialize_portable_environment()
 
-        from src.bcd_api.core.updater import check_and_apply_update
-        check_and_apply_update(settings.app_version, get_app_dir())
+        if settings.auto_update:
+            from src.bcd_api.core.updater import check_and_apply_update
+            check_and_apply_update(settings.app_version, get_app_dir())
 
         ui_mode = args.ui_mode.lower()
         if ui_mode == "kids":

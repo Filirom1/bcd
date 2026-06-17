@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     # UI_MODE: "webview" (native window), "browser" (system browser), or "kids" (launch Kids client)
     ui_mode: str = "webview"
 
+    # Auto-update (portable mode only)
+    auto_update: bool = True
+
     # Path to Kids client executable (used when ui_mode=kids)
     # Can be absolute path or relative to the BCD executable directory
     # Examples: "BCD-Kids.exe", "./kids/BCD-Kids.x86_64", "C:\\Programs\\BCD-Kids\\BCD-Kids.exe"
