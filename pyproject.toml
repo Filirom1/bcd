@@ -84,7 +84,7 @@ filterwarnings = [
     "error",
     "ignore::ResourceWarning",
     "ignore::DeprecationWarning",
-    "ignore:.*httpx.*starlette.testclient.*",
+    "ignore:::starlette.*",
 ]
 markers = [
     "unit: Unit tests",
