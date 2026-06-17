@@ -84,7 +84,8 @@ filterwarnings = [
     "error",
     "ignore::ResourceWarning",
     "ignore::DeprecationWarning",
-    "ignore:::starlette.*",
+    "ignore:.*httpx.*",
+    "ignore:.*HTTP_422_UNPROCESSABLE_ENTITY.*",
 ]
 markers = [
     "unit: Unit tests",
