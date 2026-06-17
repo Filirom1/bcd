@@ -296,12 +296,8 @@ def get_bibliographic_record(
     - 404: Record not found
     """
     from ...models.item import Item
-    from ...models.circulation import CirculationTransaction
     record = catalog_service.get_bibliographic_record(db, record_id)
     record.total_items = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
-    record.total_circulations = db.query(CirculationTransaction).filter(
-        CirculationTransaction.bibliographic_record_id == record_id
-    ).count()
     return record
 
 

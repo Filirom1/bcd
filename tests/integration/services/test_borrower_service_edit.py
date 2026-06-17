@@ -367,8 +367,8 @@ class TestUpdateBorrowerClass:
         Assert: Class 1 count decreases, class 2 count increases
         """
         # Arrange
-        class1 = class_factory.create(name="CP-A", student_count=1)
-        class2 = class_factory.create(name="CE1-A", student_count=0)
+        class1 = class_factory.create(name="CP-A")
+        class2 = class_factory.create(name="CE1-A")
         borrower = borrower_factory.create(
             borrower_id="101",
             role="student",
@@ -384,10 +384,6 @@ class TestUpdateBorrowerClass:
 
         # Assert
         assert updated.class_id == class2.id
-        db_session.refresh(class1)
-        db_session.refresh(class2)
-        assert class1.student_count == 0
-        assert class2.student_count == 1
 
     def test_update_borrower_unassign_class_updates_student_count(
         self,
@@ -403,7 +399,7 @@ class TestUpdateBorrowerClass:
         Assert: Class student count decreases
         """
         # Arrange
-        class1 = class_factory.create(name="CP-A", student_count=1)
+        class1 = class_factory.create(name="CP-A")
         borrower = borrower_factory.create(
             borrower_id="101",
             role="student",
@@ -419,8 +415,6 @@ class TestUpdateBorrowerClass:
 
         # Assert
         assert updated.class_id is None
-        db_session.refresh(class1)
-        assert class1.student_count == 0
 
     def test_update_borrower_class_to_nonexistent_fails(
         self,
@@ -461,8 +455,8 @@ class TestUpdateBorrowerClass:
         Assert: Student counts unchanged
         """
         # Arrange
-        class1 = class_factory.create(name="CP-A", student_count=0)
-        class2 = class_factory.create(name="CE1-A", student_count=0)
+        class1 = class_factory.create(name="CP-A")
+        class2 = class_factory.create(name="CE1-A")
         teacher = borrower_factory.create(
             borrower_id="T001",
             role="teacher",
@@ -478,11 +472,6 @@ class TestUpdateBorrowerClass:
 
         # Assert
         assert updated.class_id == class2.id
-        db_session.refresh(class1)
-        db_session.refresh(class2)
-        # Student counts should remain 0
-        assert class1.student_count == 0
-        assert class2.student_count == 0
 
 
 class TestUpdateBorrowerNotFound:
@@ -527,7 +516,7 @@ class TestUpdateBorrowerCombinedChanges:
         Assert: All fields updated correctly
         """
         # Arrange
-        class1 = class_factory.create(name="CP-A", student_count=0)
+        class1 = class_factory.create(name="CP-A")
         borrower = borrower_factory.create(
             borrower_id="101",
             first_name="Jean",

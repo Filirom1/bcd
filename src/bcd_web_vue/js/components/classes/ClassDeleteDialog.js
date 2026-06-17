@@ -86,12 +86,9 @@ export default {
                             <strong>{{ t('admin.warning') }}</strong>
                         </div>
 
-                        <!-- Delete confirmation message with student count -->
+                        <!-- Delete confirmation message -->
                         <p class="mb-3">
-                            {{ t('admin.confirm_delete_class', {
-                                name: classData.name,
-                                count: classData.student_count
-                            }) }}
+                            {{ t('admin.confirm_delete_class', { name: classData.name }) }}
                         </p>
 
                         <!-- Class details -->
@@ -103,22 +100,14 @@ export default {
                                         <strong>{{ t('admin.class_name') }}:</strong>
                                         {{ classData.name }}
                                     </li>
-                                    <li>
-                                        <strong>{{ t('admin.student_count') }}:</strong>
-                                        <span class="badge bg-info text-dark">
-                                            {{ classData.student_count }}
-                                        </span>
-                                    </li>
                                 </ul>
                             </div>
                         </div>
 
-                        <!-- Additional warning if students exist -->
-                        <div v-if="classData.student_count > 0" class="alert alert-info" role="alert">
+                        <!-- Warning about student unassignment -->
+                        <div class="alert alert-info" role="alert">
                             <i class="bi bi-info-circle me-2"></i>
-                            {{ t('admin.delete_class_warning_students', {
-                                count: classData.student_count
-                            }, 'The {count} students in this class will be unassigned (class_id set to NULL). They will not be deleted.') }}
+                            {{ t('admin.delete_class_warning_students') }}
                         </div>
 
                         <!-- Cannot be undone warning -->

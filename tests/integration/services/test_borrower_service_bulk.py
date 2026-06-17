@@ -50,11 +50,9 @@ class TestBulkChangeClass:
             )
             borrower_ids.append(borrower.borrower_id)
 
-        # Verify initial student counts
+        # Verify initial state
         db_session.refresh(cp_a)
         db_session.refresh(ce1_a)
-        assert cp_a.student_count == 5
-        assert ce1_a.student_count == 0
 
         # Act: Bulk change class from CP-A to CE1-A
         result = borrower_service.bulk_change_class(
@@ -72,12 +70,6 @@ class TestBulkChangeClass:
         for borrower_id in borrower_ids:
             borrower = borrower_service.get_borrower_by_id(db_session, borrower_id)
             assert borrower.class_id == ce1_a.id
-
-        # Verify student counts updated correctly
-        db_session.refresh(cp_a)
-        db_session.refresh(ce1_a)
-        assert cp_a.student_count == 0
-        assert ce1_a.student_count == 5
 
     def test_bulk_change_class_unassign_from_class(self, db_session):
         """Test bulk change class to None (unassign from class)."""
@@ -99,7 +91,6 @@ class TestBulkChangeClass:
             borrower_ids.append(borrower.borrower_id)
 
         db_session.refresh(cp_a)
-        assert cp_a.student_count == 3
 
         # Act: Unassign all from class (set to None)
         result = borrower_service.bulk_change_class(
@@ -113,10 +104,6 @@ class TestBulkChangeClass:
         for borrower_id in borrower_ids:
             borrower = borrower_service.get_borrower_by_id(db_session, borrower_id)
             assert borrower.class_id is None
-
-        # Student count decremented
-        db_session.refresh(cp_a)
-        assert cp_a.student_count == 0
 
     def test_bulk_change_class_invalid_class_id_rolls_back(self, db_session):
         """Test that invalid class ID causes rollback of entire operation."""
@@ -146,15 +133,10 @@ class TestBulkChangeClass:
             )
 
         # Verify NO changes were made (transaction rolled back)
-        # After exception, test transaction rollback will restore state
         for borrower_id in borrower_ids:
             borrower = db_session.query(Borrower).filter(Borrower.borrower_id == borrower_id).first()
             assert borrower is not None
             assert borrower.class_id == cp_a.id  # Still in original class
-
-        # Re-fetch class from db
-        cp_a_refreshed = db_session.query(Class).filter(Class.id == cp_a.id).first()
-        assert cp_a_refreshed.student_count == 3  # Count unchanged
 
     def test_bulk_change_class_invalid_borrower_id_rolls_back(self, db_session):
         """Test that one invalid borrower ID causes rollback of entire operation."""
@@ -223,9 +205,6 @@ class TestBulkChangeClass:
         db_session.refresh(teacher)
         assert student.class_id == cp_a.id
         assert teacher.class_id == cp_a.id
-
-        db_session.refresh(cp_a)
-        assert cp_a.student_count == 1  # Only student counted
 
 
 class TestBulkChangeRole:
@@ -302,7 +281,6 @@ class TestBulkChangeRole:
         )
 
         db_session.refresh(cp_a)
-        assert cp_a.student_count == 1
 
         # Act: Change to teacher
         result = borrower_service.bulk_change_role(
@@ -316,9 +294,6 @@ class TestBulkChangeRole:
         db_session.refresh(student)
         assert student.role == "teacher"
         assert student.class_id == cp_a.id  # Class preserved
-
-        db_session.refresh(cp_a)
-        assert cp_a.student_count == 0  # Count decremented (no longer student)
 
     def test_bulk_change_role_invalid_borrower_rolls_back(self, db_session):
         """Test that one invalid borrower causes rollback of entire operation."""
@@ -460,7 +435,6 @@ class TestBulkDeleteBorrowers:
             borrower_ids.append(borrower.borrower_id)
 
         db_session.refresh(cp_a)
-        assert cp_a.student_count == 3
 
         # Act: Delete students
         result = borrower_service.bulk_delete_borrowers(
@@ -468,10 +442,11 @@ class TestBulkDeleteBorrowers:
             borrower_ids=borrower_ids
         )
 
-        # Assert: Class count updated
+        # Assert: All deleted
         assert result["successful_count"] == 3
-        db_session.refresh(cp_a)
-        assert cp_a.student_count == 0
+        for borrower_id in borrower_ids:
+            b = db_session.query(Borrower).filter(Borrower.borrower_id == borrower_id).first()
+            assert b is None
 
     def test_bulk_delete_borrowers_invalid_id_rolls_back(self, db_session):
         """Test that one invalid borrower ID causes rollback of entire operation."""
@@ -593,7 +568,7 @@ class TestBulkOperationsAtomicity:
 
         # Re-fetch class
         cp_a_refreshed = db_session.query(Class).filter(Class.id == cp_a.id).first()
-        assert cp_a_refreshed.student_count == 5  # Count unchanged
+        assert cp_a_refreshed is not None  # Class still exists
 
     def test_bulk_change_role_all_or_nothing(self, db_session):
         """Test that bulk change role is truly atomic."""

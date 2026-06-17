@@ -52,7 +52,7 @@ func _do_checkout() -> void:
 
 	var item_id := text
 	var prefix: String = GS.settings.get("item_barcode_prefix", ".")
-	if text.begins_with(prefix):
+	if not prefix.is_empty() and text.begins_with(prefix):
 		item_id = text.substr(prefix.length())
 
 	if item_id.length() < 1:

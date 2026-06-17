@@ -289,7 +289,7 @@ def most_borrowed_report(period: str, limit: int, api_url: str):
                     title.get("title", "N/A")[:35],
                     (title.get("authors") or "N/A")[:20],
                     str(title.get("publication_year") or "-"),
-                    str(title.get("circulation_count", 0)),
+                    str(title.get("checkout_count", 0)),
                 )
 
             console.print(table)

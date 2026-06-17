@@ -376,7 +376,6 @@ class ClassFactory:
         name=None,
         homeroom_teacher=None,
         notes=None,
-        student_count=0,
     ):
         """Create a single class with custom parameters."""
         self._counter += 1
@@ -387,7 +386,6 @@ class ClassFactory:
             name=name,
             homeroom_teacher=homeroom_teacher,
             notes=notes,
-            student_count=student_count,
         )
         self.db_session.add(class_obj)
         self.db_session.commit()

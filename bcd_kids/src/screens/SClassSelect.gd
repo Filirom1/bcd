@@ -55,10 +55,13 @@ func _handle_scan(text: String) -> void:
 		return
 	var item_pfx: String = GS.settings.get("item_barcode_prefix", ".")
 	var borrower_pfx: String = GS.settings.get("borrower_barcode_prefix", "%")
-	if t.begins_with(item_pfx):
-		_quick_return(t.substr(item_pfx.length()))
-	elif t.begins_with(borrower_pfx):
+	
+	if not borrower_pfx.is_empty() and t.begins_with(borrower_pfx):
 		_login_by_card(t.substr(borrower_pfx.length()))
+	elif item_pfx.is_empty():
+		_quick_return(t)
+	elif t.begins_with(item_pfx):
+		_quick_return(t.substr(item_pfx.length()))
 
 func _quick_return(item_id: String) -> void:
 	if item_id.is_empty():

@@ -42,7 +42,6 @@ class ClassResponse(ClassBase, TimestampMixin):
     """Schema for class response."""
 
     id: int
-    student_count: int = Field(default=0, description="Number of students in this class")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -52,7 +51,6 @@ class ClassResponse(ClassBase, TimestampMixin):
                 "name": "CP-A",
                 "homeroom_teacher": "Mme. Dupont",
                 "notes": "Classe de 24 élèves",
-                "student_count": 24,
                 "average_age": 6,
                 "created_at": "2026-01-30T10:00:00",
                 "updated_at": "2026-01-30T10:00:00",

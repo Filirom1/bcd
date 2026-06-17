@@ -212,7 +212,7 @@ class TestBulkChangeClass:
         # Arrange - Create class
         from src.bcd_api.models.class_model import Class
 
-        target_class = Class(name="CP-TARGET", grade_level="CP", academic_year="2024-2025", student_count=0)
+        target_class = Class(name="CP-TARGET", grade_level="CP", academic_year="2024-2025")
         db_session.add(target_class)
         db_session.commit()
 
@@ -256,7 +256,7 @@ class TestBulkChangeClass:
         # Arrange - Create target class
         from src.bcd_api.models.class_model import Class
 
-        target_class = Class(name="CE1-NEW", grade_level="CP", academic_year="2024-2025", student_count=0)
+        target_class = Class(name="CE1-NEW", grade_level="CP", academic_year="2024-2025")
         db_session.add(target_class)
         db_session.commit()
 
@@ -544,8 +544,8 @@ class TestBulkOperationTableRefresh:
         # Arrange
         from src.bcd_api.models.class_model import Class
 
-        old_class = Class(name="CP-OLD", grade_level="CP", academic_year="2024-2025", student_count=0)
-        new_class = Class(name="CE1-NEW", grade_level="CP", academic_year="2024-2025", student_count=0)
+        old_class = Class(name="CP-OLD", grade_level="CP", academic_year="2024-2025")
+        new_class = Class(name="CE1-NEW", grade_level="CP", academic_year="2024-2025")
         db_session.add_all([old_class, new_class])
         db_session.commit()
 

@@ -202,15 +202,9 @@ def checkout_items(
         )
         db.add(transaction)
 
-        # Update item status and denormalized counters
+        # Update item status
         item.status = "on_loan"
-        item.circulation_count += 1
         item.last_borrowed_at = checkout_date
-
-        # Update bibliographic record denormalized counters
-        if item.bibliographic_record:
-            item.bibliographic_record.total_circulations += 1
-            item.bibliographic_record.last_borrowed_at = checkout_date
 
         # Fulfill or cancel any active hold this borrower had for this title
         active_hold_for_borrower = db.query(Hold).filter(

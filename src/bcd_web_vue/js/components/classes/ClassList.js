@@ -37,7 +37,6 @@ export default {
             { key: 'name', label: t('admin.class_name') },
             { key: 'homeroom_teacher', label: t('admin.homeroom_teacher') },
             { key: 'average_age', label: t('admin.average_age') },
-            { key: 'student_count', label: t('admin.student_count') },
             { key: 'actions', label: t('common.actions') }
         ]);
 
@@ -85,13 +84,6 @@ export default {
                         {{ classObj.average_age }}
                     </span>
                     <span v-else class="text-muted">—</span>
-                </td>
-
-                <!-- Student Count -->
-                <td>
-                    <span class="badge bg-info text-dark">
-                        {{ classObj.student_count }}
-                    </span>
                 </td>
 
                 <!-- Actions -->

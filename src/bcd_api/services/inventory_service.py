@@ -519,13 +519,6 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
     for item in deletable_items:
         db.delete(item)
 
-    # Snapshot circulation_count per item before deletion (cascade will remove transactions)
-    item_circ_by_record: dict = {}
-    for item in deletable_items:
-        item_circ_by_record[item.bibliographic_record_id] = (
-            item_circ_by_record.get(item.bibliographic_record_id, 0) + item.circulation_count
-        )
-
     # Update parent record counters
     orphan_records_created = 0
     for record_id in record_ids:
@@ -534,7 +527,6 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
             # Recount items for this record
             item_count = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
             record.total_items = item_count
-            record.total_circulations = max(0, record.total_circulations - item_circ_by_record.get(record_id, 0))
 
             if item_count == 0:
                 orphan_records_created += 1

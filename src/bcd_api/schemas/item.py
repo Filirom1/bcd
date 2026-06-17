@@ -57,7 +57,6 @@ class ItemResponse(ItemBase, TimestampMixin):
 
     id: int
     barcode: str
-    circulation_count: int
     last_borrowed_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)

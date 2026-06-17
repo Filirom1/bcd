@@ -5,6 +5,7 @@ Tests cover CRUD operations, delete with unassignment, and student_count denorma
 """
 
 import pytest
+from sqlalchemy import func
 
 from src.bcd_api.services import class_service, borrower_service
 from src.bcd_api.core.exceptions import (
@@ -34,7 +35,6 @@ class TestClassCRUDOperations:
         assert class_obj.name == "CP-A"
         assert class_obj.homeroom_teacher == "Mme. Dupont"
         assert class_obj.notes == "Classe de 24 élèves"
-        assert class_obj.student_count == 0
         assert class_obj.created_at is not None
         assert class_obj.updated_at is not None
 
@@ -50,7 +50,6 @@ class TestClassCRUDOperations:
         assert class_obj.name == "CE1-B"
         assert class_obj.homeroom_teacher is None
         assert class_obj.notes is None
-        assert class_obj.student_count == 0
 
     def test_create_class_duplicate_name(self, db_session):
         """Test that creating a class with duplicate name fails."""
@@ -284,16 +283,20 @@ class TestDeleteClassWithUnassignment:
 
 
 class TestStudentCountDenormalizedCounter:
-    """Integration tests for student_count denormalized counter behavior."""
+    """Integration tests for student count via live query (formerly denormalized)."""
+
+    def _count_students(self, db, class_id):
+        return (
+            db.query(func.count(Borrower.id))
+            .filter(Borrower.class_id == class_id, Borrower.role == "student")
+            .scalar()
+        )
 
     def test_student_count_increments_on_class_assignment(self, db_session):
-        """Test that student_count increments when students are assigned to class."""
-        # Arrange
+        """Test that student count increments when students are assigned to class."""
         class_obj = class_service.create_class(db=db_session, name="CP-A")
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 0
+        assert self._count_students(db_session, class_obj.id) == 0
 
-        # Act - Assign first student
         borrower_service.create_borrower(
             db=db_session,
             borrower_id="101",
@@ -302,12 +305,8 @@ class TestStudentCountDenormalizedCounter:
             role="student",
             class_id=class_obj.id,
         )
+        assert self._count_students(db_session, class_obj.id) == 1
 
-        # Assert - Count increments to 1
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 1
-
-        # Act - Assign second student
         borrower_service.create_borrower(
             db=db_session,
             borrower_id="102",
@@ -316,14 +315,10 @@ class TestStudentCountDenormalizedCounter:
             role="student",
             class_id=class_obj.id,
         )
-
-        # Assert - Count increments to 2
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 2
+        assert self._count_students(db_session, class_obj.id) == 2
 
     def test_student_count_decrements_on_class_unassignment(self, db_session):
-        """Test that student_count decrements when students are unassigned."""
-        # Arrange - Create class with 2 students
+        """Test that student count decrements when students are unassigned."""
         class_obj = class_service.create_class(db=db_session, name="CP-A")
 
         borrower_service.create_borrower(
@@ -334,7 +329,6 @@ class TestStudentCountDenormalizedCounter:
             role="student",
             class_id=class_obj.id,
         )
-
         borrower_service.create_borrower(
             db=db_session,
             borrower_id="102",
@@ -343,39 +337,19 @@ class TestStudentCountDenormalizedCounter:
             role="student",
             class_id=class_obj.id,
         )
+        assert self._count_students(db_session, class_obj.id) == 2
 
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 2
+        borrower_service.update_borrower(db=db_session, borrower_id="101", class_id=None)
+        assert self._count_students(db_session, class_obj.id) == 1
 
-        # Act - Unassign first student
-        borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            class_id=None,
-        )
-
-        # Assert - Count decrements to 1
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 1
-
-        # Act - Unassign second student
-        borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="102",
-            class_id=None,
-        )
-
-        # Assert - Count decrements to 0
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 0
+        borrower_service.update_borrower(db=db_session, borrower_id="102", class_id=None)
+        assert self._count_students(db_session, class_obj.id) == 0
 
     def test_student_count_updates_on_class_change(self, db_session):
-        """Test that student_count updates correctly when students move between classes."""
-        # Arrange - Create two classes
+        """Test that student count updates correctly when students move between classes."""
         class_a = class_service.create_class(db=db_session, name="CP-A")
         class_b = class_service.create_class(db=db_session, name="CP-B")
 
-        # Create student in class A
         borrower_service.create_borrower(
             db=db_session,
             borrower_id="101",
@@ -384,31 +358,17 @@ class TestStudentCountDenormalizedCounter:
             role="student",
             class_id=class_a.id,
         )
+        assert self._count_students(db_session, class_a.id) == 1
+        assert self._count_students(db_session, class_b.id) == 0
 
-        db_session.refresh(class_a)
-        db_session.refresh(class_b)
-        assert class_a.student_count == 1
-        assert class_b.student_count == 0
-
-        # Act - Move student from class A to class B
-        borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            class_id=class_b.id,
-        )
-
-        # Assert - Count decrements in A, increments in B
-        db_session.refresh(class_a)
-        db_session.refresh(class_b)
-        assert class_a.student_count == 0
-        assert class_b.student_count == 1
+        borrower_service.update_borrower(db=db_session, borrower_id="101", class_id=class_b.id)
+        assert self._count_students(db_session, class_a.id) == 0
+        assert self._count_students(db_session, class_b.id) == 1
 
     def test_student_count_only_counts_students_not_teachers(self, db_session):
-        """Test that student_count only counts role='student', not teachers/staff."""
-        # Arrange
+        """Test that student count only counts role='student', not teachers/staff."""
         class_obj = class_service.create_class(db=db_session, name="CP-A")
 
-        # Act - Create a student
         borrower_service.create_borrower(
             db=db_session,
             borrower_id="101",
@@ -417,8 +377,6 @@ class TestStudentCountDenormalizedCounter:
             role="student",
             class_id=class_obj.id,
         )
-
-        # Act - Create a teacher (assigned to same class)
         borrower_service.create_borrower(
             db=db_session,
             borrower_id="999",
@@ -427,15 +385,12 @@ class TestStudentCountDenormalizedCounter:
             role="teacher",
             class_id=class_obj.id,
         )
-
-        # Assert - Count should only include students (1, not 2)
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 1
+        assert self._count_students(db_session, class_obj.id) == 1
 
     def test_student_count_resets_to_zero_on_delete_with_unassignment(self, db_session):
-        """Test that student_count is set to 0 before class deletion."""
-        # Arrange - Create class with students
+        """Test that students are unassigned when class is deleted."""
         class_obj = class_service.create_class(db=db_session, name="CP-A")
+        class_id = class_obj.id
 
         borrower_service.create_borrower(
             db=db_session,
@@ -443,42 +398,34 @@ class TestStudentCountDenormalizedCounter:
             first_name="Alice",
             last_name="BENALI",
             role="student",
-            class_id=class_obj.id,
+            class_id=class_id,
         )
-
         borrower_service.create_borrower(
             db=db_session,
             borrower_id="102",
             first_name="Bob",
             last_name="MARTIN",
             role="student",
-            class_id=class_obj.id,
+            class_id=class_id,
         )
+        assert self._count_students(db_session, class_id) == 2
 
-        db_session.refresh(class_obj)
-        assert class_obj.student_count == 2
+        class_service.delete_class_with_unassignment(db_session, class_id)
 
-        # Act
-        class_service.delete_class_with_unassignment(db_session, class_obj.id)
-
-        # Assert - Class is deleted (cannot check student_count after deletion)
-        result = db_session.query(Class).filter(Class.id == class_obj.id).first()
+        result = db_session.query(Class).filter(Class.id == class_id).first()
         assert result is None
 
-        # Assert - Students are unassigned
         student1 = borrower_service.get_borrower_by_id(db_session, "101")
         student2 = borrower_service.get_borrower_by_id(db_session, "102")
         assert student1.class_id is None
         assert student2.class_id is None
 
     def test_student_count_multiple_class_assignments(self, db_session):
-        """Test student_count with complex scenario of multiple assignments."""
-        # Arrange - Create 3 classes
+        """Test student count with complex scenario of multiple assignments."""
         class_a = class_service.create_class(db=db_session, name="CP-A")
         class_b = class_service.create_class(db=db_session, name="CP-B")
         class_c = class_service.create_class(db=db_session, name="CE1-A")
 
-        # Create 5 students in class A
         for i in range(1, 6):
             borrower_service.create_borrower(
                 db=db_session,
@@ -488,8 +435,6 @@ class TestStudentCountDenormalizedCounter:
                 role="student",
                 class_id=class_a.id,
             )
-
-        # Create 3 students in class B
         for i in range(6, 9):
             borrower_service.create_borrower(
                 db=db_session,
@@ -500,36 +445,19 @@ class TestStudentCountDenormalizedCounter:
                 class_id=class_b.id,
             )
 
-        db_session.refresh(class_a)
-        db_session.refresh(class_b)
-        db_session.refresh(class_c)
+        assert self._count_students(db_session, class_a.id) == 5
+        assert self._count_students(db_session, class_b.id) == 3
+        assert self._count_students(db_session, class_c.id) == 0
 
-        # Assert initial counts
-        assert class_a.student_count == 5
-        assert class_b.student_count == 3
-        assert class_c.student_count == 0
-
-        # Act - Move 2 students from A to C
         borrower_service.update_borrower(db=db_session, borrower_id="101", class_id=class_c.id)
         borrower_service.update_borrower(db=db_session, borrower_id="102", class_id=class_c.id)
 
-        # Assert updated counts
-        db_session.refresh(class_a)
-        db_session.refresh(class_b)
-        db_session.refresh(class_c)
+        assert self._count_students(db_session, class_a.id) == 3
+        assert self._count_students(db_session, class_b.id) == 3
+        assert self._count_students(db_session, class_c.id) == 2
 
-        assert class_a.student_count == 3
-        assert class_b.student_count == 3
-        assert class_c.student_count == 2
-
-        # Act - Unassign 1 student from B
         borrower_service.update_borrower(db=db_session, borrower_id="106", class_id=None)
 
-        # Assert final counts
-        db_session.refresh(class_a)
-        db_session.refresh(class_b)
-        db_session.refresh(class_c)
-
-        assert class_a.student_count == 3
-        assert class_b.student_count == 2
-        assert class_c.student_count == 2
+        assert self._count_students(db_session, class_a.id) == 3
+        assert self._count_students(db_session, class_b.id) == 2
+        assert self._count_students(db_session, class_c.id) == 2

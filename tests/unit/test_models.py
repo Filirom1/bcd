@@ -100,7 +100,6 @@ class TestBibliographicRecordModel:
         assert biblio.id is not None
         assert biblio.isbn == "9782800687346"
         assert biblio.total_items == 0
-        assert biblio.total_circulations == 0
 
     def test_bibliographic_record_optional_fields(self, db_session):
         """Test bibliographic record with minimal data."""
@@ -355,7 +354,6 @@ class TestClassModel:
         assert class_obj.id is not None
         assert class_obj.name == "CP-A"
         assert class_obj.homeroom_teacher == "Mme Dupont"
-        assert class_obj.student_count == 0
 
 
 class TestSystemSettingsModel:

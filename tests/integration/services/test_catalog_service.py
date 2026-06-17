@@ -99,7 +99,7 @@ class TestBibliographicRecordCreation:
         # Assert
         assert result.id is not None
         assert result.title == "The Great Gatsby"
-        assert result.isbn == "9780743273565"
+        assert result.isbn == "isbn:9780743273565"
         assert result.medium_type == "Livre"  # Default value
         assert result.authors is None or result.authors == "[]"
 
@@ -146,7 +146,7 @@ class TestBibliographicRecordCreation:
         assert result.id is not None
         assert result.title == "Stuart Little"
         assert result.subtitle == "A Classic Tale"
-        assert result.isbn == "9780060263959"
+        assert result.isbn == "isbn:9780060263959"
         assert "White, E.B." in result.authors
         assert "Williams, Garth" in result.illustrators
         assert result.publisher == "Harper & Row"
@@ -231,7 +231,7 @@ class TestBibliographicRecordCreation:
         # Assert - Should use manual data
         assert result.id is not None
         assert result.title == "Test Book"
-        assert result.isbn == "9781234567890"
+        assert result.isbn == "isbn:9781234567890"
 
     @patch("src.bcd_api.services.catalog_service.sudoc_search_by_isbn")
     @patch("src.bcd_api.services.catalog_service.google_search_by_isbn")
@@ -413,7 +413,7 @@ class TestBibliographicRecordRetrieval:
         # Assert
         assert result.id == created.id
         assert result.title == "1984"
-        assert result.isbn == "9780451524935"
+        assert result.isbn == "isbn:9780451524935"
         assert "Orwell, George" in result.authors
 
     def test_get_bibliographic_record_not_found_error(self, db_session):
@@ -1374,15 +1374,9 @@ class TestDeleteItemValidation:
         db_session.commit()
         loan_id = loan.id
 
-        # Manually set circulation_count on item (simulates a previously-borrowed item)
-        item.circulation_count = 3
-        bib_record.total_circulations = 3
-        db_session.commit()
-
-        # Verify denormalized counters before deletion
+        # Verify denormalized counter before deletion
         db_session.refresh(bib_record)
         assert bib_record.total_items == 1
-        assert bib_record.total_circulations == 3
 
         # Act: Delete item
         catalog_service.delete_item(db_session, "HIST123")

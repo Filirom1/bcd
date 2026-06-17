@@ -35,9 +35,8 @@ class Item(Base):
     acquisition_date = Column(Date, nullable=True)
     funding_source = Column(String(100), nullable=True)
 
-    # Statistics (denormalized for performance)
-    circulation_count = Column(Integer, nullable=False, default=0)
-    last_borrowed_at = Column(DateTime, nullable=True)
+    # Timestamp of last checkout (kept: used in WHERE IS NULL filters + CSV export)
+    last_borrowed_at = Column(DateTime, nullable=True, index=True)
 
     # Inventory tracking
     last_inventoried_at = Column(DateTime, nullable=True, index=True)

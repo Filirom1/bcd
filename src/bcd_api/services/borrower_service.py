@@ -111,11 +111,6 @@ def create_borrower(
     db.commit()
     db.refresh(borrower)
 
-    # Update class student count if this is a student
-    if role == "student" and class_id is not None:
-        from src.bcd_api.services import class_service
-        class_service.update_class_student_count(db, class_id, +1)
-
     logger.info(f"Created borrower {borrower_id} ({full_name}) - Role: {role}")
     return borrower
 
@@ -422,31 +417,6 @@ def update_borrower(
     # Determine final role after update
     final_role = borrower.role
 
-    # Update class student counts if class changed and borrower was/is a student
-    # Case 1: Was student, still student, class changed
-    if old_role == "student" and final_role == "student" and class_id_changed and old_class_id != new_class_id:
-        from src.bcd_api.services import class_service
-        # Decrement old class count
-        if old_class_id is not None:
-            class_service.update_class_student_count(db, old_class_id, -1)
-        # Increment new class count
-        if new_class_id is not None:
-            class_service.update_class_student_count(db, new_class_id, +1)
-
-    # Case 2: Was student, changed to non-student
-    elif old_role == "student" and final_role != "student":
-        from src.bcd_api.services import class_service
-        # Decrement old class count only
-        if old_class_id is not None:
-            class_service.update_class_student_count(db, old_class_id, -1)
-
-    # Case 3: Was non-student, changed to student
-    elif old_role != "student" and final_role == "student":
-        from src.bcd_api.services import class_service
-        # Increment new class count only
-        if new_class_id is not None:
-            class_service.update_class_student_count(db, new_class_id, +1)
-
     return borrower
 
 
@@ -534,8 +504,6 @@ def bulk_change_class(
         ClassNotFoundException: If new_class_id doesn't exist
         BorrowerNotFoundException: If any borrower_id doesn't exist
     """
-    from src.bcd_api.services import class_service
-
     total_count = len(borrower_ids)
 
     if total_count == 0:
@@ -559,31 +527,11 @@ def bulk_change_class(
         borrower = get_borrower_by_id(db, borrower_id)
         borrowers.append(borrower)
 
-    # Track class changes for student count updates
-    class_changes = {}  # {class_id: delta}
-
     # Update all borrowers
     for borrower in borrowers:
-        old_class_id = borrower.class_id
-
-        # Only update student count for students
-        if borrower.role == "student":
-            # Decrement old class
-            if old_class_id is not None and old_class_id != new_class_id:
-                class_changes[old_class_id] = class_changes.get(old_class_id, 0) - 1
-
-            # Increment new class
-            if new_class_id is not None and old_class_id != new_class_id:
-                class_changes[new_class_id] = class_changes.get(new_class_id, 0) + 1
-
         # Update borrower class
         borrower.class_id = new_class_id
         borrower.updated_at = datetime.now()
-
-    # Apply class student count updates
-    for class_id, delta in class_changes.items():
-        if delta != 0:
-            class_service.update_class_student_count(db, class_id, delta)
 
     # Commit transaction
     db.commit()
@@ -627,8 +575,6 @@ def bulk_change_role(
         ValidationError: If new_role is invalid
         BorrowerNotFoundException: If any borrower_id doesn't exist
     """
-    from src.bcd_api.services import class_service
-
     total_count = len(borrower_ids)
 
     if total_count == 0:
@@ -653,31 +599,11 @@ def bulk_change_role(
         borrower = get_borrower_by_id(db, borrower_id)
         borrowers.append(borrower)
 
-    # Track class changes for student count updates
-    class_changes = {}  # {class_id: delta}
-
     # Update all borrowers
     for borrower in borrowers:
-        old_role = borrower.role
-
-        # Update student count if role change affects it
-        if borrower.class_id is not None:
-            # Was student, now not student: decrement
-            if old_role == "student" and new_role != "student":
-                class_changes[borrower.class_id] = class_changes.get(borrower.class_id, 0) - 1
-
-            # Was not student, now student: increment
-            if old_role != "student" and new_role == "student":
-                class_changes[borrower.class_id] = class_changes.get(borrower.class_id, 0) + 1
-
         # Update borrower role
         borrower.role = new_role
         borrower.updated_at = datetime.now()
-
-    # Apply class student count updates
-    for class_id, delta in class_changes.items():
-        if delta != 0:
-            class_service.update_class_student_count(db, class_id, delta)
 
     # Commit transaction
     db.commit()
@@ -718,8 +644,6 @@ def bulk_delete_borrowers(
     Raises:
         BorrowerNotFoundException: If any borrower_id doesn't exist
     """
-    from src.bcd_api.services import class_service
-
     total_count = len(borrower_ids)
 
     if total_count == 0:
@@ -771,22 +695,10 @@ def bulk_delete_borrowers(
             active_loan_count=borrower_with_loan.loan_count
         )
 
-    # Track class changes for student count updates
-    class_changes = {}  # {class_id: delta}
-
     # Delete all borrowers
     for borrower in borrowers:
-        # Update student count if deleting a student with class
-        if borrower.role == "student" and borrower.class_id is not None:
-            class_changes[borrower.class_id] = class_changes.get(borrower.class_id, 0) - 1
-
         # Delete borrower (CASCADE will delete circulation history)
         db.delete(borrower)
-
-    # Apply class student count updates
-    for class_id, delta in class_changes.items():
-        if delta != 0:
-            class_service.update_class_student_count(db, class_id, delta)
 
     # Commit transaction
     db.commit()

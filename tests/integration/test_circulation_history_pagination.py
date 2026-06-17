@@ -67,7 +67,6 @@ def _make_item(db, item_id, biblio_id):
         bibliographic_record_id=biblio_id,
         status="available",
         loanable=True,
-        circulation_count=0,
     )
     db.add(item)
     db.flush()

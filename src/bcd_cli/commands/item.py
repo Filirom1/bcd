@@ -127,12 +127,6 @@ def status(item_id: str, api_url: str):
                     f"[bold]Financement / Funding:[/bold] {item_data['funding_source']}"
                 )
 
-            # Circulation stats
-            console.print()
-            console.print(
-                f"[bold]Nombre de prêts / Circulation count:[/bold] "
-                f"{item_data.get('circulation_count', 0)}"
-            )
 
         elif response.status_code == 404:
             print_error(f"Item not found / Document non trouvé: {item_id}")
@@ -248,9 +242,6 @@ def history(item_id: str, limit: int, api_url: str):
                 stats = data.get("statistics", {})
                 if stats:
                     console.print("[bold]📊 Statistiques / Statistics:[/bold]")
-                    console.print(
-                        f"   Total prêts / Circulations: {stats.get('total_circulations', 0)}"
-                    )
                     if stats.get("late_return_rate"):
                         console.print(
                             f"   Taux de retard / Late rate: {stats['late_return_rate']:.1f}%"

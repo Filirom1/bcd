@@ -221,7 +221,7 @@ class TestClassDeletion:
         # Arrange
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="EMPTY-CLASS", grade_level="CP", academic_year="2024-2025", student_count=0)
+        test_class = Class(name="EMPTY-CLASS", grade_level="CP", academic_year="2024-2025")
         db_session.add(test_class)
         db_session.commit()
 
@@ -249,7 +249,7 @@ class TestClassDeletion:
         # Arrange - Create class
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="CP-WITH-STUDENTS", grade_level="CP", academic_year="2024-2025", student_count=0)
+        test_class = Class(name="CP-WITH-STUDENTS", grade_level="CP", academic_year="2024-2025")
         db_session.add(test_class)
         db_session.commit()
 
@@ -266,10 +266,6 @@ class TestClassDeletion:
             last_name="ToDelete",
             class_id=test_class.id
         )
-
-        # Update student count
-        test_class.student_count = 2
-        db_session.commit()
 
         classes_page.goto()
 
@@ -301,7 +297,7 @@ class TestClassDeletion:
         from src.bcd_api.models.class_model import Class
         from src.bcd_api.models.borrower import Borrower
 
-        test_class = Class(name="CLASS-TO-DELETE", grade_level="CP", academic_year="2024-2025", student_count=0)
+        test_class = Class(name="CLASS-TO-DELETE", grade_level="CP", academic_year="2024-2025")
         db_session.add(test_class)
         db_session.commit()
 
@@ -317,9 +313,6 @@ class TestClassDeletion:
             last_name="Unassigned",
             class_id=test_class.id
         )
-
-        test_class.student_count = 2
-        db_session.commit()
 
         class_id = test_class.id
 
@@ -361,7 +354,7 @@ class TestClassStudentCount:
         # Arrange
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="CP-COUNT-TEST", grade_level="CP", academic_year="2024-2025", student_count=0)
+        test_class = Class(name="CP-COUNT-TEST", grade_level="CP", academic_year="2024-2025")
         db_session.add(test_class)
         db_session.commit()
 
@@ -373,10 +366,6 @@ class TestClassStudentCount:
                 last_name="Count",
                 class_id=test_class.id
             )
-
-        # Update count
-        test_class.student_count = 3
-        db_session.commit()
 
         # Act
         classes_page.goto()

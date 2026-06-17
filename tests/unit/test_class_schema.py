@@ -181,46 +181,23 @@ class TestClassResponseValidation:
 
     def test_class_response_includes_all_fields(self):
         """Test that response schema includes all required fields."""
-        # Arrange
         data = {
             "id": 1,
             "name": "CP-A",
             "homeroom_teacher": "Mme. Dupont",
             "notes": "Classe de 24 élèves",
-            "student_count": 24,
             "created_at": datetime(2026, 1, 30, 10, 0, 0),
             "updated_at": datetime(2026, 1, 30, 10, 0, 0),
         }
 
-        # Act
         response = ClassResponse(**data)
 
-        # Assert
         assert response.id == 1
         assert response.name == "CP-A"
         assert response.homeroom_teacher == "Mme. Dupont"
         assert response.notes == "Classe de 24 élèves"
-        assert response.student_count == 24
         assert response.created_at == datetime(2026, 1, 30, 10, 0, 0)
         assert response.updated_at == datetime(2026, 1, 30, 10, 0, 0)
-
-    def test_class_response_student_count_defaults_to_zero(self):
-        """Test that student_count has a default value of 0."""
-        # Arrange
-        data = {
-            "id": 1,
-            "name": "CP-A",
-            "homeroom_teacher": None,
-            "notes": None,
-            "created_at": datetime(2026, 1, 30, 10, 0, 0),
-            "updated_at": datetime(2026, 1, 30, 10, 0, 0),
-        }
-
-        # Act
-        response = ClassResponse(**data)
-
-        # Assert
-        assert response.student_count == 0
 
     def test_class_response_from_orm_model(self):
         """Test that response schema works with from_attributes (ORM mode)."""
@@ -232,7 +209,6 @@ class TestClassResponseValidation:
             name="CP-A",
             homeroom_teacher="Mme. Dupont",
             notes="Test notes",
-            student_count=15,
             created_at=datetime(2026, 1, 30, 10, 0, 0),
             updated_at=datetime(2026, 1, 30, 10, 0, 0),
         )
@@ -244,7 +220,6 @@ class TestClassResponseValidation:
         assert response.id == 1
         assert response.name == "CP-A"
         assert response.homeroom_teacher == "Mme. Dupont"
-        assert response.student_count == 15
 
     def test_class_response_optional_fields_can_be_none(self):
         """Test that optional fields can be None in response."""
@@ -254,7 +229,6 @@ class TestClassResponseValidation:
             "name": "CP-A",
             "homeroom_teacher": None,
             "notes": None,
-            "student_count": 0,
             "created_at": datetime(2026, 1, 30, 10, 0, 0),
             "updated_at": datetime(2026, 1, 30, 10, 0, 0),
         }
@@ -273,7 +247,6 @@ class TestClassResponseValidation:
             "name": "CP-A",
             "homeroom_teacher": None,
             "notes": None,
-            "student_count": 0,
             "created_at": datetime(2026, 1, 30, 10, 0, 0),
             "updated_at": datetime(2026, 1, 30, 10, 0, 0),
         }
@@ -293,7 +266,6 @@ class TestClassResponseValidation:
             "name": "CP-A",
             "homeroom_teacher": None,
             "notes": None,
-            "student_count": 0,
         }
 
         # Act & Assert
@@ -338,21 +310,17 @@ class TestClassSchemaEdgeCases:
         assert class_obj.name == "CP-A/B"
         assert class_obj.homeroom_teacher == "M. O'Brien-Smith"
 
-    def test_class_response_with_large_student_count(self):
-        """Test that large student counts are handled correctly."""
-        # Arrange
+    def test_class_response_with_all_optional_fields(self):
+        """Test that large values are handled correctly."""
         data = {
             "id": 1,
             "name": "CP-A",
             "homeroom_teacher": None,
             "notes": None,
-            "student_count": 1000,
             "created_at": datetime(2026, 1, 30, 10, 0, 0),
             "updated_at": datetime(2026, 1, 30, 10, 0, 0),
         }
 
-        # Act
         response = ClassResponse(**data)
 
-        # Assert
-        assert response.student_count == 1000
+        assert response.id == 1

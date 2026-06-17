@@ -17,9 +17,6 @@ class Class(Base):
     homeroom_teacher = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
 
-    # Denormalized counter for performance
-    student_count = Column(Integer, nullable=False, default=0)
-
     # Average age of students in this class (used for sorting youngest to oldest)
     average_age = Column(Integer, nullable=True)
 

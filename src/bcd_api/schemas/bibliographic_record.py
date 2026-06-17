@@ -120,8 +120,6 @@ class BiblographicRecordResponse(BiblographicRecordBase, TimestampMixin):
 
     id: int
     total_items: int
-    total_circulations: int
-    last_borrowed_at: Optional[datetime]
     isbn_value: Optional[str] = None
     identifier_type: str = 'isbn'
 

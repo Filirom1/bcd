@@ -32,7 +32,7 @@ class TestCreateBibliographicRecord:
         )
 
         assert result.title == "Test Book"
-        assert result.isbn == "9781234567890"
+        assert result.isbn == "isbn:9781234567890"
         assert result.publisher == "Test Publisher"
         assert result.publication_year == 2024
         # Authors should be JSON string
@@ -195,11 +195,11 @@ class TestSearchBibliographicRecords:
         )
 
         results, total = catalog_service.search_bibliographic_records(
-            db_session, isbn="9781234567890"
+            db_session, isbn="isbn:9781234567890"
         )
 
         assert total == 1
-        assert results[0].isbn == "9781234567890"
+        assert results[0].isbn == "isbn:9781234567890"
 
     def test_search_general_query(self, db_session):
         """Test general search query."""

@@ -96,7 +96,7 @@ class TestBiblioSchemas:
             "has_illustrations": True,
         }
         biblio = BiblographicRecordCreate(**data)
-        assert biblio.isbn == "978-2-8006-8734-6"
+        assert biblio.isbn == "isbn:978-2-8006-8734-6"
         assert biblio.authors == ["Carmi, Danielle"]
         assert biblio.page_count == 32
 
@@ -155,7 +155,6 @@ class TestItemSchemas:
             "condition": ItemCondition.GOOD,
             "acquisition_date": None,
             "funding_source": None,
-            "circulation_count": 0,
             "last_borrowed_at": None,
             "created_at": date.today(),
             "updated_at": date.today(),

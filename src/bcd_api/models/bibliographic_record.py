@@ -58,10 +58,8 @@ class BiblographicRecord(Base):
     dimensions = Column(String(50), nullable=True)
     physical_size = Column(String(100), nullable=True)
 
-    # Statistics (denormalized for performance)
+    # Denormalized item count (kept: used in orphan detection)
     total_items = Column(Integer, nullable=False, default=0)
-    total_circulations = Column(Integer, nullable=False, default=0)
-    last_borrowed_at = Column(DateTime, nullable=True)
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

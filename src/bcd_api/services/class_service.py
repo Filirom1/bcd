@@ -228,31 +228,7 @@ def delete_class_with_unassignment(db: Session, class_id: int) -> None:
         {"class_id": None}, synchronize_session=False
     )
 
-    # Reset student count to 0
-    class_obj.student_count = 0
-
     # Delete the class
     db.delete(class_obj)
     db.commit()
 
-
-def update_class_student_count(db: Session, class_id: int, delta: int) -> None:
-    """
-    Update the student count for a class.
-
-    This is a helper function called by borrower_service when students
-    are assigned/unassigned from classes.
-
-    Args:
-        db: Database session
-        class_id: Class ID (or None to skip)
-        delta: Change in student count (+1 for assignment, -1 for unassignment)
-    """
-    if class_id is None:
-        return
-
-    class_obj = db.query(Class).filter(Class.id == class_id).first()
-    if class_obj:
-        class_obj.student_count = max(0, class_obj.student_count + delta)
-        class_obj.updated_at = datetime.now()
-        db.commit()

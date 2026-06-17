@@ -25,7 +25,6 @@ class TestClassCreationIntegration:
         assert class_obj.name == "CP-A"
         assert class_obj.homeroom_teacher == "Mme Marie Martin"
         assert class_obj.notes == "Section bilingue"
-        assert class_obj.student_count == 0
         assert class_obj.created_at is not None
 
     def test_create_multiple_classes_same_grade(self, db_session):
