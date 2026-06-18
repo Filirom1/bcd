@@ -219,6 +219,14 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
             logger.info(f"Created bibliographic record: {biblio_key} (ID: {db_record.id})")
 
     # BULK OPERATION 2: Check for existing items and prepare new ones
+    # Retrieve system settings to check for item barcode prefix
+    from .settings_service import get_settings
+    try:
+        sys_settings = get_settings(db)
+        prefix = sys_settings.item_barcode_prefix
+    except Exception:
+        prefix = None
+
     # Get item IDs from item.id column or dc.identifier if no item.id
     item_ids_to_check = []
     for _, row, _ in items_to_create:
@@ -226,6 +234,11 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
         if not item_id:
             item_id = row.get(DublinCoreColumns.IDENTIFIER, "").strip()
         if item_id:
+            # Strip prefix if present
+            if prefix:
+                prefix_strip = prefix.strip()
+                if prefix_strip and item_id.startswith(prefix_strip):
+                    item_id = item_id[len(prefix_strip):]
             item_ids_to_check.append(item_id)
 
     existing_items_set = set()
@@ -259,6 +272,12 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
                 result.add_error(row_num, f"Missing item ID (need {DublinCoreColumns.ITEM_ID} or {DublinCoreColumns.IDENTIFIER})")
                 result.items_skipped += 1
                 continue
+
+            # Strip prefix if present
+            if prefix:
+                prefix_strip = prefix.strip()
+                if prefix_strip and item_id.startswith(prefix_strip):
+                    item_id = item_id[len(prefix_strip):]
 
             # Skip if item already exists in database
             if item_id in existing_items_set:

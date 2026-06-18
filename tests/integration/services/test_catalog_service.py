@@ -731,6 +731,35 @@ class TestItemManagement:
         assert "already exists" in str(exc_info.value).lower()
         assert "DUP001" in str(exc_info.value)
 
+    def test_create_item_strips_prefix(self, db_session):
+        """
+        Test that creating an item automatically strips the item barcode prefix.
+        """
+        # Arrange - Get actual prefix from settings, or mock/stub if needed
+        from src.bcd_api.services.settings_service import get_settings
+        settings = get_settings(db_session)
+        prefix = settings.item_barcode_prefix or "."
+
+        bib_record = catalog_service.create_bibliographic_record(
+            db_session,
+            BiblographicRecordCreate(title="Prefix Strip Test", isbn="9789999999999"),
+            isbn_lookup=False
+        )
+
+        # Act - Create item with prefixed barcode (e.g. .785)
+        prefixed_id = f"{prefix}785"
+        item_data = ItemCreate(item_id=prefixed_id, bibliographic_record_id=bib_record.id)
+        result = catalog_service.create_item(db_session, item_data)
+
+        # Assert - The saved item_id should have the prefix stripped
+        assert result.item_id == "785"
+        assert result.barcode == "785"
+
+        # Verify database has "785" and not ".785"
+        db_item = db_session.query(Item).filter_by(item_id="785").first()
+        assert db_item is not None
+        assert db_session.query(Item).filter_by(item_id=prefixed_id).first() is None
+
     def test_get_item_by_id_success(self, db_session):
         """Test retrieving an item by its item_id."""
         # Arrange

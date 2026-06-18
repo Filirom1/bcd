@@ -36,7 +36,7 @@ export default defineComponent({
         // --- Computed ---
         const totalCount = computed(() => generatedIds.value.length);
         const libraryName = computed(() => settings.value?.library_name || '');
-        const barcodePrefix = computed(() => settings.value?.item_barcode_prefix || '.');
+        const barcodePrefix = computed(() => settings.value?.item_barcode_prefix ?? '');
 
         const labelsPerSheet = computed(() =>
             customParams.value.layout.cols * customParams.value.layout.rows

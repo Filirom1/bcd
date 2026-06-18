@@ -379,3 +379,28 @@ Valid Book 2,isbn:333333
         titles = [r.title for r in records]
         assert "Valid Book 1" in titles
         assert "Valid Book 2" in titles
+
+    def test_import_strips_item_prefix(self, db_session):
+        """Test that importing items automatically strips the item barcode prefix."""
+        # Arrange - Get actual prefix from settings
+        from src.bcd_api.services.settings_service import get_settings
+        settings = get_settings(db_session)
+        prefix = settings.item_barcode_prefix or "."
+
+        prefixed_id = f"{prefix}785"
+        csv_content = f"""dc.title,dc.identifier,item.id
+Book with Prefixed Item,isbn:9782070611111,{prefixed_id}"""
+
+        # Act
+        result = import_dublin_core_csv(db_session, csv_content)
+
+        # Assert
+        assert result.records_created == 1
+        assert result.items_created == 1
+        assert len(result.errors) == 0
+
+        # Verify database has "785" and not ".785"
+        db_item = db_session.query(Item).filter_by(item_id="785").first()
+        assert db_item is not None
+        assert db_session.query(Item).filter_by(item_id=prefixed_id).first() is None
+

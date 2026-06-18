@@ -475,6 +475,21 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
         ValidationError: If bibliographic record not found
         ConflictError: If item_id already exists
     """
+    # Retrieve system settings to check for item barcode prefix
+    from .settings_service import get_settings
+    try:
+        sys_settings = get_settings(db)
+        prefix = sys_settings.item_barcode_prefix
+    except Exception:
+        prefix = None
+
+    # Clean item_id by removing prefix if present
+    item_id = item_data.item_id.strip()
+    if prefix:
+        prefix_strip = prefix.strip()
+        if prefix_strip and item_id.startswith(prefix_strip):
+            item_id = item_id[len(prefix_strip):]
+
     # Validate bibliographic record exists
     biblio_record = (
         db.query(BiblographicRecord)
@@ -486,13 +501,14 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
         raise BiblographicRecordNotFoundException(item_data.bibliographic_record_id)
 
     # Check for duplicate item_id
-    existing = db.query(Item).filter(Item.item_id == item_data.item_id).first()
+    existing = db.query(Item).filter(Item.item_id == item_id).first()
     if existing:
         from src.bcd_api.core.exceptions import DuplicateItemIDException
-        raise DuplicateItemIDException(item_data.item_id)
+        raise DuplicateItemIDException(item_id)
 
     # Create item (barcode is auto-computed from item_id via property)
     item_dict = item_data.model_dump()
+    item_dict['item_id'] = item_id  # Use the stripped item_id
     if item_dict.get('acquisition_date') is None:
         item_dict['acquisition_date'] = date.today()
     db_item = Item(**item_dict)

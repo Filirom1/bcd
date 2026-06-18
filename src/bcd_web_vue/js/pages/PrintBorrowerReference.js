@@ -22,7 +22,7 @@ export default defineComponent({
 
         // Add prefix to borrower barcodes for printing
         const borrowersWithPrefixedBarcodes = computed(() => {
-            const prefix = settings.value?.borrower_barcode_prefix || '%';
+            const prefix = settings.value?.borrower_barcode_prefix ?? '';
             return borrowers.value.map(b => ({
                 ...b,
                 barcodeWithPrefix: `${prefix}${b.barcode}`

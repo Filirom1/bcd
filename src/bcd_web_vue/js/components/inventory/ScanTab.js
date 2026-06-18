@@ -58,7 +58,7 @@ export default defineComponent({
             }
 
             // Strip barcode prefix before sending to API
-            const prefix = settings.value?.item_barcode_prefix || '.';
+            const prefix = settings.value?.item_barcode_prefix ?? '';
             const itemId = stripBarcodePrefix(barcode, prefix);
 
             scanning.value = true;
