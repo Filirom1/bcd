@@ -12,6 +12,7 @@ import hashlib
 import secrets
 import time
 import base64
+import fnmatch
 from typing import Optional, Dict
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -287,14 +288,15 @@ class HTTPAuthMiddleware(BaseHTTPMiddleware):
         if not is_auth_enabled():
             return await call_next(request)
 
-        # Public routes that don't require authentication
+        # Public routes that don't require authentication (supports glob patterns)
         public_paths = [
             "/health",  # Health check endpoint
             "/api/v1/collections/peers",  # mDNS peer discovery — public by design
+            "/covers/*",  # Book covers accessed by clients (such as Godot)
         ]
 
-        # Check if this is a public path
-        if request.url.path in public_paths:
+        # Check if this matches any public path pattern
+        if any(fnmatch.fnmatch(request.url.path, pattern) for pattern in public_paths):
             return await call_next(request)
 
         # Check for Authorization header
