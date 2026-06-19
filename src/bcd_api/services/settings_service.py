@@ -181,6 +181,8 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.id_validation_regex = r"^\d+$"
     settings.id_length_min = 1
     settings.id_length_max = 10
+    settings.catalog_medium_types = "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
+    settings.catalog_genres = "Album, Roman, Conte, Poésie, Théâtre, Bande dessinée, Manga, Documentaire, Autre"
 
     db.commit()
     db.refresh(settings)

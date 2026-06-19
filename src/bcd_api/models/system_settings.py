@@ -63,8 +63,8 @@ class SystemSettings(Base):
     library_code = Column(String(50), nullable=True)
 
     # Catalog vocabulary lists (CSV strings)
-    catalog_medium_types = Column(Text, nullable=True, default="Livre, Album illustré, Conte, Poème, Périodique, Bande dessinée, Manga, DVD, CD, Autre")
-    catalog_genres = Column(Text, nullable=True, default="Aventure, Fantastique, Policier, Science-fiction, Historique, Biographie, Poésie, Théâtre, Autre")
+    catalog_medium_types = Column(Text, nullable=True, default="Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre")
+    catalog_genres = Column(Text, nullable=True, default="Album, Roman, Conte, Poésie, Théâtre, Bande dessinée, Manga, Documentaire, Autre")
     catalog_languages = Column(Text, nullable=True, default="fr, en, es, de, ar")
     catalog_levels = Column(Text, nullable=True, default="CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, Lycée, Adulte")
 
