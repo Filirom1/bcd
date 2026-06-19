@@ -52,7 +52,8 @@ export default defineComponent({
             academic_year_start_month: 9,
             academic_year_current: '2024-2025',
             language: 'fr',
-            date_format: 'DD/MM/YYYY'
+            date_format: 'DD/MM/YYYY',
+            catalog_call_number_rules: null
         });
 
         const originalSettings = ref({});

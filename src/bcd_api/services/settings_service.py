@@ -22,6 +22,8 @@ DEFAULT_SHELF_LOCATIONS = json.dumps([
     {"label": "Poésie",           "color": "#8e44ad"},
 ])
 
+DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":"Périodique","genre":null,"pattern":""},{"medium_type":null,"genre":"Album","pattern":"A {AUT1}"},{"medium_type":null,"genre":"Roman","pattern":"R {AUT3}"},{"medium_type":null,"genre":"Conte","pattern":"C {AUT1}"},{"medium_type":null,"genre":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"genre":"Théâtre","pattern":"T {AUT1}"},{"medium_type":null,"genre":"Bande dessinée","pattern":"BD {AUT1}"},{"medium_type":null,"genre":"Manga","pattern":"M {AUT1}"},{"medium_type":null,"genre":"Documentaire","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"genre":null,"pattern":"{AUT3}"}]'
+
 
 def initialize_default_settings(db: Session) -> SystemSettings:
     """
@@ -60,6 +62,7 @@ def initialize_default_settings(db: Session) -> SystemSettings:
         id_length_min=4,
         id_length_max=10,
         catalog_shelf_locations=DEFAULT_SHELF_LOCATIONS,
+        catalog_call_number_rules=DEFAULT_CALL_NUMBER_RULES,
         created_at=datetime.now(),
         updated_at=datetime.now(),
     )
@@ -87,6 +90,13 @@ def get_settings(db: Session) -> SystemSettings:
     settings = db.query(SystemSettings).first()
     if not settings:
         raise NotFoundError("SystemSettings", "default")
+    
+    # Backfill default rules if they are missing
+    if settings.catalog_call_number_rules is None:
+        settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
+        db.commit()
+        db.refresh(settings)
+
     return settings
 
 
@@ -138,6 +148,7 @@ def update_settings(
         "inventory_search_result_limit",
         "dewey_colors",
         "catalog_shelf_locations",
+        "catalog_call_number_rules",
     }
 
     for key, value in updates.items():
@@ -183,6 +194,7 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.id_length_max = 10
     settings.catalog_medium_types = "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
     settings.catalog_genres = "Album, Roman, Conte, Poésie, Théâtre, Bande dessinée, Manga, Documentaire, Autre"
+    settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
 
     db.commit()
     db.refresh(settings)

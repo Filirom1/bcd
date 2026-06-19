@@ -138,6 +138,7 @@ class TestResetToDefaults:
         assert result.renewal_limit == 2
         assert result.catalog_medium_types == "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
         assert result.catalog_genres == "Album, Roman, Conte, Poésie, Théâtre, Bande dessinée, Manga, Documentaire, Autre"
+        assert result.catalog_call_number_rules is not None
 
     def test_reset_persists(self, db_session):
         """Test that reset persists to database."""

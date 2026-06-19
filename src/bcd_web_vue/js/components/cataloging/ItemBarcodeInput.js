@@ -30,6 +30,10 @@ export default defineComponent({
             type: String,
             default: ''
         },
+        recordGenre: {
+            type: String,
+            default: ''
+        },
         recordDeweyNumber: {
             type: String,
             default: null
@@ -74,6 +78,15 @@ export default defineComponent({
 
         const isPeriodical = computed(() => props.recordMediumType === 'P\u00e9riodique');
 
+        // AUT1: first 1 uppercase letter of author's last name (NFD-normalized, no accents, only A-Z)
+        function computeAut1(authors) {
+            if (!authors || !authors.length) return '';
+            const first = authors[0];
+            const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
+            const cleanLastName = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+            return cleanLastName.slice(0, 1);
+        }
+
         // AUT3: first 3 uppercase letters of author's last name (NFD-normalized, no accents, only A-Z)
         function computeAut3(authors) {
             if (!authors || !authors.length) return '';
@@ -83,20 +96,76 @@ export default defineComponent({
             return cleanLastName.slice(0, 3);
         }
 
-        // Suggested call number = "[dewey_number] [AUT3]" (skipped for periodicals)
+        // Suggest a shelf location based on medium type or genre matching the available options
+        function suggestShelfLocation(mediumType, genre, locations) {
+            if (!locations || !locations.length) return '';
+            
+            const norm = (s) => s ? s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/s$/, '').trim() : '';
+            const query = norm(genre) || norm(mediumType);
+            
+            const found = locations.find(l => norm(l.label) === query);
+            return found ? found.label : '';
+        }
+
+        // Suggested call number based on dynamic settings rules:
         const suggestedCallNumber = computed(() => {
-            if (isPeriodical.value) return '';
+            const rules = (() => {
+                try {
+                    return JSON.parse(settings.value?.catalog_call_number_rules || '[]');
+                } catch {
+                    return [];
+                }
+            })();
+
+            const aut1 = computeAut1(props.recordAuthors);
             const aut3 = computeAut3(props.recordAuthors);
-            if (props.recordDeweyNumber && aut3) return `${props.recordDeweyNumber} ${aut3}`;
-            if (props.recordDeweyNumber) return props.recordDeweyNumber;
-            if (aut3) return aut3;
-            return '';
+            const dewey = props.recordDeweyNumber ? props.recordDeweyNumber.trim() : '';
+            const mediumType = props.recordMediumType ? props.recordMediumType.trim() : '';
+            const genre = props.recordGenre ? props.recordGenre.trim() : '';
+
+            // Find first matching rule
+            const matchedRule = rules.find(rule => {
+                if (rule.medium_type && rule.medium_type.trim().toLowerCase() !== mediumType.toLowerCase()) {
+                    return false;
+                }
+                if (rule.genre && rule.genre.trim().toLowerCase() !== genre.toLowerCase()) {
+                    return false;
+                }
+                return true;
+            });
+
+            if (!matchedRule) {
+                return aut3;
+            }
+
+            const pattern = matchedRule.pattern || '';
+            if (!pattern.trim()) {
+                return '';
+            }
+
+            return pattern
+                .replace(/{AUT1}/g, aut1)
+                .replace(/{AUT3}/g, aut3)
+                .replace(/{DEWEY}/g, dewey)
+                .trim()
+                .replace(/\s+/g, ' ');
+        });
+
+        const suggestedShelfLocation = computed(() => {
+            return suggestShelfLocation(props.recordMediumType, props.recordGenre, shelfLocationOptions.value);
         });
 
         // Pre-fill call number only when it is still empty
         watch(suggestedCallNumber, (val) => {
             if (val && !callNumber.value.trim()) {
                 callNumber.value = val;
+            }
+        }, { immediate: true });
+
+        // Pre-fill shelf location only when it is still empty
+        watch(suggestedShelfLocation, (val) => {
+            if (val && !shelfLocation.value.trim()) {
+                shelfLocation.value = val;
             }
         }, { immediate: true });
 

@@ -3,7 +3,7 @@
  * Form with 14 fields matching HTMX version exactly
  */
 
-const { defineComponent, ref, computed } = Vue;
+const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 
 export default defineComponent({
@@ -89,6 +89,55 @@ export default defineComponent({
             ));
         };
 
+        const localRules = ref([]);
+
+        watch(() => props.settings.catalog_call_number_rules, (newVal) => {
+            try {
+                const parsed = JSON.parse(newVal || '[]');
+                if (JSON.stringify(parsed) !== JSON.stringify(localRules.value)) {
+                    localRules.value = parsed;
+                }
+            } catch {
+                localRules.value = [];
+            }
+        }, { immediate: true });
+
+        watch(localRules, (newVal) => {
+            props.settings.catalog_call_number_rules = JSON.stringify(newVal);
+        }, { deep: true });
+
+        const mediumTypesOptions = computed(() => {
+            if (!props.settings.catalog_medium_types) return [];
+            return props.settings.catalog_medium_types.split(',').map(s => s.trim()).filter(s => s);
+        });
+
+        const genresOptions = computed(() => {
+            if (!props.settings.catalog_genres) return [];
+            return props.settings.catalog_genres.split(',').map(s => s.trim()).filter(s => s);
+        });
+
+        const addCallNumberRule = () => {
+            localRules.value.push({ medium_type: null, genre: null, pattern: '' });
+        };
+
+        const removeCallNumberRule = (idx) => {
+            localRules.value.splice(idx, 1);
+        };
+
+        const moveCallNumberRuleUp = (idx) => {
+            if (idx === 0) return;
+            const temp = localRules.value[idx];
+            localRules.value[idx] = localRules.value[idx - 1];
+            localRules.value[idx - 1] = temp;
+        };
+
+        const moveCallNumberRuleDown = (idx) => {
+            if (idx === localRules.value.length - 1) return;
+            const temp = localRules.value[idx];
+            localRules.value[idx] = localRules.value[idx + 1];
+            localRules.value[idx + 1] = temp;
+        };
+
         return {
             t,
             handleSubmit,
@@ -101,7 +150,14 @@ export default defineComponent({
             removeShelfLocation,
             updateShelfLocationLabel,
             updateShelfLocationColor,
-            toggleShelfLocationColor
+            toggleShelfLocationColor,
+            localRules,
+            mediumTypesOptions,
+            genresOptions,
+            addCallNumberRule,
+            removeCallNumberRule,
+            moveCallNumberRuleUp,
+            moveCallNumberRuleDown
         };
     },
 
@@ -525,6 +581,107 @@ export default defineComponent({
                         <i class="bi bi-plus-circle me-1"></i>
                         {{ t('settings.shelf_location_add') }}
                     </button>
+                </div>
+
+                <!-- Automatic Call Number Rules -->
+                <div class="col-12 mt-4">
+                    <h4 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-tag"></i>
+                        {{ t('settings.call_number_rules') }}
+                    </h4>
+                    <p class="text-muted small">{{ t('settings.call_number_rules_help') }}</p>
+                </div>
+
+                <div class="col-12">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">Ordre</th>
+                                    <th>{{ t('settings.rule_if_medium') }}</th>
+                                    <th>{{ t('settings.rule_and_genre') }}</th>
+                                    <th>{{ t('settings.rule_then_pattern') }}</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(rule, idx) in localRules" :key="idx">
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-secondary"
+                                                :disabled="idx === 0"
+                                                @click="moveCallNumberRuleUp(idx)"
+                                            >
+                                                <i class="bi bi-arrow-up"></i>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline-secondary"
+                                                :disabled="idx === localRules.length - 1"
+                                                @click="moveCallNumberRuleDown(idx)"
+                                            >
+                                                <i class="bi bi-arrow-down"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select
+                                            class="form-select form-select-sm"
+                                            v-model="rule.medium_type"
+                                        >
+                                            <option :value="null">{{ t('settings.all_any') }}</option>
+                                            <option v-for="m in mediumTypesOptions" :key="m" :value="m">{{ m }}</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select
+                                            class="form-select form-select-sm"
+                                            v-model="rule.genre"
+                                        >
+                                            <option :value="null">{{ t('settings.all_any') }}</option>
+                                            <option v-for="g in genresOptions" :key="g" :value="g">{{ g }}</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-sm"
+                                            v-model="rule.pattern"
+                                            :placeholder="t('settings.manual_entry_placeholder')"
+                                        />
+                                    </td>
+                                    <td>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            @click="removeCallNumberRule(idx)"
+                                        >
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary mt-2"
+                        @click="addCallNumberRule"
+                    >
+                        <i class="bi bi-plus-circle me-1"></i>
+                        {{ t('settings.rule_add') }}
+                    </button>
+
+                    <div class="card bg-light mt-3">
+                        <div class="card-body py-2">
+                            <span class="small fw-bold text-muted d-block mb-1">{{ t('settings.rule_guide') }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_aut1', { AUT1: '{AUT1}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_aut3', { AUT3: '{AUT3}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_dewey', { DEWEY: '{DEWEY}' }) }}</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Save Button -->

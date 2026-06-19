@@ -68,6 +68,7 @@ export default defineComponent({
                 id: record.record_id || record.id,
                 title: record.title,
                 medium_type: record.medium_type,
+                genre: record.genre || null,
                 dewey_number: record.dewey_number || null,
                 authors: record.authors || []
             };
@@ -196,6 +197,7 @@ export default defineComponent({
                         :record-id="createdRecord.id"
                         :record-title="createdRecord.title"
                         :record-medium-type="createdRecord.medium_type"
+                        :record-genre="createdRecord.genre"
                         :record-dewey-number="createdRecord.dewey_number"
                         :record-authors="createdRecord.authors"
                         @item-created="(item) => {}"

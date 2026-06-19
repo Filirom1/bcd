@@ -37,6 +37,7 @@ class SystemSettingsResponse(BaseModel):
     inventory_search_result_limit: int = 200
     dewey_colors: Optional[str] = None
     catalog_shelf_locations: Optional[str] = None
+    catalog_call_number_rules: Optional[str] = None
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -97,3 +98,4 @@ class SystemSettingsUpdate(BaseModel):
     inventory_search_result_limit: Optional[int] = Field(None, ge=1, le=1000)
     dewey_colors: Optional[str] = None
     catalog_shelf_locations: Optional[str] = None
+    catalog_call_number_rules: Optional[str] = None
