@@ -3,22 +3,24 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.exceptions import RequestValidationError
-from fastapi.staticfiles import StaticFiles
-from sqlalchemy.exc import IntegrityError
 from pathlib import Path
 
-from src.bcd_api.core.config import settings
-from src.bcd_api.core.logging_config import setup_logging
-from src.bcd_api.core.exceptions import BCDException
-from src.bcd_api.core.auth import DigestAuthMiddleware, is_auth_enabled
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import IntegrityError
+
 from src.bcd_api.api.v1.router import api_router
 from src.bcd_api.core import mdns
+from src.bcd_api.core.auth import DigestAuthMiddleware, is_auth_enabled
+from src.bcd_api.core.config import settings
+from src.bcd_api.core.exceptions import BCDException
+from src.bcd_api.core.logging_config import setup_logging
 from src.bcd_api.services.bnf_service import configure as configure_bnf
-from src.bcd_api.services.cover_service import configure as configure_covers, migrate_covers_to_isbn13
+from src.bcd_api.services.cover_service import configure as configure_covers
+from src.bcd_api.services.cover_service import migrate_covers_to_isbn13
 from src.bcd_api.services.google_books_service import configure as configure_google_books
 from src.bcd_api.services.sudoc_service import configure as configure_sudoc
 
@@ -34,10 +36,10 @@ _cached_library_code: str = ""
 # Import portable mode helpers
 try:
     from src.bcd_api.core.portable import (
-        is_portable,
-        initialize_portable_environment,
-        get_bundled_resource,
         get_app_dir,
+        get_bundled_resource,
+        initialize_portable_environment,
+        is_portable,
     )
 except ImportError:
     # Fallback for development/testing
@@ -52,19 +54,23 @@ except ImportError:
     def get_bundled_resource(resource_path: str) -> Optional[Path]:
         return Path(resource_path)
 
+    def get_app_dir() -> Path:
+        return Path(".")
+
 
 # Web UI directory (Vue 3 implementation)
 # Set based on portable mode or development mode
 if is_portable():
     # In portable mode, web UI is bundled in _internal or next to executable
-    web_resource = get_bundled_resource('bcd_web_vue')
-    WEB_DIR = str(web_resource) if web_resource else 'bcd_web_vue'
+    web_resource = get_bundled_resource("bcd_web_vue")
+    WEB_DIR = str(web_resource) if web_resource else "bcd_web_vue"
     # Help documentation is bundled separately
-    help_resource = get_bundled_resource('docs/help')
-    HELP_DIR = str(help_resource) if help_resource else 'docs/help'
+    help_resource = get_bundled_resource("docs/help")
+    HELP_DIR = str(help_resource) if help_resource else "docs/help"
 else:
-    WEB_DIR = 'src/bcd_web_vue'
-    HELP_DIR = 'docs/help'
+    WEB_DIR = "src/bcd_web_vue"
+    HELP_DIR = "docs/help"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -74,7 +80,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Database: {settings.database_url}")
     if is_auth_enabled():
-        logger.info(f"Authentication enabled ({settings.auth_scheme.upper()}, user: {settings.auth_username})")
+        logger.info(
+            f"Authentication enabled ({settings.auth_scheme.upper()}, user: {settings.auth_username})"
+        )
 
     if is_portable():
         logger.info("Running in portable mode")
@@ -102,9 +110,9 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="School library management system (Bibliothèque que Claude a Développée)",
-    docs_url=f"/api/v1/docs",
-    redoc_url=f"/api/v1/redoc",
-    openapi_url=f"/api/v1/openapi.json",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
+    openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
 )
 
@@ -149,7 +157,11 @@ async def add_cache_headers(request: Request, call_next):
             # Always revalidate locale files so translation updates apply immediately.
             # ETags (from StaticFiles) allow 304 responses — no extra bandwidth.
             response.headers["Cache-Control"] = "no-cache, must-revalidate"
-        elif path.startswith("/static/") or path.startswith("/assets/") or path.startswith("/covers/"):
+        elif (
+            path.startswith("/static/")
+            or path.startswith("/assets/")
+            or path.startswith("/covers/")
+        ):
             response.headers["Cache-Control"] = "public, max-age=3600"
     return response
 
@@ -162,8 +174,8 @@ async def bcd_exception_handler(request: Request, exc: BCDException):
     content = {
         "success": False,
         "error": exc.detail,
-        "error_code": getattr(exc, 'error_code', 'UNKNOWN_ERROR'),
-        "context": getattr(exc, 'context', {})
+        "error_code": getattr(exc, "error_code", "UNKNOWN_ERROR"),
+        "context": getattr(exc, "context", {}),
     }
     return JSONResponse(
         status_code=exc.status_code,
@@ -203,7 +215,6 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
 app.include_router(api_router)
 
 
-
 async def init_mdns():
     """Read library_code from DB and start mDNS if configured.
 
@@ -229,9 +240,7 @@ async def init_mdns():
             port = mdns.get_server_port(settings.api_port)
             try:
                 await asyncio.wait_for(mdns.start_mdns(library_code, port), timeout=10)
-                logger.info(
-                    f"mDNS active — access via http://{hostname}.local:{port}"
-                )
+                logger.info(f"mDNS active — access via http://{hostname}.local:{port}")
             except asyncio.TimeoutError:
                 logger.warning("mDNS registration timed out after 10s — skipped")
         else:
@@ -244,6 +253,7 @@ def _migrate_covers():
     """Rename any ISBN-10 cover files to ISBN-13 (idempotent, non-fatal)."""
     try:
         from src.bcd_api.core.database import SessionLocal
+
         db = SessionLocal()
         try:
             migrate_covers_to_isbn13(db=db)
@@ -261,8 +271,9 @@ def init_database_if_needed():
     already at head.
     """
     try:
-        from alembic.config import Config
         from alembic.command import upgrade
+        from alembic.config import Config
+
         from src.bcd_api.core.portable import get_alembic_ini_path
 
         logger.info("Checking database schema (running migrations)...")
@@ -272,9 +283,7 @@ def init_database_if_needed():
         alembic_cfg.set_main_option("sqlalchemy.url", settings.database_url)
         # Resolve script_location to an absolute path so Alembic can find
         # the migrations folder regardless of the working directory.
-        alembic_cfg.set_main_option(
-            "script_location", str(alembic_ini.parent / "migrations")
-        )
+        alembic_cfg.set_main_option("script_location", str(alembic_ini.parent / "migrations"))
 
         upgrade(alembic_cfg, "head")
 
@@ -398,6 +407,7 @@ def _start_server_thread(host: str, port: int) -> tuple:
     import threading
     import time
     import urllib.request
+
     import uvicorn
 
     config = uvicorn.Config(
@@ -433,7 +443,25 @@ def _run_portable_browser(host: str, port: int):
     """
     import webbrowser
 
-    url = f"http://127.0.0.1:{port}"
+    url = f"http://{host}:{port}" if settings.client_only else f"http://127.0.0.1:{port}"
+
+    if settings.client_only:
+        logger.info(f"CLIENT_ONLY is enabled. Opening browser at {url}")
+        webbrowser.open(url)
+        print("\n" + "=" * 60)
+        print("  BCD Client-Only Mode (Browser)")
+        print("=" * 60)
+        print(f"  Connected to remote server: {url}")
+        print("  Press Ctrl+C to exit.")
+        print("=" * 60 + "\n")
+        try:
+            while True:
+                import time
+
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("Keyboard interrupt received, exiting...")
+        return
 
     server, server_thread = _start_server_thread(host, port)
 
@@ -496,6 +524,15 @@ def _run_portable_kids(host: str, port: int):
         print(f"\nERROR: Could not execute Kids client at: {kids_path_obj}")
         return
 
+    if settings.client_only:
+        logger.info("CLIENT_ONLY is enabled. API server startup and migrations skipped.")
+        try:
+            process.wait()
+            logger.info("Kids client closed.")
+        except KeyboardInterrupt:
+            logger.info("Keyboard interrupt received, exiting...")
+        return
+
     # Run migrations and start API server while the Kids splash is showing
     init_database_if_needed()
     server, server_thread = _start_server_thread(host, port)
@@ -521,24 +558,29 @@ def _run_portable(host: str, port: int):
     """
     import webview
 
-    url = f"http://127.0.0.1:{port}"
+    url = f"http://{host}:{port}" if settings.client_only else f"http://127.0.0.1:{port}"
 
-    server, _server_thread = _start_server_thread(host, port)
+    server = None
+    if settings.client_only:
+        logger.info(f"CLIENT_ONLY is enabled. Connecting webview to remote server at {url}")
+    else:
+        server, _server_thread = _start_server_thread(host, port)
 
     # Read library_name from DB for the window title (server is ready, settings exist)
     window_title = "BCD"
-    try:
-        from src.bcd_api.core.database import SessionLocal
-        from src.bcd_api.services import settings_service
-
-        db = SessionLocal()
+    if not settings.client_only:
         try:
-            sys_settings = settings_service.get_settings(db)
-            window_title = getattr(sys_settings, "library_name", None) or "BCD"
-        finally:
-            db.close()
-    except Exception:
-        pass
+            from src.bcd_api.core.database import SessionLocal
+            from src.bcd_api.services import settings_service
+
+            db = SessionLocal()
+            try:
+                sys_settings = settings_service.get_settings(db)
+                window_title = getattr(sys_settings, "library_name", None) or "BCD"
+            finally:
+                db.close()
+        except Exception:
+            pass
 
     # Open native webview window — blocks until the user closes it
     window = webview.create_window(
@@ -550,7 +592,8 @@ def _run_portable(host: str, port: int):
     )
 
     def on_closed():
-        server.should_exit = True
+        if server:
+            server.should_exit = True
 
     window.events.closed += on_closed
 
@@ -564,6 +607,7 @@ def _run_portable(host: str, port: int):
 def main():
     """Run the application."""
     import argparse
+
     import uvicorn
 
     parser = argparse.ArgumentParser(
@@ -590,7 +634,16 @@ def main():
         metavar="MODE",
         help="UI mode: webview (native window), browser (system browser), or kids (Kids client); default: %(default)s",
     )
+    parser.add_argument(
+        "--client-only",
+        action="store_true",
+        default=settings.client_only,
+        help="Run in client-only mode (do not start the local server, only launch the client UI)",
+    )
     args = parser.parse_args()
+
+    if args.client_only:
+        settings.client_only = True
 
     # Portable mode: initialize environment, then open window
     if is_portable():
@@ -598,18 +651,23 @@ def main():
 
         if settings.auto_update:
             from src.bcd_api.core.updater import check_and_apply_update
+
             check_and_apply_update(settings.app_version, get_app_dir())
 
+    # If running in portable mode OR client-only mode, launch the client UI directly
+    if is_portable() or settings.client_only:
         ui_mode = args.ui_mode.lower()
         if ui_mode == "kids":
             # Kids mode runs migrations internally, after launching the client
             # so the splash screen is visible immediately.
             _run_portable_kids(args.host, args.port)
         elif ui_mode == "webview":
-            init_database_if_needed()
+            if not settings.client_only:
+                init_database_if_needed()
             _run_portable(args.host, args.port)
         elif ui_mode == "browser":
-            init_database_if_needed()
+            if not settings.client_only:
+                init_database_if_needed()
             _run_portable_browser(args.host, args.port)
         else:
             logger.error(f"Invalid UI mode: {ui_mode}")

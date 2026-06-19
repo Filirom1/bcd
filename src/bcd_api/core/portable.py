@@ -1,7 +1,7 @@
 """Portable mode detection and path helpers for PyInstaller bundles."""
 
-import sys
 import shutil
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -12,7 +12,7 @@ def is_portable() -> bool:
     Returns:
         True if running as frozen PyInstaller executable, False otherwise.
     """
-    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
 def get_app_dir() -> Path:
@@ -90,7 +90,7 @@ def get_bundled_resource(resource_path: str) -> Optional[Path]:
     Returns:
         Path to resource, or None if not found.
     """
-    if is_portable() and hasattr(sys, '_MEIPASS'):
+    if is_portable() and hasattr(sys, "_MEIPASS"):
         # PyInstaller extracts bundled files to _MEIPASS temporary directory
         meipass_path = Path(sys._MEIPASS)
         resource = meipass_path / resource_path
@@ -187,6 +187,12 @@ UI_MODE=kids
 # Can be absolute path or relative to the BCD executable directory
 KIDS_CLIENT_PATH={kids_client_path}
 
+# Client Only Mode
+# If CLIENT_ONLY=true, BCD does not start the local API server. It only starts
+# the selected UI_MODE client (e.g. kids, webview, browser) connecting to a remote server.
+# Set API_HOST and API_PORT to point to the remote BCD server.
+CLIENT_ONLY=false
+
 # Authentication (HTTP Basic or Digest Auth)
 # If both AUTH_USERNAME and AUTH_PASSWORD are set, authentication is enabled.
 # Otherwise, no authentication is required (open access).
@@ -196,7 +202,7 @@ AUTH_USERNAME=
 AUTH_PASSWORD=
 AUTH_SCHEME=basic
 """
-    env_path.write_text(default_env, encoding='utf-8')
+    env_path.write_text(default_env, encoding="utf-8")
 
 
 def get_alembic_ini_path() -> Path:

@@ -1,12 +1,14 @@
 """Application configuration using Pydantic Settings."""
 
 from typing import List
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from src.shared.version import get_version
 
 # Import portable mode helpers
 try:
-    from src.bcd_api.core.portable import is_portable, get_data_dir, get_config_dir
+    from src.bcd_api.core.portable import get_config_dir, get_data_dir, is_portable
 except ImportError:
     # Fallback for development/testing when module might not be in path
     from pathlib import Path
@@ -75,7 +77,7 @@ class Settings(BaseSettings):
     bnf_rate_limit: int = 1  # requests per second
 
     # Google Books API
-    google_books_api_key: str = ""   # optional — empty = no key (~1 000 req/day)
+    google_books_api_key: str = ""  # optional — empty = no key (~1 000 req/day)
     google_books_rate_limit: int = 1  # requests per second
 
     # SUDOC API — French university library catalog (fallback for periodicals)
@@ -94,6 +96,10 @@ class Settings(BaseSettings):
     # UI Mode (portable mode only)
     # UI_MODE: "webview" (native window), "browser" (system browser), or "kids" (launch Kids client)
     ui_mode: str = "webview"
+
+    # Client Only Mode
+    # If True, does not start the local API server, only launches the specified UI client
+    client_only: bool = False
 
     # Auto-update (portable mode only)
     auto_update: bool = True
