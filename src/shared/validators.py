@@ -42,7 +42,7 @@ def validate_isbn10(isbn: str) -> bool:
         checksum += int(isbn[i]) * (10 - i)
 
     # Last digit can be X (representing 10)
-    if isbn[9] == 'X':
+    if isbn[9] == "X":
         checksum += 10
     else:
         checksum += int(isbn[9])
@@ -82,7 +82,7 @@ def validate_id_format(
     value: str,
     validation_regex: str,
     min_length: Optional[int] = None,
-    max_length: Optional[int] = None
+    max_length: Optional[int] = None,
 ) -> bool:
     """
     Validate ID format against regex and length constraints.
@@ -163,3 +163,30 @@ def validate_item_id(item_id: str, settings) -> tuple[bool, Optional[str]]:
         return False, f"Item ID format is invalid (must match {settings.id_validation_regex})"
 
     return True, None
+
+
+def clean_call_number(value: Optional[str]) -> Optional[str]:
+    """
+    Clean a dewey number or call number to keep only A-Z, 0-9, dots, and spaces,
+    effectively filtering out special characters like (, °, etc., and converting
+    any lowercase letters to uppercase.
+    """
+    if not value:
+        return value
+
+    import unicodedata
+
+    # Normalize unicode to remove accents (e.g. É -> E)
+    normalized = unicodedata.normalize("NFD", value)
+    clean_val = "".join([c for c in normalized if unicodedata.category(c) != "Mn"])
+
+    # Convert to uppercase
+    clean_val = clean_val.upper()
+
+    # Keep only A-Z, 0-9, dots, and spaces
+    clean_val = re.sub(r"[^A-Z0-9. ]", "", clean_val)
+
+    # Collapse multiple spaces
+    clean_val = re.sub(r"\s+", " ", clean_val).strip()
+
+    return clean_val if clean_val else None

@@ -1,18 +1,18 @@
 """Unit tests for Pydantic schemas."""
 
-import pytest
 from datetime import date
+
+import pytest
 from pydantic import ValidationError
 
-from src.bcd_api.schemas.borrower import BorrowerCreate, BorrowerUpdate, BorrowerResponse
 from src.bcd_api.schemas.bibliographic_record import (
     BiblographicRecordCreate,
     BiblographicRecordUpdate,
-    BiblographicRecordResponse,
 )
-from src.bcd_api.schemas.item import ItemCreate, ItemUpdate, ItemResponse
-from src.bcd_api.schemas.circulation import CheckoutRequest, ReturnRequest, RenewRequest
-from src.shared.constants import BorrowerRole, ItemStatus, ItemCondition
+from src.bcd_api.schemas.borrower import BorrowerCreate, BorrowerResponse, BorrowerUpdate
+from src.bcd_api.schemas.circulation import CheckoutRequest, RenewRequest, ReturnRequest
+from src.bcd_api.schemas.item import ItemCreate, ItemResponse, ItemUpdate
+from src.shared.constants import BorrowerRole, ItemCondition, ItemStatus
 
 
 class TestBorrowerSchemas:
@@ -112,6 +112,17 @@ class TestBiblioSchemas:
         assert update.title == "Updated Title"
         assert update.publisher == "New Publisher"
 
+    def test_biblio_dewey_number_cleaning(self):
+        """Test that dewey_number is cleaned of special characters and normalized."""
+        data = {"title": "Test Book", "medium_type": "Livre", "dewey_number": "843 (3)°"}
+        biblio = BiblographicRecordCreate(**data)
+        assert biblio.dewey_number == "843 3"
+
+        # Update test
+        update_data = {"dewey_number": "R(A)°"}
+        update = BiblographicRecordUpdate(**update_data)
+        assert update.dewey_number == "RA"
+
 
 class TestItemSchemas:
     """Tests for Item schemas."""
@@ -128,6 +139,21 @@ class TestItemSchemas:
         assert item.item_id == "785"
         assert item.bibliographic_record_id == 1
         assert item.loanable is True
+
+    def test_item_call_number_cleaning(self):
+        """Test that call_number is cleaned of special characters and normalized."""
+        data = {
+            "item_id": "785",
+            "bibliographic_record_id": 1,
+            "call_number": "843 (3)° D'O-R",
+            "loanable": True,
+        }
+        item = ItemCreate(**data)
+        assert item.call_number == "843 3 DOR"
+
+        update_data = {"call_number": "A°(B) D'U"}
+        update = ItemUpdate(**update_data)
+        assert update.call_number == "AB DU"
 
     def test_item_create_missing_required(self):
         """Test item creation with missing required fields."""
@@ -233,6 +259,4 @@ class TestSchemaValidation:
 
         # Future year (2101 is above max of 2100)
         with pytest.raises(ValidationError):
-            BiblographicRecordCreate(
-                title="Test Book", medium_type="Livre", publication_year=2101
-            )
+            BiblographicRecordCreate(title="Test Book", medium_type="Livre", publication_year=2101)

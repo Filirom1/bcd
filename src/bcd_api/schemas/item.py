@@ -1,11 +1,13 @@
 """Pydantic schemas for Item model."""
 
-from typing import Optional
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional
 
-from src.shared.constants import ItemStatus, ItemCondition
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 from src.bcd_api.schemas.common import TimestampMixin
+from src.shared.constants import ItemCondition, ItemStatus
+from src.shared.validators import clean_call_number
 
 
 class ItemBase(BaseModel):
@@ -14,12 +16,20 @@ class ItemBase(BaseModel):
     item_id: str = Field(..., min_length=1, max_length=20, description="Unique item ID")
     bibliographic_record_id: int = Field(..., description="Bibliographic record ID")
     call_number: Optional[str] = Field(None, max_length=50, description="Call number (Dewey/CDU)")
-    shelf_location: Optional[str] = Field(None, max_length=100, description="Physical shelf location")
+    shelf_location: Optional[str] = Field(
+        None, max_length=100, description="Physical shelf location"
+    )
     condition: ItemCondition = Field(ItemCondition.GOOD, description="Physical condition")
     status: ItemStatus = Field(ItemStatus.AVAILABLE, description="Availability status")
     loanable: bool = Field(True, description="Can be borrowed?")
     acquisition_date: Optional[date] = Field(None, description="Acquisition date")
     funding_source: Optional[str] = Field(None, max_length=100, description="Funding source")
+
+    @field_validator("call_number", mode="before")
+    @classmethod
+    def clean_call_number_field(cls, v):
+        """Clean call number to keep only alphanumeric characters, dots, and spaces."""
+        return clean_call_number(v)
 
 
 class ItemCreate(ItemBase):
@@ -44,6 +54,13 @@ class ItemUpdate(BaseModel):
     """Schema for updating an item."""
 
     call_number: Optional[str] = Field(None, max_length=50)
+
+    @field_validator("call_number", mode="before")
+    @classmethod
+    def clean_call_number_field(cls, v):
+        """Clean call number to keep only alphanumeric characters, dots, and spaces."""
+        return clean_call_number(v)
+
     shelf_location: Optional[str] = Field(None, max_length=100)
     condition: Optional[ItemCondition] = None
     status: Optional[ItemStatus] = None
@@ -130,7 +147,7 @@ class AvailableIDsResponse(BaseModel):
                 "ids": ["2000", "2001", "2002"],
                 "count": 30,
                 "id_format": "numeric",
-                "contiguous": True
+                "contiguous": True,
             }
         }
     )

@@ -74,12 +74,13 @@ export default defineComponent({
 
         const isPeriodical = computed(() => props.recordMediumType === 'P\u00e9riodique');
 
-        // AUT3: first 3 uppercase letters of author's last name (NFD-normalized, no accents)
+        // AUT3: first 3 uppercase letters of author's last name (NFD-normalized, no accents, only A-Z)
         function computeAut3(authors) {
             if (!authors || !authors.length) return '';
             const first = authors[0];
             const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
-            return lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().slice(0, 3);
+            const cleanLastName = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+            return cleanLastName.slice(0, 3);
         }
 
         // Suggested call number = "[dewey_number] [AUT3]" (skipped for periodicals)

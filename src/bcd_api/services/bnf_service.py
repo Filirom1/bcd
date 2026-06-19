@@ -12,6 +12,7 @@ import time
 from typing import Optional
 
 from ...shared.constants import MediumType, TargetAudience
+from ...shared.validators import clean_call_number
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +149,7 @@ def parse_unimarc_xml(xml_content: bytes) -> Optional[dict]:
     """
     try:
         from lxml import etree  # lazy — only loaded on first ISBN lookup
+
         root = etree.fromstring(xml_content)
 
         # Define namespaces
@@ -185,9 +187,17 @@ def parse_unimarc_xml(xml_content: bytes) -> Optional[dict]:
 
         # Language (101$a) — normalize ISO 639-2 (3-letter) to ISO 639-1 (2-letter)
         _iso3_to_2 = {
-            "fre": "fr", "eng": "en", "ger": "de", "spa": "es",
-            "ita": "it", "por": "pt", "ara": "ar", "chi": "zh",
-            "rus": "ru", "dut": "nl", "pol": "pl",
+            "fre": "fr",
+            "eng": "en",
+            "ger": "de",
+            "spa": "es",
+            "ita": "it",
+            "por": "pt",
+            "ara": "ar",
+            "chi": "zh",
+            "rus": "ru",
+            "dut": "nl",
+            "pol": "pl",
         }
         lang_elem = marc_record.find('.//mxc:datafield[@tag="101"]/mxc:subfield[@code="a"]', ns)
         if lang_elem is not None:
@@ -209,23 +219,31 @@ def parse_unimarc_xml(xml_content: bytes) -> Optional[dict]:
             data["subtitle"] = subtitle_elem.text
 
         # Author statement (200$f)
-        author_stmt_elem = marc_record.find('.//mxc:datafield[@tag="200"]/mxc:subfield[@code="f"]', ns)
+        author_stmt_elem = marc_record.find(
+            './/mxc:datafield[@tag="200"]/mxc:subfield[@code="f"]', ns
+        )
         author_from_stmt = None
         if author_stmt_elem is not None:
             author_from_stmt = _parse_author_statement(author_stmt_elem.text)
 
         # Illustrator statement (200$g)
-        illus_stmt_elem = marc_record.find('.//mxc:datafield[@tag="200"]/mxc:subfield[@code="g"]', ns)
+        illus_stmt_elem = marc_record.find(
+            './/mxc:datafield[@tag="200"]/mxc:subfield[@code="g"]', ns
+        )
         illus_from_stmt = None
         if illus_stmt_elem is not None:
             illus_text = illus_stmt_elem.text
             if "ill" in illus_text.lower():
-                match = re.search(r"(?:ill\.|illustré)\s*(?:par)?\s*(.+)", illus_text, re.IGNORECASE)
+                match = re.search(
+                    r"(?:ill\.|illustré)\s*(?:par)?\s*(.+)", illus_text, re.IGNORECASE
+                )
                 if match:
                     illus_from_stmt = match.group(1).strip()
 
         # Publisher and year (210$c, 210$d)
-        publisher_elem = marc_record.find('.//mxc:datafield[@tag="210"]/mxc:subfield[@code="c"]', ns)
+        publisher_elem = marc_record.find(
+            './/mxc:datafield[@tag="210"]/mxc:subfield[@code="c"]', ns
+        )
         if publisher_elem is not None:
             data["publisher"] = publisher_elem.text
 
@@ -245,7 +263,9 @@ def parse_unimarc_xml(xml_content: bytes) -> Optional[dict]:
             physical_parts = [extent_text]
 
             # Illustrations (215$c)
-            illus_elem = marc_record.find('.//mxc:datafield[@tag="215"]/mxc:subfield[@code="c"]', ns)
+            illus_elem = marc_record.find(
+                './/mxc:datafield[@tag="215"]/mxc:subfield[@code="c"]', ns
+            )
             if illus_elem is not None:
                 illus_text = illus_elem.text
                 data["has_illustrations"] = _has_illustrations(illus_text)
@@ -267,7 +287,9 @@ def parse_unimarc_xml(xml_content: bytes) -> Optional[dict]:
         if series_elem is not None:
             data["collection"] = series_elem.text
 
-        series_num_elem = marc_record.find('.//mxc:datafield[@tag="225"]/mxc:subfield[@code="v"]', ns)
+        series_num_elem = marc_record.find(
+            './/mxc:datafield[@tag="225"]/mxc:subfield[@code="v"]', ns
+        )
         if series_num_elem is not None:
             data["series_number"] = series_num_elem.text
 
@@ -277,21 +299,27 @@ def parse_unimarc_xml(xml_content: bytes) -> Optional[dict]:
             data["description"] = summary_elem.text
 
         # Subject headings / keywords (606$a)
-        keywords = _extract_all_text(marc_record, './/mxc:datafield[@tag="606"]/mxc:subfield[@code="a"]', ns)
+        keywords = _extract_all_text(
+            marc_record, './/mxc:datafield[@tag="606"]/mxc:subfield[@code="a"]', ns
+        )
         if keywords:
             data["keywords"] = keywords
 
         # Dewey classification number (676$a)
         dewey_elem = marc_record.find('.//mxc:datafield[@tag="676"]/mxc:subfield[@code="a"]', ns)
         if dewey_elem is not None and dewey_elem.text:
-            data["dewey_number"] = dewey_elem.text.strip()
+            data["dewey_number"] = clean_call_number(dewey_elem.text.strip())
 
         # Authors (700$a, 700$b, 701$a, 701$b)
         authors = []
 
         # Primary author (700)
-        surname_700 = _extract_text(marc_record, './/mxc:datafield[@tag="700"]/mxc:subfield[@code="a"]', ns)
-        forename_700 = _extract_text(marc_record, './/mxc:datafield[@tag="700"]/mxc:subfield[@code="b"]', ns)
+        surname_700 = _extract_text(
+            marc_record, './/mxc:datafield[@tag="700"]/mxc:subfield[@code="a"]', ns
+        )
+        forename_700 = _extract_text(
+            marc_record, './/mxc:datafield[@tag="700"]/mxc:subfield[@code="b"]', ns
+        )
         author_700 = _parse_author_name(surname_700, forename_700)
         if author_700:
             authors.append(author_700)
@@ -363,6 +391,7 @@ def search_by_isbn(isbn: str, timeout: int = 10) -> Optional[dict]:
     Reference: /specs/001-school-library-system/contracts/bnf-sru-api.md
     """
     import httpx  # lazy — only loaded on first ISBN lookup
+
     isbn_normalized = _normalize_isbn(isbn)
 
     if not isbn_normalized:
