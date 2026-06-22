@@ -290,9 +290,11 @@ def _apply_update_windows(archive_path: Path, new_version: str, app_dir: Path) -
 def _apply_update_linux(archive_path: Path, new_version: str, app_dir: Path) -> None:
     """Extract the tar.gz, write update.sh, launch it in a new session, then exit.
 
-    Linux allows overwriting a running binary (the kernel keeps the old inode
-    open until the last reference drops), so a plain ``cp`` after ``sleep 2``
-    is sufficient.
+    On Linux, writing directly to an executing binary or library (overwriting in-place)
+    results in a "Text file busy" (ETXTBSY) error. However, unlinking (deleting) the
+    files/directories is perfectly allowed even while they are running or mapped.
+    Therefore, the update script unlinks the existing bcd binary and _internal directory
+    before copying the new versions, avoiding any file-in-use locks.
     """
     import subprocess
     import tarfile
@@ -317,14 +319,19 @@ def _apply_update_linux(archive_path: Path, new_version: str, app_dir: Path) -> 
         "sleep 2",
         f'SRC="{src}"',
         f'APP="{app}"',
-        'cp -r "$SRC/_internal/." "$APP/_internal/"',
+        '# Remove old _internal directory and bcd files to prevent "Text file busy" errors',
+        'rm -rf "$APP/_internal"',
+        'cp -r "$SRC/_internal" "$APP/_internal"',
+        'rm -f "$APP/bcd"',
         'cp "$SRC/bcd" "$APP/bcd"',
         'if [ -f "$SRC/BCD-Kids.x86_64" ]; then',
+        '    rm -f "$APP/BCD-Kids.x86_64"',
         '    cp "$SRC/BCD-Kids.x86_64" "$APP/BCD-Kids.x86_64"',
-        "fi",
+        'fi',
         'if [ -f "$SRC/BCD-Kids.pck" ]; then',
+        '    rm -f "$APP/BCD-Kids.pck"',
         '    cp "$SRC/BCD-Kids.pck" "$APP/BCD-Kids.pck"',
-        "fi",
+        'fi',
         'chmod +x "$APP/bcd"',
         'if [ -f "$APP/BCD-Kids.x86_64" ]; then chmod +x "$APP/BCD-Kids.x86_64"; fi',
         'rm -rf "$APP/update"',
