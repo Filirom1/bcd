@@ -55,6 +55,11 @@ export default {
                 <code>101,Amira,BENALI,CP-A,student,true</code><br>
                 <code>305,Samir,BOUTALEB,CE1-B,student,true</code>
               </p>
+              <div class="mt-3 pt-2 border-top border-info border-opacity-25">
+                <a href="/api/v1/borrowers/template" class="btn btn-sm btn-info text-white fw-bold" download>
+                  <i class="bi bi-download"></i> {{ $t('borrowers.import.download_template') }}
+                </a>
+              </div>
             </div>
 
             <!-- Import Progress -->

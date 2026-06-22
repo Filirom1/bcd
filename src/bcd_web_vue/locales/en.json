@@ -208,7 +208,8 @@
     "card_view": "Card view",
     "select_columns": "Select columns",
     "reset_columns": "Reset to defaults",
-    "import_dc": "Import DC",
+    "import_dc": "Import Books from CSV (Dublin Core)",
+    "download_template": "Download CSV template",
     "import_dc_help": "Dublin Core CSV format with standard columns (dc:title, dc:creator, dc:identifier, etc.)",
     "importers": "Supported import formats",
     "importers_none": "No importers found",
@@ -360,7 +361,8 @@
       "import_failed": "Import failed",
       "import_button": "Import",
       "import_another": "Import Another File",
-      "created": "Created"
+      "created": "Created",
+      "download_template": "Download CSV template"
     },
     "export": "Export",
     "export_borrowers": "Export borrowers",

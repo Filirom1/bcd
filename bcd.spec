@@ -95,6 +95,8 @@ datas = [
     ('pyproject.toml', '.'),
     # Sample import files for catalog, borrowers, and classes
     ('data/sample_imports', 'data/sample_imports'),
+    # CSV templates for catalog and borrowers imports
+    ('data/templates', 'data/templates'),
     # Documentation
     ('LICENSE', '.'),
     ('README.md', '.'),

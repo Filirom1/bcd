@@ -81,6 +81,27 @@ def create_borrower(
     return borrower
 
 
+@router.get("/template")
+def get_borrowers_template():
+    """
+    Download the CSV template for borrower import.
+    """
+    from fastapi.responses import FileResponse
+    from ...core.portable import get_bundled_resource
+
+    template_path = get_bundled_resource("data/templates/borrowers_bcd.csv")
+    if not template_path or not template_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Borrowers CSV template file not found"
+        )
+    return FileResponse(
+        path=template_path,
+        media_type="text/csv",
+        filename="borrowers_template.csv"
+    )
+
+
 @router.post("/import")
 async def import_borrowers_csv(
     file: UploadFile = File(..., description="CSV file with borrower data"),

@@ -59,10 +59,15 @@ export default {
               <p class="mb-2 small">
                 <code>dc.title, dc.identifier, dc.creator, dc.subject, dc.description, dc.publisher, dc.contributor, dc.date, dc.type, dc.format, dc.language</code>
               </p>
-              <p class="mb-0 small">
+              <p class="mb-2 small">
                 <strong>{{ $t('catalog.format_dc_item_extensions') }}</strong><br>
                 <code>item.id, item.callNumber, item.acquisitionDate, item.fundingSource</code>
               </p>
+              <div class="mt-3 pt-2 border-top border-info border-opacity-25">
+                <a href="/api/v1/catalog/template" class="btn btn-sm btn-info text-white fw-bold" download>
+                  <i class="bi bi-download"></i> {{ $t('catalog.download_template') }}
+                </a>
+              </div>
             </div>
 
             <!-- File Upload Section -->

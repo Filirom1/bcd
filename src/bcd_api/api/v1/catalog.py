@@ -431,6 +431,27 @@ def list_importers():
     return {"importers": importers}
 
 
+@router.get("/template")
+def get_catalog_template():
+    """
+    Download the CSV template for catalog import (Dublin Core format).
+    """
+    from fastapi.responses import FileResponse
+    from ...core.portable import get_bundled_resource
+
+    template_path = get_bundled_resource("data/templates/catalog_dublin_core.csv")
+    if not template_path or not template_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Catalog CSV template file not found"
+        )
+    return FileResponse(
+        path=template_path,
+        media_type="text/csv",
+        filename="catalog_dublin_core_template.csv"
+    )
+
+
 @router.post("/import")
 async def import_catalog(
     file: UploadFile = File(..., description="CSV file to import"),

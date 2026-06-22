@@ -208,7 +208,8 @@
     "card_view": "Vue cartes",
     "select_columns": "Sélectionner les colonnes",
     "reset_columns": "Réinitialiser par défaut",
-    "import_dc": "Importer DC",
+    "import_dc": "Importer des notices et exemplaires depuis CSV (Dublin Core)",
+    "download_template": "Télécharger le modèle CSV (template)",
     "import_dc_help": "Format CSV Dublin Core avec colonnes standard (dc:title, dc:creator, dc:identifier, etc.)",
     "importers": "Formats d'import supportés",
     "importers_none": "Aucun importeur trouvé",
@@ -360,7 +361,8 @@
       "import_failed": "L'importation a échoué",
       "import_button": "Importer",
       "import_another": "Importer un autre fichier",
-      "created": "Créés"
+      "created": "Créés",
+      "download_template": "Télécharger le modèle CSV (template)"
     },
     "export": "Exporter",
     "export_borrowers": "Exporter les emprunteurs",
