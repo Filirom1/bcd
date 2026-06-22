@@ -28,7 +28,6 @@ func load_settings() -> void:
 			print("[API] Settings loaded successfully, keys: %s" % str(settings.keys()))
 			GS.settings = settings
 			GS.filter_medium_types = GS.parse_csv_list(settings.get("catalog_medium_types", ""))
-			GS.filter_genres = GS.parse_csv_list(settings.get("catalog_genres", ""))
 			GS.filter_levels = GS.parse_csv_list(settings.get("catalog_levels", ""))
 	else:
 		print("[API] Settings is not a Dictionary! Type: %s" % str(typeof(settings)))
@@ -118,9 +117,6 @@ func search_catalog(query: String, filters: Dictionary):
 
 	if filters.get("medium_type"):
 		params.append("medium_type=" + filters.medium_type.uri_encode())
-
-	if filters.get("genre"):
-		params.append("genre=" + filters.genre.uri_encode())
 
 	if filters.get("target_audience"):
 		params.append("target_audience=" + filters.target_audience)

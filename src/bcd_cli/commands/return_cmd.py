@@ -4,17 +4,19 @@ Return command
 Interactive and direct return workflows.
 """
 
+from typing import List
+
 import click
-from typing import List, Optional
+
 from ..client import get_client
 from ..utils.display import (
+    confirm,
     console,
+    format_date,
+    print_error,
     print_header,
     print_return_summary,
-    print_error,
     print_warning,
-    confirm,
-    format_date,
 )
 from ..utils.scanner import read_barcode_input
 

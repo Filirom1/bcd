@@ -47,7 +47,6 @@ export default {
 
         // Bulk edit fields
         const fields = ref({
-            genre: '',
             level: '',
             target_audience: '',
             language: '',
@@ -68,7 +67,6 @@ export default {
             return str.split(',').map(s => s.trim()).filter(Boolean);
         };
 
-        const genreSuggestions = computed(() => parseCsv(props.settings?.catalog_genres));
         const levelSuggestions = computed(() => parseCsv(props.settings?.catalog_levels));
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));
         const mediumTypeSuggestions = computed(() => parseCsv(props.settings?.catalog_medium_types));
@@ -118,9 +116,6 @@ export default {
         // Get summary of fields to update
         const fieldsSummary = computed(() => {
             const summary = [];
-            if (fields.value.genre) {
-                summary.push(`${t('admin.genre')}: ${fields.value.genre}`);
-            }
             if (fields.value.level) {
                 summary.push(`${t('admin.level')}: ${fields.value.level}`);
             }
@@ -152,7 +147,6 @@ export default {
             currentStep.value = 1;
             selectedOperation.value = null;
             fields.value = {
-                genre: '',
                 level: '',
                 target_audience: '',
                 language: '',
@@ -223,7 +217,6 @@ export default {
             currentStep,
             selectedOperation,
             fields,
-            genreSuggestions,
             levelSuggestions,
             audienceOptions,
             bindingTypeOptions,
@@ -366,24 +359,6 @@ export default {
                                 <p class="text-muted mb-3">
                                     {{ t('admin.common_fields') }} - Select fields to update (leave blank to keep existing values)
                                 </p>
-
-                                <!-- Genre -->
-                                <div class="mb-3">
-                                    <label class="form-label">{{ t('admin.genre') }}</label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        v-model="fields.genre"
-                                        list="bulk-genre-suggestions"
-                                        :placeholder="t('admin.genre_placeholder') || 'e.g., Adventure, Policier, Fantastique'"
-                                    />
-                                    <datalist id="bulk-genre-suggestions">
-                                        <option v-for="genre in genreSuggestions" :key="genre" :value="genre">
-                                            {{ genre }}
-                                        </option>
-                                    </datalist>
-                                    <small class="form-text text-muted">{{ t('admin.genre_hint') || 'Type any value or select from suggestions' }}</small>
-                                </div>
 
                                 <!-- Level -->
                                 <div class="mb-3">

@@ -1,7 +1,8 @@
 """CirculationTransaction model - represents a checkout event."""
 
-from datetime import datetime, date, timezone
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey, Text, CheckConstraint
+from datetime import date, datetime, timezone
+
+from sqlalchemy import CheckConstraint, Column, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from src.bcd_api.core.database import Base

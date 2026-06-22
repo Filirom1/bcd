@@ -4,7 +4,7 @@ Base Page Object
 Provides common functionality for all page objects.
 """
 
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
 
 
 class BasePage:

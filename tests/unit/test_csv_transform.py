@@ -1,7 +1,6 @@
 """Unit tests for CSV transformation service (BCD -> Dublin Core)"""
 
-import pytest
-from src.bcd_api.services.csv_transform import transform_bcd_to_dublin_core, _map_support_to_dc_type
+from src.bcd_api.services.csv_transform import _map_support_to_dc_type, transform_bcd_to_dublin_core
 
 
 class TestTransformBcdToDublinCore:

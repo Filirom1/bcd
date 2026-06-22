@@ -1,10 +1,11 @@
 """Unit tests for Class Pydantic schemas."""
 
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
 
-from src.bcd_api.schemas.class_schema import ClassCreate, ClassUpdate, ClassResponse
+from src.bcd_api.schemas.class_schema import ClassCreate, ClassResponse, ClassUpdate
 
 
 class TestClassCreateValidation:

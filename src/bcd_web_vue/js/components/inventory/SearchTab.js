@@ -46,7 +46,6 @@ export default defineComponent({
             inventoried_before: null,
             medium_type: '',
             target_audience: '',
-            genre: '',
             level: '',
             language: '',
             publication_year_min: null,
@@ -124,7 +123,6 @@ export default defineComponent({
                 inventoried_before: null,
                 medium_type: '',
                 target_audience: '',
-                genre: '',
                 level: '',
                 language: '',
                 publication_year_min: null,
@@ -192,7 +190,6 @@ export default defineComponent({
                         last_inventoried_at: new Date().toISOString(),
                         // Record fields (from search results JOIN)
                         title: item.title,
-                        genre: item.genre,
                         level: item.level,
                         target_audience: item.target_audience,
                         language: item.language,
@@ -228,10 +225,6 @@ export default defineComponent({
         /**
          * Computed: Parse vocabulary lists from settings
          */
-        const genreOptions = computed(() => {
-            return settings.value?.catalog_genres?.split(',').map(s => s.trim()).filter(Boolean) || [];
-        });
-
         const levelOptions = computed(() => {
             return settings.value?.catalog_levels?.split(',').map(s => s.trim()).filter(Boolean) || [];
         });
@@ -256,7 +249,6 @@ export default defineComponent({
             selectedItemIds,
             selectedCount,
             rotationFilterActive,
-            genreOptions,
             levelOptions,
             mediumTypeOptions,
             languageOptions,
@@ -376,22 +368,6 @@ export default defineComponent({
                         <option value="youth">{{ t('bibliographic.audience_youth') }}</option>
                         <option value="adult">{{ t('bibliographic.audience_adult') }}</option>
                     </select>
-                </div>
-
-                <!-- Genre -->
-                <div class="mb-3">
-                    <label class="form-label">{{ t('inventory.search.genre') }}</label>
-                    <input
-                        v-model="filters.genre"
-                        type="text"
-                        class="form-control form-control-sm"
-                        list="search-genre-suggestions"
-                        :placeholder="t('inventory.search.all')"
-                    />
-                    <datalist id="search-genre-suggestions">
-                        <option value="__none__">{{ t('inventory.search.not_defined') }}</option>
-                        <option v-for="option in genreOptions" :key="option" :value="option">{{ option }}</option>
-                    </datalist>
                 </div>
 
                 <!-- Level -->

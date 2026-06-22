@@ -1,20 +1,21 @@
 """SystemSettings model - stores configurable system parameters (singleton table)."""
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, CheckConstraint
+
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import validates
 
 from src.bcd_api.core.database import Base
 from src.shared.constants import (
-    IDFormat,
-    BarcodeType,
-    Language,
+    ACADEMIC_YEAR_START_MONTH,
+    DEFAULT_HOLD_EXPIRATION_DAYS,
+    DEFAULT_LOAN_DURATION_DAYS,
     DEFAULT_LOAN_LIMIT,
     DEFAULT_LOAN_LIMIT_TEACHER,
-    DEFAULT_LOAN_DURATION_DAYS,
     DEFAULT_RENEWAL_LIMIT,
-    DEFAULT_HOLD_EXPIRATION_DAYS,
-    ACADEMIC_YEAR_START_MONTH,
+    BarcodeType,
+    IDFormat,
+    Language,
 )
 
 
@@ -64,7 +65,6 @@ class SystemSettings(Base):
 
     # Catalog vocabulary lists (CSV strings)
     catalog_medium_types = Column(Text, nullable=True, default="Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre")
-    catalog_genres = Column(Text, nullable=True, default="Album, Roman, Conte, Poésie, Théâtre, Bande dessinée, Manga, Documentaire, Autre")
     catalog_languages = Column(Text, nullable=True, default="fr, en, es, de, ar")
     catalog_levels = Column(Text, nullable=True, default="CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, Lycée, Adulte")
 
@@ -74,8 +74,8 @@ class SystemSettings(Base):
     # Shelf locations (JSON array of {label, color|null})
     catalog_shelf_locations = Column(Text, nullable=True, default='[{"label":"Romans","color":"#c0392b"},{"label":"Albums","color":"#e67e22"},{"label":"Bandes dessinées","color":"#2980b9"},{"label":"Documentaires","color":"#27ae60"},{"label":"Périodiques","color":"#16a085"},{"label":"Contes","color":"#f39c12"},{"label":"Poésie","color":"#8e44ad"}]')
 
-    # Call number rules (JSON array of {medium_type|null, genre|null, pattern})
-    catalog_call_number_rules = Column(Text, nullable=True, default='[{"medium_type":"Périodique","genre":null,"pattern":""},{"medium_type":null,"genre":"Album","pattern":"A {AUT1}"},{"medium_type":null,"genre":"Roman","pattern":"R {AUT3}"},{"medium_type":null,"genre":"Conte","pattern":"C {AUT1}"},{"medium_type":null,"genre":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"genre":"Théâtre","pattern":"T {AUT1}"},{"medium_type":null,"genre":"Bande dessinée","pattern":"BD {AUT1}"},{"medium_type":null,"genre":"Manga","pattern":"M {AUT1}"},{"medium_type":null,"genre":"Documentaire","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"genre":null,"pattern":"{AUT3}"}]')
+    # Call number rules (JSON array of {medium_type|null, shelf_location|null, pattern})
+    catalog_call_number_rules = Column(Text, nullable=True, default='[{"medium_type":"Périodique","shelf_location":null,"pattern":""},{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {AUT1}"},{"medium_type":null,"shelf_location":"Documentaires","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]')
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

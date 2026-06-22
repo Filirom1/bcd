@@ -7,16 +7,23 @@ Business logic for managing holds/reservations (librarian-mediated).
 import logging
 from datetime import datetime, timedelta
 from typing import List, Optional
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_
 
-from ..models.hold import Hold
-from ..models.borrower import Borrower
+from sqlalchemy import and_
+from sqlalchemy.orm import Session, joinedload
+
+from src.shared.constants import DEFAULT_HOLD_EXPIRATION_DAYS
+
+from ..core.exceptions import (
+    ConflictError,
+    HoldLimitExceededException,
+    NotFoundError,
+    ValidationError,
+)
 from ..models.bibliographic_record import BiblographicRecord
+from ..models.borrower import Borrower
+from ..models.hold import Hold
 from ..models.item import Item
 from ..models.system_settings import SystemSettings
-from ..core.exceptions import NotFoundError, ValidationError, ConflictError, HoldLimitExceededException
-from src.shared.constants import DEFAULT_HOLD_EXPIRATION_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +75,7 @@ def create_hold(
         Item.bibliographic_record_id == bibliographic_record_id
     ).count()
     if item_count == 0:
-        raise ValidationError(f"Bibliographic record has no items to reserve")
+        raise ValidationError("Bibliographic record has no items to reserve")
 
     # Check if borrower already has a hold for this record
     existing_hold = db.query(Hold).filter(

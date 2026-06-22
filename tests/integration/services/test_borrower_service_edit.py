@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import (
     DuplicateError,
-    NotFoundError,
 )
 from src.bcd_api.services import borrower_service
 from src.shared.constants import BorrowerRole

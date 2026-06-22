@@ -68,7 +68,6 @@
 		"title": "Search",
 		"placeholder": "Search for a book...",
 		"filter_type": "Type:",
-		"filter_genre": "Genre:",
 		"filter_audience": "Audience:",
 		"audience_all": "All",
 		"audience_child": "Child",

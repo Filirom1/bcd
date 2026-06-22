@@ -7,7 +7,6 @@ Validates that JSON files are valid and contain required keys.
 import json
 from pathlib import Path
 
-
 # Path to locales directory
 LOCALES_DIR = Path(__file__).parent.parent.parent / "src" / "bcd_web_vue" / "locales"
 

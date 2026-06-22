@@ -30,10 +30,6 @@ export default defineComponent({
             type: String,
             default: ''
         },
-        recordGenre: {
-            type: String,
-            default: ''
-        },
         recordDeweyNumber: {
             type: String,
             default: null
@@ -96,12 +92,12 @@ export default defineComponent({
             return cleanLastName.slice(0, 3);
         }
 
-        // Suggest a shelf location based on medium type or genre matching the available options
-        function suggestShelfLocation(mediumType, genre, locations) {
+        // Suggest a shelf location based on medium type matching the available options
+        function suggestShelfLocation(mediumType, locations) {
             if (!locations || !locations.length) return '';
             
             const norm = (s) => s ? s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/s$/, '').trim() : '';
-            const query = norm(genre) || norm(mediumType);
+            const query = norm(mediumType);
             
             const found = locations.find(l => norm(l.label) === query);
             return found ? found.label : '';
@@ -121,14 +117,14 @@ export default defineComponent({
             const aut3 = computeAut3(props.recordAuthors);
             const dewey = props.recordDeweyNumber ? props.recordDeweyNumber.trim() : '';
             const mediumType = props.recordMediumType ? props.recordMediumType.trim() : '';
-            const genre = props.recordGenre ? props.recordGenre.trim() : '';
+            const currentShelf = shelfLocation.value ? shelfLocation.value.trim() : '';
 
             // Find first matching rule
             const matchedRule = rules.find(rule => {
                 if (rule.medium_type && rule.medium_type.trim().toLowerCase() !== mediumType.toLowerCase()) {
                     return false;
                 }
-                if (rule.genre && rule.genre.trim().toLowerCase() !== genre.toLowerCase()) {
+                if (rule.shelf_location && rule.shelf_location.trim().toLowerCase() !== currentShelf.toLowerCase()) {
                     return false;
                 }
                 return true;
@@ -152,12 +148,12 @@ export default defineComponent({
         });
 
         const suggestedShelfLocation = computed(() => {
-            return suggestShelfLocation(props.recordMediumType, props.recordGenre, shelfLocationOptions.value);
+            return suggestShelfLocation(props.recordMediumType, shelfLocationOptions.value);
         });
 
-        // Pre-fill call number only when it is still empty
-        watch(suggestedCallNumber, (val) => {
-            if (val && !callNumber.value.trim()) {
+        // Update call number when suggestedCallNumber changes
+        watch(suggestedCallNumber, (val, oldVal) => {
+            if (val && (!callNumber.value.trim() || callNumber.value === oldVal)) {
                 callNumber.value = val;
             }
         }, { immediate: true });

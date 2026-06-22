@@ -5,7 +5,9 @@ Provides request/response models for bulk borrower and catalog operations.
 """
 
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
+
 from src.shared.constants import BindingType
 
 
@@ -70,10 +72,6 @@ class BulkEditRecordsRequest(BaseModel):
         ...,
         min_length=1,
         description="List of bibliographic record IDs to update"
-    )
-    genre: Optional[str] = Field(
-        None,
-        description="Genre to set (null = no change)"
     )
     level: Optional[str] = Field(
         None,

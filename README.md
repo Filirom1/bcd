@@ -79,7 +79,7 @@ Reserve a book for a borrower from the catalog record's **Holds** tab — search
 
 ![Catalog](docs/screenshots/03-catalog.png)
 
-Search by title, author, ISBN, or barcode. Filter by availability (available / on loan / reserved), category, genre, language, or medium type. Each result shows a color-coded status badge and available-copy count.
+Search by title, author, ISBN, or barcode. Filter by availability (available / on loan / reserved), category, language, or medium type. Each result shows a color-coded status badge and available-copy count.
 
 Click any record to open the detail view with three tabs:
 - **Items** — all physical copies, their status, and current borrower
@@ -97,7 +97,7 @@ Click any record to open the detail view with three tabs:
 Three-step workflow:
 
 1. **ISBN / ISSN lookup** — scan or type the ISBN (books) or ISSN (magazines / journals); details are fetched automatically from the French National Library (BNF). Skip this step for items without an identifier.
-2. **Review metadata** — edit title, author, publisher, category, genre, language, audience, and other fields.
+2. **Review metadata** — edit title, author, publisher, category, language, audience, and other fields.
 3. **Create items** — scan each physical copy's barcode to register it. Multiple copies can be added in one session.
 
 **Bulk import**: upload a Dublin Core CSV file to import hundreds of books at once. BiblioPuce exports are also supported (automatic format detection).
@@ -148,9 +148,9 @@ The Inventory page supports physical collection checks (récolement) and weeding
 
 - **Scan tab** — scan item barcodes one by one to mark them as physically verified; the scanner retains focus for rapid successive scans
 - **File import tab** — import a plain-text file of barcodes (one per line) from a handheld scanner
-- **Search tab** — find items using advanced filters (status, condition, never inventoried, low circulation, medium type, audience, genre, language, publication year) and add results to the working table
+- **Search tab** — find items using advanced filters (status, condition, never inventoried, low circulation, medium type, audience, language, publication year) and add results to the working table
 
-The **working table** persists in the browser. From it you can bulk-edit items (status, condition, location, medium type, genre, level, audience), bulk-delete items and orphan records, and export an inventory report to CSV.
+The **working table** persists in the browser. From it you can bulk-edit items (status, condition, location, medium type, level, audience), bulk-delete items and orphan records, and export an inventory report to CSV.
 
 [→ Detailed help](docs/help/en/inventory.md)
 
@@ -178,7 +178,7 @@ The **working table** persists in the browser. From it you can bulk-edit items (
 - **Never Inventoried** — items never physically verified (potentially missing)
 - **Duplicate Low Demand** — titles with 3+ copies and low average circulation
 
-Each item receives a CREW score (0-7+) based on age in collection, physical condition, publication year, and circulation history. Color-coded badges (green=keep, orange=review, red=weed) help prioritize decisions. Advanced filters let you narrow results by category, genre, level, audience, and medium type.
+Each item receives a CREW score (0-7+) based on age in collection, physical condition, publication year, and circulation history. Color-coded badges (green=keep, orange=review, red=weed) help prioritize decisions. Advanced filters let you narrow results by category, level, audience, and medium type.
 
 ![CREW Weeding](docs/screenshots/09-reports-never-borrowed.png)
 

@@ -5,23 +5,22 @@ All functions in this module operate on items and bibliographic records
 for physical inventory tracking and bulk operations.
 """
 
-import logging
-import json
-from datetime import datetime, timezone, date
-from typing import Optional
-from io import StringIO
 import csv
+import logging
+from datetime import date, datetime, timezone
+from io import StringIO
+from typing import Optional
 
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from ..core.exceptions import NotFoundError, ItemNotFoundException, ValidationError
-from ..models.item import Item
+from ...shared.constants import ItemStatus
+from ..core.exceptions import ItemNotFoundException
 from ..models.bibliographic_record import BiblographicRecord
 from ..models.circulation import CirculationTransaction
 from ..models.hold import Hold
+from ..models.item import Item
 from ..models.system_settings import SystemSettings
-from ...shared.constants import ItemStatus
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +136,6 @@ def search_items(
     acquired_after: Optional[date] = None,
     medium_type: Optional[str] = None,
     target_audience: Optional[str] = None,
-    genre: Optional[str] = None,
     level: Optional[str] = None,
     language: Optional[str] = None,
     publication_year_min: Optional[int] = None,
@@ -162,7 +160,6 @@ def search_items(
         acquired_after: Items acquired after or on this date
         medium_type: Bibliographic medium type
         target_audience: child, youth, adult
-        genre: Partial match on genre
         level: Partial match on reading level
         publication_year_min: Min publication year
         publication_year_max: Max publication year
@@ -183,7 +180,6 @@ def search_items(
         Item,
         BiblographicRecord.title,
         BiblographicRecord.authors,
-        BiblographicRecord.genre,
         BiblographicRecord.level,
         BiblographicRecord.target_audience,
         BiblographicRecord.language,
@@ -287,11 +283,6 @@ def search_items(
         query = query.filter(BiblographicRecord.target_audience.is_(None))
     elif target_audience:
         query = query.filter(BiblographicRecord.target_audience == target_audience)
-    if genre == "__none__":
-        query = query.filter(BiblographicRecord.genre.is_(None))
-    elif genre:
-        genre_safe = _escape_like_pattern(genre)
-        query = query.filter(BiblographicRecord.genre.ilike(f'%{genre_safe}%', escape='\\'))
     if level == "__none__":
         query = query.filter(BiblographicRecord.level.is_(None))
     elif level:
@@ -333,13 +324,12 @@ def search_items(
         item = result[0]  # Item object
         title = result[1]  # title from BiblographicRecord
         authors = result[2]  # authors JSON string from BiblographicRecord
-        genre = result[3]  # genre from BiblographicRecord
-        level = result[4]  # level from BiblographicRecord
-        target_audience = result[5]  # target_audience from BiblographicRecord
-        language = result[6]  # language from BiblographicRecord
-        medium_type = result[7]  # medium_type from BiblographicRecord
-        publication_year = result[8]  # publication_year from BiblographicRecord
-        circulation_count = result[9]  # all-time loan count (always present)
+        level = result[3]  # level from BiblographicRecord
+        target_audience = result[4]  # target_audience from BiblographicRecord
+        language = result[5]  # language from BiblographicRecord
+        medium_type = result[6]  # medium_type from BiblographicRecord
+        publication_year = result[7]  # publication_year from BiblographicRecord
+        circulation_count = result[8]  # all-time loan count (always present)
 
         # Parse authors JSON
         try:
@@ -369,7 +359,6 @@ def search_items(
             "title": title,
             "authors": authors_list,
             "call_number": item.call_number,
-            "genre": genre,
             "level": level,
             "target_audience": target_audience,
             "language": language,
@@ -381,8 +370,8 @@ def search_items(
         }
 
         # Add period_loan_count if rotation filter was active
-        if period_loan_count_column is not None and len(result) > 10:
-            item_dict["period_loan_count"] = result[10]  # period_loan_count from subquery
+        if period_loan_count_column is not None and len(result) > 9:
+            item_dict["period_loan_count"] = result[9]  # period_loan_count from subquery
 
         items.append(item_dict)
 
@@ -416,7 +405,7 @@ def bulk_update_items(
         db: Database session
         item_ids: List of item barcodes to update
         item_updates: Optional dict with item field updates (status, condition, loanable, shelf_location)
-        record_updates: Optional dict with record field updates (genre, level, target_audience, language, medium_type)
+        record_updates: Optional dict with record field updates (level, target_audience, language, medium_type)
 
     Returns:
         dict with:
@@ -557,8 +546,6 @@ def get_items_csv(db: Session, item_ids: list[str]) -> str:
     Returns:
         str: CSV string with 9 columns
     """
-    from io import StringIO
-    import csv
 
     # Fetch items with joined bibliographic_record
     items = (

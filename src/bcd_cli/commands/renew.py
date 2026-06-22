@@ -4,18 +4,20 @@ Renew command
 Interactive renewal workflow.
 """
 
+from typing import Optional
+
 import click
-from typing import List, Optional
+
 from ..client import get_client
 from ..utils.display import (
+    confirm,
     console,
-    print_header,
     print_borrower_info,
-    print_renewal_summary,
     print_current_loans_table,
     print_error,
+    print_header,
+    print_renewal_summary,
     print_warning,
-    confirm,
 )
 from ..utils.scanner import read_barcode_input, read_selection_from_list
 

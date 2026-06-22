@@ -8,16 +8,17 @@ The authentication is enabled only if both AUTH_USERNAME and AUTH_PASSWORD are s
 in the configuration (.env file). Use AUTH_SCHEME to choose between "basic" or "digest".
 """
 
+import base64
+import fnmatch
 import hashlib
 import secrets
 import time
-import base64
-import fnmatch
-from typing import Optional, Dict
+from typing import Dict, Optional
+
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
-from src.bcd_api.core.config import settings
 
+from src.bcd_api.core.config import settings
 
 # Realm for HTTP Digest Auth
 REALM = "BCD Library System"

@@ -3,11 +3,11 @@
 Tests automatic column detection and mapping for French CSV exports.
 """
 
-import pytest
 import csv
 import sys
 from pathlib import Path
-import unicodedata
+
+import pytest
 
 # Add scripts directory to path for importing conversion script
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "convert"))
@@ -92,7 +92,10 @@ class TestFrenchCSVConversion:
     def test_accent_insensitive_matching(self, tmp_path):
         """Test that column matching handles accents (éditeur → editeur)."""
         try:
-            from french_csv_to_dublin_core import convert_french_csv_to_dublin_core, normalize_column_name
+            from french_csv_to_dublin_core import (
+                convert_french_csv_to_dublin_core,
+                normalize_column_name,
+            )
         except ImportError:
             pytest.skip("french_csv_to_dublin_core.py not yet implemented")
 

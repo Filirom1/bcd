@@ -4,12 +4,13 @@ Unit Tests for Backup Service
 Tests all backup service functions with various scenarios.
 """
 
-import pytest
 import sqlite3
 import tempfile
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.bcd_api.services import backup_service
 from src.bcd_api.services.backup_service import BackupMetadata
@@ -308,9 +309,9 @@ class TestCleanupOldBackups:
 
     def test_cleanup_old_backups(self, temp_backup_dir, temp_db):
         """Test cleanup deletes old backups"""
+        import os
         import shutil
         import time
-        import os
 
         # Create old backup (modify timestamp)
         old_backup = temp_backup_dir / "old.db"
@@ -335,9 +336,9 @@ class TestCleanupOldBackups:
 
     def test_cleanup_custom_retention(self, temp_backup_dir, temp_db):
         """Test cleanup with custom retention period"""
+        import os
         import shutil
         import time
-        import os
 
         backup = temp_backup_dir / "backup.db"
         shutil.copy2(temp_db, backup)

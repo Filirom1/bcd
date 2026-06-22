@@ -1,14 +1,13 @@
 """Unit tests for Dublin Core import service"""
 
-import pytest
 from datetime import date
-from unittest.mock import MagicMock
-from src.bcd_api.services.dublin_core_import import (
-    import_dublin_core_csv,
-    _map_dc_type_to_medium_type,
-)
+
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.item import Item
+from src.bcd_api.services.dublin_core_import import (
+    _map_dc_type_to_medium_type,
+    import_dublin_core_csv,
+)
 
 
 class TestImportDublinCoreCSV:

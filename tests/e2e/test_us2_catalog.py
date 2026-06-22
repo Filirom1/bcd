@@ -18,9 +18,9 @@ Test Quality:
 - Clear AAA pattern (Arrange-Act-Assert)
 """
 
-import pytest
 from datetime import date, timedelta
-from playwright.sync_api import expect
+
+import pytest
 
 
 class TestUS2CatalogSearch:

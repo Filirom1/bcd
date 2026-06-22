@@ -10,8 +10,9 @@ The service is mocked here to keep tests fast, deterministic, and free of
 database-isolation issues.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from src.bcd_api.main import app

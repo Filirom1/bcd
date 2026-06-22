@@ -54,7 +54,6 @@ import io
 import re
 import sys
 
-
 DC_COLUMNS = [
     'dc.identifier',
     'dc.title',
@@ -222,7 +221,7 @@ def convert_file(input_file: str, output_file: str) -> bool:
             f.write(csv_content)
 
         dc_rows = list(csv.DictReader(io.StringIO(csv_content)))
-        print(f'Conversion successful!')
+        print('Conversion successful!')
         print(f'  Input:  {input_file}')
         print(f'  Output: {output_file} (UTF-8 with BOM)')
         print(f'  Records converted: {len(dc_rows)}')

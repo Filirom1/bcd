@@ -4,12 +4,12 @@ CLI Tests for Admin Backup Commands
 Tests the Click-based CLI backup commands.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from click.testing import CliRunner
-from unittest.mock import patch, MagicMock
-import json
 
-from src.bcd_cli.commands.admin import admin, create_backup, list_backups, restore_backup
+from src.bcd_cli.commands.admin import admin
 
 
 @pytest.fixture

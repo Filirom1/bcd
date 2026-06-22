@@ -5,21 +5,20 @@ Tests complete workflows including database transactions, business logic,
 and data validation according to User Story 1 acceptance scenarios.
 """
 
-import pytest
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
-from src.bcd_api.services import circulation_service
+import pytest
+
 from src.bcd_api.core.exceptions import (
-    NotFoundException,
-    ValidationError,
-    ConflictError,
     BorrowerBlockedException,
-    BorrowerHasOverdueItemsException,
+    ConflictError,
     ItemNotLoanableException,
     ItemNotOnLoanException,
-    LoanLimitExceededException
+    LoanLimitExceededException,
+    NotFoundException,
 )
 from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.services import circulation_service
 
 
 class TestCheckoutScenarios:
@@ -554,11 +553,11 @@ class TestReturnWithHold:
         When: The item is returned
         Then: The return response includes hold_ready info with borrower details
         """
-        from src.bcd_api.services import hold_service
+        from src.bcd_api.models.bibliographic_record import BiblographicRecord
         from src.bcd_api.models.borrower import Borrower
         from src.bcd_api.models.class_model import Class
-        from src.bcd_api.models.bibliographic_record import BiblographicRecord
         from src.bcd_api.models.item import Item
+        from src.bcd_api.services import hold_service
 
         # Create class
         class_obj = Class(name="CE2-A")
@@ -679,13 +678,14 @@ class TestReturnWithHold:
         """
         Test that hold expiration date uses the system settings value.
         """
-        from src.bcd_api.services import hold_service
+        from datetime import date, timedelta
+
+        from src.bcd_api.models.bibliographic_record import BiblographicRecord
         from src.bcd_api.models.borrower import Borrower
         from src.bcd_api.models.class_model import Class
-        from src.bcd_api.models.bibliographic_record import BiblographicRecord
         from src.bcd_api.models.item import Item
         from src.bcd_api.models.system_settings import SystemSettings
-        from datetime import date, timedelta
+        from src.bcd_api.services import hold_service
 
         # Update system settings to use 7 days for hold expiration instead of default 3
         settings = db_session.query(SystemSettings).filter(SystemSettings.id == 1).first()
@@ -796,9 +796,10 @@ class TestReturnItemsIncludesShelfLocation:
     def test_return_items_shelf_location_none_when_not_set(
         self, db_session, test_borrower_student
     ):
+        import json
+
         from src.bcd_api.models.bibliographic_record import BiblographicRecord
         from src.bcd_api.models.item import Item
-        import json
 
         # Arrange: item without shelf_location
         record = BiblographicRecord(title="Sans emplacement", authors=json.dumps(["A"]), medium_type="Livre")

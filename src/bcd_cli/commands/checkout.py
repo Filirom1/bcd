@@ -4,20 +4,21 @@ Checkout command
 Interactive and direct checkout workflows.
 """
 
-import click
 from typing import List, Optional
+
+import click
+
 from ..client import get_client
 from ..utils.display import (
+    confirm,
     console,
-    print_header,
     print_borrower_info,
-    print_item_added,
     print_checkout_summary,
     print_error,
+    print_header,
     print_warning,
-    confirm,
 )
-from ..utils.scanner import read_barcode_input, read_multiple_barcodes
+from ..utils.scanner import read_barcode_input
 
 
 @click.command(name="checkout")

@@ -5,12 +5,13 @@ Business logic for managing system settings.
 """
 
 import json
-from typing import Dict, Any
-from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Any, Dict
 
-from ..models.system_settings import SystemSettings
+from sqlalchemy.orm import Session
+
 from ..core.exceptions import NotFoundError
+from ..models.system_settings import SystemSettings
 
 DEFAULT_SHELF_LOCATIONS = json.dumps([
     {"label": "Romans",           "color": "#c0392b"},
@@ -22,7 +23,7 @@ DEFAULT_SHELF_LOCATIONS = json.dumps([
     {"label": "Poésie",           "color": "#8e44ad"},
 ])
 
-DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":"Périodique","genre":null,"pattern":""},{"medium_type":null,"genre":"Album","pattern":"A {AUT1}"},{"medium_type":null,"genre":"Roman","pattern":"R {AUT3}"},{"medium_type":null,"genre":"Conte","pattern":"C {AUT1}"},{"medium_type":null,"genre":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"genre":"Théâtre","pattern":"T {AUT1}"},{"medium_type":null,"genre":"Bande dessinée","pattern":"BD {AUT1}"},{"medium_type":null,"genre":"Manga","pattern":"M {AUT1}"},{"medium_type":null,"genre":"Documentaire","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"genre":null,"pattern":"{AUT3}"}]'
+DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":"Périodique","shelf_location":null,"pattern":""},{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {AUT1}"},{"medium_type":null,"shelf_location":"Documentaires","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]'
 
 
 def initialize_default_settings(db: Session) -> SystemSettings:
@@ -90,7 +91,7 @@ def get_settings(db: Session) -> SystemSettings:
     settings = db.query(SystemSettings).first()
     if not settings:
         raise NotFoundError("SystemSettings", "default")
-    
+
     # Backfill default rules if they are missing
     if settings.catalog_call_number_rules is None:
         settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
@@ -142,7 +143,6 @@ def update_settings(
         "id_length_min",
         "id_length_max",
         "catalog_medium_types",
-        "catalog_genres",
         "catalog_languages",
         "catalog_levels",
         "inventory_search_result_limit",
@@ -193,7 +193,6 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.id_length_min = 1
     settings.id_length_max = 10
     settings.catalog_medium_types = "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
-    settings.catalog_genres = "Album, Roman, Conte, Poésie, Théâtre, Bande dessinée, Manga, Documentaire, Autre"
     settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
 
     db.commit()

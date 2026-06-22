@@ -37,7 +37,7 @@ L'élève voit ses livres en cours et accède à toutes les fonctions :
 | Bouton | Ce que ça fait |
 |---|---|
 | 📖 EMPRUNTER UN LIVRE | Scanner le code-barres d'un livre pour l'emprunter |
-| 🔍 CHERCHER UN LIVRE | Rechercher par titre, auteur ou genre |
+| 🔍 CHERCHER UN LIVRE | Rechercher par titre ou auteur |
 | 📌 MES RÉSERVATIONS | Consulter et annuler ses réservations |
 | ✅ RENDRE PAR SCAN | Rendre un livre en scannant son code-barres |
 

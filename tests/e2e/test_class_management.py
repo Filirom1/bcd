@@ -24,7 +24,6 @@ This provides comprehensive test coverage once the UI is ready.
 import pytest
 from playwright.sync_api import expect
 
-
 pytestmark = pytest.mark.xfail(reason="Class management UI may not be fully implemented yet", strict=False)
 
 
@@ -294,8 +293,8 @@ class TestClassDeletion:
         Assert: Students exist but class_id is NULL, class is deleted
         """
         # Arrange
-        from src.bcd_api.models.class_model import Class
         from src.bcd_api.models.borrower import Borrower
+        from src.bcd_api.models.class_model import Class
 
         test_class = Class(name="CLASS-TO-DELETE", grade_level="CP", academic_year="2024-2025")
         db_session.add(test_class)

@@ -7,14 +7,14 @@ Tests cover CRUD operations, delete with unassignment, and student_count denorma
 import pytest
 from sqlalchemy import func
 
-from src.bcd_api.services import class_service, borrower_service
 from src.bcd_api.core.exceptions import (
     ClassNotFoundException,
-    NotFoundException,
     DuplicateError,
+    NotFoundException,
 )
-from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.borrower import Borrower
+from src.bcd_api.models.class_model import Class
+from src.bcd_api.services import borrower_service, class_service
 
 
 class TestClassCRUDOperations:

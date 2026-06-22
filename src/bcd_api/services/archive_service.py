@@ -5,13 +5,13 @@ Business logic for archiving old circulation transactions to prevent database bl
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any, List
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from ..models.circulation import CirculationTransaction
-from ..core.exceptions import NotFoundError
 
 logger = logging.getLogger(__name__)
 

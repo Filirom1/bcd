@@ -1,6 +1,7 @@
 """Collections API endpoints for peer discovery."""
 
 from fastapi import APIRouter
+
 from ...core.mdns import get_peers
 
 router = APIRouter(prefix="/collections", tags=["collections"])

@@ -2,11 +2,12 @@
 
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, CheckConstraint
+
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from src.bcd_api.core.database import Base
-from src.shared.constants import TargetAudience, BindingType
+from src.shared.constants import BindingType, TargetAudience
 
 
 class BiblographicRecord(Base):
@@ -40,7 +41,6 @@ class BiblographicRecord(Base):
     binding_type = Column(String(20), nullable=True)
 
     # Classification and categorization
-    genre = Column(String(100), nullable=True, index=True)
     level = Column(String(50), nullable=True)
     medium_type = Column(String(50), nullable=False, index=True)
     target_audience = Column(String(20), nullable=True, index=True)

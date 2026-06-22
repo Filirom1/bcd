@@ -22,7 +22,7 @@ import FilterChips from './FilterChips.js';
 import TauxRotationPanel from './TauxRotationPanel.js';
 import PubYearPanel from './PubYearPanel.js';
 
-const PANEL_IDS = ['medium_type', 'genre', 'taux_rotation', 'pub_year'];
+const PANEL_IDS = ['medium_type', 'taux_rotation', 'pub_year'];
 const HIDDEN_PANELS_KEY = 'bcd_most_borrowed_hidden_panels';
 
 export default defineComponent({
@@ -65,7 +65,6 @@ export default defineComponent({
         };
         const PANEL_LABELS = computed(() => ({
             medium_type:    t('reports.mostBorrowed.bySupport'),
-            genre:          t('reports.mostBorrowed.byGenre'),
             target_audience:t('reports.mostBorrowed.byAudience'),
             taux_rotation:  t('reports.tauxRotation.label'),
             pub_year:       t('reports.pubYear.label'),
@@ -121,7 +120,6 @@ export default defineComponent({
         // ── Breakdowns ─────────────────────────────────────────────────────────
         const BREAKDOWN_COLORS = ['#4D99F2', '#1abc9c', '#e67e22', '#9b59b6', '#F2BF33', '#2ecc71', '#adb5bd'];
         const mediumTypeBreakdown = computed(() => buildBreakdown(methodBase.value, 'medium_type'));
-        const genreBreakdown      = computed(() => buildBreakdown(methodBase.value, 'genre'));
         const audienceBreakdown   = computed(() => buildBreakdown(methodBase.value, 'target_audience'));
         // Items for breakdown histograms: filtered by all except the key itself
         const tauxHistogramItems  = computed(() => applyFilters(methodBase.value, 'taux_rotation'));
@@ -207,7 +205,7 @@ export default defineComponent({
             period, periodOptions,
             crossFilters, hasActiveFilters, activeChips,
             toggleBreakdown, clearFilter, clearAllFilters,
-            BREAKDOWN_COLORS, mediumTypeBreakdown, genreBreakdown, audienceBreakdown, tauxHistogramItems,
+            BREAKDOWN_COLORS, mediumTypeBreakdown, audienceBreakdown, tauxHistogramItems,
             loading, allData, paginatedData, processedData, totalItems, totalPages,
             currentPage, pageSize, sortColumn, sortDirection,
             handleSort, goToPage, setPageSize,
@@ -310,16 +308,6 @@ export default defineComponent({
                 @toggle="toggleBreakdown('medium_type', $event)"
             />
         </div>
-        <div class="col-6 col-md-4" v-if="isPanelVisible('genre')">
-            <breakdown-panel
-                :title="t('reports.mostBorrowed.byGenre')"
-                :subtitle="t('reports.mostBorrowed.clickToFilter')"
-                :rows="genreBreakdown"
-                :active-value="crossFilters.genre"
-                :colors="BREAKDOWN_COLORS"
-                @toggle="toggleBreakdown('genre', $event)"
-            />
-        </div>
         <div class="col-6 col-md-4" v-if="isPanelVisible('taux_rotation') && tauxHistogramItems.length">
             <taux-rotation-panel
                 :items="tauxHistogramItems"
@@ -388,7 +376,6 @@ export default defineComponent({
                                 </a>
                                 <div class="text-muted small">
                                     <span v-if="item.author || item.publisher">{{ item.author || item.publisher }}</span>
-                                    <span v-if="item.genre" class="ms-2 badge bg-light text-secondary border" style="font-size:10px;">{{ item.genre }}</span>
                                     <span v-if="item.medium_type" class="ms-1 badge bg-light text-secondary border" style="font-size:10px;">{{ item.medium_type }}</span>
                                 </div>
                             </td>

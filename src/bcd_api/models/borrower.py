@@ -1,7 +1,8 @@
 """Borrower model - represents library users (students, teachers, staff)."""
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, ForeignKey, CheckConstraint
+
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from src.bcd_api.core.database import Base

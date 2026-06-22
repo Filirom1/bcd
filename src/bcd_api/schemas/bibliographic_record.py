@@ -29,7 +29,6 @@ class BiblographicRecordBase(BaseModel):
     language: Optional[str] = Field(None, max_length=10, description="ISO 639 language code")
     country_code: Optional[str] = Field(None, max_length=5, description="Country code")
     binding_type: Optional[BindingType] = Field(None, description="Binding type")
-    genre: Optional[str] = Field(None, max_length=100, description="Genre")
     level: Optional[str] = Field(None, max_length=50, description="Reading level")
     medium_type: str = Field(
         default="Livre",
@@ -87,7 +86,6 @@ class BiblographicRecordCreate(BiblographicRecordBase):
                 "publication_year": 2004,
                 "language": "fr",
                 "medium_type": "Livre",
-                "genre": "Album",
                 "target_audience": "child",
             }
         }
@@ -130,7 +128,6 @@ class BiblographicRecordUpdate(BaseModel):
     language: Optional[str] = Field(None, max_length=10)
     country_code: Optional[str] = Field(None, max_length=5)
     binding_type: Optional[BindingType] = None
-    genre: Optional[str] = Field(None, max_length=100)
     level: Optional[str] = Field(None, max_length=50)
     medium_type: Optional[str] = Field(None, max_length=50)
     target_audience: Optional[TargetAudience] = None

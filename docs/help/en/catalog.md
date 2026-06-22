@@ -50,7 +50,6 @@ Check the records to update, then click **Bulk edit**. You can update:
 | Field | Description |
 |-------|-------------|
 | **Medium type** | Physical format (e.g., Book, Comic, Magazine). Values configured in Settings. |
-| **Genre** | Literary sub-category (e.g., Fantasy, Mystery). Values configured in Settings. |
 | **Audience** | Child / Youth / Adult. |
 | **Language** | Language of the book (e.g., French, English). Values configured in Settings. |
 
@@ -89,22 +88,22 @@ The import file is a spreadsheet you prepare in **Excel** or **LibreOffice Calc*
 
 ### Harmonizing catalog data
 
-The catalog can also be used to **correct and standardize field values** across a set of records in a few clicks — for medium types, genres, or languages.
+The catalog can also be used to **correct and standardize field values** across a set of records in a few clicks — for medium types or languages.
 
-**Example: unify genre variants**
+**Example: unify reading level variants**
 
-You have records with `mystery`, `Mystery`, `Crime fiction` and want everything set to `Mystery`:
+You have records with `year 1`, `Year 1`, `Yr 1` and want everything set to `Year 1`:
 
-1. In the **Genre** field of the advanced filters, type `mystery`
+1. In the **Reading level** field of the advanced filters, type `year 1`
 2. Set the page size to **500** (at the bottom of the list) to see all results at once
 3. Check the top checkbox to **select all**
-4. Admin menu → **Bulk edit** → set `Genre = Mystery`
+4. Admin menu → **Bulk edit** → set `Reading level = Year 1`
 5. Confirm — all selected records are corrected in one operation
 
 > **Tip:** Always review the search results before selecting all. Refine the filters if needed to target only the records you want to change.
 
 **Other common uses:**
-- Set audience for a genre: filter Genre = `Picture book` → set Audience = `Child`
+- Set audience for a medium: filter Medium type = `Magazine` → set Audience = `Youth`
 - Fix language on an imported batch: filter Language = empty → set `French`
 
 > **Known limitation:** Bulk edit replaces the entire value of a field. It cannot replace a substring (e.g., turning `"crime mystery novel"` into `"Mystery"` while keeping other values). In that case, work in two steps: filter on the exact value, then bulk edit.

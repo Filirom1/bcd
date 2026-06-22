@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
-
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)

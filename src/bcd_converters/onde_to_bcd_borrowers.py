@@ -44,7 +44,6 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
-
 # Column name variations for flexible matching
 COLUMN_VARIATIONS = {
     'last_name': ['Nom', 'Nom de l\'élève', 'NOM', 'nom'],
@@ -218,7 +217,7 @@ def convert_onde_to_bcd(
                 'active': 'true',  # Default to active
                 'email': '',  # ONDE typically doesn't include email
                 'phone': '',  # ONDE typically doesn't include phone
-                'notes': f'Imported from ONDE' if not ine else ''
+                'notes': 'Imported from ONDE' if not ine else ''
             }
 
             bcd_rows.append(bcd_row)
@@ -231,7 +230,7 @@ def convert_onde_to_bcd(
             writer.writerows(bcd_rows)
 
     # Print summary
-    print(f"Conversion complete!")
+    print("Conversion complete!")
     print(f"   Input file:  {input_path}")
     print(f"   Output file: {output_path}")
     print(f"   Total rows processed: {total_rows}")

@@ -71,10 +71,10 @@ Trouvez des exemplaires avec des filtres avancés pour identifier les candidats 
 
 **Filtres de notice :**
 - Type de support, public cible
-- Genre, niveau de lecture, langue
+- Niveau de lecture, langue
 - Plage d'années de publication
 
-> **Astuce :** Pour les champs texte (emplacement, type de support, genre, niveau, langue), saisissez `__none__` pour filtrer les exemplaires dont ce champ n'est pas renseigné.
+> **Astuce :** Pour les champs texte (emplacement, type de support, niveau, langue), saisissez `__none__` pour filtrer les exemplaires dont ce champ n'est pas renseigné.
 
 **Résultats :**
 - Limités à 200 exemplaires (affinez les filtres si nécessaire)
@@ -98,7 +98,7 @@ Modifiez plusieurs exemplaires et leurs notices en une fois :
 1. Sélectionnez des exemplaires dans la table de travail
 2. Cliquez sur le menu admin (⋮) → "Modification groupée"
 3. Modifiez les champs d'exemplaire (statut, état, empruntable, emplacement)
-4. Modifiez les champs de notice (type de support, genre, niveau, public cible)
+4. Modifiez les champs de notice (type de support, niveau, public cible)
 5. Laissez les champs "— inchangé —" pour conserver les valeurs existantes
 6. Sélectionnez "— Vider —" dans un champ pour effacer sa valeur actuelle
 7. Confirmez l'opération

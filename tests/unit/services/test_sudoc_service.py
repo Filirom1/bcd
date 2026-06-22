@@ -1,20 +1,20 @@
 """Unit tests for SUDOC SRU API service."""
 
-import pytest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 import httpx
+import pytest
 
 from src.bcd_api.services.sudoc_service import (
+    ISSN_PATTERN,
+    _parse_pica_record,
+    _parse_year,
+    _pica_title,
+    configure,
     search_by_isbn,
     search_by_issn,
     search_by_title_author,
-    _pica_title,
-    _parse_year,
-    _parse_pica_record,
-    configure,
-    ISSN_PATTERN,
 )
-
 
 # ---------------------------------------------------------------------------
 # Minimal Pica+ XML helpers

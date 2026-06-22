@@ -4,12 +4,13 @@ Item commands
 Commands for viewing item status and circulation history.
 """
 
+
 import click
-from typing import Optional
+from rich.panel import Panel
+from rich.table import Table
+
 from ..client import get_client
 from ..utils.display import console, print_error
-from rich.table import Table
-from rich.panel import Panel
 
 
 @click.group(name="item")

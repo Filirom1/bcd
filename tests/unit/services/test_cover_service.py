@@ -3,27 +3,25 @@
 All HTTP calls are mocked. No real network requests are made.
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
+
 import httpx
+import pytest
 
 from src.bcd_api.services import cover_service
 from src.bcd_api.services.cover_service import (
+    _both_forms,
+    _fetch,
     _isbn10_to_isbn13,
     _isbn13_to_isbn10,
-    _both_forms,
     _normalize,
-    _fetch,
     _try_amazon,
-    _try_openlibrary,
-    _try_google_api,
     _try_geobib,
-    download_cover,
+    _try_google_api,
+    _try_openlibrary,
     configure,
-    _MIN_BYTES,
+    download_cover,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

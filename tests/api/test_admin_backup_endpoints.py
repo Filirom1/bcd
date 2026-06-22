@@ -4,12 +4,13 @@ Integration Tests for Admin Backup API Endpoints
 Tests the backup/restore API endpoints with FastAPI TestClient.
 """
 
-import pytest
-import tempfile
 import sqlite3
+import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
 
 from src.bcd_api.main import app
 
@@ -369,7 +370,6 @@ class TestVerifyBackupEndpoint:
     def test_verify_error(self, client, mock_backup_service):
         """Test error handling in verification"""
         # Create a temporary backup file to avoid 404
-        import tempfile
         from pathlib import Path
 
         backups_dir = Path("./backups")

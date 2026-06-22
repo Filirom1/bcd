@@ -89,7 +89,6 @@ export default defineComponent({
         // Filters (default to borrowed/on loan)
         const filters = reactive({
             availability: 'borrowed',
-            genre: '',
             level: '',
             language: '',
             medium_type: '',
@@ -148,9 +147,6 @@ export default defineComponent({
             if (route.query.availability) {
                 filters.availability = route.query.availability;
             }
-            if (route.query.genre) {
-                filters.genre = route.query.genre;
-            }
             if (route.query.level) {
                 filters.level = route.query.level;
             }
@@ -184,9 +180,6 @@ export default defineComponent({
             // Persist filters to URL (skip 'borrowed' as it's the default)
             if (filters.availability && filters.availability !== 'borrowed') {
                 query.availability = filters.availability;
-            }
-            if (filters.genre) {
-                query.genre = filters.genre;
             }
             if (filters.level) {
                 query.level = filters.level;
@@ -232,9 +225,6 @@ export default defineComponent({
                 }
 
                 // Add advanced filters
-                if (filters.genre) {
-                    params.genre = filters.genre;
-                }
                 if (filters.level) {
                     params.level = filters.level;
                 }

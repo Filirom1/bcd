@@ -87,7 +87,7 @@ def _pica_title(raw: str) -> str:
     rest = raw[idx + 1:].lstrip()  # Remove leading whitespace from rest
 
     # Add space between prefix and rest if prefix doesn't end with punctuation
-    if prefix and not prefix[-1] in ("'", "-", " "):
+    if prefix and prefix[-1] not in ("'", "-", " "):
         return f"{prefix} {rest}"
     return prefix + rest
 

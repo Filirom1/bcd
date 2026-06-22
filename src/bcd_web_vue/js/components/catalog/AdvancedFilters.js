@@ -1,6 +1,6 @@
 /**
  * AdvancedFilters Component
- * Availability, genre, language, medium type filters for catalog
+ * Availability, language, medium type filters for catalog
  */
 
 const { defineComponent, ref, computed, onMounted } = Vue;
@@ -61,7 +61,6 @@ export default defineComponent({
             props.shelfLocations.map(loc => ({ value: loc, label: loc }))
         );
 
-        const genreSuggestions = computed(() => parseCsv(props.settings?.catalog_genres));
         const levelSuggestions = computed(() => parseCsv(props.settings?.catalog_levels));
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));
         const mediumTypeSuggestions = computed(() => parseCsv(props.settings?.catalog_medium_types));
@@ -75,7 +74,6 @@ export default defineComponent({
         const clearFilters = () => {
             const clearedFilters = {
                 availability: 'all',
-                genre: '',
                 level: '',
                 language: '',
                 medium_type: '',
@@ -93,7 +91,6 @@ export default defineComponent({
             showAdvanced,
             availabilityOptions,
             locationOptions,
-            genreSuggestions,
             levelSuggestions,
             languageSuggestions,
             mediumTypeSuggestions,
@@ -184,22 +181,6 @@ export default defineComponent({
                         />
                         <datalist id="filter-medium-type-suggestions">
                             <option v-for="s in mediumTypeSuggestions" :key="s" :value="s" />
-                        </datalist>
-                    </div>
-
-                    <!-- Genre -->
-                    <div class="col-md-3">
-                        <label class="form-label">{{ t('catalog.genre') || 'Genre' }}</label>
-                        <input
-                            type="text"
-                            class="form-control"
-                            :value="filters.genre"
-                            list="filter-genre-suggestions"
-                            @input="updateFilter('genre', $event.target.value)"
-                            :placeholder="t('catalog.genre') || 'Genre'"
-                        />
-                        <datalist id="filter-genre-suggestions">
-                            <option v-for="s in genreSuggestions" :key="s" :value="s" />
                         </datalist>
                     </div>
 

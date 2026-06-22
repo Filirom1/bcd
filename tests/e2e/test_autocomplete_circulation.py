@@ -4,8 +4,9 @@ E2E Tests for Autocomplete in Circulation Pages
 Tests autocomplete functionality for borrower and item search on checkout/return pages.
 """
 
-import pytest
 import time
+
+import pytest
 
 
 @pytest.mark.e2e

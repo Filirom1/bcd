@@ -5,6 +5,7 @@ Handles borrower management operations.
 """
 
 from playwright.sync_api import Page
+
 from tests.e2e.page_objects.base_page import BasePage
 
 

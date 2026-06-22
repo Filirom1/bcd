@@ -1,6 +1,7 @@
 """Pydantic schemas for Class model."""
 
 from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.bcd_api.schemas.common import TimestampMixin

@@ -8,22 +8,23 @@ This module tests bulk operations on borrowers:
 All operations must be atomic (all succeed or all fail with rollback).
 """
 
-import pytest
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 
-from src.bcd_api.services import borrower_service
+import pytest
+
 from src.bcd_api.core.exceptions import (
-    ClassNotFoundException,
-    BorrowerNotFoundException,
     BorrowerHasActiveLoansException,
+    BorrowerNotFoundException,
+    ClassNotFoundException,
     ValidationError,
 )
-from src.bcd_api.models.borrower import Borrower
-from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
-from src.bcd_api.models.item import Item
+from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.models.class_model import Class
+from src.bcd_api.models.item import Item
+from src.bcd_api.services import borrower_service
 
 
 class TestBulkChangeClass:

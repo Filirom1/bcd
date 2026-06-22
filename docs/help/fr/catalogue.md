@@ -50,7 +50,6 @@ Coche les notices à modifier, puis clique sur **Édition groupée**. Tu peux me
 | Champ | Description |
 |-------|-------------|
 | **Type de support** | Format physique (ex : Livre, BD, Revue). Valeurs configurées dans les paramètres. |
-| **Genre** | Sous-catégorie littéraire (ex : Fantastique, Policier). Valeurs configurées dans les paramètres. |
 | **Public cible** | Enfant / Jeune / Adulte. |
 | **Langue** | Langue du livre (ex : Français, Anglais). Valeurs configurées dans les paramètres. |
 
@@ -89,22 +88,22 @@ Le fichier d'import est un tableau que tu prépares avec **Excel** ou **LibreOff
 
 ### Harmoniser les données du catalogue
 
-Le catalogue peut aussi servir à **corriger et uniformiser les valeurs** d'un ensemble de notices en quelques clics — pour les types de support, genres ou langues.
+Le catalogue peut aussi servir à **corriger et uniformiser les valeurs** d'un ensemble de notices en quelques clics — pour les types de support ou langues.
 
-**Exemple : unifier les variantes de genre**
+**Exemple : unifier les variantes de niveau de lecture**
 
-Vous avez des notices avec `policier`, `Policier`, `Roman policier` et vous voulez tout mettre à `Policier` :
+Vous avez des notices avec `cp`, `C.P.`, `Cp` et vous voulez tout mettre à `CP` :
 
-1. Dans le champ **Genre** des filtres avancés, tapez `policier`
+1. Dans le champ **Niveau de lecture** des filtres avancés, tapez `cp`
 2. Passez la taille de page à **500** (en bas de la liste) pour voir tous les résultats d'un coup
 3. Cochez la case en haut pour **tout sélectionner**
-4. Menu Admin → **Édition groupée** → renseignez `Genre = Policier`
+4. Menu Admin → **Édition groupée** → renseignez `Niveau de lecture = CP`
 5. Confirmez — toutes les notices sélectionnées sont corrigées en une fois
 
 > **Conseil :** Vérifiez toujours les résultats de la recherche avant de tout sélectionner. Affinez les filtres si nécessaire pour n'attraper que les notices concernées.
 
 **Autres cas d'usage courants :**
-- Uniformiser le public cible d'un genre : filtre Genre = `Album` → mettre Public cible = `Enfant`
+- Uniformiser le public cible : filtre Type de support = `Revue` → mettre Public cible = `Jeune`
 - Corriger la langue d'un lot d'importation : filtre Langue = vide → mettre `Français`
 
 > **Limite connue :** L'édition groupée remplace la valeur entière d'un champ. Elle ne permet pas de remplacer une sous-chaîne (ex : transformer `"roman policier"` en `"Policier"` en conservant le reste). Dans ce cas, procédez en deux étapes : filtrer sur la valeur exacte, puis éditer.

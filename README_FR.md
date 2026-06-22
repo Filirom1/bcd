@@ -75,7 +75,7 @@ Réserver un livre pour un emprunteur depuis l'onglet **Réservations** de la fi
 
 ![Catalogue](docs/screenshots/03-catalog.png)
 
-Rechercher par titre, auteur, ISBN ou code-barres. Filtrer par disponibilité (disponible / en prêt / réservé), catégorie, genre, langue ou type de support. Chaque résultat affiche un badge de statut coloré et le nombre d'exemplaires disponibles.
+Rechercher par titre, auteur, ISBN ou code-barres. Filtrer par disponibilité (disponible / en prêt / réservé), catégorie, langue ou type de support. Chaque résultat affiche un badge de statut coloré et le nombre d'exemplaires disponibles.
 
 Cliquer sur une notice pour ouvrir la fiche détaillée avec trois onglets :
 - **Exemplaires** — tous les exemplaires physiques, leur statut et l'emprunteur actuel
@@ -93,7 +93,7 @@ Cliquer sur une notice pour ouvrir la fiche détaillée avec trois onglets :
 Flux de travail en trois étapes :
 
 1. **Recherche ISBN / ISSN** — scanner ou saisir l'ISBN (livres) ou l'ISSN (revues / périodiques) ; les informations sont récupérées automatiquement depuis la Bibliothèque nationale de France (BNF). Cette étape peut être ignorée pour les livres sans identifiant.
-2. **Vérifier les métadonnées** — modifier titre, auteur, éditeur, catégorie, genre, langue, public cible et autres champs.
+2. **Vérifier les métadonnées** — modifier titre, auteur, éditeur, catégorie, langue, public cible et autres champs.
 3. **Créer les exemplaires** — scanner le code-barres de chaque exemplaire physique pour l'enregistrer. Plusieurs exemplaires peuvent être ajoutés en une seule session.
 
 **Import en masse** : déposer un fichier CSV Dublin Core pour importer des centaines de livres en une fois. Les exports BiblioPuce sont également pris en charge (détection automatique du format).
@@ -144,9 +144,9 @@ La page Inventaire permet d'effectuer le récolement physique et le désherbage 
 
 - **Onglet Scanner** — scanner les codes-barres un par un pour marquer les exemplaires comme vérifiés ; le scanner garde le focus pour des scans rapides successifs
 - **Onglet Importer un fichier** — importer un fichier texte de codes-barres (un par ligne) depuis une douchette portable
-- **Onglet Rechercher** — trouver des exemplaires avec des filtres avancés (statut, état, jamais inventorié, faible rotation, type de support, public, genre, langue, année de publication) et les ajouter à la table de travail
+- **Onglet Rechercher** — trouver des exemplaires avec des filtres avancés (statut, état, jamais inventorié, faible rotation, type de support, public, langue, année de publication) et les ajouter à la table de travail
 
-La **table de travail** persiste dans le navigateur. On peut y faire une modification groupée (statut, état, emplacement, type de support, genre, niveau, public), supprimer des exemplaires et des notices orphelines, et exporter un rapport d'inventaire en CSV.
+La **table de travail** persiste dans le navigateur. On peut y faire une modification groupée (statut, état, emplacement, type de support, niveau, public), supprimer des exemplaires et des notices orphelines, et exporter un rapport d'inventaire en CSV.
 
 [→ Aide détaillée](docs/help/fr/inventaire.md)
 
@@ -174,7 +174,7 @@ La **table de travail** persiste dans le navigateur. On peut y faire une modific
 - **Jamais inventorié** — exemplaires jamais vérifiés physiquement (potentiellement manquants)
 - **Doublons peu demandés** — titres avec 3+ exemplaires et faible rotation moyenne
 
-Chaque exemplaire reçoit un score CREW (0-7+) basé sur l'âge dans la collection, la condition physique, l'année de publication et l'historique de circulation. Des badges de couleur (vert=conserver, orange=examiner, rouge=désherber) aident à prioriser les décisions. Des filtres avancés permettent d'affiner les résultats par catégorie, genre, niveau, public et type de support.
+Chaque exemplaire reçoit un score CREW (0-7+) basé sur l'âge dans la collection, la condition physique, l'année de publication et l'historique de circulation. Des badges de couleur (vert=conserver, orange=examiner, rouge=désherber) aident à prioriser les décisions. Des filtres avancés permettent d'affiner les résultats par catégorie, niveau, public et type de support.
 
 ![CREW - Désherbage](docs/screenshots/09-reports-never-borrowed.png)
 

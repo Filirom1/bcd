@@ -7,17 +7,20 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from ...core.deps import get_db
-from ...core.exceptions import NotFoundError, NotFoundException, ValidationError, ConflictError, ExportTooLargeException, ExportFailedException
+from ...core.exceptions import (
+    ExportFailedException,
+    ExportTooLargeException,
+)
 from ...schemas.bibliographic_record import (
     BiblographicRecordCreate,
     BiblographicRecordResponse,
 )
-from ...schemas.item import ItemCreate, ItemResponse, ItemWithCurrentLoan, AvailableIDsResponse
 from ...schemas.common import PaginatedResponse
+from ...schemas.item import AvailableIDsResponse, ItemCreate, ItemResponse, ItemWithCurrentLoan
 from ...services import catalog_service
 from ...services.export_service import ExportService
 
@@ -120,7 +123,6 @@ def search_bibliographic_records(
     title: Optional[str] = Query(None, description="Filter by title (partial match)"),
     author: Optional[str] = Query(None, description="Filter by author (partial match)"),
     isbn: Optional[str] = Query(None, description="Filter by ISBN (exact match)"),
-    genre: Optional[str] = Query(None, description="Filter by genre"),
     level: Optional[str] = Query(None, description="Filter by reading level"),
     language: Optional[str] = Query(None, description="Filter by language code (e.g., 'fr', 'en')"),
     target_audience: Optional[str] = Query(
@@ -140,7 +142,7 @@ def search_bibliographic_records(
 
     **Search capabilities:**
     - General search (q): Searches in title and authors
-    - Specific filters: title, author, ISBN, genre, language, audience, medium
+    - Specific filters: title, author, ISBN, language, audience, medium
     - Pagination: limit (max 100) and offset
     - Availability filter: available_only shows only items with available copies
     - Borrowed filter: borrowed_only shows only items with at least one copy borrowed
@@ -156,7 +158,6 @@ def search_bibliographic_records(
         title=title,
         author=author,
         isbn=isbn,
-        genre=genre,
         level=level,
         language=language,
         target_audience=target_audience,
@@ -171,11 +172,12 @@ def search_bibliographic_records(
 
     # Compute availability for each record
     import json
-    from sqlalchemy import func, case
-    from ...models.item import Item
-    from ....shared.constants import ItemStatus
 
+    from sqlalchemy import case, func
+
+    from ....shared.constants import ItemStatus
     from ...models.hold import Hold
+    from ...models.item import Item
 
     record_ids = [r.id for r in records]
 
@@ -255,7 +257,6 @@ def search_bibliographic_records(
             "publication_year": r.publication_year,
             "collection": r.collection,
             "series_number": r.series_number,
-            "genre": r.genre,
             "medium_type": r.medium_type,
             "target_audience": r.target_audience,
             "level": r.level,

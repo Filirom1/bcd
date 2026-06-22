@@ -1,19 +1,20 @@
 """Unit tests for Google Books API service."""
 
-import pytest
-from unittest.mock import patch, Mock
-import httpx
+from unittest.mock import Mock, patch
 
+import httpx
+import pytest
+
+from src.bcd_api.services._catalog_utils import normalize as _normalize
+from src.bcd_api.services._catalog_utils import token_overlap as _token_overlap
 from src.bcd_api.services.google_books_service import (
-    search_by_isbn,
-    search_by_title_author,
-    _parse_year,
     _extract_isbn,
     _parse_volume,
+    _parse_year,
     configure,
+    search_by_isbn,
+    search_by_title_author,
 )
-from src.bcd_api.services._catalog_utils import normalize as _normalize, token_overlap as _token_overlap
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

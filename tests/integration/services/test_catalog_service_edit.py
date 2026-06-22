@@ -7,10 +7,10 @@ Tests update_record and update_item service methods.
 import pytest
 from sqlalchemy.orm import Session
 
-from src.bcd_api.services import catalog_service
 from src.bcd_api.core.exceptions import NotFoundError
 from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
+from src.bcd_api.services import catalog_service
 
 
 class TestUpdateRecord:
@@ -22,7 +22,7 @@ class TestUpdateRecord:
         record_data = BiblographicRecordCreate(
             title="Original Title",
             authors=["Original Author"],
-            genre="Novel",
+            level="CM1",
             language="eng"
         )
         record = catalog_service.create_bibliographic_record(
@@ -34,7 +34,7 @@ class TestUpdateRecord:
         # ACT - Update multiple fields
         update_data = {
             "title": "Updated Title",
-            "genre": "Biography"
+            "level": "CP"
         }
         updated_record = catalog_service.update_record(
             db=db_session,
@@ -44,8 +44,41 @@ class TestUpdateRecord:
 
         # ASSERT - Fields updated correctly
         assert updated_record.title == "Updated Title"
-        assert updated_record.genre == "Biography"
+        assert updated_record.level == "CP"
         assert updated_record.language == "eng"  # Unchanged
+
+    def test_update_record_clear_optional_fields(self, db_session: Session):
+        """Test clearing optional fields by setting them to None."""
+        # ARRANGE - Create test record with populated optional fields
+        record_data = BiblographicRecordCreate(
+            title="Book to Clear",
+            publisher="Original Publisher",
+            level="CM1",
+            dewey_number="123"
+        )
+        record = catalog_service.create_bibliographic_record(
+            db=db_session,
+            record_data=record_data,
+            isbn_lookup=False
+        )
+
+        # ACT - Clear optional fields
+        update_data = {
+            "publisher": None,
+            "level": None,
+            "dewey_number": None
+        }
+        updated_record = catalog_service.update_record(
+            db=db_session,
+            record_id=record.id,
+            update_data=update_data
+        )
+
+        # ASSERT - Fields cleared to None
+        assert updated_record.publisher is None
+        assert updated_record.level is None
+        assert updated_record.dewey_number is None
+        assert updated_record.title == "Book to Clear"  # Unchanged
 
     def test_update_record_list_fields(self, db_session: Session):
         """Test updating list fields (authors, illustrators, keywords)."""
@@ -94,7 +127,6 @@ class TestUpdateRecord:
         record_data = BiblographicRecordCreate(
             title="Original Title",
             authors=["Author"],
-            genre="Novel",
             publisher="Publisher A",
             publication_year=2020
         )
@@ -159,6 +191,43 @@ class TestUpdateItem:
         assert updated_item.shelf_location == "B2"
         assert updated_item.condition == "damaged"
         assert updated_item.item_id == "ITEM1"  # Unchanged
+
+    def test_update_item_clear_optional_fields(self, db_session: Session):
+        """Test clearing optional item fields by setting them to None."""
+        # ARRANGE - Create record and item with optional fields
+        record_data = BiblographicRecordCreate(
+            title="Test Book",
+            authors=["Author"]
+        )
+        record = catalog_service.create_bibliographic_record(
+            db=db_session,
+            record_data=record_data,
+            isbn_lookup=False
+        )
+
+        item_data = ItemCreate(
+            item_id="ITEM1_CLEAR",
+            bibliographic_record_id=record.id,
+            call_number="800.000",
+            shelf_location="A1"
+        )
+        item = catalog_service.create_item(db=db_session, item_data=item_data)
+
+        # ACT - Clear fields
+        update_data = {
+            "call_number": None,
+            "shelf_location": None
+        }
+        updated_item = catalog_service.update_item(
+            db=db_session,
+            item_id=item.item_id,
+            update_data=update_data
+        )
+
+        # ASSERT - Fields cleared
+        assert updated_item.call_number is None
+        assert updated_item.shelf_location is None
+        assert updated_item.item_id == "ITEM1_CLEAR"
 
     def test_update_item_barcode_change(self, db_session: Session):
         """Test changing item barcode (item_id field)."""

@@ -4,18 +4,19 @@ Integration tests for catalog service bulk operations (US5).
 Tests bulk_edit_records and bulk_delete_records service methods.
 """
 
-import pytest
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
-from src.bcd_api.services import catalog_service
-from src.bcd_api.core.exceptions import ValidationError, ItemHasActiveLoanException
+import pytest
+from sqlalchemy.orm import Session
+
+from src.bcd_api.core.exceptions import ItemHasActiveLoanException, ValidationError
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
-from src.bcd_api.models.item import Item
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.models.item import Item
 from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
+from src.bcd_api.services import catalog_service
 
 
 class TestBulkEditRecords:
@@ -29,7 +30,6 @@ class TestBulkEditRecords:
             record_data = BiblographicRecordCreate(
                 title=f"Test Book {i}",
                 authors=[f"Author {i}"],
-                genre="Novel",
                 language="eng"
             )
             record = catalog_service.create_bibliographic_record(
@@ -45,7 +45,6 @@ class TestBulkEditRecords:
         result = catalog_service.bulk_edit_records(
             db=db_session,
             record_ids=record_ids,
-            genre="Biography",
             level="CP",
             language="fr",
             publisher="New Pub",
@@ -64,7 +63,6 @@ class TestBulkEditRecords:
             record = db_session.query(BiblographicRecord).filter(
                 BiblographicRecord.id == record_id
             ).first()
-            assert record.genre == "Biography"
             assert record.level == "CP"
             assert record.language == "fr"
             assert record.publisher == "New Pub"
@@ -77,7 +75,6 @@ class TestBulkEditRecords:
         record_data = BiblographicRecordCreate(
             title="Test Book",
             authors=["Author"],
-            genre="Novel",
             language="eng"
         )
         record = catalog_service.create_bibliographic_record(
@@ -86,17 +83,17 @@ class TestBulkEditRecords:
             isbn_lookup=False
         )
 
-        # ACT - Update genre only (language = null = no change)
+        # ACT - Update level only (language = null = no change)
         catalog_service.bulk_edit_records(
             db=db_session,
             record_ids=[record.id],
-            genre="Biography",
+            level="CM1",
             language=None  # No change
         )
 
-        # ASSERT - Only genre updated
+        # ASSERT - Only level updated
         db_session.refresh(record)
-        assert record.genre == "Biography"  # Updated
+        assert record.level == "CM1"  # Updated
         assert record.language == "eng"  # Unchanged
 
     def test_bulk_edit_records_only_valid_ids(self, db_session: Session):
@@ -117,12 +114,12 @@ class TestBulkEditRecords:
         result = catalog_service.bulk_edit_records(
             db=db_session,
             record_ids=[record1.id, 99999],  # 99999 doesn't exist
-            genre="Updated"
+            level="CM2"
         )
 
         # ASSERT - Only valid record updated
         db_session.refresh(record1)
-        assert record1.genre == "Updated"
+        assert record1.level == "CM2"
         assert result["successful_count"] == 1  # Only 1 record found and updated
 
     def test_bulk_edit_records_no_fields_error(self, db_session: Session):
@@ -143,7 +140,6 @@ class TestBulkEditRecords:
             catalog_service.bulk_edit_records(
                 db=db_session,
                 record_ids=[record.id],
-                genre=None,
                 level=None,
                 target_audience=None,
                 language=None,
@@ -162,7 +158,7 @@ class TestBulkEditRecords:
             catalog_service.bulk_edit_records(
                 db=db_session,
                 record_ids=[],
-                genre="Fiction"
+                level="CM1"
             )
 
         assert "No record IDs provided" in str(exc.value)

@@ -58,7 +58,6 @@ export default defineComponent({
 
         // Filters
         const filters = ref({
-            genre: '',
             level: '',
             target_audience: '',
             medium_type: '',
@@ -71,7 +70,6 @@ export default defineComponent({
             return str.split(',').map(s => s.trim()).filter(Boolean);
         };
 
-        const genreOptions = computed(() => parseCsv(settings.value?.catalog_genres));
         const levelOptions = computed(() => parseCsv(settings.value?.catalog_levels));
         const mediumTypeOptions = computed(() => parseCsv(settings.value?.catalog_medium_types));
 
@@ -248,9 +246,6 @@ export default defineComponent({
                 }
 
                 // Common filters (only add if not empty)
-                if (filters.value.genre && filters.value.genre !== '') {
-                    params.genre = filters.value.genre;
-                }
                 if (filters.value.level && filters.value.level !== '') {
                     params.level = filters.value.level;
                 }
@@ -445,7 +440,6 @@ export default defineComponent({
             crewMethods,
             filters,
             excludePeriodicals,
-            genreOptions,
             levelOptions,
             mediumTypeOptions,
             audienceOptions,
@@ -516,22 +510,6 @@ export default defineComponent({
                             />
                             <datalist id="crew-medium-suggestions">
                                 <option v-for="medium in mediumTypeOptions" :key="medium" :value="medium" />
-                            </datalist>
-                        </div>
-
-                        <!-- Genre -->
-                        <div class="col-md-3">
-                            <label class="form-label small">{{ t('bibliographic.genre') }}</label>
-                            <input
-                                type="text"
-                                class="form-control form-control-sm"
-                                v-model="filters.genre"
-                                list="crew-genre-suggestions"
-                                @input="loadReport"
-                                :placeholder="t('common.all')"
-                            />
-                            <datalist id="crew-genre-suggestions">
-                                <option v-for="genre in genreOptions" :key="genre" :value="genre" />
                             </datalist>
                         </div>
 

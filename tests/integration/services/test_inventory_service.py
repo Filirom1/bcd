@@ -4,15 +4,15 @@ Tests for collection inventory operations (récolement/weeding).
 All tests use AAA pattern: Arrange-Act-Assert.
 """
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
-from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 
-from src.bcd_api.models.item import Item
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
-from src.bcd_api.services import inventory_service
 from src.bcd_api.core.exceptions import ItemNotFoundException
-
+from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.item import Item
+from src.bcd_api.services import inventory_service
 
 # ==================== User Story 1: Barcode Scanning Tests ====================
 

@@ -4,8 +4,8 @@ Scanner input utilities
 Handles barcode scanner input (keyboard wedge mode).
 """
 
-import sys
-from typing import Optional, List
+from typing import List
+
 from .display import console
 
 

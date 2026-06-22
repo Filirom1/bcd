@@ -3,7 +3,6 @@
 Covers ISSN preservation, isbn: prefix for books, and edge cases.
 """
 
-import pytest
 
 from src.bcd_api.services.import_service import _normalize_isbn
 

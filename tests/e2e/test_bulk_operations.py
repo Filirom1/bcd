@@ -25,7 +25,6 @@ This provides comprehensive test coverage once the UI is ready.
 import pytest
 from playwright.sync_api import expect
 
-
 pytestmark = pytest.mark.xfail(reason="Bulk operations UI may not be fully implemented yet", strict=False)
 
 

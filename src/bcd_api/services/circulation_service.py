@@ -11,30 +11,36 @@ This module implements the core circulation operations for the library system:
 import logging
 import math
 from datetime import date, datetime, timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional
+
+from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func
 
 logger = logging.getLogger(__name__)
 
-from ..models.circulation import CirculationTransaction
-from ..models.item import Item
-from ..models.borrower import Borrower
-from ..models.hold import Hold
-from ..models.system_settings import SystemSettings
-from ..models.bibliographic_record import BiblographicRecord
-from ..core.exceptions import (
-    ValidationError, NotFoundException, ConflictError,
-    BorrowerNotFoundException, BorrowerBlockedException, BorrowerHasOverdueItemsException,
-    ItemNotFoundException, ItemAlreadyOnLoanException, LoanLimitExceededException,
-    ItemReservedForOtherBorrowerException
-)
 from ..core.deps import get_settings as _get_system_settings
+from ..core.exceptions import (
+    BorrowerBlockedException,
+    BorrowerNotFoundException,
+    ItemAlreadyOnLoanException,
+    ItemNotFoundException,
+    ItemReservedForOtherBorrowerException,
+    LoanLimitExceededException,
+    NotFoundException,
+)
+from ..models.borrower import Borrower
+from ..models.circulation import CirculationTransaction
+from ..models.hold import Hold
+from ..models.item import Item
 from ..schemas.circulation import (
-    CheckoutResponse, ReturnResponse, RenewResponse,
+    BorrowerHistoryItem,
+    BorrowerHistoryResponse,
+    CheckoutResponse,
+    ItemHistoryItem,
+    ItemHistoryResponse,
     PaginationMeta,
-    BorrowerHistoryItem, BorrowerHistoryResponse,
-    ItemHistoryItem, ItemHistoryResponse,
+    RenewResponse,
+    ReturnResponse,
 )
 from . import hold_service
 

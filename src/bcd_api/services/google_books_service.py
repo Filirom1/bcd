@@ -21,7 +21,7 @@ from typing import Optional
 import httpx
 
 from ...shared.constants import MediumType, TargetAudience
-from ._catalog_utils import normalize as _normalize, token_overlap as _token_overlap
+from ._catalog_utils import token_overlap as _token_overlap
 
 logger = logging.getLogger(__name__)
 

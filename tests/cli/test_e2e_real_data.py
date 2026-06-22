@@ -57,13 +57,14 @@ when called immediately after Dublin Core bulk import. May be related to:
 - Fix needed before: Production deployment if Dublin Core import is primary method
 """
 
-import pytest
+import csv
+import os
 import subprocess
 import time
-import requests
-import os
-import csv
 from pathlib import Path
+
+import pytest
+import requests
 from click.testing import CliRunner
 
 # Import CLI app
@@ -106,6 +107,7 @@ def api_server(test_database):
     # Seed default SystemSettings (required for API to work)
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     from src.bcd_api.models.system_settings import SystemSettings
 
     engine = create_engine(f"sqlite:///{test_db_path.absolute()}")
@@ -157,7 +159,7 @@ def api_server(test_database):
                 # Get error output before terminating
                 stdout, stderr = process.communicate(timeout=1)
                 process.terminate()
-                error_msg = f"API server failed to start after 15 seconds.\n"
+                error_msg = "API server failed to start after 15 seconds.\n"
                 error_msg += f"STDOUT: {stdout.decode() if stdout else 'none'}\n"
                 error_msg += f"STDERR: {stderr.decode() if stderr else 'none'}"
                 raise Exception(error_msg)
@@ -220,7 +222,7 @@ def test_02_transform_catalog_to_dublin_core(runner, sample_data_dir):
         "--format", "dublin-core"
     ])
 
-    print(f"\n--- Transform Catalog Output ---")
+    print("\n--- Transform Catalog Output ---")
     print(result.output)
     print(f"Exit code: {result.exit_code}")
 
@@ -255,7 +257,7 @@ def test_03_import_catalog_dublin_core(runner, sample_data_dir, api_server):
         "--yes"
     ])
 
-    print(f"\n--- Import Catalog Output ---")
+    print("\n--- Import Catalog Output ---")
     print(result.output)
     print(f"Exit code: {result.exit_code}")
 
@@ -341,7 +343,7 @@ def test_05_list_borrowers_via_cli(runner, api_server):
         "--api-url", api_server
     ])
 
-    print(f"\n--- List Borrowers CLI Output ---")
+    print("\n--- List Borrowers CLI Output ---")
     print(result.output)
 
     assert result.exit_code == 0 or "borrower" in result.output.lower()
@@ -355,7 +357,7 @@ def test_06_search_catalog_via_cli(runner, api_server):
         "--api-url", api_server
     ])
 
-    print(f"\n--- Search Catalog CLI Output ---")
+    print("\n--- Search Catalog CLI Output ---")
     print(result.output)
 
     # Should execute (may have results or not)
@@ -408,7 +410,7 @@ def test_07_checkout_item_via_cli(runner, api_server):
         "--api-url", api_server
     ])
 
-    print(f"\n--- Checkout CLI Output ---")
+    print("\n--- Checkout CLI Output ---")
     print(result.output)
     print(f"Exit code: {result.exit_code}")
 
@@ -459,7 +461,7 @@ def test_08_return_item_via_cli(runner, api_server):
         "--api-url", api_server
     ])
 
-    print(f"\n--- Return CLI Output ---")
+    print("\n--- Return CLI Output ---")
     print(result.output)
     print(f"Exit code: {result.exit_code}")
 
@@ -476,7 +478,7 @@ def test_09_overdue_report_via_cli(runner, api_server):
         "--api-url", api_server
     ])
 
-    print(f"\n--- Overdue Report CLI Output ---")
+    print("\n--- Overdue Report CLI Output ---")
     print(result.output)
     print(f"Exit code: {result.exit_code}")
 
@@ -488,12 +490,12 @@ def test_10_final_data_integrity(api_server):
     data = response.json()
     counts = data["counts"]
 
-    print(f"\n=== Final System State ===")
+    print("\n=== Final System State ===")
     print(f"Borrowers: {counts['borrowers']}")
     print(f"Bibliographic Records: {counts['bibliographic_records']}")
     print(f"Items: {counts['items']}")
     print(f"Circulations: {counts['circulations']}")
-    print(f"===========================")
+    print("===========================")
 
     # Verify we have test data
     assert counts["borrowers"] > 0, "No borrowers in system"

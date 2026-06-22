@@ -1,6 +1,7 @@
 """Custom exceptions for BCD library system."""
 
-from typing import Optional, Any
+from typing import Any, Optional
+
 from fastapi import HTTPException, status
 
 

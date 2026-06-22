@@ -39,7 +39,6 @@ export default defineComponent({
         const shelfLocation = ref('');
 
         // Record fields
-        const genre = ref('');
         const level = ref('');
         const targetAudience = ref('unchanged');
         const language = ref('');
@@ -56,7 +55,6 @@ export default defineComponent({
             catch { return []; }
         });
 
-        const genreSuggestions = computed(() => parseCsv(props.settings?.catalog_genres));
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));
         const mediumTypeSuggestions = computed(() => parseCsv(props.settings?.catalog_medium_types));
         const levelSuggestions = computed(() => parseCsv(props.settings?.catalog_levels));
@@ -88,7 +86,6 @@ export default defineComponent({
                    itemStatus.value !== 'unchanged' ||
                    loanable.value !== 'unchanged' ||
                    shelfLocation.value.trim() !== '' ||
-                   genre.value.trim() !== '' ||
                    level.value.trim() !== '' ||
                    targetAudience.value !== 'unchanged' ||
                    language.value.trim() !== '' ||
@@ -127,8 +124,6 @@ export default defineComponent({
             if (shelfVal !== null) payload.item_updates.shelf_location = shelfVal;
 
             // Record updates
-            const genreVal = toPayload(genre.value);
-            if (genreVal !== null) payload.record_updates.genre = genreVal;
             const levelVal = toPayload(level.value);
             if (levelVal !== null) payload.record_updates.level = levelVal;
             if (targetAudience.value !== 'unchanged') {
@@ -156,12 +151,10 @@ export default defineComponent({
             loanable,
             shelfLocation,
             shelfLocationOptions,
-            genre,
             level,
             targetAudience,
             language,
             mediumType,
-            genreSuggestions,
             levelSuggestions,
             languageSuggestions,
             mediumTypeSuggestions,
@@ -241,21 +234,6 @@ export default defineComponent({
                 <!-- Record fields -->
                 <div class="mb-3">
                     <label class="form-label small fw-bold">{{ t('inventory.bulk_edit.record_section') }}</label>
-
-                    <div class="mb-2">
-                        <label class="form-label small">{{ t('bibliographic.genre') }}</label>
-                        <input
-                            type="text"
-                            class="form-control form-control-sm"
-                            v-model="genre"
-                            list="bulk-genre-suggestions"
-                            :placeholder="t('inventory.bulk_edit.unchanged')"
-                        />
-                        <datalist id="bulk-genre-suggestions">
-                            <option value="__clear__">{{ t('inventory.bulk_edit.clear_value') }}</option>
-                            <option v-for="g in genreSuggestions" :key="g" :value="g">{{ g }}</option>
-                        </datalist>
-                    </div>
 
                     <div class="mb-2">
                         <label class="form-label small">{{ t('bibliographic.level') }}</label>

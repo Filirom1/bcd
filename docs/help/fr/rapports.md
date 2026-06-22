@@ -63,7 +63,6 @@ Le taux de rotation est l'indicateur ISO 11620 de performance d'une collection. 
 
 Les panneaux (histogrammes + sliders) permettent de croiser les données :
 - **Par support** : albums, romans, documentaires, BD, etc.
-- **Par genre** : aventure, fantastique, etc.
 - **Par public** : enfant, ado, adulte
 - **Taux de rotation** : slider pour filtrer une plage (ex : afficher seulement les titres avec taux > 8)
 - **Année de publication** : histogramme coloré — rouge (> 20 ans), orange (10–20 ans), bleu (< 10 ans)
@@ -186,7 +185,7 @@ Un seul critère IOUPI suffit à justifier le retrait, indépendamment du score.
 
 **Panneaux de filtre** (toggle ⊟ en haut à droite) :
 - **Distribution des scores CREW** : histogramme par valeur de score (0–5+) avec slider — filtre les exemplaires par plage de score
-- Histogrammes cliquables par support, genre, public, état
+- Histogrammes cliquables par support, public, état
 - Histogramme taux de rotation avec slider min/max
 - Histogrammes d'année de publication et d'acquisition avec sliders
 
@@ -201,7 +200,7 @@ Un seul critère IOUPI suffit à justifier le retrait, indépendamment du score.
 7. **Estampiller** les livres retirés "RETIRÉ" et les écarter physiquement
 8. **Acquisition compensatrice** : pour chaque lot retiré, prévoir des achats dans les segments identifiés comme populaires (rapport "Plus empruntés")
 
-> **Conseil** : le rapport "Plus empruntés" et le rapport CREW fonctionnent en binôme. Le désherbage libère de la place et du budget ; les titres les plus empruntés révèlent les genres en demande. Acheter ciblé dans ces catégories maximise l'usage de la BCD.
+> **Conseil** : le rapport "Plus empruntés" et le rapport CREW fonctionnent en binôme. Le désherbage libère de la place et du budget ; les titres les plus empruntés révèlent les thématiques et supports en demande. Acheter ciblé dans ces catégories maximise l'usage de la BCD.
 
 ---
 

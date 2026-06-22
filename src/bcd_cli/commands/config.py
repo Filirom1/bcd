@@ -4,12 +4,12 @@ Config commands
 Commands for managing CLI configuration.
 """
 
-import click
 import json
 from pathlib import Path
-from typing import Optional
-from ..utils.display import console, print_error
 
+import click
+
+from ..utils.display import console, print_error
 
 # Default config location
 CONFIG_DIR = Path.home() / ".bcd"

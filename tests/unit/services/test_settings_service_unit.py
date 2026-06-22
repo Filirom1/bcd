@@ -2,9 +2,9 @@
 
 import pytest
 
-from src.bcd_api.services import settings_service
 from src.bcd_api.core.exceptions import NotFoundError
 from src.bcd_api.models.system_settings import SystemSettings
+from src.bcd_api.services import settings_service
 
 
 class TestGetSettings:
@@ -121,7 +121,6 @@ class TestResetToDefaults:
             loan_duration_days=30,
             loan_limit_default=5,
             catalog_medium_types="CustomType1, CustomType2",
-            catalog_genres="CustomGenre1, CustomGenre2",
         )
         db_session.add(settings)
         db_session.commit()
@@ -137,7 +136,6 @@ class TestResetToDefaults:
         assert result.loan_limit_teacher == 5
         assert result.renewal_limit == 2
         assert result.catalog_medium_types == "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
-        assert result.catalog_genres == "Album, Roman, Conte, Poésie, Théâtre, Bande dessinée, Manga, Documentaire, Autre"
         assert result.catalog_call_number_rules is not None
 
     def test_reset_persists(self, db_session):

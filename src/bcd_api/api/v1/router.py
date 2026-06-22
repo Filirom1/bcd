@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter
 
-from src.shared.constants import API_PREFIX
 from src.bcd_api.core.config import settings
+from src.shared.constants import API_PREFIX
 
 # Create main API router
 api_router = APIRouter(prefix=API_PREFIX)
@@ -17,7 +17,17 @@ async def health_check():
 
 
 # Include routers
-from src.bcd_api.api.v1 import circulation, catalog, borrowers, classes, holds, reports, admin, collections, inventory
+from src.bcd_api.api.v1 import (
+    admin,
+    borrowers,
+    catalog,
+    circulation,
+    classes,
+    collections,
+    holds,
+    inventory,
+    reports,
+)
 
 api_router.include_router(circulation.router)
 api_router.include_router(catalog.router)

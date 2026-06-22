@@ -67,7 +67,6 @@ When creating or editing a record, here is the role of each field:
 | Field | Role | Required |
 |-------|------|----------|
 | **Medium type** | Physical format of the document (e.g., Book, Comic, Magazine, CD, DVD). | No |
-| **Genre** | Literary sub-category (e.g., Adventure, Mystery, Fantasy). | No |
 | **Target audience** | Child (up to 8 years) / Youth (8–15 years) / Adult. Refines searches and statistics. | No |
 | **Reading level** | Recommended school level (e.g., Year 1, Year 3, Year 5). Free text. | No |
 

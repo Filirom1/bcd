@@ -6,7 +6,6 @@ Convert between different CSV formats (BCD custom -> Dublin Core standard).
 import csv
 import logging
 from io import StringIO
-from typing import Optional
 
 from src.bcd_api.services.import_service import CSVColumns, DublinCoreColumns
 

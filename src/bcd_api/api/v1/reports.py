@@ -5,9 +5,10 @@ REST API for generating library reports and statistics.
 """
 
 import logging
+from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,6 @@ def get_collection_stats(
     crew_method: str = Query("never_borrowed"),
     min_age_years: float = Query(0.0, ge=0),
     exclude_periodicals: bool = Query(True),
-    genre: Optional[str] = Query(None),
     medium_type: Optional[str] = Query(None),
     target_audience: Optional[str] = Query(None),
     condition: Optional[str] = Query(None),
@@ -35,9 +35,9 @@ def get_collection_stats(
     """
     Aggregation stats for the collection report (breakdowns + histograms).
 
-    Returns GROUP BY counts by genre, medium_type, target_audience, condition,
+    Returns GROUP BY counts by medium_type, target_audience, condition,
     and histograms by publication_year and acquisition_year.
-    Cross-filter params (genre, medium_type, etc.) restrict the base dataset;
+    Cross-filter params (medium_type, etc.) restrict the base dataset;
     each breakdown excludes its own filter to show the full distribution.
     """
     return report_service.get_collection_stats(
@@ -45,7 +45,6 @@ def get_collection_stats(
         crew_method=crew_method,
         min_age_years=min_age_years,
         exclude_periodicals=exclude_periodicals,
-        genre=genre,
         medium_type=medium_type,
         target_audience=target_audience,
         condition=condition,
@@ -119,7 +118,6 @@ def get_overdue_summary_by_class(
 @router.get("/never-borrowed")
 def get_never_borrowed_report(
     academic_year: Optional[str] = Query(None, description="Filter by acquisition year"),
-    genre: Optional[str] = Query(None, description="Filter by genre"),
     level: Optional[str] = Query(None, description="Filter by reading level"),
     target_audience: Optional[str] = Query(None, description="Filter by target audience (child/youth/adult)"),
     medium_type: Optional[str] = Query(None, description="Filter by medium type"),
@@ -134,7 +132,6 @@ def get_never_borrowed_report(
     Args:
         academic_year: Optional filter by acquisition year
 
-        genre: Filter by genre
         level: Filter by reading level
         target_audience: Filter by target audience (child/youth/adult)
         medium_type: Filter by medium type
@@ -150,7 +147,6 @@ def get_never_borrowed_report(
     all_items = report_service.get_never_borrowed_items(
         db,
         academic_year=academic_year,
-        genre=genre,
         level=level,
         target_audience=target_audience,
         medium_type=medium_type,
@@ -176,7 +172,6 @@ def get_most_borrowed_report(
     limit: int = Query(default=20, ge=1, le=500, description="Number of items per page"),
     offset: int = Query(default=0, ge=0, description="Number of items to skip"),
     medium_type: Optional[str] = Query(None, description="Filter by medium type"),
-    genre: Optional[str] = Query(None, description="Filter by genre"),
     target_audience: Optional[str] = Query(None, description="Filter by target audience"),
     db: Session = Depends(get_db),
 ):
@@ -195,7 +190,7 @@ def get_most_borrowed_report(
     """
     all_titles = report_service.get_most_borrowed_titles(
         db, period=period, limit=limit, medium_type=medium_type,
-        genre=genre, target_audience=target_audience,
+        target_audience=target_audience,
     )
     total_count = len(all_titles)
 

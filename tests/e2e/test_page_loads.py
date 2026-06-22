@@ -1,7 +1,7 @@
 """
 Simple test to check if borrowers page loads
 """
-from playwright.sync_api import expect, Page
+from playwright.sync_api import Page
 
 
 def test_borrowers_page_loads(page: Page, server_url: str, db_session):
@@ -23,11 +23,11 @@ def test_borrowers_page_loads(page: Page, server_url: str, db_session):
 
     # Check if page title exists
     title = page.locator('h1, h2, h3').first
-    print(f"Looking for page title...")
+    print("Looking for page title...")
 
     # Check if any Vue app element exists
     app_element = page.locator('#app, .borrowers-page, .container').first
-    print(f"Looking for app element...")
+    print("Looking for app element...")
 
     # Print page HTML for debugging
     html = page.content()

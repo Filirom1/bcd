@@ -5,6 +5,7 @@ Provides REST API endpoints for class/grade level management.
 """
 
 from typing import List
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
@@ -15,7 +16,6 @@ from ...schemas.class_schema import (
     ClassUpdate,
 )
 from ...services import class_service
-
 
 router = APIRouter(prefix="/classes", tags=["classes"])
 

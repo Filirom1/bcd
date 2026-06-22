@@ -1,11 +1,11 @@
 """Dependency injection for FastAPI endpoints."""
 
 from typing import Generator
+
 from sqlalchemy.orm import Session
 
 from src.bcd_api.core.database import SessionLocal
 from src.bcd_api.models.system_settings import SystemSettings
-from src.bcd_api.core.exceptions import NotFoundException
 
 
 def get_db() -> Generator[Session, None, None]:

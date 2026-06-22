@@ -1,7 +1,8 @@
 """Common Pydantic schemas used across the application."""
 
 from datetime import datetime
-from typing import Optional, TypeVar, Generic
+from typing import Generic, Optional, TypeVar
+
 from pydantic import BaseModel, ConfigDict
 
 

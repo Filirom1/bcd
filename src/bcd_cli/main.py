@@ -5,10 +5,11 @@ BCD CLI - Main entry point
 Command-line interface for the BCD library management system.
 """
 
-import click
-from pathlib import Path
-import sys
 import os
+import sys
+
+import click
+
 from src.shared.version import __version__
 
 
@@ -59,8 +60,16 @@ def register_commands():
     """Register all command modules."""
     try:
         from .commands import (
-            checkout, return_cmd, renew, catalog, borrower,
-            item, hold, report, admin, config
+            admin,
+            borrower,
+            catalog,
+            checkout,
+            config,
+            hold,
+            item,
+            renew,
+            report,
+            return_cmd,
         )
 
         # Register commands
@@ -75,7 +84,7 @@ def register_commands():
         cli.add_command(admin.admin)
         cli.add_command(config.config)
 
-    except ImportError as e:
+    except ImportError:
         # Commands not yet implemented - graceful degradation
         pass
 

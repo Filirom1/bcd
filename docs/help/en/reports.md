@@ -61,7 +61,6 @@ The turnover rate is the ISO 11620 collection performance indicator. It is calcu
 
 Panels (histograms + range sliders) let you cross-filter the data:
 - **By medium type**: albums, novels, nonfiction, comics, etc.
-- **By genre**: adventure, fantasy, etc.
 - **By audience**: child, youth, adult
 - **Turnover rate**: slider to filter a range (e.g. show only titles with rate > 8)
 - **Publication year**: colour-coded histogram — red (> 20 years), orange (10–20 years), blue (< 10 years)
@@ -185,7 +184,7 @@ A single MUSTIE criterion is sufficient to justify removal, regardless of score.
 
 **Filter panels** (toggle ⊟ top right):
 - **CREW score distribution**: histogram by score value (0–5+) with range slider — filters items by score range
-- Clickable histograms by medium type, genre, audience, condition
+- Clickable histograms by medium type, audience, condition
 - Turnover rate histogram with min/max slider
 - Publication year and acquisition year histograms with sliders
 
@@ -200,7 +199,7 @@ A single MUSTIE criterion is sufficient to justify removal, regardless of score.
 7. **Stamp** removed items "WITHDRAWN" and set them aside physically
 8. **Compensatory acquisition**: for each batch removed, plan purchases in the segments identified as popular (Most Borrowed report)
 
-> **Tip:** The Most Borrowed and CREW reports work as a pair. Weeding frees up space and budget; the most borrowed titles reveal in-demand genres. Targeted purchases in those categories maximise collection usage.
+> **Tip:** The Most Borrowed and CREW reports work as a pair. Weeding frees up space and budget; the most borrowed titles reveal in-demand formats and subjects. Targeted purchases in those categories maximise collection usage.
 
 ---
 

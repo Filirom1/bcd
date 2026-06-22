@@ -1,17 +1,14 @@
 """Integration tests for borrower service."""
 
 import json
-import pytest
 from datetime import datetime, timedelta
 
-from src.bcd_api.services import borrower_service
-from src.bcd_api.core.exceptions import NotFoundError, DuplicateError, ValidationError
-from src.bcd_api.models.borrower import Borrower
-from src.bcd_api.models.class_model import Class
-from src.bcd_api.models.system_settings import SystemSettings
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
-from src.bcd_api.models.item import Item
+from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.models.class_model import Class
+from src.bcd_api.models.item import Item
+from src.bcd_api.services import borrower_service
 
 
 class TestBorrowerCreationIntegration:

@@ -111,13 +111,12 @@ export default defineComponent({
             return props.settings.catalog_medium_types.split(',').map(s => s.trim()).filter(s => s);
         });
 
-        const genresOptions = computed(() => {
-            if (!props.settings.catalog_genres) return [];
-            return props.settings.catalog_genres.split(',').map(s => s.trim()).filter(s => s);
+        const shelfLocationLabels = computed(() => {
+            return shelfLocationsList.value.map(s => s.label).filter(Boolean);
         });
 
         const addCallNumberRule = () => {
-            localRules.value.push({ medium_type: null, genre: null, pattern: '' });
+            localRules.value.push({ medium_type: null, shelf_location: null, pattern: '' });
         };
 
         const removeCallNumberRule = (idx) => {
@@ -153,7 +152,7 @@ export default defineComponent({
             toggleShelfLocationColor,
             localRules,
             mediumTypesOptions,
-            genresOptions,
+            shelfLocationLabels,
             addCallNumberRule,
             removeCallNumberRule,
             moveCallNumberRuleUp,
@@ -459,17 +458,6 @@ export default defineComponent({
                 </div>
 
                 <div class="col-md-6">
-                    <label for="catalog_genres" class="form-label">{{ t('settings.catalog_genres') }}</label>
-                    <textarea
-                        class="form-control"
-                        id="catalog_genres"
-                        v-model="settings.catalog_genres"
-                        rows="3"
-                        :placeholder="t('settings.catalog_genres_placeholder')"
-                    ></textarea>
-                </div>
-
-                <div class="col-md-6">
                     <label for="catalog_languages" class="form-label">{{ t('settings.catalog_languages') }}</label>
                     <textarea
                         class="form-control"
@@ -599,7 +587,7 @@ export default defineComponent({
                                 <tr>
                                     <th style="width: 100px;">Ordre</th>
                                     <th>{{ t('settings.rule_if_medium') }}</th>
-                                    <th>{{ t('settings.rule_and_genre') }}</th>
+                                    <th>{{ t('catalog.shelf_location') }}</th>
                                     <th>{{ t('settings.rule_then_pattern') }}</th>
                                     <th style="width: 50px;"></th>
                                 </tr>
@@ -638,10 +626,10 @@ export default defineComponent({
                                     <td>
                                         <select
                                             class="form-select form-select-sm"
-                                            v-model="rule.genre"
+                                            v-model="rule.shelf_location"
                                         >
                                             <option :value="null">{{ t('settings.all_any') }}</option>
-                                            <option v-for="g in genresOptions" :key="g" :value="g">{{ g }}</option>
+                                            <option v-for="s in shelfLocationLabels" :key="s" :value="s">{{ s }}</option>
                                         </select>
                                     </td>
                                     <td>

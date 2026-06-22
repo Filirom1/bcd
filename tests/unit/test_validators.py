@@ -1,13 +1,12 @@
 """Unit tests for validation utilities."""
 
-import pytest
 from src.shared.validators import (
+    normalize_isbn,
+    validate_borrower_id,
+    validate_id_format,
     validate_isbn,
     validate_isbn10,
     validate_isbn13,
-    normalize_isbn,
-    validate_id_format,
-    validate_borrower_id,
     validate_item_id,
 )
 

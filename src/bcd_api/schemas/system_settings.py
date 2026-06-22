@@ -1,9 +1,10 @@
 """Pydantic schemas for SystemSettings model."""
 
 from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.shared.constants import IDFormat, BarcodeType, Language
+from src.shared.constants import BarcodeType, IDFormat, Language
 
 
 class SystemSettingsResponse(BaseModel):

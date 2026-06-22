@@ -66,7 +66,6 @@ export default {
       series_number: '',
 
       // Classification
-      genre: '',
       level: '',
       medium_type: '',
       target_audience: '',
@@ -92,9 +91,6 @@ export default {
       if (!str) return [];
       return str.split(',').map(s => s.trim()).filter(Boolean);
     };
-
-    // Suggestions from settings (user can type any value)
-    const genreSuggestions = computed(() => parseCsv(props.settings?.catalog_genres));
 
     const audienceOptions = [
       { value: 'child', label: t('bibliographic.audience_child') },
@@ -132,7 +128,6 @@ export default {
           publication_year: newRecord.publication_year || null,
           collection: newRecord.collection || '',
           series_number: newRecord.series_number || '',
-          genre: newRecord.genre || '',
           level: newRecord.level || '',
           medium_type: newRecord.medium_type || '',
           target_audience: newRecord.target_audience || '',
@@ -439,7 +434,6 @@ export default {
       formData,
       errors,
       isSubmitting,
-      genreSuggestions,
       audienceOptions,
       languageOptions,
       mediumTypeSuggestions,
@@ -686,28 +680,6 @@ export default {
                     </option>
                   </datalist>
                   <small class="form-text text-muted">{{ t('bibliographic.medium_type_hint') || 'Type any value or select from suggestions' }}</small>
-                </div>
-
-                <!-- Genre -->
-                <div class="col-md-6 mb-3">
-                  <label for="genre" class="form-label">
-                    {{ t('bibliographic.genre') }}
-                  </label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="genre"
-                    data-testid="input-genre"
-                    v-model="formData.genre"
-                    list="genre-suggestions"
-                    :placeholder="t('bibliographic.placeholder_genre')"
-                  />
-                  <datalist id="genre-suggestions">
-                    <option v-for="genre in genreSuggestions" :key="genre" :value="genre">
-                      {{ genre }}
-                    </option>
-                  </datalist>
-                  <small class="form-text text-muted">{{ t('bibliographic.genre_hint') || 'Type any value or select from suggestions' }}</small>
                 </div>
               </div>
 

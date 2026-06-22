@@ -6,18 +6,16 @@ Business logic for bibliographic records and items management.
 import json
 import logging
 import re
+from datetime import date, datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
-from datetime import datetime, date
-
-import httpx
+from typing import Any, Dict, Optional
 
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload
 
-from ...shared.constants import MediumType, IDFormat
+from ...shared.constants import IDFormat, MediumType
 from ..core.config import settings
-from ..core.exceptions import NotFoundError, ValidationError, ConflictError, NotFoundException
+from ..core.exceptions import ConflictError, NotFoundError, NotFoundException, ValidationError
 from ..models.bibliographic_record import BiblographicRecord
 from ..models.hold import Hold
 from ..models.item import Item
@@ -26,9 +24,13 @@ from ..schemas.item import ItemCreate
 from .bnf_service import search_by_isbn
 from .google_books_service import search_by_isbn as google_search_by_isbn
 from .sudoc_service import (
-    search_by_isbn as sudoc_search_by_isbn,
-    search_by_issn as sudoc_search_by_issn,
     ISSN_PATTERN as SUDOC_ISSN_PATTERN,
+)
+from .sudoc_service import (
+    search_by_isbn as sudoc_search_by_isbn,
+)
+from .sudoc_service import (
+    search_by_issn as sudoc_search_by_issn,
 )
 
 logger = logging.getLogger(__name__)
@@ -305,7 +307,6 @@ def search_bibliographic_records(
     title: Optional[str] = None,
     author: Optional[str] = None,
     isbn: Optional[str] = None,
-    genre: Optional[str] = None,
     level: Optional[str] = None,
     language: Optional[str] = None,
     target_audience: Optional[str] = None,
@@ -326,7 +327,6 @@ def search_bibliographic_records(
         title: Title filter (case-insensitive partial match)
         author: Author filter (case-insensitive partial match)
         isbn: ISBN filter (exact match)
-        genre: Genre filter
         level: Reading level filter
         language: Language filter (ISO 639 code)
         target_audience: Target audience filter
@@ -386,9 +386,6 @@ def search_bibliographic_records(
 
     if isbn:
         query = query.filter(BiblographicRecord.isbn == isbn)
-
-    if genre:
-        query = query.filter(BiblographicRecord.genre == genre)
 
     if level:
         query = query.filter(BiblographicRecord.level == level)
@@ -557,8 +554,9 @@ def get_items_for_bibliographic_record(
     Returns:
         List of item dictionaries with current_loan info
     """
-    from ..models.circulation import CirculationTransaction
     from datetime import date
+
+    from ..models.circulation import CirculationTransaction
 
     items = (
         db.query(Item)
@@ -612,7 +610,6 @@ def get_items_for_bibliographic_record(
 def bulk_edit_records(
     db: Session,
     record_ids: list[int],
-    genre: Optional[str] = None,
     level: Optional[str] = None,
     target_audience: Optional[str] = None,
     language: Optional[str] = None,
@@ -630,7 +627,6 @@ def bulk_edit_records(
     Args:
         db: Database session
         record_ids: List of record IDs to update
-        genre: Genre to set (null = no change)
         level: Reading level to set (null = no change)
         target_audience: Target audience to set (null = no change)
         language: Language to set (null = no change)
@@ -650,8 +646,6 @@ def bulk_edit_records(
 
     # Build update dict (only include non-None values)
     updates = {}
-    if genre is not None:
-        updates["genre"] = genre
     if level is not None:
         updates["level"] = level
     if target_audience is not None:
@@ -677,7 +671,7 @@ def bulk_edit_records(
         ).all()
 
         if not records:
-            raise NotFoundError(f"No records found with provided IDs")
+            raise NotFoundError("No records found with provided IDs")
 
         updated_count = 0
         for record in records:
@@ -731,7 +725,7 @@ def bulk_delete_records(db: Session, record_ids: list[int]) -> dict:
             .all()
 
         if not records:
-            raise NotFoundError(f"No records found with provided IDs")
+            raise NotFoundError("No records found with provided IDs")
 
         deleted_count = len(records)
 
@@ -742,8 +736,8 @@ def bulk_delete_records(db: Session, record_ids: list[int]) -> dict:
 
         # Single batch query to check for ANY active loan
         if all_item_ids:
-            from src.bcd_api.models.circulation import CirculationTransaction
             from src.bcd_api.models.borrower import Borrower
+            from src.bcd_api.models.circulation import CirculationTransaction
 
             item_with_loan = db.query(
                 Item.item_id,
@@ -823,7 +817,7 @@ def update_record(db: Session, record_id: int, update_data: dict) -> Biblographi
 
     # Update fields
     for field, value in update_data.items():
-        if value is not None and hasattr(record, field):
+        if hasattr(record, field):
             setattr(record, field, value)
 
     db.commit()
@@ -869,7 +863,7 @@ def update_item(db: Session, item_id: str, update_data: dict) -> Item:
 
     # Update fields
     for field, value in update_data.items():
-        if value is not None and hasattr(item, field):
+        if hasattr(item, field):
             setattr(item, field, value)
 
     db.commit()
@@ -891,8 +885,9 @@ def _check_item_has_active_loan(db: Session, item: Item) -> Optional[dict]:
     Returns:
         Dict with borrower_name and due_date if on loan, None otherwise
     """
-    from src.bcd_api.models.circulation import CirculationTransaction
     from sqlalchemy import and_
+
+    from src.bcd_api.models.circulation import CirculationTransaction
 
     active_loan = db.query(CirculationTransaction).filter(
         and_(

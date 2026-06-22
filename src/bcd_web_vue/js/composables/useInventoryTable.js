@@ -92,7 +92,6 @@ export function useInventoryTable() {
                         last_inventoried_at: item.last_inventoried_at,
                         // Record fields
                         title: item.title,
-                        genre: item.genre,
                         level: item.level,
                         target_audience: item.target_audience,
                         language: item.language,

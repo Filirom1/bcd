@@ -77,7 +77,6 @@ export default defineComponent({
                 { key: 'series_number', label: t('bibliographic.series_number') },
                 // Classification
                 { key: 'medium_type', label: t('bibliographic.medium_type') },
-                { key: 'genre', label: t('bibliographic.genre') },
                 { key: 'target_audience', label: t('bibliographic.target_audience') },
                 { key: 'level', label: t('bibliographic.level') },
                 { key: 'language', label: t('catalog.language') },
@@ -261,7 +260,6 @@ export default defineComponent({
 
                     <!-- Classification -->
                     <td v-if="isColumnVisible('medium_type')">{{ record.medium_type }}</td>
-                    <td v-if="isColumnVisible('genre')">{{ record.genre }}</td>
                     <td v-if="isColumnVisible('target_audience')">
                         <span v-if="record.target_audience" class="badge bg-info">{{ getAudienceLabel(record.target_audience) }}</span>
                     </td>
@@ -360,13 +358,10 @@ export default defineComponent({
                                 <span v-if="record.call_number && getCoteBadge(record.call_number)" :style="getCoteBadge(record.call_number)">{{ record.call_number }}</span>
                             </div>
 
-                            <!-- Badges: Medium Type, Genre, Audience, Language -->
+                            <!-- Badges: Medium Type, Audience, Language -->
                             <div class="mb-3 d-flex flex-wrap gap-1">
                                 <span v-if="record.medium_type" class="badge bg-secondary">
                                     {{ record.medium_type }}
-                                </span>
-                                <span v-if="record.genre" class="badge bg-light text-dark">
-                                    {{ record.genre }}
                                 </span>
                                 <span v-if="record.target_audience" class="badge bg-info">
                                     {{ getAudienceLabel(record.target_audience) }}

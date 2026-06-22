@@ -43,7 +43,6 @@ Ces listes définissent les valeurs suggérées dans les formulaires de cataloga
 | Paramètre | Rôle |
 |-----------|------|
 | **Types de support** | Liste des types de support (ex : Livre, BD, Revue, CD, DVD). |
-| **Genres** | Liste des genres disponibles (ex : Aventure, Policier, Fantastique, Historique). |
 | **Langues** | Liste des codes de langue ISO 639-1, séparés par des virgules (ex : `fr, en, es, de, ar`). Ces codes sont utilisés dans les formulaires de catalogage et les filtres d'inventaire. |
 
 > **Conseil :** Ces listes sont utilisées comme suggestions — tu peux toujours saisir une valeur qui n'y figure pas.
@@ -54,7 +53,7 @@ Les listes de classification jouent le rôle de référentiel pour tout le fonds
 
 - **Définir les listes une bonne fois pour toutes** avant de commencer à cataloguer
 - **Choisir des noms simples et sans majuscule superflue** pour éviter les doublons (ex : `Policier` et non `Roman policier`)
-- **Vérifier régulièrement** via Catalogue → filtres avancés → genre/type de support vide ou inhabituel → corriger en édition groupée
+- **Vérifier régulièrement** via Catalogue → filtres avancés → type de support vide ou inhabituel → corriger en édition groupée
 - Si une valeur est saisie hors liste par erreur, elle restera dans la base jusqu'à ce qu'on la corrige manuellement via l'édition groupée dans le catalogue
 
 ## Étape 4 — Couleurs Dewey

@@ -1,11 +1,12 @@
 """Item model - represents a physical copy of a bibliographic record."""
 
-from datetime import datetime, date, timezone
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, CheckConstraint
+from datetime import datetime, timezone
+
+from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from src.bcd_api.core.database import Base
-from src.shared.constants import ItemStatus, ItemCondition
+from src.shared.constants import ItemCondition, ItemStatus
 
 
 class Item(Base):

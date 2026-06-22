@@ -5,39 +5,42 @@ REST API for system administration.
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from typing import Dict, Any
-from pydantic import BaseModel
-import shutil
 from pathlib import Path
-from datetime import datetime
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-from ...core.deps import get_db
 from ...core import mdns as mdns_module
+from ...core.config import settings as app_settings
+from ...core.deps import get_db
 from ...core.exceptions import (
-    NotFoundError,
     BorrowerNotFoundException,
     ClassNotFoundException,
+    NotFoundError,
     ValidationError,
 )
-from ...core.config import settings as app_settings
-from ...services import settings_service, backup_service, archive_service, borrower_service, catalog_service, inventory_service
-from ...schemas.system_settings import SystemSettingsResponse
 from ...schemas.admin import (
     BulkChangeClassRequest,
     BulkChangeRoleRequest,
-    BulkDeleteRequest,
-    BulkOperationResult,
-    BulkEditRecordsRequest,
     BulkDeleteRecordsRequest,
+    BulkDeleteRequest,
+    BulkEditRecordsRequest,
+    BulkOperationResult,
 )
-from ...schemas.inventory import (
-    OrphanRecordsResponse,
-    OrphanDeleteResponse
+from ...schemas.inventory import OrphanDeleteResponse, OrphanRecordsResponse
+from ...schemas.system_settings import SystemSettingsResponse
+from ...services import (
+    archive_service,
+    backup_service,
+    borrower_service,
+    catalog_service,
+    inventory_service,
+    settings_service,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -427,10 +430,10 @@ def health_check(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
 
         # Get database statistics
-        from ...models.borrower import Borrower
         from ...models.bibliographic_record import BiblographicRecord
-        from ...models.item import Item
+        from ...models.borrower import Borrower
         from ...models.circulation import CirculationTransaction
+        from ...models.item import Item
 
         borrower_count = db.query(Borrower).count()
         biblio_count = db.query(BiblographicRecord).count()
@@ -576,7 +579,6 @@ def bulk_edit_records_endpoint(
         result = catalog_service.bulk_edit_records(
             db=db,
             record_ids=request.record_ids,
-            genre=request.genre,
             level=request.level,
             target_audience=request.target_audience,
             language=request.language,
@@ -773,9 +775,10 @@ def set_acquisition_dates_from_publication_year(db: Session = Depends(get_db)):
     Returns:
         {"updated_count": N}
     """
-    from ...models.item import Item
-    from ...models.bibliographic_record import BiblographicRecord
     from datetime import date
+
+    from ...models.bibliographic_record import BiblographicRecord
+    from ...models.item import Item
 
     # Find items without acquisition_date that have a publication_year
     items = (

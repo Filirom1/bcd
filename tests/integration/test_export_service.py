@@ -2,13 +2,14 @@
 
 import csv
 import json
-import pytest
 from io import StringIO
 
-from src.bcd_api.services.export_service import ExportService, MAX_EXPORT_ROWS
+import pytest
+
 from src.bcd_api.core.exceptions import ExportTooLargeException
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.item import Item
+from src.bcd_api.services.export_service import MAX_EXPORT_ROWS, ExportService
 
 
 class TestExportService:

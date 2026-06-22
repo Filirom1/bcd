@@ -2,9 +2,9 @@
 
 import pytest
 
-from src.bcd_api.services import settings_service
 from src.bcd_api.core.exceptions import NotFoundError
 from src.bcd_api.models.system_settings import SystemSettings
+from src.bcd_api.services import settings_service
 
 
 class TestGetSettings:

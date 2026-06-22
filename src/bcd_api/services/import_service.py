@@ -3,8 +3,8 @@
 Shared constants and utilities for import operations.
 """
 
-from typing import Optional
 import re
+from typing import Optional
 
 _ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$", re.IGNORECASE)
 

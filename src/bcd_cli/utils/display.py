@@ -4,13 +4,11 @@ Display utilities using Rich library
 Provides formatted console output with tables, colors, and progress indicators.
 """
 
+from datetime import date, datetime
+from typing import Any, Dict
+
 from rich.console import Console
 from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
-from typing import List, Dict, Any, Optional
-from datetime import date, datetime
-
 
 # Console instance
 console = Console()
@@ -91,7 +89,7 @@ def print_borrower_info(borrower_data: Dict[str, Any]):
     # Status
     is_active = borrower_data.get("active", True)
     if is_active:
-        console.print(f"  Statut / Status: [green]Actif / Active[/green]")
+        console.print("  Statut / Status: [green]Actif / Active[/green]")
     else:
         reason = borrower_data.get("blocked_reason", "Unknown")
         console.print(

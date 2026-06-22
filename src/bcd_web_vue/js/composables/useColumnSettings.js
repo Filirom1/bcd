@@ -21,7 +21,6 @@ export const AVAILABLE_COLUMNS = [
     { id: 'series_number', label_en: 'Volume', label_fr: 'Volume', default: false },
 
     // Classification
-    { id: 'genre', label_en: 'Genre', label_fr: 'Genre', default: false },
     { id: 'medium_type', label_en: 'Medium Type', label_fr: 'Type de support', default: false },
     { id: 'target_audience', label_en: 'Audience', label_fr: 'Public', default: false },
     { id: 'level', label_en: 'Level', label_fr: 'Niveau', default: false },

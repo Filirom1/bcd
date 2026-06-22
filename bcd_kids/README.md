@@ -37,7 +37,7 @@ The student sees their current loans and can access all features:
 | Button | What it does |
 |---|---|
 | 📖 BORROW A BOOK | Scan a book's barcode to borrow it |
-| 🔍 SEARCH FOR A BOOK | Search by title, author or genre |
+| 🔍 SEARCH FOR A BOOK | Search by title or author |
 | 📌 MY HOLDS | View and cancel reservations |
 | ✅ RETURN BY SCAN | Return a book by scanning its barcode |
 

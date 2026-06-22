@@ -4,20 +4,21 @@ Integration test fixtures and configuration
 Provides database fixtures and test data for integration testing.
 """
 
-import pytest
 import json
+
+import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
 
 from src.bcd_api.core.database import Base, get_db
 from src.bcd_api.main import app
-from src.bcd_api.models.system_settings import SystemSettings
+from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.class_model import Class
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.item import Item
+from src.bcd_api.models.system_settings import SystemSettings
 
 
 @pytest.fixture(scope="function")
@@ -173,7 +174,6 @@ def test_bibliographic_record(db_session):
         isbn="978-2-08-161739-6",
         language="fr",
         target_audience="child",
-        genre="Album",
         medium_type="Livre"
     )
     db_session.add(record)
@@ -193,7 +193,6 @@ def test_bibliographic_record_2(db_session):
         isbn="978-0-06-026395-7",
         language="eng",
         target_audience="child",
-        genre="Novel",
         medium_type="Livre"
     )
     db_session.add(record)
@@ -457,7 +456,6 @@ class ItemFactory:
             publication_year=2020,
             language="fr",
             target_audience="child",
-            genre="Novel",
             medium_type="Livre",
         )
         self.db_session.add(record)

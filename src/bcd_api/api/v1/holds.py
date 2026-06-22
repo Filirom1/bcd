@@ -4,9 +4,10 @@ Holds API Endpoints
 REST API for managing holds/reservations.
 """
 
+from typing import List
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from typing import List
 
 from ...core.deps import get_db
 from ...schemas.hold import (

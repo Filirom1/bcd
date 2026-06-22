@@ -4,11 +4,10 @@ API Client - HTTP client wrapper for BCD API
 Handles communication with the FastAPI backend.
 """
 
-import httpx
-from typing import Dict, List, Any, Optional
-from pathlib import Path
-import json
 import os
+from typing import Any, Dict, List, Optional
+
+import httpx
 
 
 class BCDAPIClient:

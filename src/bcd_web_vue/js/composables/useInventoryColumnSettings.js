@@ -22,7 +22,6 @@ export const INVENTORY_AVAILABLE_COLUMNS = [
     { id: 'shelf_location', label_en: 'Location', label_fr: 'Emplacement', default: false, group: 'item' },
 
     // Record fields (modifiable via bulk edit)
-    { id: 'genre', label_en: 'Genre', label_fr: 'Genre', default: false, group: 'record' },
     { id: 'level', label_en: 'Level', label_fr: 'Niveau', default: false, group: 'record' },
     { id: 'target_audience', label_en: 'Audience', label_fr: 'Public', default: false, group: 'record' },
     { id: 'language', label_en: 'Language', label_fr: 'Langue', default: false, group: 'record' },

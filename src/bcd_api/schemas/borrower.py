@@ -1,10 +1,11 @@
 """Pydantic schemas for Borrower model."""
 
 from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from src.shared.constants import BorrowerRole
 from src.bcd_api.schemas.common import TimestampMixin
+from src.shared.constants import BorrowerRole
 
 
 class BorrowerBase(BaseModel):

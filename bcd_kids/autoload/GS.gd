@@ -19,7 +19,6 @@ var settings := {}
 
 # Configurable filters (parsed from settings CSV)
 var filter_medium_types := []  # ["Livre", "BD", "Album", ...]
-var filter_genres := []         # ["Roman", "Conte", ...]
 var filter_levels := []         # ["CP", "CE1", "CE2", ...]
 
 func reset_borrower():

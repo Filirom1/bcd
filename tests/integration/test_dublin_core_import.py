@@ -2,12 +2,11 @@
 
 import csv
 import json
-import pytest
 from io import StringIO
 
-from src.bcd_api.services.dublin_core_import import import_dublin_core_csv
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.item import Item
+from src.bcd_api.services.dublin_core_import import import_dublin_core_csv
 
 
 class TestDublinCoreImport:

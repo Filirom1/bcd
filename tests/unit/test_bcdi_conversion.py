@@ -3,12 +3,11 @@
 Tests the conversion of BCDI library system exports (French format) to Dublin Core CSV.
 """
 
-import pytest
 import csv
-import tempfile
-import os
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import pytest
 
 # Add scripts directory to path for importing conversion script
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts" / "convert"))
@@ -21,7 +20,7 @@ class TestBCDIConversion:
         """Test basic BCDI column mapping to Dublin Core format."""
         # Import here to avoid import errors if script doesn't exist yet
         try:
-            from bcdi_to_dublin_core import convert_bcdi_to_dublin_core, BCDI_COLUMN_MAPPING
+            from bcdi_to_dublin_core import BCDI_COLUMN_MAPPING, convert_bcdi_to_dublin_core
         except ImportError:
             pytest.skip("bcdi_to_dublin_core.py not yet implemented")
 

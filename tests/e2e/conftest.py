@@ -9,16 +9,16 @@ Key Features:
 - Performance measurement helpers
 """
 
-import pytest
 import os
+import shutil
 import subprocess
 import time
-import shutil
 from pathlib import Path
-from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
+
+import pytest
+from playwright.sync_api import sync_playwright
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
 
 # =============================================================================
 # Database Fixtures - Function Scoped for Isolation
@@ -242,7 +242,7 @@ def page(context, app_url, request):
     try:
         page.wait_for_selector('.sidebar', timeout=10000)
     except:
-        print(f"⚠️  Sidebar not found, app may not have loaded")
+        print("⚠️  Sidebar not found, app may not have loaded")
 
     yield page
 

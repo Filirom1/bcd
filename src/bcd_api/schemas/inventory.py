@@ -1,9 +1,9 @@
 """Pydantic schemas for Inventory operations."""
 
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # T006: ItemInventoryResponse, BulkInventoryRequest, BulkInventoryResponse
 
@@ -22,7 +22,6 @@ class ItemInventoryResponse(BaseModel):
 
     # Record fields (for display in working table)
     title: str = Field(..., description="Title from bibliographic record")
-    genre: Optional[str] = Field(None, description="Genre")
     level: Optional[str] = Field(None, description="Reading level")
     target_audience: Optional[str] = Field(None, description="Target audience")
     language: Optional[str] = Field(None, description="Language")
@@ -73,7 +72,6 @@ class InventoryItemResult(BaseModel):
     title: str = Field(..., description="Title from bibliographic record")
     authors: Optional[list[str]] = Field(default=None, description="Authors from bibliographic record")
     call_number: Optional[str] = Field(default=None, description="Call number")
-    genre: Optional[str] = Field(default=None, description="Genre")
     level: Optional[str] = Field(default=None, description="Reading level")
     target_audience: Optional[str] = Field(default=None, description="Target audience")
     language: Optional[str] = Field(default=None, description="Language")
@@ -125,7 +123,6 @@ class ItemUpdates(BaseModel):
 class RecordUpdates(BaseModel):
     """Optional bibliographic record field updates for bulk edit."""
 
-    genre: Optional[str] = Field(default=None, description="Genre")
     level: Optional[str] = Field(default=None, description="Reading level")
     target_audience: Optional[str] = Field(default=None, description="Target audience (child/youth/adult)")
     language: Optional[str] = Field(default=None, description="Language")
@@ -134,7 +131,6 @@ class RecordUpdates(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "genre": "Album",
                 "level": "CP",
                 "target_audience": "child",
                 "language": "fra",
@@ -160,7 +156,7 @@ class BulkUpdateRequest(BaseModel):
                     "condition": "damaged"
                 },
                 "record_updates": {
-                    "genre": "Album"
+                    "level": "CP"
                 }
             }
         }

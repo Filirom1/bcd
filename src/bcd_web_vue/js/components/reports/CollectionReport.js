@@ -17,7 +17,7 @@ import Pagination from '../ui/Pagination.js';
 import FilterChips from './FilterChips.js';
 import TauxRotationPanel from './TauxRotationPanel.js';
 
-const PANEL_IDS = ['crew_score', 'medium_type', 'genre', 'condition', 'pub_year', 'acq_year', 'taux_rotation'];
+const PANEL_IDS = ['crew_score', 'medium_type', 'condition', 'pub_year', 'acq_year', 'taux_rotation'];
 const HIDDEN_PANELS_KEY = 'bcd_collection_hidden_panels';
 
 export default defineComponent({
@@ -36,7 +36,6 @@ export default defineComponent({
 
         // ── Cross-filters (set by clicking breakdowns or sliders) ─────────────
         const crossFilters = ref({
-            genre: null,
             medium_type: null,
             target_audience: null,
             condition: null,
@@ -77,7 +76,6 @@ export default defineComponent({
         const PANEL_LABELS = computed(() => ({
             crew_score:     t('reports.crew.scoreHistogram'),
             medium_type:    t('reports.collectionReport.bySupport'),
-            genre:          t('reports.collectionReport.byGenre'),
             target_audience:t('reports.collectionReport.byAudience'),
             condition:      t('reports.collectionReport.byCondition'),
             pub_year:       t('reports.collectionReport.histoPubYear'),
@@ -260,7 +258,7 @@ export default defineComponent({
 
         const clearAllFilters = () => {
             crossFilters.value = {
-                genre: null, medium_type: null, target_audience: null, condition: null,
+                medium_type: null, target_audience: null, condition: null,
                 pub_year_min: null, pub_year_max: null, acq_year_min: null, acq_year_max: null,
             };
             tauxRotationFilter.value = { min: null, max: null };
@@ -277,7 +275,6 @@ export default defineComponent({
         const activeChips = computed(() => {
             const chips = [];
             const cf = crossFilters.value;
-            if (cf.genre)          chips.push({ key: 'genre',          label: t('bibliographic.genre'),          value: cf.genre });
             if (cf.medium_type)    chips.push({ key: 'medium_type',    label: t('bibliographic.medium_type'),    value: cf.medium_type });
             if (cf.target_audience)chips.push({ key: 'target_audience',label: t('bibliographic.target_audience'),value: audienceLabel(cf.target_audience) });
             if (cf.condition)      chips.push({ key: 'condition',      label: t('item.condition'),               value: conditionLabel(cf.condition) });
@@ -306,7 +303,6 @@ export default defineComponent({
                 min_age_years: 0,
                 exclude_periodicals: false,
             };
-            if (cf.genre)          p.genre = cf.genre;
             if (cf.medium_type)    p.medium_type = cf.medium_type;
             if (cf.target_audience)p.target_audience = cf.target_audience;
             if (cf.condition)      p.condition = cf.condition;
@@ -340,7 +336,6 @@ export default defineComponent({
                 p.acquired_before = d3.toISOString().split('T')[0];
             }
 
-            if (cf.genre)          p.genre = cf.genre;
             if (cf.medium_type)    p.medium_type = cf.medium_type;
             if (cf.target_audience)p.target_audience = cf.target_audience;
             if (cf.condition && crewMethod.value !== 'damaged_old') p.condition = cf.condition;
@@ -812,31 +807,6 @@ export default defineComponent({
                         <span style="min-width:90px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ row.value }}</span>
                         <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
                             <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.medium_type)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'3px'}"></div>
-                        </div>
-                        <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
-                        <span style="min-width:34px;font-size:11px;color:#999;">{{ Math.round(row.count/stats.total_count*100) }}%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Par genre -->
-        <div class="col-6 col-md-4" v-if="isPanelVisible('genre')">
-            <div class="card h-100">
-                <div class="card-body p-3">
-                    <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
-                        {{ t('reports.collectionReport.byGenre') }}
-                        <span class="fw-normal text-muted ms-1" style="text-transform:none;letter-spacing:0;">· {{ t('reports.collectionReport.clickToFilter') }}</span>
-                    </div>
-                    <div v-if="!stats.breakdowns.genre.length" class="text-muted small">—</div>
-                    <div v-for="(row, i) in stats.breakdowns.genre" :key="row.value"
-                         @click="toggleBreakdown('genre', row.value)"
-                         class="d-flex align-items-center gap-2 mb-1 px-1 py-1 rounded"
-                         style="cursor:pointer;"
-                         :style="crossFilters.genre === row.value ? 'background:#ddeeff;outline:2px solid #4D99F2;' : ''">
-                        <span style="min-width:90px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ row.value }}</span>
-                        <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
-                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.genre)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'3px'}"></div>
                         </div>
                         <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
                         <span style="min-width:34px;font-size:11px;color:#999;">{{ Math.round(row.count/stats.total_count*100) }}%</span>

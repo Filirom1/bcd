@@ -80,7 +80,6 @@ export default defineComponent({
                     last_inventoried_at: response.last_inventoried_at,
                     // Record fields
                     title: response.title,
-                    genre: response.genre,
                     level: response.level,
                     target_audience: response.target_audience,
                     language: response.language,

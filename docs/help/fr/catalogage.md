@@ -67,7 +67,6 @@ Lors de la création ou de la modification d'une notice, voici le rôle de chaqu
 | Champ | Rôle | Obligatoire |
 |-------|------|-------------|
 | **Type de support** | Format physique du document (ex : Livre, BD, Revue, CD, DVD). | Non |
-| **Genre** | Sous-catégorie littéraire (ex : Aventure, Policier, Fantastique). | Non |
 | **Public cible** | Enfant (jusqu'à 8 ans) / Jeune (8–15 ans) / Adulte. Affine les recherches et les statistiques. | Non |
 | **Niveau de lecture** | Niveau scolaire recommandé (ex : CP, CE1, CM2). Libre saisie. | Non |
 

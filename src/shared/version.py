@@ -2,8 +2,8 @@
 
 import re
 import sys
-from pathlib import Path
 from functools import lru_cache
+from pathlib import Path
 
 
 @lru_cache(maxsize=1)

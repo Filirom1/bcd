@@ -1,27 +1,26 @@
 """Unit tests for custom exceptions."""
 
-import pytest
 from fastapi import status
 
 from src.bcd_api.core.exceptions import (
     BCDException,
-    NotFoundException,
-    ValidationError,
-    ConflictError,
-    BusinessRuleViolation,
-    BorrowerNotFoundException,
-    BorrowerBlockedException,
-    ItemNotFoundException,
-    ItemNotAvailableException,
-    ItemNotLoanableException,
-    LoanLimitExceededException,
-    RenewalLimitExceededException,
-    ItemHasHoldsException,
     BiblographicRecordNotFoundException,
-    DuplicateISBNException,
+    BorrowerBlockedException,
+    BorrowerNotFoundException,
+    BusinessRuleViolation,
+    ConflictError,
     DuplicateBorrowerIDException,
+    DuplicateISBNException,
     DuplicateItemIDException,
     InvalidIDFormatException,
+    ItemHasHoldsException,
+    ItemNotAvailableException,
+    ItemNotFoundException,
+    ItemNotLoanableException,
+    LoanLimitExceededException,
+    NotFoundException,
+    RenewalLimitExceededException,
+    ValidationError,
 )
 
 

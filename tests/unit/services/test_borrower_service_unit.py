@@ -1,18 +1,17 @@
 """Unit tests for borrower_service.py"""
 
-import pytest
-from datetime import datetime
-from unittest.mock import Mock, MagicMock
 
-from src.bcd_api.services import borrower_service
+import pytest
+
 from src.bcd_api.core.exceptions import (
-    NotFoundError,
     DuplicateError,
+    NotFoundError,
     ValidationError,
 )
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.system_settings import SystemSettings
+from src.bcd_api.services import borrower_service
 
 
 class TestCreateBorrower:

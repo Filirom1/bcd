@@ -1,14 +1,13 @@
 """Pytest configuration and fixtures for BCD tests."""
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
 
 from src.bcd_api.core.database import Base, get_db
 from src.bcd_api.main import app
-
 
 # Test database URL (in-memory SQLite)
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"

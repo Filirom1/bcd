@@ -64,7 +64,6 @@ export default defineComponent({
                 { key: 'loanable', label: t('item.loanable'), width: '100px' },
                 { key: 'shelf_location', label: t('item.shelf_location'), width: '150px' },
                 // Record fields
-                { key: 'genre', label: t('bibliographic.genre'), width: '150px' },
                 { key: 'level', label: t('bibliographic.level'), width: '100px' },
                 { key: 'target_audience', label: t('bibliographic.target_audience'), width: '120px' },
                 { key: 'language', label: t('bibliographic.language'), width: '100px' },
@@ -291,11 +290,6 @@ export default defineComponent({
                 <td v-if="isColumnVisible('shelf_location')" :class="getRowClass(item)">
                     <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
                     <span v-else class="text-muted">—</span>
-                </td>
-
-                <!-- Genre -->
-                <td v-if="isColumnVisible('genre')" :class="getRowClass(item)">
-                    <small>{{ item.genre || '—' }}</small>
                 </td>
 
                 <!-- Level -->

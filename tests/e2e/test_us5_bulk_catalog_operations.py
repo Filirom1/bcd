@@ -23,10 +23,11 @@ IMPLEMENTATION STATUS: UI components pending implementation
 """
 
 import re
+
 import pytest
 from playwright.sync_api import expect
-from tests.e2e.helpers.wait_for_app import wait_for_vue_app
 
+from tests.e2e.helpers.wait_for_app import wait_for_vue_app
 
 pytestmark = pytest.mark.skip(reason="US5 UI components not yet implemented - test ready when UI complete")
 

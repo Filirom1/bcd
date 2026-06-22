@@ -6,23 +6,24 @@ REST API for collection inventory operations (récolement/weeding).
 import logging
 from datetime import date
 from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ...core.deps import get_db
 from ...core.exceptions import ItemNotFoundException
-from ...services import inventory_service
 from ...schemas.inventory import (
-    ItemInventoryResponse,
-    BulkInventoryRequest,
-    BulkInventoryResponse,
-    InventorySearchResponse,
-    BulkUpdateRequest,
-    BulkUpdateResponse,
     BulkDeleteRequest,
     BulkDeleteResponse,
-    ExportCSVRequest
+    BulkInventoryRequest,
+    BulkInventoryResponse,
+    BulkUpdateRequest,
+    BulkUpdateResponse,
+    ExportCSVRequest,
+    InventorySearchResponse,
+    ItemInventoryResponse,
 )
+from ...services import inventory_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/inventory", tags=["inventory"])
@@ -67,7 +68,6 @@ def mark_item_inventoried_endpoint(
             last_inventoried_at=item.last_inventoried_at,
             # Record fields
             title=record.title,
-            genre=record.genre,
             level=record.level,
             target_audience=record.target_audience,
             language=record.language,
@@ -125,7 +125,6 @@ def search_items_endpoint(
     acquired_after: Optional[date] = Query(None, description="Items acquired after this date"),
     medium_type: Optional[str] = Query(None, description="Bibliographic medium type"),
     target_audience: Optional[str] = Query(None, description="child, youth, adult"),
-    genre: Optional[str] = Query(None, description="Partial match on genre"),
     level: Optional[str] = Query(None, description="Partial match on reading level"),
     language: Optional[str] = Query(None, description="Language code filter (ISO 639-1, e.g. 'fr', 'en'); use '__none__' for records with no language set"),
     publication_year_min: Optional[int] = Query(None, description="Min publication year"),
@@ -144,7 +143,7 @@ def search_items_endpoint(
     - Text search: q
     - Item filters: status, condition, shelf_location
     - Inventory filters: never_inventoried, inventoried_before, acquired_before
-    - Record filters: medium_type, target_audience, genre, level, language
+    - Record filters: medium_type, target_audience, level, language
     - Publication year: publication_year_min, publication_year_max
     - Rotation filter (CREW method): max_borrows + since_date
 
@@ -167,7 +166,6 @@ def search_items_endpoint(
             acquired_after=acquired_after,
             medium_type=medium_type,
             target_audience=target_audience,
-            genre=genre,
             level=level,
             language=language,
             publication_year_min=publication_year_min,
@@ -198,7 +196,7 @@ def bulk_update_items_endpoint(
     **Request Body:**
     - item_ids: List of item barcodes to update
     - item_updates: Optional item field updates (status, condition, loanable, shelf_location)
-    - record_updates: Optional record field updates (genre, level, target_audience)
+    - record_updates: Optional record field updates (level, target_audience)
 
     **Returns:**
     - 200: Items and records updated successfully with counts
@@ -273,8 +271,9 @@ def export_csv_endpoint(
 
     **Usage:** Export CSV button in admin dropdown
     """
-    from fastapi.responses import Response
     from datetime import datetime
+
+    from fastapi.responses import Response
 
     try:
         csv_content = inventory_service.get_items_csv(db, request.item_ids)

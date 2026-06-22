@@ -4,12 +4,14 @@ Admin commands
 Commands for system administration.
 """
 
-import click
 from typing import Optional
+
+import click
+from rich.panel import Panel
+from rich.table import Table
+
 from ..client import get_client
 from ..utils.display import console, print_error
-from rich.table import Table
-from rich.panel import Panel
 
 
 @click.group(name="admin")
@@ -495,7 +497,7 @@ def archive_transactions(older_than: int, dry_run: bool, stats: bool, api_url: s
                 console.print(f"[bold]Transactions archivées / Archived:[/bold] {data.get('archived_count', 0)}")
                 console.print(f"[bold]Réduction de taille / Size reduction:[/bold] ~{data.get('size_reduction_estimate_mb', 0)} MB")
                 console.print()
-                console.print(f"[dim]Plage de dates / Date range:[/dim]")
+                console.print("[dim]Plage de dates / Date range:[/dim]")
                 console.print(f"[dim]  De / From: {data.get('oldest_date', 'N/A')}[/dim]")
                 console.print(f"[dim]  À / To: {data.get('newest_date', 'N/A')}[/dim]")
 

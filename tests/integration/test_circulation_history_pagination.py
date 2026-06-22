@@ -9,17 +9,15 @@ Tests cover:
 All tests use service-layer integration (db_session fixture, AAA pattern).
 """
 
-import pytest
-from datetime import date, datetime, timedelta
 import json
+from datetime import date, datetime, timedelta
 
-from src.bcd_api.services import circulation_service
-from src.bcd_api.models.circulation import CirculationTransaction
-from src.bcd_api.models.item import Item
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.borrower import Borrower
+from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
-
+from src.bcd_api.models.item import Item
+from src.bcd_api.services import circulation_service
 
 # ---------------------------------------------------------------------------
 # Shared test helpers

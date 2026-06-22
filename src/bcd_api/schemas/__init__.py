@@ -1,67 +1,66 @@
 """Pydantic schemas for BCD library system."""
 
 # Common schemas
-from src.bcd_api.schemas.common import (
-    PaginationParams,
-    PaginatedResponse,
-    SuccessResponse,
-    ErrorResponse,
-    ErrorDetail,
-)
-
-# Class schemas
-from src.bcd_api.schemas.class_schema import (
-    ClassCreate,
-    ClassUpdate,
-    ClassResponse,
-    ClassWithBorrowerCount,
+# Bibliographic Record schemas
+from src.bcd_api.schemas.bibliographic_record import (
+    BiblographicRecordCreate,
+    BiblographicRecordResponse,
+    BiblographicRecordSummary,
+    BiblographicRecordUpdate,
+    BiblographicRecordWithAvailability,
 )
 
 # Borrower schemas
 from src.bcd_api.schemas.borrower import (
     BorrowerCreate,
-    BorrowerUpdate,
+    BorrowerDetailed,
     BorrowerResponse,
     BorrowerSummary,
-    BorrowerDetailed,
-)
-
-# Bibliographic Record schemas
-from src.bcd_api.schemas.bibliographic_record import (
-    BiblographicRecordCreate,
-    BiblographicRecordUpdate,
-    BiblographicRecordResponse,
-    BiblographicRecordSummary,
-    BiblographicRecordWithAvailability,
-)
-
-# Item schemas
-from src.bcd_api.schemas.item import (
-    ItemCreate,
-    ItemUpdate,
-    ItemResponse,
-    ItemSummary,
-    ItemWithBiblio,
+    BorrowerUpdate,
 )
 
 # Circulation schemas
 from src.bcd_api.schemas.circulation import (
     CheckoutRequest,
     CheckoutResponse,
-    ReturnRequest,
-    ReturnResponse,
-    RenewRequest,
-    RenewResponse,
     CirculationTransactionResponse,
     CurrentLoanResponse,
+    RenewRequest,
+    RenewResponse,
+    ReturnRequest,
+    ReturnResponse,
+)
+
+# Class schemas
+from src.bcd_api.schemas.class_schema import (
+    ClassCreate,
+    ClassResponse,
+    ClassUpdate,
+    ClassWithBorrowerCount,
+)
+from src.bcd_api.schemas.common import (
+    ErrorDetail,
+    ErrorResponse,
+    PaginatedResponse,
+    PaginationParams,
+    SuccessResponse,
 )
 
 # Hold schemas
 from src.bcd_api.schemas.hold import (
     HoldCreate,
+    HoldReadyForPickup,
     HoldResponse,
     HoldSummary,
-    HoldReadyForPickup,
+)
+
+# Item schemas
+from src.bcd_api.schemas.item import (
+    ItemCreate,
+    ItemResponse,
+    ItemSummary,
+    ItemUpdate,
+    ItemWithBiblio,
 )
 
 # System Settings schemas

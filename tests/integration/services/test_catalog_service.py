@@ -56,23 +56,24 @@ BEST PRACTICES DEMONSTRATED:
     - Validate error details provide debugging information
 """
 
-import pytest
-from unittest.mock import patch
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
-from src.bcd_api.services import catalog_service
+import pytest
+
 from src.bcd_api.core.exceptions import (
-    NotFoundError,
-    ConflictError,
     BiblographicRecordNotFoundException,
-    ItemHasActiveLoanException
+    ConflictError,
+    ItemHasActiveLoanException,
+    NotFoundError,
 )
-from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
-from src.bcd_api.schemas.item import ItemCreate
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
-from src.bcd_api.models.item import Item
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.models.item import Item
+from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
+from src.bcd_api.schemas.item import ItemCreate
+from src.bcd_api.services import catalog_service
 
 
 class TestBibliographicRecordCreation:
@@ -128,7 +129,6 @@ class TestBibliographicRecordCreation:
             publication_year=1945,
             collection="Harper Classics",
             language="eng",
-            genre="Children's Literature",
             target_audience="child",
             medium_type="Livre",
             page_count=131,
@@ -153,7 +153,6 @@ class TestBibliographicRecordCreation:
         assert result.publication_year == 1945
         assert result.collection == "Harper Classics"
         assert result.language == "eng"
-        assert result.genre == "Children's Literature"
         assert result.target_audience == "child"
         assert result.page_count == 131
         assert result.has_illustrations is True
@@ -935,7 +934,7 @@ class TestCatalogIntegrationScenarios:
                 title="Animal Farm",
                 isbn="9780451526342",
                 authors=["Orwell, George"],
-                genre="Novel"
+                level="CM1"
             ),
             isbn_lookup=False
         )
@@ -946,14 +945,14 @@ class TestCatalogIntegrationScenarios:
                 title="Brave New World",
                 isbn="9780060850524",
                 authors=["Huxley, Aldous"],
-                genre="Novel"
+                level="CM1"
             ),
             isbn_lookup=False
         )
 
         # Step 1: Search for novels
         results, total = catalog_service.search_bibliographic_records(
-            db_session, genre="Novel"
+            db_session, level="CM1"
         )
 
         assert total == 2
@@ -965,7 +964,7 @@ class TestCatalogIntegrationScenarios:
 
         assert full_details.id == selected.id
         assert full_details.title == selected.title
-        assert full_details.genre == "Novel"
+        assert full_details.level == "CM1"
 
 
 class TestGetAvailableItemIDs:

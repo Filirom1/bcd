@@ -43,7 +43,6 @@ These lists define the suggested values in cataloging forms and in bulk edit.
 | Setting | Role |
 |---------|------|
 | **Medium types** | List of medium types (e.g., Book, Comic, Magazine, CD, DVD). |
-| **Genres** | List of available genres (e.g., Adventure, Mystery, Fantasy, Historical). |
 | **Languages** | Comma-separated list of ISO 639-1 language codes (e.g., `fr, en, es, de, ar`). These codes are used in cataloging forms and inventory filters. |
 
 > **Tip:** These lists are suggestions only — you can always type a value not on the list.
@@ -54,7 +53,7 @@ The classification lists act as a reference for the entire collection. The more 
 
 - **Define the lists once, before you start cataloging**
 - **Use simple, consistent names** to avoid duplicates (e.g., `Mystery` rather than `Crime mystery novel`)
-- **Check regularly** via Catalog → advanced filters → genre/medium type empty or unusual → fix with bulk edit
+- **Check regularly** via Catalog → advanced filters → medium type empty or unusual → fix with bulk edit
 - If a value is entered outside the list by mistake, it stays in the database until you correct it manually via bulk edit in the catalog
 
 ## Step 4 — Dewey colors

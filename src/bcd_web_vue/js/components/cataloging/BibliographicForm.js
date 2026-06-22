@@ -37,7 +37,6 @@ export default defineComponent({
         const { handleError } = useErrorHandler(t);
 
         const parseCsv = (str) => str ? str.split(',').map(s => s.trim()).filter(Boolean) : [];
-        const genreSuggestions = computed(() => parseCsv(settings.value?.catalog_genres));
         const languageSuggestions = computed(() => parseCsv(settings.value?.catalog_languages));
         const mediumTypeSuggestions = computed(() => parseCsv(settings.value?.catalog_medium_types));
 
@@ -54,7 +53,6 @@ export default defineComponent({
             series_number: '',
             language: 'fr',
             binding_type: null,
-            genre: '',
             level: '',
             medium_type: 'Livre',
             target_audience: 'child',
@@ -90,7 +88,6 @@ export default defineComponent({
                 formData.collection = rec.collection || '';
                 formData.series_number = rec.series_number || '';
                 formData.language = rec.language || 'fr';
-                formData.genre = rec.genre || '';
                 formData.level = rec.level || '';
                 formData.medium_type = rec.medium_type || 'Livre';
                 formData.target_audience = rec.target_audience || 'child';
@@ -118,7 +115,6 @@ export default defineComponent({
                 formData.collection = bnf.collection || '';
                 formData.series_number = bnf.series_number || '';
                 formData.language = bnf.language || 'fr';
-                formData.genre = bnf.genre || '';
                 formData.level = bnf.level || '';
                 formData.medium_type = bnf.medium_type || 'Livre';
                 formData.target_audience = bnf.target_audience || 'child';
@@ -240,7 +236,6 @@ export default defineComponent({
             authorsText,
             illustratorsText,
             keywordsText,
-            genreSuggestions,
             languageSuggestions,
             mediumTypeSuggestions,
             submitRecord,
@@ -454,24 +449,6 @@ export default defineComponent({
                         />
                         <datalist id="biblio-language-suggestions">
                             <option v-for="s in languageSuggestions" :key="s" :value="s" />
-                        </datalist>
-                    </div>
-
-                    <!-- Genre -->
-                    <div class="col-md-4">
-                        <label for="genre" class="form-label">
-                            {{ $t('bibliographic.genre') }}
-                        </label>
-                        <input
-                            id="genre"
-                            v-model="formData.genre"
-                            type="text"
-                            class="form-control"
-                            list="biblio-genre-suggestions"
-                            maxlength="100"
-                        />
-                        <datalist id="biblio-genre-suggestions">
-                            <option v-for="s in genreSuggestions" :key="s" :value="s" />
                         </datalist>
                     </div>
 

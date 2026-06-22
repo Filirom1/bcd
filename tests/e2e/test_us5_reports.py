@@ -15,8 +15,9 @@ Test Quality:
 - Clear AAA pattern (Arrange-Act-Assert)
 """
 
-import pytest
 from datetime import date, timedelta
+
+import pytest
 
 
 class TestUS5OverdueReport:
@@ -38,8 +39,8 @@ class TestUS5OverdueReport:
         Assert: Items grouped by class with borrower, title, days overdue
         """
         # Arrange
-        from src.bcd_api.models.class_model import Class
         from src.bcd_api.models.circulation import CirculationTransaction
+        from src.bcd_api.models.class_model import Class
 
         # Create class
         test_class = Class(
@@ -104,8 +105,8 @@ class TestUS5OverdueReport:
         Assert: Only shows overdue items for that class
         """
         # Arrange
-        from src.bcd_api.models.class_model import Class
         from src.bcd_api.models.circulation import CirculationTransaction
+        from src.bcd_api.models.class_model import Class
 
         # Create two classes
         class1 = Class(name="CP-A", grade_level="CP", academic_year="2024-2025")
@@ -279,8 +280,8 @@ class TestUS5ReportActions:
         Assert: Print dialog opens, report formatted one page per class
         """
         # Arrange
-        from src.bcd_api.models.class_model import Class
         from src.bcd_api.models.circulation import CirculationTransaction
+        from src.bcd_api.models.class_model import Class
 
         test_class = Class(
             name="PRINT-CLASS",

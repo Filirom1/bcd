@@ -1,15 +1,21 @@
 """Integration tests for hold service."""
 
-import pytest
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 
-from src.bcd_api.services import hold_service
-from src.bcd_api.core.exceptions import NotFoundError, ValidationError, ConflictError, HoldLimitExceededException
-from src.bcd_api.models.hold import Hold
+import pytest
+
+from src.bcd_api.core.exceptions import (
+    ConflictError,
+    HoldLimitExceededException,
+    NotFoundError,
+    ValidationError,
+)
+from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.class_model import Class
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.hold import Hold
 from src.bcd_api.models.item import Item
+from src.bcd_api.services import hold_service
 
 
 class TestHoldCreation:

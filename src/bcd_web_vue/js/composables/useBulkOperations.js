@@ -156,7 +156,7 @@ export function useBulkOperations(resourceType) {
     /**
      * Bulk edit catalog records
      * @param {Array<number>} recordIds - IDs of records to edit
-     * @param {Object} fields - Fields to update (genre, target_audience, language, medium_type)
+     * @param {Object} fields - Fields to update (target_audience, language, medium_type)
      * @returns {Promise<Object>} Operation result
      */
     const bulkEditRecords = async (recordIds, fields) => {

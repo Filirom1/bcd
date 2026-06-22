@@ -69,10 +69,10 @@ Find items using advanced filters to identify candidates for weeding:
 
 **Record Filters:**
 - Medium type, target audience
-- Genre, reading level, language
+- Reading level, language
 - Publication year range
 
-> **Tip:** For text fields (location, medium type, genre, level, language), type `__none__` to filter items where that field is not set.
+> **Tip:** For text fields (location, medium type, level, language), type `__none__` to filter items where that field is not set.
 
 **Results:**
 - Capped at 200 items (refine filters if needed)
@@ -96,7 +96,7 @@ Modify multiple items and their records at once:
 1. Select items in the working table
 2. Click the admin menu (⋮) → "Bulk Edit"
 3. Change item fields (status, condition, loanable, location)
-4. Change record fields (medium type, genre, level, target audience)
+4. Change record fields (medium type, level, target audience)
 5. Leave fields as "— unchanged —" to keep existing values
 6. Select "— Clear —" in a field to erase its current value
 7. Confirm the operation

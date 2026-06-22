@@ -43,7 +43,6 @@ func _build_fields(data: Dictionary) -> void:
 		["publication_year", "Année"],
 		["collection",       "Collection"],
 		["series_number",    "Numéro de série"],
-		["genre",            "Genre"],
 		["level",            "Niveau"],
 		["medium_type",      "Type"],
 		["page_count",       "Pages"],

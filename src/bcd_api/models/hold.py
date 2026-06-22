@@ -1,7 +1,18 @@
 """Hold model - represents a borrower's request for an item (librarian-mediated)."""
 
-from datetime import datetime, date, timezone
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Text, CheckConstraint
+from datetime import datetime, timezone
+
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 
 from src.bcd_api.core.database import Base

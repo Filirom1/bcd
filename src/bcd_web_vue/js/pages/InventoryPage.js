@@ -490,7 +490,6 @@ export default defineComponent({
                     last_inventoried_at: freshItem.last_inventoried_at,
                     // Record fields
                     title: freshItem.title,
-                    genre: freshItem.genre,
                     level: freshItem.level,
                     target_audience: freshItem.target_audience,
                     language: freshItem.language,

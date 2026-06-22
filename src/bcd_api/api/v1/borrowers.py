@@ -6,24 +6,26 @@ Provides REST API endpoints for borrower management.
 
 import logging
 from typing import Optional, Tuple
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
+from datetime import datetime
+
+from fastapi.responses import Response
+
 from ...core.deps import get_db
-from ...core.exceptions import NotFoundError, ValidationError, DuplicateError
+from ...core.exceptions import NotFoundError, ValidationError
 from ...schemas.borrower import (
     BorrowerCreate,
-    BorrowerResponse,
     BorrowerDetailed,
+    BorrowerResponse,
     BorrowerUpdate,
 )
-from ...schemas.common import PaginatedResponse
 from ...services import borrower_service
 from ...services.export_service import ExportService
-from fastapi.responses import Response
-from datetime import datetime
 
 router = APIRouter(prefix="/borrowers", tags=["borrowers"])
 
@@ -461,10 +463,12 @@ def list_borrowers(
     - limit: Maximum number of results (alternative to page_size, 1-500, default 10)
     - offset: Pagination offset (alternative to page, default 0)
     """
+    from datetime import date
+
+    from sqlalchemy import and_
+
     from ...models.circulation import CirculationTransaction
     from ...services import settings_service
-    from sqlalchemy import and_
-    from datetime import date
 
     # Convert page/page_size to limit/offset if provided
     if page is not None and page_size is not None:

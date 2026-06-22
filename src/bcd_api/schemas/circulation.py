@@ -1,11 +1,12 @@
 """Pydantic schemas for CirculationTransaction model."""
 
-from typing import Optional
 from datetime import date, datetime
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.shared.constants import CirculationStatus
 from src.bcd_api.schemas.common import TimestampMixin
+from src.shared.constants import CirculationStatus
 
 
 class CheckoutRequest(BaseModel):

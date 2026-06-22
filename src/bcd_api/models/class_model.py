@@ -1,7 +1,8 @@
 """Class model - represents a school class/grade level."""
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime
+
+from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from src.bcd_api.core.database import Base

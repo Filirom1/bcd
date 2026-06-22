@@ -4,12 +4,14 @@ Report commands
 Commands for generating library reports and statistics.
 """
 
-import click
 from typing import Optional
+
+import click
+from rich.panel import Panel
+from rich.table import Table
+
 from ..client import get_client
 from ..utils.display import console, print_error
-from rich.table import Table
-from rich.panel import Panel
 
 
 @click.group(name="report")

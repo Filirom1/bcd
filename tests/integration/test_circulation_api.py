@@ -4,12 +4,8 @@ Integration tests for circulation API endpoints
 Tests full HTTP request/response cycle through FastAPI endpoints.
 """
 
-import pytest
-from fastapi.testclient import TestClient
-from datetime import date, timedelta
 
-from src.bcd_api.main import app
-from src.bcd_api.core.database import get_db
+import pytest
 
 
 class TestCheckoutAPI:

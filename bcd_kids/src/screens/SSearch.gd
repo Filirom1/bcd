@@ -42,7 +42,7 @@ func _ready() -> void:
 
 	_search_btn.pressed.connect(func(): _perform_search(_autocomplete.get_text()))
 
-	_filter_panel.setup(GS.filter_medium_types, GS.filter_genres)
+	_filter_panel.setup(GS.filter_medium_types)
 	_filter_panel.filters_changed.connect(_on_filters_changed)
 
 func _update_breadcrumb() -> void:

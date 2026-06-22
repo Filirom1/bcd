@@ -4,14 +4,16 @@ Catalog command
 Catalog management including import, search, and add operations.
 """
 
-import click
 from pathlib import Path
 from typing import Optional
+
+import click
+
 from ..client import get_client
 from ..utils.display import (
     console,
-    print_header,
     print_error,
+    print_header,
     print_warning,
 )
 
@@ -36,7 +38,6 @@ def catalog():
 @click.option("--author", help="Search by author")
 @click.option("--isbn", help="Search by ISBN")
 @click.option("--category", help="Filter by category")
-@click.option("--genre", help="Filter by genre")
 @click.option("--limit", default=20, help="Maximum results to show")
 @click.option(
     "--api-url",
@@ -49,7 +50,6 @@ def search(
     author: Optional[str],
     isbn: Optional[str],
     category: Optional[str],
-    genre: Optional[str],
     limit: int,
     api_url: str,
 ):
@@ -61,7 +61,6 @@ def search(
         bcd-cli catalog search --title "Harry Potter"
         bcd-cli catalog search --author "Rowling"
         bcd-cli catalog search --isbn 978-2-8006-8734-6
-        bcd-cli catalog search --category "Fiction" --genre "Album"
     """
     try:
         client = get_client(base_url=api_url)
@@ -78,8 +77,6 @@ def search(
             params["isbn"] = isbn
         if category:
             params["category"] = category
-        if genre:
-            params["genre"] = genre
         params["limit"] = limit
 
         # Search
@@ -128,7 +125,7 @@ def search(
         if total > limit:
             console.print()
             console.print(f"[yellow]Showing {len(records)} of {total} results[/yellow]")
-            console.print(f"[dim]Use --limit to show more results[/dim]")
+            console.print("[dim]Use --limit to show more results[/dim]")
 
     except click.Abort:
         raise
@@ -160,6 +157,7 @@ def transform_csv(input_file: str, output_file: str, format: str):
     """
     try:
         from pathlib import Path
+
         from src.bcd_api.services.csv_transform import transform_bcd_to_dublin_core
 
         print_header("CSV Transformation")
@@ -251,7 +249,7 @@ def import_dublin_core(file_path: str, api_url: str, yes: bool):
         file_size = file_path_obj.stat().st_size
         console.print(f"[cyan]File:[/cyan] {file_path_obj.name}")
         console.print(f"[cyan]Size:[/cyan] {file_size:,} bytes")
-        console.print(f"[cyan]Format:[/cyan] Dublin Core CSV")
+        console.print("[cyan]Format:[/cyan] Dublin Core CSV")
         console.print()
 
         # Confirm import (unless --yes flag)
@@ -331,7 +329,6 @@ def import_dublin_core(file_path: str, api_url: str, yes: bool):
 @click.option("--publisher", help="Publisher")
 @click.option("--year", type=int, help="Publication year")
 @click.option("--category", help="Category")
-@click.option("--genre", help="Genre")
 @click.option(
     "--api-url",
     default="http://localhost:8888",
@@ -345,7 +342,6 @@ def add(
     publisher: Optional[str],
     year: Optional[int],
     category: Optional[str],
-    genre: Optional[str],
     api_url: str,
 ):
     """
@@ -385,8 +381,6 @@ def add(
             data["publication_year"] = year
         if category:
             data["category"] = category
-        if genre:
-            data["genre"] = genre
 
         # Determine if ISBN lookup should be used
         isbn_lookup = bool(isbn)

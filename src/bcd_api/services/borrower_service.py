@@ -14,22 +14,20 @@ import unicodedata
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 from src.bcd_api.core.exceptions import (
-    NotFoundError,
     DuplicateError,
-    ValidationError,
 )
 from src.bcd_api.models.borrower import Borrower
-from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.system_settings import SystemSettings
-from src.shared.validators import validate_id_format
 from src.shared.constants import BorrowerRole
+from src.shared.validators import validate_id_format
 
 
 def create_borrower(
@@ -193,8 +191,9 @@ def list_borrowers(
     Returns:
         Tuple of (List of Borrower objects, total count)
     """
-    from sqlalchemy import or_, func, and_
     from datetime import date
+
+    from sqlalchemy import and_
 
     query = db.query(Borrower)
 

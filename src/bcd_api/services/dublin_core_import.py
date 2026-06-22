@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.item import Item
-from src.bcd_api.services.import_service import ImportResult, DublinCoreColumns, _normalize_isbn
+from src.bcd_api.services.import_service import DublinCoreColumns, ImportResult, _normalize_isbn
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,6 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
                 "publication_year": publication_year,
                 "collection": row.get(DublinCoreColumns.SOURCE, "").strip() or None,
                 "series_number": row.get(DublinCoreColumns.RELATION, "").strip() or None,
-                "genre": None,  # No direct mapping
                 "medium_type": medium_type,
                 "keywords": subjects,
                 "level": row.get(DublinCoreColumns.COVERAGE, "").strip() or None,

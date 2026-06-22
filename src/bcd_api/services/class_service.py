@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from src.bcd_api.core.exceptions import NotFoundError, DuplicateError
+from src.bcd_api.core.exceptions import DuplicateError
 from src.bcd_api.models.class_model import Class
 
 

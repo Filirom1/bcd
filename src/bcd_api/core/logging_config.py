@@ -3,6 +3,7 @@
 import logging
 import logging.config
 from pathlib import Path
+
 from .config import settings
 
 
@@ -21,7 +22,7 @@ class CleanLoggerNameFormatter(logging.Formatter):
 def _get_log_dir() -> Path:
     """Return the log directory, portable-aware."""
     try:
-        from .portable import is_portable, get_app_dir
+        from .portable import get_app_dir, is_portable
         if is_portable():
             return get_app_dir() / "logs"
     except ImportError:

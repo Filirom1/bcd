@@ -1,17 +1,18 @@
 """Unit tests for BNF SRU API service."""
 
-import pytest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 import httpx
+import pytest
 
 from src.bcd_api.services.bnf_service import (
-    search_by_isbn,
-    parse_unimarc_xml,
-    _normalize_isbn,
-    _parse_page_count,
-    _parse_binding_type,
     _has_illustrations,
+    _normalize_isbn,
     _parse_author_name,
+    _parse_binding_type,
+    _parse_page_count,
+    parse_unimarc_xml,
+    search_by_isbn,
 )
 
 

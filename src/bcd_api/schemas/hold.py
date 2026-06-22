@@ -1,11 +1,12 @@
 """Pydantic schemas for Hold model."""
 
-from typing import Optional
 from datetime import date, datetime
+from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.shared.constants import HoldStatus
 from src.bcd_api.schemas.common import TimestampMixin
+from src.shared.constants import HoldStatus
 
 
 class HoldCreate(BaseModel):

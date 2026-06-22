@@ -5,17 +5,18 @@ Business logic for generating library reports and statistics.
 """
 
 import json
-from datetime import datetime, date, timedelta
-from typing import List, Dict, Any, Optional
-from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, desc, case
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from ..models.circulation import CirculationTransaction
-from ..models.borrower import Borrower
+from sqlalchemy import and_, case, desc, func
+from sqlalchemy.orm import Session
+
 from ..models.bibliographic_record import BiblographicRecord
-from ..models.item import Item
+from ..models.borrower import Borrower
+from ..models.circulation import CirculationTransaction
 from ..models.class_model import Class
 from ..models.hold import Hold
+from ..models.item import Item
 
 
 def _deserialize_authors(authors) -> str:
@@ -34,7 +35,6 @@ def get_collection_stats(
     crew_method: str = "never_borrowed",
     min_age_years: float = 0.0,
     exclude_periodicals: bool = True,
-    genre: Optional[str] = None,
     medium_type: Optional[str] = None,
     target_audience: Optional[str] = None,
     condition: Optional[str] = None,
@@ -46,7 +46,7 @@ def get_collection_stats(
     """
     Compute aggregation stats for the collection report (breakdowns + histograms).
 
-    Returns GROUP BY counts by genre, medium_type, target_audience, condition,
+    Returns GROUP BY counts by medium_type, target_audience, condition,
     plus histograms by publication_year and acquisition_year.
 
     Args:
@@ -54,7 +54,6 @@ def get_collection_stats(
         crew_method: 'never_borrowed' or 'low_circulation' or 'damaged_old' etc.
         min_age_years: Minimum age in collection (years); 0 = no filter
         exclude_periodicals: Exclude items with medium_type = 'Périodique'
-        genre: Cross-filter by genre
         medium_type: Cross-filter by medium_type
         target_audience: Cross-filter by target_audience
         condition: Cross-filter by condition
@@ -68,7 +67,7 @@ def get_collection_stats(
     """
     today = date.today()
 
-    def _base_query(db, exclude_genre=False, exclude_medium_type=False,
+    def _base_query(db, exclude_medium_type=False,
                     exclude_target_audience=False, exclude_condition=False,
                     exclude_pub_year=False, exclude_acq_year=False):
         """Build the base filtered query for aggregations."""
@@ -109,8 +108,6 @@ def get_collection_stats(
             q = q.filter(BiblographicRecord.medium_type != "Périodique")
 
         # Cross-filters (each excluded for its own breakdown query)
-        if genre and not exclude_genre:
-            q = q.filter(BiblographicRecord.genre == genre)
         if medium_type and not exclude_medium_type:
             q = q.filter(BiblographicRecord.medium_type == medium_type)
         if target_audience and not exclude_target_audience:
@@ -145,7 +142,6 @@ def get_collection_stats(
         return [{"value": r[0], "count": r[1], "damaged_count": r[2] or 0} for r in rows]
 
     # Each breakdown excludes its own filter so the full distribution is visible
-    genre_rows = _breakdown(_base_query(db, exclude_genre=True), BiblographicRecord.genre)
     medium_rows = _breakdown(_base_query(db, exclude_medium_type=True), BiblographicRecord.medium_type)
     audience_rows = _breakdown(_base_query(db, exclude_target_audience=True), BiblographicRecord.target_audience)
     condition_rows = _breakdown(_base_query(db, exclude_condition=True), Item.condition)
@@ -186,7 +182,6 @@ def get_collection_stats(
     return {
         "total_count": total,
         "breakdowns": {
-            "genre": genre_rows,
             "medium_type": medium_rows,
             "target_audience": audience_rows,
             "condition": condition_rows,
@@ -314,7 +309,6 @@ def get_overdue_summary_by_class(
 def get_never_borrowed_items(
     db: Session,
     academic_year: Optional[str] = None,
-    genre: Optional[str] = None,
     level: Optional[str] = None,
     target_audience: Optional[str] = None,
     medium_type: Optional[str] = None,
@@ -327,7 +321,6 @@ def get_never_borrowed_items(
     Args:
         db: Database session
         academic_year: Optional filter by academic year (acquisition date)
-        genre: Filter by genre
         level: Filter by reading level
         target_audience: Filter by target audience (child/youth/adult)
         medium_type: Filter by medium type
@@ -364,10 +357,6 @@ def get_never_borrowed_items(
                     Item.acquisition_date <= end_date,
                 )
             )
-
-    # Filter by genre
-    if genre:
-        query = query.filter(BiblographicRecord.genre.ilike(f"%{genre}%"))
 
     # Filter by level
     if level:
@@ -406,7 +395,6 @@ def get_never_borrowed_items(
             "title": biblio.title,
             "authors": _deserialize_authors(biblio.authors),
             "publisher": biblio.publisher,
-            "genre": biblio.genre,
             "level": biblio.level,
             "target_audience": biblio.target_audience,
             "medium_type": biblio.medium_type,
@@ -429,7 +417,6 @@ def get_most_borrowed_titles(
     period: str = "year",  # "month", "year", "all-time"
     limit: int = 20,
     medium_type: Optional[str] = None,
-    genre: Optional[str] = None,
     target_audience: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
@@ -463,7 +450,6 @@ def get_most_borrowed_titles(
         BiblographicRecord.publisher,
         BiblographicRecord.publication_year,
         BiblographicRecord.medium_type,
-        BiblographicRecord.genre,
         BiblographicRecord.target_audience,
         func.count(CirculationTransaction.id).label("checkout_count"),
     ).join(
@@ -478,9 +464,6 @@ def get_most_borrowed_titles(
     if medium_type:
         query = query.filter(BiblographicRecord.medium_type == medium_type)
 
-    if genre:
-        query = query.filter(BiblographicRecord.genre == genre)
-
     if target_audience:
         query = query.filter(BiblographicRecord.target_audience == target_audience)
 
@@ -491,7 +474,6 @@ def get_most_borrowed_titles(
         BiblographicRecord.publisher,
         BiblographicRecord.publication_year,
         BiblographicRecord.medium_type,
-        BiblographicRecord.genre,
         BiblographicRecord.target_audience,
     ).order_by(
         desc("checkout_count")
@@ -500,7 +482,7 @@ def get_most_borrowed_titles(
     results = query.all()
 
     most_borrowed = []
-    for biblio_id, title, authors, publisher, pub_year, med_type, genre_val, audience_val, count in results:
+    for biblio_id, title, authors, publisher, pub_year, med_type, audience_val, count in results:
         # Count total copies for this bibliographic record
         total_copies = db.query(func.count(Item.id)).filter(
             Item.bibliographic_record_id == biblio_id
@@ -513,7 +495,6 @@ def get_most_borrowed_titles(
             "publisher": publisher,
             "publication_year": pub_year,
             "medium_type": med_type,
-            "genre": genre_val,
             "target_audience": audience_val,
             "checkout_count": count,
             "total_copies": total_copies,

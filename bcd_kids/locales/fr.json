@@ -68,7 +68,6 @@
 		"title": "Rechercher",
 		"placeholder": "Chercher un livre...",
 		"filter_type": "Type:",
-		"filter_genre": "Genre:",
 		"filter_audience": "Public:",
 		"audience_all": "Tous",
 		"audience_child": "Enfant",

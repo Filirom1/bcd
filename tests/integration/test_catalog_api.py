@@ -63,8 +63,9 @@ Priority: Medium (functionality works, but integration test coverage incomplete)
 Reference: Constitution III - Testing Standards (line 69-98)
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 # Skip all API tests - use test_catalog_service.py for equivalent coverage
 pytestmark = pytest.mark.skip(

@@ -4,12 +4,14 @@ Borrower commands
 Commands for managing borrowers (students, teachers, staff).
 """
 
-import click
 from typing import Optional
+
+import click
+from rich.panel import Panel
+from rich.table import Table
+
 from ..client import get_client
 from ..utils.display import console, print_error
-from rich.table import Table
-from rich.panel import Panel
 
 
 @click.group(name="borrower")
@@ -73,7 +75,7 @@ def add_borrower(
 
         if response.status_code == 201:
             data = response.json()
-            console.print(f"\n[green]✓[/green] Borrower created successfully")
+            console.print("\n[green]✓[/green] Borrower created successfully")
             console.print(f"  ID: {data['borrower_id']}")
             console.print(f"  Name: {data['full_name']}")
             console.print(f"  Barcode: {data['barcode']}")
@@ -199,7 +201,7 @@ Status: {'[green]Active[/green]' if data['active'] else '[red]Blocked[/red]'}
             if data.get("blocked_reason"):
                 info_text += f"\n[red]Blocked Reason:[/red] {data['blocked_reason']}\n"
 
-            info_text += f"\n[bold]Circulation Statistics[/bold]\n"
+            info_text += "\n[bold]Circulation Statistics[/bold]\n"
             info_text += f"Current Loans: {data.get('current_loans_count', 0)}\n"
             info_text += f"Total Checkouts: {data.get('total_checkouts', 0)}\n"
             info_text += f"Overdue Items: {data.get('overdue_count', 0)}\n"

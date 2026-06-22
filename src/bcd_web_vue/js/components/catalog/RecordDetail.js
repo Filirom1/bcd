@@ -463,10 +463,6 @@ export default defineComponent({
                                     </tr>
 
                                     <!-- Classification -->
-                                    <tr v-if="record.genre">
-                                        <th>{{ t('bibliographic.genre') }}</th>
-                                        <td>{{ record.genre }}</td>
-                                    </tr>
                                     <tr v-if="record.medium_type">
                                         <th>{{ t('bibliographic.medium_type') }}</th>
                                         <td>{{ record.medium_type }}</td>

@@ -1,6 +1,6 @@
 /**
  * Shared composable for cross-filter state used by collection reports.
- * Handles: genre, medium_type, target_audience, taux_rotation min/max.
+ * Handles: medium_type, target_audience, taux_rotation min/max.
  *
  * Each report may extend crossFilters with additional keys (e.g. condition,
  * pub_year_min/max in CollectionReport).
@@ -10,7 +10,6 @@ const { ref, computed } = Vue;
 
 export function useReportFilters(t, audienceLabel, extraFilters = {}) {
     const crossFilters = ref({
-        genre: null,
         medium_type: null,
         target_audience: null,
         taux_rotation_min: null,
@@ -55,7 +54,6 @@ export function useReportFilters(t, audienceLabel, extraFilters = {}) {
     const applyFilters = (items, excludeKey = null, tauxField = 'taux_rotation') => {
         const cf = crossFilters.value;
         return items.filter(item => {
-            if (excludeKey !== 'genre'           && cf.genre           && item.genre           !== cf.genre)           return false;
             if (excludeKey !== 'medium_type'     && cf.medium_type     && item.medium_type     !== cf.medium_type)     return false;
             if (excludeKey !== 'target_audience' && cf.target_audience && item.target_audience !== cf.target_audience) return false;
             if (excludeKey !== 'taux_rotation') {
@@ -85,7 +83,6 @@ export function useReportFilters(t, audienceLabel, extraFilters = {}) {
     const activeChips = computed(() => {
         const cf = crossFilters.value;
         const chips = [];
-        if (cf.genre)           chips.push({ key: 'genre',           label: t('bibliographic.genre'),           value: cf.genre });
         if (cf.medium_type)     chips.push({ key: 'medium_type',     label: t('bibliographic.medium_type'),     value: cf.medium_type });
         if (cf.target_audience) chips.push({ key: 'target_audience', label: t('bibliographic.target_audience'), value: audienceLabel(cf.target_audience) });
         if (cf.taux_rotation_min !== null || cf.taux_rotation_max !== null) {

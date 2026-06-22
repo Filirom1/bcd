@@ -4,12 +4,14 @@ Hold commands
 Commands for managing holds/reservations (librarian-mediated).
 """
 
-import click
 from typing import Optional
+
+import click
+from rich.panel import Panel
+from rich.table import Table
+
 from ..client import get_client
 from ..utils.display import console, print_error
-from rich.table import Table
-from rich.panel import Panel
 
 
 @click.group(name="hold")
@@ -433,18 +435,18 @@ def ready_holds(api_url: str):
 
             for hold in holds:
                 # Calculate days until expiration
-                from datetime import datetime, date
+                from datetime import date, datetime
                 exp_date = hold.get("expiration_date")
                 if exp_date:
                     try:
                         exp = datetime.strptime(exp_date, "%Y-%m-%d").date()
                         days_left = (exp - date.today()).days
                         if days_left < 0:
-                            expires_display = f"[red]Expiré[/red]"
+                            expires_display = "[red]Expiré[/red]"
                         elif days_left == 0:
-                            expires_display = f"[yellow]Aujourd'hui[/yellow]"
+                            expires_display = "[yellow]Aujourd'hui[/yellow]"
                         elif days_left == 1:
-                            expires_display = f"[yellow]1 jour[/yellow]"
+                            expires_display = "[yellow]1 jour[/yellow]"
                         else:
                             expires_display = f"{days_left} jours"
                     except:

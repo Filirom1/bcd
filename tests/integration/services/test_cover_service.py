@@ -4,13 +4,12 @@ Tests verify the end-to-end flow: ISBN input → provider cascade → file on di
 No real HTTP requests are made; httpx is patched at the client level.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 from src.bcd_api.services import cover_service
-from src.bcd_api.services.cover_service import download_cover, configure
-
+from src.bcd_api.services.cover_service import configure, download_cover
 
 # ---------------------------------------------------------------------------
 # Fixtures
