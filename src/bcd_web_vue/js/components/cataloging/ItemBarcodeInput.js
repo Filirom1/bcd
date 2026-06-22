@@ -44,7 +44,7 @@ export default defineComponent({
         }
     },
 
-    emits: ['item-created', 'done'],
+    emits: ['item-created', 'done', 'edit-record'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
@@ -298,13 +298,25 @@ export default defineComponent({
                 {{ $t('cataloging.create_items_title') }}
             </h5>
 
-            <div class="alert alert-info mb-4">
-                <p class="mb-2">
-                    <strong>{{ $t('cataloging.record_created_title') }}:</strong> {{ recordTitle }}
-                </p>
-                <p class="mb-0 small">
-                    {{ $t('cataloging.scan_barcodes_help') }}
-                </p>
+            <div class="alert alert-info mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <p class="mb-2">
+                        <strong>{{ $t('cataloging.record_created_title') }}:</strong> {{ recordTitle }}
+                    </p>
+                    <p class="mb-0 small">
+                        {{ $t('cataloging.scan_barcodes_help') }}
+                    </p>
+                </div>
+                <div>
+                    <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        @click="$emit('edit-record')"
+                    >
+                        <i class="bi bi-pencil me-1"></i>
+                        {{ $t('cataloging.edit_record_button') }}
+                    </button>
+                </div>
             </div>
 
             <form @submit.prevent="createItem">

@@ -21,6 +21,10 @@ export default defineComponent({
         isbn: {
             type: String,
             default: ''
+        },
+        existingRecord: {
+            type: Object,
+            default: null
         }
     },
 
@@ -74,41 +78,73 @@ export default defineComponent({
             return isbn.replace(/^(isbn:|issn:)/, '').replace(/[-\s]/g, '');
         };
 
-        // Auto-fill from BNF data
-        watch(() => props.bnfData, (bnfData) => {
-            if (bnfData) {
-                formData.isbn = normalizeISBN(bnfData.isbn || props.isbn);
-                formData.title = bnfData.title || '';
-                formData.subtitle = bnfData.subtitle || '';
-                formData.publisher = bnfData.publisher || '';
-                formData.publication_year = bnfData.publication_year || null;
-                formData.collection = bnfData.collection || '';
-                formData.series_number = bnfData.series_number || '';
-                formData.language = bnfData.language || 'fr';
-                formData.genre = bnfData.genre || '';
-                formData.description = bnfData.description || '';
-                formData.page_count = bnfData.page_count || null;
-                formData.has_illustrations = bnfData.has_illustrations || null;
-                formData.dimensions = bnfData.dimensions || '';
+        // Pre-fill from existing record if provided, otherwise auto-fill from BNF data
+        const prefillForm = () => {
+            if (props.existingRecord) {
+                const rec = props.existingRecord;
+                formData.isbn = normalizeISBN(rec.isbn_value || rec.isbn || props.isbn);
+                formData.title = rec.title || '';
+                formData.subtitle = rec.subtitle || '';
+                formData.publisher = rec.publisher || '';
+                formData.publication_year = rec.publication_year || null;
+                formData.collection = rec.collection || '';
+                formData.series_number = rec.series_number || '';
+                formData.language = rec.language || 'fr';
+                formData.genre = rec.genre || '';
+                formData.level = rec.level || '';
+                formData.medium_type = rec.medium_type || 'Livre';
+                formData.target_audience = rec.target_audience || 'child';
+                formData.description = rec.description || '';
+                formData.page_count = rec.page_count || null;
+                formData.has_illustrations = rec.has_illustrations !== null ? rec.has_illustrations : false;
+                formData.dimensions = rec.dimensions || '';
 
                 // Handle arrays
-                formData.authors = bnfData.authors || [];
-                formData.illustrators = bnfData.illustrators || [];
-                formData.keywords = bnfData.keywords || [];
+                formData.authors = Array.isArray(rec.authors) ? rec.authors : [];
+                formData.illustrators = Array.isArray(rec.illustrators) ? rec.illustrators : [];
+                formData.keywords = Array.isArray(rec.keywords) ? rec.keywords : [];
 
                 // Convert arrays to text for textarea
-                authorsText.value = (bnfData.authors || []).join('\n');
-                illustratorsText.value = (bnfData.illustrators || []).join('\n');
-                keywordsText.value = (bnfData.keywords || []).join(', ');
-            }
-        }, { immediate: true });
+                authorsText.value = formData.authors.join('\n');
+                illustratorsText.value = formData.illustrators.join('\n');
+                keywordsText.value = formData.keywords.join(', ');
+            } else if (props.bnfData) {
+                const bnf = props.bnfData;
+                formData.isbn = normalizeISBN(bnf.isbn || props.isbn);
+                formData.title = bnf.title || '';
+                formData.subtitle = bnf.subtitle || '';
+                formData.publisher = bnf.publisher || '';
+                formData.publication_year = bnf.publication_year || null;
+                formData.collection = bnf.collection || '';
+                formData.series_number = bnf.series_number || '';
+                formData.language = bnf.language || 'fr';
+                formData.genre = bnf.genre || '';
+                formData.level = bnf.level || '';
+                formData.medium_type = bnf.medium_type || 'Livre';
+                formData.target_audience = bnf.target_audience || 'child';
+                formData.description = bnf.description || '';
+                formData.page_count = bnf.page_count || null;
+                formData.has_illustrations = bnf.has_illustrations !== null ? bnf.has_illustrations : false;
+                formData.dimensions = bnf.dimensions || '';
 
-        // If no BNF data, use ISBN prop
-        onMounted(() => {
-            if (!props.bnfData && props.isbn) {
+                // Handle arrays
+                formData.authors = bnf.authors || [];
+                formData.illustrators = bnf.illustrators || [];
+                formData.keywords = bnf.keywords || [];
+
+                // Convert arrays to text for textarea
+                authorsText.value = formData.authors.join('\n');
+                illustratorsText.value = formData.illustrators.join('\n');
+                keywordsText.value = formData.keywords.join(', ');
+            } else if (props.isbn) {
                 formData.isbn = normalizeISBN(props.isbn);
             }
-        });
+        };
+
+        // Watchers/Lifecycle
+        watch(() => props.existingRecord, prefillForm, { immediate: true });
+        watch(() => props.bnfData, prefillForm, { immediate: true });
+        onMounted(prefillForm);
 
         /**
          * Submit bibliographic record
@@ -139,10 +175,20 @@ export default defineComponent({
                     .map(k => k.trim())
                     .filter(k => k);
 
-                // Create record via API
-                const record = await apiClient.post('/catalog/bibliographic', formData);
+                let record;
+                if (props.existingRecord) {
+                    const recordId = props.existingRecord.id || props.existingRecord.record_id;
+                    const payload = { ...formData };
+                    if (payload.publication_year === '') payload.publication_year = null;
+                    if (payload.page_count === '') payload.page_count = null;
 
-                success(t('cataloging.record_created', { title: record.title }));
+                    record = await apiClient.patch(`/catalog/records/${recordId}`, payload);
+                    success(t('cataloging.record_updated', { title: record.title }));
+                } else {
+                    // Create record via API
+                    record = await apiClient.post('/catalog/bibliographic', formData);
+                    success(t('cataloging.record_created', { title: record.title }));
+                }
 
                 // Emit success with created record
                 emit('record-created', record);
@@ -202,14 +248,28 @@ export default defineComponent({
             isBnfData,
             lookupSource,
             coverPreviewUrl,
-            handleCoverError
+            handleCoverError,
+            existingRecord: computed(() => props.existingRecord)
         };
     },
 
     template: `
         <div class="bibliographic-form">
+            <!-- Existing Record Banner -->
+            <div v-if="existingRecord" class="alert alert-warning mb-4 d-flex gap-3 align-items-start">
+                <div class="flex-grow-1">
+                    <h6 class="mb-2">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {{ $t('cataloging.editing_existing_record') }}
+                    </h6>
+                    <p class="mb-0 small">
+                        {{ $t('cataloging.editing_existing_record_help') }}
+                    </p>
+                </div>
+            </div>
+
             <!-- Lookup Data Banner -->
-            <div v-if="isBnfData" class="alert alert-success mb-4 d-flex gap-3 align-items-start">
+            <div v-if="isBnfData && !existingRecord" class="alert alert-success mb-4 d-flex gap-3 align-items-start">
                 <div class="flex-grow-1">
                     <h6 class="mb-2">
                         <i class="bi bi-check-circle"></i>
