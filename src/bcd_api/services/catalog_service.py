@@ -211,7 +211,7 @@ def lookup_isbn(db: Session, isbn: str) -> Optional[Dict[str, Any]]:
                 # Discard whatever isbn/issn SUDOC returned; use our prefixed normalized form
                 data.pop("issn", None)
                 data["isbn"] = normalized_isbn
-                data.setdefault("medium_type", MediumType.PERIODIQUE.value)
+                data["medium_type"] = MediumType.PERIODIQUE.value
                 source = "sudoc"
             else:
                 logger.info(f"ISSN {bare_identifier} not found in SUDOC")

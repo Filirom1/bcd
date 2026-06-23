@@ -179,6 +179,7 @@ def _parse_pica_record(record_xml: str) -> Optional[dict]:
         issn = _sub("005A", "0") or _sub("005A", "e")
         if issn:
             data["issn"] = issn
+            data["medium_type"] = MediumType.PERIODIQUE.value
 
         # Series / collection (036C$a)
         series = _sub("036C", "a")

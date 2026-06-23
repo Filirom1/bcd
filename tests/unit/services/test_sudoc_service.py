@@ -169,6 +169,7 @@ class TestParsePicaRecord:
         ])
         result = _parse_pica_record(rec)
         assert result["issn"] == "1147-3371"
+        assert result["medium_type"] == "Périodique"
 
     def test_parse_series(self):
         rec = _pica_xml([
