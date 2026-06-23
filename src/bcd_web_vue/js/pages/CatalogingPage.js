@@ -71,7 +71,9 @@ export default defineComponent({
                 title: record.title,
                 medium_type: record.medium_type,
                 dewey_number: record.dewey_number || null,
-                authors: record.authors || []
+                authors: record.authors || [],
+                collection: record.collection || null,
+                illustrators: record.illustrators || []
             };
             state.value = 'item-creation';
         };
@@ -85,7 +87,9 @@ export default defineComponent({
                 title: record.title,
                 medium_type: record.medium_type,
                 dewey_number: record.dewey_number || null,
-                authors: record.authors || []
+                authors: record.authors || [],
+                collection: record.collection || null,
+                illustrators: record.illustrators || []
             };
             existingRecord.value = null;
             state.value = 'item-creation';
@@ -233,6 +237,8 @@ export default defineComponent({
                         :record-medium-type="createdRecord.medium_type"
                         :record-dewey-number="createdRecord.dewey_number"
                         :record-authors="createdRecord.authors"
+                        :record-collection="createdRecord.collection"
+                        :record-illustrators="createdRecord.illustrators"
                         @item-created="(item) => {}"
                         @edit-record="handleEditRecord"
                         @done="handleItemsDone"

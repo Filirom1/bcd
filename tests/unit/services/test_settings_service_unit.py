@@ -154,3 +154,15 @@ class TestResetToDefaults:
         """Test error when settings don't exist."""
         with pytest.raises(NotFoundError):
             settings_service.reset_to_defaults(db_session)
+
+
+class TestDefaultCallNumberRules:
+    """Test default call number rules and the presence of `{SER1}` for Bandes dessinées."""
+
+    def test_default_rules_use_ser1_for_comics(self, db_session):
+        """Test that default call number rules have the BD rule with {SER1}."""
+        settings = settings_service.initialize_default_settings(db_session)
+        assert settings.catalog_call_number_rules is not None
+        assert "BD {SER1}" in settings.catalog_call_number_rules
+        assert "BD {AUT1}" not in settings.catalog_call_number_rules
+

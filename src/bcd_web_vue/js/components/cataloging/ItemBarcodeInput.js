@@ -37,6 +37,14 @@ export default defineComponent({
         recordAuthors: {
             type: Array,
             default: () => []
+        },
+        recordCollection: {
+            type: String,
+            default: null
+        },
+        recordIllustrators: {
+            type: Array,
+            default: () => []
         }
     },
 
@@ -92,6 +100,57 @@ export default defineComponent({
             return cleanLastName.slice(0, 3);
         }
 
+        // Clean string by stripping leading articles and trimming
+        function stripLeadingArticles(text) {
+            if (!text) return '';
+            let s = text.trim();
+            const articles = [
+                /^(les?|la|l'|une?|des?|d')\s+/i,
+                /^(the|an?)\s+/i,
+                /^l'/i,
+                /^d'/i
+            ];
+            for (const re of articles) {
+                if (re.test(s)) {
+                    s = s.replace(re, '');
+                    break;
+                }
+            }
+            return s;
+        }
+
+        // SER1: first 1 uppercase letter/digit of series/collection name (fallback to AUT1 if empty)
+        function computeSer1(collection, fallbackAut1) {
+            if (!collection || !collection.trim()) return fallbackAut1;
+            const cleaned = stripLeadingArticles(collection);
+            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            return normalized.slice(0, 1) || fallbackAut1;
+        }
+
+        // SER3: first 3 uppercase letters/digits of series/collection name (fallback to AUT3 if empty)
+        function computeSer3(collection, fallbackAut3) {
+            if (!collection || !collection.trim()) return fallbackAut3;
+            const cleaned = stripLeadingArticles(collection);
+            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            return normalized.slice(0, 3) || fallbackAut3;
+        }
+
+        // TIT1: first 1 uppercase letter/digit of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
+        function computeTit1(title) {
+            if (!title) return '';
+            const cleaned = stripLeadingArticles(title);
+            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            return normalized.slice(0, 1);
+        }
+
+        // TIT3: first 3 uppercase letters/digits of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
+        function computeTit3(title) {
+            if (!title) return '';
+            const cleaned = stripLeadingArticles(title);
+            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            return normalized.slice(0, 3);
+        }
+
         // Suggest a shelf location based on medium type matching the available options
         function suggestShelfLocation(mediumType, locations) {
             if (!locations || !locations.length) return '';
@@ -115,6 +174,12 @@ export default defineComponent({
 
             const aut1 = computeAut1(props.recordAuthors);
             const aut3 = computeAut3(props.recordAuthors);
+            const ser1 = computeSer1(props.recordCollection, aut1);
+            const ser3 = computeSer3(props.recordCollection, aut3);
+            const ill1 = computeAut1(props.recordIllustrators) || aut1;
+            const ill3 = computeAut3(props.recordIllustrators) || aut3;
+            const tit1 = computeTit1(props.recordTitle);
+            const tit3 = computeTit3(props.recordTitle);
             const dewey = props.recordDeweyNumber ? props.recordDeweyNumber.trim() : '';
             const mediumType = props.recordMediumType ? props.recordMediumType.trim() : '';
             const currentShelf = shelfLocation.value ? shelfLocation.value.trim() : '';
@@ -142,6 +207,12 @@ export default defineComponent({
             return pattern
                 .replace(/{AUT1}/g, aut1)
                 .replace(/{AUT3}/g, aut3)
+                .replace(/{SER1}/g, ser1)
+                .replace(/{SER3}/g, ser3)
+                .replace(/{ILL1}/g, ill1)
+                .replace(/{ILL3}/g, ill3)
+                .replace(/{TIT1}/g, tit1)
+                .replace(/{TIT3}/g, tit3)
                 .replace(/{DEWEY}/g, dewey)
                 .trim()
                 .replace(/\s+/g, ' ');

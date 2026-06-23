@@ -667,6 +667,12 @@ export default defineComponent({
                             <span class="small fw-bold text-muted d-block mb-1">{{ t('settings.rule_guide') }}</span>
                             <span class="small text-muted d-block">{{ t('settings.rule_guide_aut1', { AUT1: '{AUT1}' }) }}</span>
                             <span class="small text-muted d-block">{{ t('settings.rule_guide_aut3', { AUT3: '{AUT3}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_ser1', { SER1: '{SER1}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_ser3', { SER3: '{SER3}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_ill1', { ILL1: '{ILL1}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_ill3', { ILL3: '{ILL3}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_tit1', { TIT1: '{TIT1}' }) }}</span>
+                            <span class="small text-muted d-block">{{ t('settings.rule_guide_tit3', { TIT3: '{TIT3}' }) }}</span>
                             <span class="small text-muted d-block">{{ t('settings.rule_guide_dewey', { DEWEY: '{DEWEY}' }) }}</span>
                         </div>
                     </div>

@@ -23,7 +23,7 @@ DEFAULT_SHELF_LOCATIONS = json.dumps([
     {"label": "Poésie",           "color": "#8e44ad"},
 ])
 
-DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":"Périodique","shelf_location":null,"pattern":""},{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {AUT1}"},{"medium_type":null,"shelf_location":"Documentaires","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]'
+DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":"Périodique","shelf_location":null,"pattern":""},{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]'
 
 
 def initialize_default_settings(db: Session) -> SystemSettings:
