@@ -57,7 +57,7 @@ class TestCreateBackupEndpoint:
         mock_metadata = MagicMock()
         mock_metadata.to_dict.return_value = {
             "filename": "bcd_backup_20260205_120000.db",
-            "file_path": "/home/nixos/src/local/bcd4/backups/bcd_backup_20260205_120000.db",
+            "file_path": "/workspace/backups/bcd_backup_20260205_120000.db",
             "size_mb": 5.42,
             "size_bytes": 5681152,
             "created_at": "2026-02-05T12:00:00",
@@ -119,7 +119,7 @@ class TestListBackupsEndpoint:
         mock_backup_service.get_database_size.return_value = {
             "size_mb": 5.45,
             "size_bytes": 5710848,
-            "path": "/home/nixos/src/local/bcd4/data/bcd.db"
+            "path": "/workspace/data/bcd.db"
         }
 
         response = client.get("/api/v1/admin/backups")
@@ -138,7 +138,7 @@ class TestListBackupsEndpoint:
         mock_backup_service.get_database_size.return_value = {
             "size_mb": 5.45,
             "size_bytes": 5710848,
-            "path": "/home/nixos/src/local/bcd4/data/bcd.db"
+            "path": "/workspace/data/bcd.db"
         }
 
         response = client.get("/api/v1/admin/backups")

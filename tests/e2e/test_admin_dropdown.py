@@ -124,7 +124,7 @@ class TestAdminDropdownCatalog:
 
         # Add Book button should still exist independently (it's an <a> tag, not <button>)
         # Check it links to cataloging page (works regardless of language: EN="Add Book", FR="Ajouter un livre")
-        add_book_button = page.locator('a.btn-success[href="#/cataloging"]')
+        add_book_button = page.locator('a.btn-primary[href="#/cataloging"]')
         expect(add_book_button).to_be_visible()
 
 

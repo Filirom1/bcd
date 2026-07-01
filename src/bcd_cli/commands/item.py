@@ -43,6 +43,22 @@ def status(item_id: str, api_url: str):
         if response.status_code == 200:
             item_data = response.json()
 
+            # Fetch bibliographic info dynamically from the unmodified API
+            biblio_id = item_data.get('bibliographic_record_id')
+            title = 'N/A'
+            authors = None
+            if biblio_id:
+                try:
+                    bib_resp = client.get(f"/api/v1/catalog/bibliographic/{biblio_id}")
+                    if bib_resp.status_code == 200:
+                        bib_data = bib_resp.json()
+                        title = bib_data.get('title', 'N/A')
+                        authors_list = bib_data.get('authors', [])
+                        if authors_list:
+                            authors = ", ".join(authors_list)
+                except Exception:
+                    pass
+
             # Display item header
             console.print(
                 Panel(
@@ -53,9 +69,9 @@ def status(item_id: str, api_url: str):
             console.print()
 
             # Bibliographic info
-            console.print(f"[bold]Titre / Title:[/bold] {item_data.get('title', 'N/A')}")
-            if item_data.get('authors'):
-                console.print(f"[bold]Auteur / Author:[/bold] {item_data['authors']}")
+            console.print(f"[bold]Titre / Title:[/bold] {title}")
+            if authors:
+                console.print(f"[bold]Auteur / Author:[/bold] {authors}")
             console.print(f"[bold]Cote / Call #:[/bold] {item_data.get('call_number', 'N/A')}")
 
             if item_data.get('shelf_location'):
@@ -85,19 +101,44 @@ def status(item_id: str, api_url: str):
 
             console.print(f"[bold]Statut / Status:[/bold] [{status_color}]{status_text}[/{status_color}]")
 
-            # If on loan, show borrower info
-            if item_data.get("status") == "on_loan" and item_data.get("current_borrower"):
-                borrower = item_data["current_borrower"]
-                console.print(
-                    f"  [bold]Emprunteur / Borrower:[/bold] {borrower.get('full_name', 'N/A')} "
-                    f"({borrower.get('class_name', 'N/A')})"
-                )
-                if borrower.get("checkout_date"):
-                    console.print(
-                        f"  [bold]Prêté le / Checked out:[/bold] {borrower['checkout_date']}"
-                    )
-                if borrower.get("due_date"):
-                    console.print(f"  [bold]Dû le / Due:[/bold] {borrower['due_date']}")
+            # If on loan, show borrower info from current loan details
+            if item_data.get("status") == "on_loan":
+                try:
+                    hist_data = client.get_item_history(item_id)
+                    current_loan = hist_data.get("current_loan")
+                    if current_loan:
+                        # Fetch the borrower's class name from their profile
+                        borrower_id_str = current_loan.get("borrower_id")
+                        class_name = "N/A"
+                        if borrower_id_str:
+                            try:
+                                borrower_resp = client.get(f"/api/v1/borrowers/{borrower_id_str}")
+                                if borrower_resp.status_code == 200:
+                                    borrower_profile = borrower_resp.json()
+                                    class_name = borrower_profile.get("class_name", "N/A")
+                            except Exception:
+                                pass
+                        
+                        console.print(
+                            f"  [bold]Emprunteur / Borrower:[/bold] {current_loan.get('borrower_name', 'N/A')} "
+                            f"({class_name})"
+                        )
+                        checkout_date_val = current_loan.get('checkout_date')
+                        if checkout_date_val:
+                            # Format date nicely
+                            from ..utils.display import format_date
+                            console.print(
+                                f"  [bold]Prêté le / Checked out:[/bold] {format_date(checkout_date_val)}"
+                            )
+                        due_date_val = current_loan.get('due_date')
+                        if due_date_val:
+                            # Format date nicely
+                            from ..utils.display import format_date
+                            console.print(
+                                f"  [bold]Dû le / Due:[/bold] {format_date(due_date_val)}"
+                            )
+                except Exception:
+                    pass
 
             console.print()
 

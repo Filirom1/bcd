@@ -15,8 +15,8 @@ class BorrowersPage(BasePage):
     # Selectors
     SEARCH_INPUT = 'input[type="text"]'
     CLASS_FILTER = 'select'
-    TABLE = 'table tbody tr'
-    BORROWER_ROW = 'table tbody tr'
+    TABLE = 'table tbody tr:visible'
+    BORROWER_ROW = 'table tbody tr:visible'
     BLOCK_BUTTON = 'button:has-text("Block"), button:has-text("Bloquer")'
     UNBLOCK_BUTTON = 'button:has-text("Unblock"), button:has-text("Débloquer")'
     MODAL = '.modal.show'  # Fixed: Only select active modals
@@ -28,7 +28,7 @@ class BorrowersPage(BasePage):
     CHECKBOX_ROW = 'input[type="checkbox"][data-borrower-id]'
     BULK_EDIT_MODAL = '#bulkEditModal'
     ADMIN_DROPDOWN = 'button.btn-danger.dropdown-toggle'
-    BULK_EDIT_MENU_ITEM = 'a.dropdown-item:has-text("Bulk Edit")'
+    BULK_EDIT_MENU_ITEM = '[data-testid="admin-menu-bulk-edit"]'
 
     def __init__(self, page: Page, server_url: str):
         super().__init__(page, server_url)
@@ -36,6 +36,7 @@ class BorrowersPage(BasePage):
     def goto(self):
         """Navigate to borrowers page."""
         self.navigate_to('borrowers')
+        self.page.reload()
         self.wait_for_table_load()
 
     def wait_for_table_load(self, timeout=10000):
@@ -115,7 +116,7 @@ class BorrowersPage(BasePage):
     def confirm_action(self):
         """Confirm modal action (block/unblock)."""
         # Wait for button to become enabled (after selecting reason)
-        confirm_button = self.page.locator('.modal.show button.btn-primary:not([disabled])')
+        confirm_button = self.page.locator('.modal.show button.btn-danger:not([disabled]), .modal.show button.btn-success:not([disabled]), .modal.show button.btn-primary:not([disabled])').last
         confirm_button.wait_for(state='visible', timeout=5000)
         confirm_button.click()
         self.page.wait_for_timeout(1000)

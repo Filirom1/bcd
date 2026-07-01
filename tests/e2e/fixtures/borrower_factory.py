@@ -48,6 +48,8 @@ class BorrowerFactory:
             blocked_reason=kwargs.get('blocked_reason'),
             class_id=kwargs.get('class_id'),
             grade_level=kwargs.get('grade_level'),
+            email=kwargs.get('email'),
+            phone=kwargs.get('phone'),
         )
 
         self.db.add(borrower)

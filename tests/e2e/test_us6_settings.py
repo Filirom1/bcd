@@ -17,6 +17,7 @@ Test Quality:
 
 
 import pytest
+from playwright.sync_api import expect
 
 
 class TestUS6BasicSettings:
@@ -119,7 +120,7 @@ class TestUS6SettingsIntegration:
 
     def test_us6_ac2_checkout_limit_affects_future_operations(
         self,
-        page,
+        circulation_page,
         settings_page,
         borrower_factory,
         item_factory,
@@ -142,7 +143,8 @@ class TestUS6SettingsIntegration:
             db_session.commit()
 
         # Create borrower and items
-        borrower = borrower_factory.create(borrower_id="LIM001")
+        borrower = borrower_factory.create(borrower_id="1601")
+        borrower_id = borrower.borrower_id
         items = []
         for i in range(4):
             item, record = item_factory.create_with_record(
@@ -150,43 +152,26 @@ class TestUS6SettingsIntegration:
                 item_id=f"LIM{i+1:03d}"
             )
             items.append(item)
+        item_ids = [item.item_id for item in items]
+        db_session.commit()
+        db_session.close()
 
         # Act - Try to checkout 4 items
-        page.goto(f"{server_url}/#/checkout")
-        page.wait_for_selector('.sidebar', timeout=10000)  # Wait for Vue app to load
-        page.wait_for_timeout(500)
-
-        # Enter borrower ID and submit
-        borrower_input = page.locator('input[inputmode="numeric"]').first
-        borrower_input.fill(borrower.borrower_id)
-        borrower_input.press('Enter')
-
-        # Wait for borrower to load - look for borrower card to appear
-        try:
-            page.wait_for_selector('.card .card-header:has-text("' + borrower.last_name + '")', timeout=5000)
-        except:
-            # If borrower doesn't load, skip test (may be API issue)
-            pytest.skip("Borrower failed to load - may be test environment issue")
-
-        # Wait for item scanner to be enabled
-        page.wait_for_selector('input.font-monospace:not([disabled])', timeout=5000)
+        circulation_page.goto_checkout()
+        circulation_page.page.reload()
+        circulation_page.page.wait_for_selector('.filter-input')
+        circulation_page.enter_borrower_id(borrower_id)
 
         # Scan first 3 items (should succeed)
         for i in range(3):
-            item_input = page.locator('input.font-monospace')
-            item_input.fill(items[i].item_id)
-            item_input.press('Enter')
-            page.wait_for_timeout(800)
+            circulation_page.scan_item(item_ids[i])
 
         # Try to scan 4th item (should fail)
-        item_input = page.locator('input.font-monospace')
-        item_input.fill(items[3].item_id)
-        item_input.press('Enter')
-        page.wait_for_timeout(1000)
+        circulation_page.scan_item(item_ids[3])
 
-        # Assert - Should show loan limit error
-        error_message = page.locator('.alert-danger, .error, .toast-error')
-        # Error should mention loan limit
+        # Assert - Should show loan limit error or alert/notification
+        error_message = circulation_page.page.locator('.alert-danger, .error, .toast, .alert')
+        expect(error_message.first).to_be_visible()
 
     def test_us6_ac5_academic_year_affects_reports(
         self,

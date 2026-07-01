@@ -101,6 +101,9 @@ def test_help_panel_updates_on_language_switch(page: Page, server_url: str, db_s
     # Title should be in French by default
     expect(panel.locator('.offcanvas-title')).to_contain_text('Emprunter')
 
+    # Temporarily remove backdrop so Playwright can click the sidebar nav switcher
+    page.evaluate("const el = document.querySelector('.offcanvas-backdrop'); if (el) el.remove();")
+
     # Switch to English using the language switcher button
     page.locator('.language-switcher button', has_text='EN').click()
 
@@ -116,10 +119,15 @@ def test_help_panel_updates_on_language_switch(page: Page, server_url: str, db_s
 
 def test_help_panel_shows_error_when_content_missing(page: Page, server_url: str, db_session):
     """US3 — When help content cannot be loaded, an error alert is shown (no crash)."""
-    # Intercept help file requests and return 404 for both FR and EN
-    page.route('**/static/help/**', lambda route: route.fulfill(status=404, body='Not Found'))
+    # Intercept help file requests and return 404 for both FR and EN.
+    # Must be installed BEFORE the HelpPanel mounts, since fetchHelp runs at mount
+    # time (watch immediate:true), not when the panel is opened.
+    page.route("**/help/**", lambda route: route.fulfill(status=404, body='Not Found'))
 
+    # The conftest `page` fixture already loaded the SPA, so a hash navigation alone
+    # would not re-fire the mount-time fetch. Force a full reload with the route active.
     page.goto(f"{server_url}/#/checkout")
+    page.reload()
     wait_for_app(page)
     open_help_panel(page)
 
@@ -133,7 +141,7 @@ def test_help_panel_shows_error_when_content_missing(page: Page, server_url: str
     expect(page.locator('#bcd-help-offcanvas')).to_be_visible()
 
     # Unblock requests for subsequent tests
-    page.unroute('**/static/help/**')
+    page.unroute("**/help/**")
 
 
 def test_all_8_pages_have_help_button(page: Page, server_url: str, db_session):  # noqa: ARG001

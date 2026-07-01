@@ -24,6 +24,8 @@ from sqlalchemy.orm import sessionmaker
 # Database Fixtures - Function Scoped for Isolation
 # =============================================================================
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 @pytest.fixture(scope="session")
 def base_database():
     """Create base database once per session with migrations."""
@@ -44,7 +46,7 @@ def base_database():
         env=env,
         capture_output=True,
         text=True,
-        cwd="/home/nixos/src/local/bcd4"
+        cwd=PROJECT_ROOT
     )
 
     if result.returncode != 0:
@@ -136,13 +138,14 @@ def api_server(test_database, api_server_port):
     env["VUE_MODE"] = "true"
     env["TESTING"] = "true"
 
+    log_file = open("test_e2e_server.log", "w")
     process = subprocess.Popen(
         ["python", "-m", "uvicorn", "src.bcd_api.main:app",
          "--host", "127.0.0.1", "--port", str(api_server_port)],
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd="/home/nixos/src/local/bcd4"
+        stdout=log_file,
+        stderr=log_file,
+        cwd=PROJECT_ROOT
     )
 
     # Wait for server to be ready
@@ -169,6 +172,7 @@ def api_server(test_database, api_server_port):
         process.wait(timeout=5)
     except subprocess.TimeoutExpired:
         process.kill()
+    log_file.close()
 
 
 @pytest.fixture(scope="function")

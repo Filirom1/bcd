@@ -27,6 +27,10 @@ Test Quality:
 from datetime import date, timedelta
 
 import pytest
+from playwright.sync_api import expect
+
+from tests.e2e.helpers.wait_for_app import wait_for_vue_app
+
 
 
 class TestUS3BorrowerList:
@@ -49,9 +53,7 @@ class TestUS3BorrowerList:
         from src.bcd_api.models.class_model import Class
 
         class_cp_a = Class(
-            name="CP-A",
-            grade_level="CP",
-            academic_year="2024-2025"
+            name="CP-A"
         )
         db_session.add(class_cp_a)
         db_session.commit()
@@ -291,42 +293,19 @@ class TestUS3BorrowerBlocking:
         # Act
         borrowers_page.goto()
         borrowers_page.click_first_borrower()
-        borrowers_page.wait_for_modal()
 
-        # Try to block borrower - test if UI supports blocking
-        block_button = page.locator('button:has-text("Bloquer"), button:has-text("Block")')
-        if block_button.count() == 0:
-            pytest.skip("Block borrower UI not yet implemented")
+        # Click block borrower
+        borrowers_page.click_block_borrower()
 
-        block_button.first.click()
-        page.wait_for_timeout(500)
+        # Select reason and enter notes
+        borrowers_page.select_block_reason("Lost Book")
+        borrowers_page.enter_block_notes("Lost: Stuart Little")
 
-        # Select reason and add notes (if UI has a form)
-        reason_select = page.locator('select')
-        if reason_select.count() > 0:
-            # Try to select by value or index instead of label (more reliable)
-            try:
-                # Just select the first option
-                reason_select.first.select_option(index=1)  # Skip the default/placeholder
-            except:
-                pytest.skip("Block reason selection failed - UI may have changed")
+        # Confirm block action
+        borrowers_page.confirm_action()
 
-            # Add notes if field exists
-            notes_input = page.locator('textarea, input[type="text"]').last
-            try:
-                if notes_input.is_visible():
-                    notes_input.fill("Lost: Stuart Little")
-            except:
-                pass  # Notes are optional
-
-        # Find and click confirm button (if modal has one)
-        confirm_button = page.locator('button.btn-primary:not([disabled]), button:has-text("Confirmer"), button:has-text("Confirm")')
-        if confirm_button.count() > 0:
-            try:
-                confirm_button.first.click(timeout=2000)
-                page.wait_for_timeout(1000)
-            except:
-                pytest.skip("Confirm button not clickable - UI may have changed")
+        # Assert - borrower is now blocked
+        expect(page.locator('.badge:has-text("Bloqué"), .badge:has-text("Blocked")').first).to_be_visible()
 
     def test_us3_ac12_unblock_borrower(
         self,
@@ -503,8 +482,9 @@ class TestUS3BorrowerImport:
     def test_us3_ac9_import_borrowers_from_csv(
         self,
         page,
-        borrowers_page,
-        tmp_path
+        server_url,
+        tmp_path,
+        db_session
     ):
         """
         US3-AC9: Import borrowers from CSV file.
@@ -517,32 +497,48 @@ class TestUS3BorrowerImport:
         import csv
         csv_file = tmp_path / "test_borrowers.csv"
         with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['borrower_id', 'first_name', 'last_name', 'role', 'grade_level'])
+            writer = csv.DictWriter(f, fieldnames=['borrower_id', 'first_name', 'last_name', 'class_name', 'role', 'active'])
             writer.writeheader()
             writer.writerow({
-                'borrower_id': 'CSV001',
-                'first_name': 'CSV',
-                'last_name': 'TEST',
+                'borrower_id': '555',
+                'first_name': 'Amira',
+                'last_name': 'BENALI',
+                'class_name': 'CP-A',
                 'role': 'student',
-                'grade_level': 'CP'
+                'active': 'true'
             })
 
-        # Act - Navigate to borrowers page (may be empty)
-        borrowers_page.navigate_to('borrowers')
-        page.wait_for_timeout(1000)
+        # Act - Navigate to borrowers page
+        page.goto(f"{server_url}/#/borrowers")
+        wait_for_vue_app(page)
 
-        # Skip test if import functionality not yet implemented in UI
-        import_button = page.locator('button:has-text("Import"), button:has-text("Importer")')
-        if import_button.count() == 0:
-            pytest.skip("Import functionality not yet implemented in UI")
+        # Open admin dropdown
+        admin_button = page.locator('[data-testid="admin-dropdown-button"]')
+        admin_button.click()
 
-        # File upload would be done here with:
-        # file_input = page.locator('input[type="file"]')
-        # file_input.set_input_files(str(csv_file))
-        # Then wait for success message
+        # Click Import Borrowers menu item
+        import_item = page.locator('[data-testid="admin-menu-import"]')
+        import_item.click()
 
-        # For now, skip this test as UI may not have import feature yet
-        pytest.skip("CSV import UI not yet implemented")
+        # Wait for file input
+        page.wait_for_selector('#csv-file')
+
+        # Upload CSV file
+        page.locator('#csv-file').set_input_files(str(csv_file))
+
+        # Click the Import button on the modal
+        import_btn = page.locator('button.btn-primary:has-text("Import"), button.btn-primary:has-text("Importer")')
+        import_btn.click()
+
+        # Expect success message or summary
+        success_msg = page.locator('p:has-text("Successfully imported")')
+        expect(success_msg).to_be_visible(timeout=5000)
+
+        # Click the Close button
+        close_btn = page.locator('button.btn-success:has-text("Fermer"), button.btn-success:has-text("Close")')
+        close_btn.click()
+        page.wait_for_timeout(500)
+
 
 
 if __name__ == "__main__":

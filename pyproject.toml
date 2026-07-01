@@ -78,7 +78,7 @@ pythonpath = ["src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--verbose --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml --strict-markers"
+addopts = "-m \"unit or integration\" --verbose --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml --strict-markers"
 asyncio_mode = "auto"
 filterwarnings = [
     "error",

@@ -123,21 +123,28 @@ def list_borrowers(
         response = client.get("/api/v1/borrowers", params=params)
 
         if response.status_code == 200:
-            borrowers = response.json()
+            data = response.json()
+            # Handle both paginated dict and flat list formats
+            if isinstance(data, dict):
+                borrowers_list = data.get("items", [])
+                total_found = data.get("total", len(borrowers_list))
+            else:
+                borrowers_list = data
+                total_found = len(borrowers_list)
 
-            if not borrowers:
+            if not borrowers_list:
                 console.print("\n[yellow]No borrowers found.[/yellow]")
                 return
 
             # Create table
-            table = Table(title=f"Borrowers ({len(borrowers)} found)")
+            table = Table(title=f"Borrowers ({total_found} found)")
             table.add_column("ID", style="cyan")
             table.add_column("Name", style="white")
             table.add_column("Role", style="magenta")
             table.add_column("Class ID", style="blue")
             table.add_column("Status", style="green")
 
-            for borrower in borrowers:
+            for borrower in borrowers_list:
                 status = "✓ Active" if borrower["active"] else "✗ Blocked"
                 status_style = "green" if borrower["active"] else "red"
 

@@ -277,7 +277,6 @@ class TestUS1CirculationRenewAll:
         circulation_page.page.wait_for_timeout(1000)
 
 
-@pytest.mark.skip(reason="Requires full loan/circulation data setup")
 class TestUS1PerformanceTargets:
     """Performance validation tests."""
 

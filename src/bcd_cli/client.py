@@ -186,16 +186,16 @@ class BCDAPIClient:
 
     def get_borrower_current_loans(self, borrower_id: str) -> Dict[str, Any]:
         """
-        Get current loans for a borrower.
+        Get borrower information with their current loans.
 
         Args:
             borrower_id: Borrower ID
 
         Returns:
-            Current loans data
+            Borrower detailed data including current loans
         """
         return self._request(
-            "GET", f"/api/v1/circulation/borrower/{borrower_id}/items"
+            "GET", f"/api/v1/borrowers/{borrower_id}?detail=true"
         )
 
     def get_item_history(self, item_id: str) -> Dict[str, Any]:
