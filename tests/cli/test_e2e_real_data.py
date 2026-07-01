@@ -135,12 +135,13 @@ def api_server(test_database):
     print("✓ SystemSettings seeded")
 
     # Start server
+    log_file = open("test_e2e_real_data_server.log", "w")
     process = subprocess.Popen(
         ["python", "-m", "uvicorn", "src.bcd_api.main:app",
          "--host", "127.0.0.1", "--port", "8001", "--log-level", "error"],
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=log_file,
+        stderr=log_file,
         cwd="/home/nixos/src/local/bcd4"
     )
 
@@ -156,17 +157,18 @@ def api_server(test_database):
                 break
         except requests.ConnectionError:
             if i == max_retries - 1:
-                # Get error output before terminating
-                stdout, stderr = process.communicate(timeout=1)
                 process.terminate()
+                log_file.close()
+                with open("test_e2e_real_data_server.log", "r") as f:
+                    log_content = f.read()
                 error_msg = "API server failed to start after 15 seconds.\n"
-                error_msg += f"STDOUT: {stdout.decode() if stdout else 'none'}\n"
-                error_msg += f"STDERR: {stderr.decode() if stderr else 'none'}"
+                error_msg += f"LOG:\n{log_content}"
                 raise Exception(error_msg)
             time.sleep(0.5)
         except requests.Timeout:
             if i == max_retries - 1:
                 process.terminate()
+                log_file.close()
                 raise Exception("API server health check timed out")
             time.sleep(0.5)
 
@@ -179,6 +181,7 @@ def api_server(test_database):
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait()
+    log_file.close()
 
 
 @pytest.fixture

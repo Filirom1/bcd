@@ -1,18 +1,10 @@
 """
 E2E Tests for User Story 4: Single Borrower Editing (Updated with Testability Improvements)
 
-Tests the complete flow from specs/006-admin-features/spec.md:
-- Edit individual borrower details (name, ID, role, class)
-- Validate borrower ID uniqueness and format
-- Update fields and verify changes persist
-- Error handling for validation failures
-
-Testability Improvements:
-- Uses window.__BCD_APP__ for reliable app state detection
-- Uses data-testid attributes for stable element selection
-- Clearer error messages when app fails to mount
+...
 """
 
+import re
 from playwright.sync_api import Page, expect
 
 from tests.e2e.helpers.wait_for_app import wait_for_vue_app
@@ -46,7 +38,7 @@ class TestEditBorrowerModalOpening:
 
         edit_selected = page.locator('[data-testid="admin-menu-edit-selected"]')
         expect(edit_selected).to_be_visible()
-        expect(edit_selected).to_have_class('disabled')
+        expect(edit_selected).to_have_class(re.compile(r'disabled'))
 
     def test_edit_selected_button_enabled_when_exactly_one_selected(
         self, page: Page, server_url: str, borrower_factory, db_session
@@ -118,7 +110,7 @@ class TestEditBorrowerModalOpening:
         expect(modal).to_be_visible(timeout=5000)
 
         modal_title = page.locator('[data-testid="modal-title"]')
-        expect(modal_title).to_contain_text('Edit Borrower')
+        expect(modal_title).to_contain_text(re.compile(r"Edit Borrower|Modifier l'emprunteur"))
 
 
 class TestEditBorrowerFormFields:
@@ -269,7 +261,7 @@ class TestEditBorrowerValidation:
         # Assert - Error message displayed using stable selector
         error_message = page.locator('[data-testid="error-borrower-id"]')
         expect(error_message).to_be_visible(timeout=3000)
-        expect(error_message).to_contain_text('not available')
+        expect(error_message).to_contain_text(re.compile(r"not available|déjà attribué"))
 
 
 class TestEditBorrowerCancelBehavior:

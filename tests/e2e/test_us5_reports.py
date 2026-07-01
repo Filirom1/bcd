@@ -44,9 +44,7 @@ class TestUS5OverdueReport:
 
         # Create class
         test_class = Class(
-            name="CE1-B",
-            grade_level="CE1",
-            academic_year="2024-2025"
+            name="CE1-B"
         )
         db_session.add(test_class)
         db_session.commit()
@@ -109,8 +107,8 @@ class TestUS5OverdueReport:
         from src.bcd_api.models.class_model import Class
 
         # Create two classes
-        class1 = Class(name="CP-A", grade_level="CP", academic_year="2024-2025")
-        class2 = Class(name="CE1-A", grade_level="CE1", academic_year="2024-2025")
+        class1 = Class(name="CP-A")
+        class2 = Class(name="CE1-A")
         db_session.add_all([class1, class2])
         db_session.commit()
 
@@ -284,9 +282,7 @@ class TestUS5ReportActions:
         from src.bcd_api.models.class_model import Class
 
         test_class = Class(
-            name="PRINT-CLASS",
-            grade_level="CP",
-            academic_year="2024-2025"
+            name="PRINT-CLASS"
         )
         db_session.add(test_class)
         db_session.commit()

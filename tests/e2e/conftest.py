@@ -136,12 +136,13 @@ def api_server(test_database, api_server_port):
     env["VUE_MODE"] = "true"
     env["TESTING"] = "true"
 
+    log_file = open("test_e2e_server.log", "w")
     process = subprocess.Popen(
         ["python", "-m", "uvicorn", "src.bcd_api.main:app",
          "--host", "127.0.0.1", "--port", str(api_server_port)],
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=log_file,
+        stderr=log_file,
         cwd="/home/nixos/src/local/bcd4"
     )
 
@@ -169,6 +170,7 @@ def api_server(test_database, api_server_port):
         process.wait(timeout=5)
     except subprocess.TimeoutExpired:
         process.kill()
+    log_file.close()
 
 
 @pytest.fixture(scope="function")

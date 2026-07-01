@@ -15,7 +15,7 @@ class CatalogPage(BasePage):
     # Selectors
     SEARCH_INPUT = 'input[type="text"], input[type="search"]'
     SEARCH_BUTTON = 'button:has-text("Search"), button:has-text("Rechercher")'
-    RESULTS = 'table tbody tr, .result-item'
+    RESULTS = 'table tbody tr:visible, .result-item:visible'
     DETAIL_MODAL = '.modal.show'  # Fixed: Only select active modals
     CATALOG_DETAIL_MODAL = '#catalogDetailModal'  # Specific modal
     FILTER_AVAILABLE = 'input[type="checkbox"]'

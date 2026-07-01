@@ -171,7 +171,7 @@ def print_return_summary(return_data: Dict[str, Any]):
     table.add_column("Emprunteur\nBorrower", style="white", max_width=20)
     table.add_column("Statut\nStatus", style="white")
 
-    for item in return_data.get("items_returned", []):
+    for item in return_data.get("items", []):
         # Status indicator
         was_overdue = item.get("was_overdue", False)
         days_overdue = item.get("days_overdue", 0)
@@ -192,7 +192,7 @@ def print_return_summary(return_data: Dict[str, Any]):
     console.print()
 
     # Summary messages
-    count = return_data.get("items_returned_count", 0)
+    count = return_data.get("items_returned", 0)
     overdue_count = return_data.get("overdue_count", 0)
 
     console.print(

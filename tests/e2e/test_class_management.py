@@ -24,8 +24,6 @@ This provides comprehensive test coverage once the UI is ready.
 import pytest
 from playwright.sync_api import expect
 
-pytestmark = pytest.mark.xfail(reason="Class management UI may not be fully implemented yet", strict=False)
-
 
 class TestClassManagementBasics:
     """Test basic class management CRUD operations."""
@@ -113,20 +111,14 @@ class TestClassManagementBasics:
 
         class1 = Class(
             name="CP-A",
-            grade_level="CP",
-            academic_year="2024-2025",
             homeroom_teacher="M. Martin"
         )
         class2 = Class(
             name="CE1-A",
-            grade_level="CE1",
-            academic_year="2024-2025",
             homeroom_teacher="Mme. Bernard"
         )
         class3 = Class(
             name="CE2-B",
-            grade_level="CE2",
-            academic_year="2024-2025",
             homeroom_teacher="M. Thomas"
         )
 
@@ -161,7 +153,7 @@ class TestClassEditing:
         # Arrange
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="CP-TEMP", grade_level="CP", academic_year="2024-2025", homeroom_teacher="M. Test")
+        test_class = Class(name="CP-TEMP", homeroom_teacher="M. Test")
         db_session.add(test_class)
         db_session.commit()
 
@@ -189,7 +181,7 @@ class TestClassEditing:
         # Arrange
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="CE1-A", grade_level="CP", academic_year="2024-2025", homeroom_teacher="M. Old")
+        test_class = Class(name="CE1-A", homeroom_teacher="M. Old")
         db_session.add(test_class)
         db_session.commit()
 
@@ -220,7 +212,7 @@ class TestClassDeletion:
         # Arrange
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="EMPTY-CLASS", grade_level="CP", academic_year="2024-2025")
+        test_class = Class(name="EMPTY-CLASS")
         db_session.add(test_class)
         db_session.commit()
 
@@ -248,7 +240,7 @@ class TestClassDeletion:
         # Arrange - Create class
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="CP-WITH-STUDENTS", grade_level="CP", academic_year="2024-2025")
+        test_class = Class(name="CP-WITH-STUDENTS")
         db_session.add(test_class)
         db_session.commit()
 
@@ -296,7 +288,7 @@ class TestClassDeletion:
         from src.bcd_api.models.borrower import Borrower
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="CLASS-TO-DELETE", grade_level="CP", academic_year="2024-2025")
+        test_class = Class(name="CLASS-TO-DELETE")
         db_session.add(test_class)
         db_session.commit()
 
@@ -353,7 +345,7 @@ class TestClassStudentCount:
         # Arrange
         from src.bcd_api.models.class_model import Class
 
-        test_class = Class(name="CP-COUNT-TEST", grade_level="CP", academic_year="2024-2025")
+        test_class = Class(name="CP-COUNT-TEST")
         db_session.add(test_class)
         db_session.commit()
 
@@ -392,7 +384,7 @@ class TestClassValidation:
         # Arrange - Create first class
         from src.bcd_api.models.class_model import Class
 
-        existing_class = Class(name="CP-DUPLICATE", grade_level="CP", academic_year="2024-2025")
+        existing_class = Class(name="CP-DUPLICATE")
         db_session.add(existing_class)
         db_session.commit()
 

@@ -110,8 +110,19 @@ def _return_interactive(client):
                 )
 
                 # Check if overdue
-                is_overdue = current_loan.get("is_overdue", False)
-                days_overdue = current_loan.get("days_overdue", 0)
+                status = current_loan.get("status")
+                is_overdue = status == "overdue"
+                days_overdue = 0
+
+                if is_overdue:
+                    due_date_val = current_loan.get("due_date")
+                    if isinstance(due_date_val, str):
+                        try:
+                            from datetime import date
+                            due_date_obj = date.fromisoformat(due_date_val)
+                            days_overdue = max(0, (date.today() - due_date_obj).days)
+                        except ValueError:
+                            pass
 
                 if is_overdue:
                     console.print(

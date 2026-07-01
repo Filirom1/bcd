@@ -13,13 +13,13 @@ class CirculationPage(BasePage):
     """Page object for circulation operations (checkout/return)."""
 
     # Selectors
-    BORROWER_INPUT = 'input[role="combobox"]'  # Updated for autocomplete
+    BORROWER_INPUT = '.filter-input'  # Updated for unified ClassRosterPanel
     SEARCH_BUTTON = 'button:has-text("Rechercher"), button:has-text("Search")'
-    BORROWER_CARD = '.card-header h5, .card-header'
-    ITEM_INPUT = 'input.font-monospace[role="combobox"]'  # Updated for autocomplete
+    BORROWER_CARD = '.borrower-strip, .card-header h5, .card-header'
+    ITEM_INPUT = 'input.font-monospace'  # Matches the font-monospace class of the item input
     CHECKOUT_BUTTON = 'button.btn-success:has-text("Emprunter"), button:has-text("Checkout")'
     RETURN_BUTTON = 'button.btn-info:has-text("Retourner"), button:has-text("Return")'
-    SCANNED_ITEMS_LIST = '.list-group-item'
+    SCANNED_ITEMS_LIST = 'table tbody tr'
     RENEW_ALL_BUTTON = 'button:has-text("Renouveler tout"), button:has-text("Renew All")'
     AUTOCOMPLETE_DROPDOWN = '#autocomplete-dropdown'
     AUTOCOMPLETE_ITEM = '.autocomplete-item'
@@ -114,6 +114,28 @@ class CirculationPage(BasePage):
         return match.group(0) if match else ""
 
     # Autocomplete methods
+    def select_class(self, class_id: int):
+        """Select a class from the dropdown."""
+        self.page.locator('select.form-select').select_option(value=str(class_id))
+        self.page.wait_for_timeout(300)
+
+    def get_roster_students_count(self) -> int:
+        """Get the count of visible student rows in the roster."""
+        return self.page.locator('.student-row').count()
+
+    def get_roster_student_text(self, index: int) -> str:
+        """Get text of a roster student row."""
+        return self.page.locator('.student-row').nth(index).inner_text()
+
+    def click_roster_student(self, index: int):
+        """Click a student in the roster list."""
+        self.page.locator('.student-row').nth(index).click()
+        self.page.wait_for_timeout(300)
+
+    def is_roster_empty_visible(self) -> bool:
+        """Check if 'No students found' placeholder is visible."""
+        return self.page.locator('.roster-placeholder').is_visible()
+
     def type_borrower_search(self, text: str):
         """Type into borrower input without submitting."""
         borrower_input = self.page.locator(self.BORROWER_INPUT).first
