@@ -164,7 +164,7 @@ export default defineComponent({
                             <small class="text-muted">{{ t('circulation.current_loans') }}</small>
                             <div>
                                 <span class="badge"
-                                      :class="borrower.current_loans_count >= borrower.loan_limit ? 'bg-danger' : 'bg-info'">
+                                      :class="borrower.current_loans_count >= borrower.loan_limit ? 'bg-danger' : (borrower.loan_limit_warning && borrower.current_loans_count >= borrower.loan_limit_warning ? 'bg-warning text-dark' : 'bg-info')">
                                     {{ borrower.current_loans_count || 0 }}/{{ borrower.loan_limit }}
                                 </span>
                             </div>
@@ -338,6 +338,12 @@ export default defineComponent({
                 <div v-if="borrower.current_loans_count >= borrower.loan_limit" class="alert alert-warning mt-3 mb-0">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     {{ t('circulation.at_loan_limit') }}
+                </div>
+
+                <!-- Warning if at/above warning limit (soft limit) -->
+                <div v-else-if="borrower.loan_limit_warning && borrower.current_loans_count >= borrower.loan_limit_warning" class="alert alert-warning mt-3 mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {{ t('circulation.near_loan_limit', { count: borrower.current_loans_count, limit: borrower.loan_limit }) }}
                 </div>
 
                 <!-- Warning if has overdue items -->

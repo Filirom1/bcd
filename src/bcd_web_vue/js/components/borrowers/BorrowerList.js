@@ -59,8 +59,12 @@ export default {
         const getLoanBadgeClass = (borrower) => {
             const count = borrower.current_loans_count || 0;
             const limit = borrower.loan_limit || 0;
+            const warningLimit = borrower.loan_limit_warning || 0;
 
             if (count >= limit) {
+                return 'bg-danger';
+            }
+            if (warningLimit && count >= warningLimit) {
                 return 'bg-warning text-dark';
             }
             return 'bg-secondary';

@@ -45,6 +45,7 @@ export default defineComponent({
             library_code: '',
             loan_duration_days: 14,
             loan_limit_default: 3,
+            loan_limit_warning: 1,
             loan_limit_teacher: 10,
             renewal_limit: 2,
             hold_expiration_days: 3,

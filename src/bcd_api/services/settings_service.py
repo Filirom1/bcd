@@ -52,6 +52,7 @@ def initialize_default_settings(db: Session) -> SystemSettings:
         academic_year_start_month=9,
         loan_duration_days=14,
         loan_limit_default=3,
+        loan_limit_warning=1,
         loan_limit_teacher=10,
         renewal_limit=1,
         hold_expiration_days=7,
@@ -130,6 +131,7 @@ def update_settings(
         "academic_year_start_month",
         "loan_duration_days",
         "loan_limit_default",
+        "loan_limit_warning",
         "loan_limit_teacher",
         "renewal_limit",
         "hold_expiration_days",
@@ -182,6 +184,7 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.academic_year_start_month = 9
     settings.loan_duration_days = 14
     settings.loan_limit_default = 2
+    settings.loan_limit_warning = 1
     settings.loan_limit_teacher = 5
     settings.renewal_limit = 2
     settings.hold_expiration_days = 3

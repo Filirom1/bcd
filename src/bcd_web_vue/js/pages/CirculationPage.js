@@ -584,7 +584,7 @@ export default defineComponent({
                                 <div class="b-badges">
                                     <span
                                         class="badge"
-                                        :class="borrower.current_loans_count >= borrower.loan_limit ? 'bg-danger' : 'bg-info text-dark'"
+                                        :class="borrower.current_loans_count >= borrower.loan_limit ? 'bg-danger' : (borrower.loan_limit_warning && borrower.current_loans_count >= borrower.loan_limit_warning ? 'bg-warning text-dark' : 'bg-info text-dark')"
                                     >
                                         {{ borrower.current_loans_count }}/{{ borrower.loan_limit }}
                                     </span>

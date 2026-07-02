@@ -19,6 +19,7 @@ class SystemSettingsResponse(BaseModel):
     borrower_barcode_prefix: str
     item_barcode_prefix: str
     loan_limit_default: int
+    loan_limit_warning: int
     loan_limit_teacher: int
     loan_duration_days: int
     renewal_limit: int
@@ -53,6 +54,7 @@ class SystemSettingsResponse(BaseModel):
                 "borrower_barcode_prefix": "%",
                 "item_barcode_prefix": ".",
                 "loan_limit_default": 2,
+                "loan_limit_warning": 1,
                 "loan_limit_teacher": 5,
                 "loan_duration_days": 14,
                 "renewal_limit": 2,
@@ -80,6 +82,7 @@ class SystemSettingsUpdate(BaseModel):
     borrower_barcode_prefix: Optional[str] = Field(None, max_length=10)
     item_barcode_prefix: Optional[str] = Field(None, max_length=10)
     loan_limit_default: Optional[int] = Field(None, ge=1, le=10)
+    loan_limit_warning: Optional[int] = Field(None, ge=0, le=10)
     loan_limit_teacher: Optional[int] = Field(None, ge=1, le=20)
     loan_duration_days: Optional[int] = Field(None, ge=1, le=365)
     renewal_limit: Optional[int] = Field(None, ge=0, le=10)

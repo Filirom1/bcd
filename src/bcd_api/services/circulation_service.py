@@ -26,6 +26,7 @@ from ..core.exceptions import (
     ItemNotFoundException,
     ItemReservedForOtherBorrowerException,
     LoanLimitExceededException,
+    LoanLimitWarningExceededException,
     NotFoundException,
 )
 from ..models.borrower import Borrower
@@ -117,6 +118,16 @@ def checkout_items(
         limit = settings.loan_limit_teacher
     else:
         limit = settings.loan_limit_default
+
+    # Check soft limit if request is from Godot client (kids interface)
+    if checked_out_by == "godot-ui" and settings.loan_limit_warning > 0:
+        if borrower.role not in ("teacher", "staff") and current_loans + len(item_ids) > settings.loan_limit_warning:
+            raise LoanLimitWarningExceededException(
+                borrower_id=borrower_id,
+                current_count=current_loans,
+                limit=settings.loan_limit_warning,
+                additional=len(item_ids)
+            )
 
     # Check if borrower would exceed limit
     if current_loans + len(item_ids) > limit:

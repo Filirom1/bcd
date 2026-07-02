@@ -125,6 +125,7 @@ class BorrowerDetailed(BorrowerResponse):
     total_checkouts: int = Field(0, description="Total number of checkouts (all time)")
     overdue_count: int = Field(0, description="Number of overdue items")
     loan_limit: int = Field(2, description="Maximum number of items that can be borrowed")
+    loan_limit_warning: int = Field(1, description="Soft warning threshold for loans")
     class_name: Optional[str] = Field(None, description="Class name (if student)")
     homeroom_teacher: Optional[str] = Field(None, description="Homeroom teacher for the class")
 

@@ -15,6 +15,7 @@ from src.bcd_api.core.exceptions import (
     ItemNotLoanableException,
     ItemNotOnLoanException,
     LoanLimitExceededException,
+    LoanLimitWarningExceededException,
     NotFoundException,
 )
 from src.bcd_api.models.circulation import CirculationTransaction
@@ -237,6 +238,65 @@ class TestCheckoutScenarios:
                 borrower_id="INVALID999",
                 item_ids=[test_item_available.item_id]
             )
+
+    def test_checkout_soft_limit_warning_godot_blocked(self, db_session, test_borrower_student, multiple_items):
+        """
+        Test that checking out past the soft warning limit blocks in the Godot kids client
+        """
+        from src.bcd_api.models.system_settings import SystemSettings
+        settings = db_session.query(SystemSettings).filter(SystemSettings.id == 1).first()
+        settings.loan_limit_warning = 1
+        db_session.commit()
+
+        # Checkout first item (brings student to warning limit of 1)
+        circulation_service.checkout_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[multiple_items[0].item_id],
+            checked_out_by="godot-ui"
+        )
+
+        # Act & Assert - Try to checkout 2nd item from Godot client (should block)
+        with pytest.raises(LoanLimitWarningExceededException) as exc_info:
+            circulation_service.checkout_items(
+                db=db_session,
+                borrower_id=test_borrower_student.borrower_id,
+                item_ids=[multiple_items[1].item_id],
+                checked_out_by="godot-ui"
+            )
+
+        # Verify exception details
+        assert exc_info.value.error_code == "LOAN_LIMIT_WARNING_EXCEEDED"
+        assert exc_info.value.context["current"] == 1
+        assert exc_info.value.context["limit"] == 1
+
+    def test_checkout_soft_limit_warning_web_ui_allowed(self, db_session, test_borrower_student, multiple_items):
+        """
+        Test that checking out past the soft warning limit is allowed in the Web UI / VueJS client
+        """
+        from src.bcd_api.models.system_settings import SystemSettings
+        settings = db_session.query(SystemSettings).filter(SystemSettings.id == 1).first()
+        settings.loan_limit_warning = 1
+        db_session.commit()
+
+        # Checkout first item (brings student to warning limit of 1)
+        circulation_service.checkout_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[multiple_items[0].item_id],
+            checked_out_by="web-ui"
+        )
+
+        # Act - Try to checkout 2nd item from Web UI (should succeed)
+        response = circulation_service.checkout_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[multiple_items[1].item_id],
+            checked_out_by="web-ui"
+        )
+
+        # Assert
+        assert response.items_checked_out == 1
 
     def test_checkout_item_not_found(self, db_session, test_borrower_student):
         """

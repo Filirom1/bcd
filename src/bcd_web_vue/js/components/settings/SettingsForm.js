@@ -238,6 +238,21 @@ export default defineComponent({
                 </div>
 
                 <div class="col-md-4">
+                    <label for="loan_limit_warning" class="form-label">
+                        {{ t('settings.loan_limit_warning') }}
+                    </label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="loan_limit_warning"
+                        v-model.number="settings.loan_limit_warning"
+                        min="0"
+                        max="10"
+                        required
+                    />
+                </div>
+
+                <div class="col-md-4">
                     <label for="loan_limit_teacher" class="form-label">
                         {{ t('settings.loan_limit_teacher') }}
                     </label>

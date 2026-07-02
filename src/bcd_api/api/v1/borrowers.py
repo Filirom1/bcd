@@ -433,6 +433,7 @@ def get_borrower(
         total_checkouts=details["total_checkouts"],
         overdue_count=details["overdue_count"],
         loan_limit=loan_limit,
+        loan_limit_warning=settings.loan_limit_warning,
         class_name=class_name,
         homeroom_teacher=homeroom_teacher,
     )
@@ -551,6 +552,7 @@ def list_borrowers(
         # Add attributes to borrower object
         borrower.current_loans_count = current_loans_count
         borrower.loan_limit = loan_limit
+        borrower.loan_limit_warning = settings.loan_limit_warning
         borrower.overdue_count = overdue_count
         borrower.class_name = class_name
         borrower.homeroom_teacher = homeroom_teacher
