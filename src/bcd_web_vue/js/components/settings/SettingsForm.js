@@ -630,22 +630,22 @@ export default defineComponent({
                                         </div>
                                     </td>
                                     <td>
-                                        <select
-                                            class="form-select form-select-sm"
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-sm"
                                             v-model="rule.medium_type"
-                                        >
-                                            <option :value="null">{{ t('settings.all_any') }}</option>
-                                            <option v-for="m in mediumTypesOptions" :key="m" :value="m">{{ m }}</option>
-                                        </select>
+                                            list="settings-medium-suggestions"
+                                            :placeholder="t('settings.all_any')"
+                                        />
                                     </td>
                                     <td>
-                                        <select
-                                            class="form-select form-select-sm"
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-sm"
                                             v-model="rule.shelf_location"
-                                        >
-                                            <option :value="null">{{ t('settings.all_any') }}</option>
-                                            <option v-for="s in shelfLocationLabels" :key="s" :value="s">{{ s }}</option>
-                                        </select>
+                                            list="settings-shelf-suggestions"
+                                            :placeholder="t('settings.all_any')"
+                                        />
                                     </td>
                                     <td>
                                         <input
@@ -667,6 +667,12 @@ export default defineComponent({
                                 </tr>
                             </tbody>
                         </table>
+                        <datalist id="settings-shelf-suggestions">
+                            <option v-for="s in shelfLocationLabels" :key="s" :value="s">{{ s }}</option>
+                        </datalist>
+                        <datalist id="settings-medium-suggestions">
+                            <option v-for="m in mediumTypesOptions" :key="m" :value="m">{{ m }}</option>
+                        </datalist>
                     </div>
                     <button
                         type="button"

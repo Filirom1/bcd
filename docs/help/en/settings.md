@@ -98,7 +98,25 @@ These locations appear as colored badges in:
 
 > **Tip:** Use the same names as the physical signs on your shelves. Students will find books more easily if the on-screen names match what they see in the library.
 
-## Step 6 — Save settings
+## Step 6 — Automatic call number rules
+
+These rules automatically pre-fill the **call number** of a book during cataloging based on its medium type and/or shelf location.
+
+The system applies the **first matching rule (from top to bottom)**.
+
+### Wildcard support (`*`)
+To avoid duplicating rules when you have sub-locations or custom medium types, you can use the `*` character as a wildcard on both location and medium type fields:
+- A location configured as `Documentaires*` will automatically match `Documentaires`, `Documentaires - Sciences`, `Documentaires - Nature`, etc.
+- A medium type configured as `Book*` will match `Book`, `Book with CD`, etc.
+- A value configured as `*` will match any text.
+
+### Available placeholders for patterns:
+- `{AUT1}` / `{AUT3}`: 1 or 3 first uppercase letters of the author's last name (normalized, no accents).
+- `{SER1}` / `{SER3}`: 1 or 3 first uppercase letters of the collection/series (or author if empty).
+- `{TIT1}` / `{TIT3}`: 1 or 3 first uppercase letters of the title (ignoring leading articles).
+- `{DEWEY}`: The Dewey classification number (mostly used for non-fiction).
+
+## Step 7 — Save settings
 
 Click **"Save"** to apply all changes.
 A confirmation message appears at the top of the screen.

@@ -162,6 +162,20 @@ export default defineComponent({
             return found ? found.label : '';
         }
 
+        // Check if string matches wildcard rule (e.g. "Documentaires*") without RegExp
+        function matchWildcard(str, rule) {
+            if (rule.startsWith('*') && rule.endsWith('*')) {
+                return str.includes(rule.slice(1, -1));
+            }
+            if (rule.endsWith('*')) {
+                return str.startsWith(rule.slice(0, -1));
+            }
+            if (rule.startsWith('*')) {
+                return str.endsWith(rule.slice(1));
+            }
+            return str === rule;
+        }
+
         // Suggested call number based on dynamic settings rules:
         const suggestedCallNumber = computed(() => {
             const rules = (() => {
@@ -186,11 +200,19 @@ export default defineComponent({
 
             // Find first matching rule
             const matchedRule = rules.find(rule => {
-                if (rule.medium_type && rule.medium_type.trim().toLowerCase() !== mediumType.toLowerCase()) {
-                    return false;
+                if (rule.medium_type) {
+                    const ruleMedium = rule.medium_type.trim().toLowerCase();
+                    const itemMedium = mediumType.toLowerCase();
+                    if (!matchWildcard(itemMedium, ruleMedium)) {
+                        return false;
+                    }
                 }
-                if (rule.shelf_location && rule.shelf_location.trim().toLowerCase() !== currentShelf.toLowerCase()) {
-                    return false;
+                if (rule.shelf_location) {
+                    const ruleShelf = rule.shelf_location.trim().toLowerCase();
+                    const itemShelf = currentShelf.toLowerCase();
+                    if (!matchWildcard(itemShelf, ruleShelf)) {
+                        return false;
+                    }
                 }
                 return true;
             });

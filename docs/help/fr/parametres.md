@@ -98,7 +98,25 @@ Ces emplacements apparaissent comme des badges colorés dans :
 
 > **Conseil :** Utilise les mêmes noms que les panneaux physiques sur tes étagères. Les élèves retrouveront plus facilement les livres si les noms à l'écran correspondent à ce qu'ils voient dans la bibliothèque.
 
-## Étape 6 — Sauvegarder les paramètres
+## Étape 6 — Règles de génération automatique des cotes
+
+Ces règles permettent de pré-remplir automatiquement la **cote** d'un livre lors du catalogage en fonction de son type de support et/ou de son emplacement de rayonnage. 
+
+Le système applique la **première règle correspondante (de haut en bas)**.
+
+### Support du caractère joker (wildcard `*`)
+Pour éviter de dupliquer les règles lorsque vous avez des sous-emplacements ou des types de supports personnalisés, vous pouvez utiliser le caractère `*` comme joker sur l'emplacement ou le type de support :
+- Un emplacement configuré comme `Documentaires*` s'appliquera automatiquement à `Documentaires`, `Documentaires - Sciences`, `Documentaires - Nature`, etc.
+- Un type de support configuré comme `Livre*` s'appliquera à `Livre`, `Livre audio`, etc.
+- Une valeur configurée comme `*` s'appliquera à n'importe quel texte.
+
+### Variables disponibles dans les modèles (pattern) :
+- `{AUT1}` / `{AUT3}` : 1 ou 3 premières lettres du nom de l'auteur (majuscules, nettoyées de tout accent et article).
+- `{SER1}` / `{SER3}` : 1 ou 3 premières lettres de la collection/série (ou de l'auteur si absente).
+- `{TIT1}` / `{TIT3}` : 1 ou 3 premières lettres du titre (ignorant les articles de début).
+- `{DEWEY}` : L'indice de classification Dewey (utilisé pour les documentaires).
+
+## Étape 7 — Sauvegarder les paramètres
 
 Clique sur **« Enregistrer »** pour appliquer tous les changements.
 Un message de confirmation apparaît en haut de l'écran.
