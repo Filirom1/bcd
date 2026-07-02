@@ -170,6 +170,14 @@ def create_default_env_file(env_path: Path) -> None:
 # Uncomment only to override with a custom database location.
 # DATABASE_URL=sqlite:///./data/bcd.db
 
+# Configurable Paths (Linux Packaging & Custom Deployments)
+# Uncomment and set these to absolute or custom relative paths to override default folders.
+# DATA_DIR_PATH=./data
+# CONFIG_DIR_PATH=.
+# LOG_DIR_PATH=./logs
+# COVERS_DIR_PATH=./data/covers
+# BACKUPS_DIR_PATH=./backups
+
 # API Server
 API_HOST=127.0.0.1
 API_PORT=8888

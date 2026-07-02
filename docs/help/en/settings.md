@@ -130,3 +130,87 @@ A confirmation message appears at the top of the screen.
 | The new loan duration does not apply to existing loans | Settings only apply to new loans. Existing loans keep their original due date. |
 | The scanner cannot distinguish cards from books | Check that the borrower and item prefixes are configured correctly and are different. |
 | Changes are not saved | Click the "Save" button to confirm the changes. |
+
+---
+
+## Step 8 — Advanced Settings (Configuration file .env)
+
+For schools managing their own IT setup or wanting to customize backup locations, cover images folders, or the database path, BCD allows direct editing of its configuration file.
+
+![Configuration file .env](../images/settings-env.png)
+
+### Why customize these settings?
+This section is aimed at people in charge of the school's IT setup (IT coordinators, local council technical team, etc.). It allows you to:
+* **Switch the database**: to move from a local installation to a database shared between several computers in the school (PostgreSQL).
+* **Change storage paths**: if you prefer to save automatic backups or downloaded cover images on a USB drive or network share instead of the main computer's hard drive.
+
+### How to modify a setting?
+1. Edit or add configuration lines directly in the text area. Lines starting with a `#` are informational comments.
+2. Click **"Save"**.
+3. **IMPORTANT:** You must fully restart the BCD application for these new folders or settings to take effect.
+
+### All .env settings explained
+
+Here is the complete list of settings you can customize in your `.env` file, grouped by category:
+
+#### 1. Database & Custom Storage Folders
+*Use these if you want to move folders to a network drive, a USB key, or to use an external PostgreSQL database.*
+
+| Parameter | Default value | Description |
+|-----------|---------------|-------------|
+| **`DATABASE_URL`** | `sqlite:///./data/bcd.db` | **Database connection URL.** For SQLite: `sqlite:///path/to/bcd.db`. For PostgreSQL: `postgresql://user:password@host:port/dbname`. |
+| **`DATA_DIR_PATH`** | `data` | **Data directory path.** Where local database and related files are stored. |
+| **`CONFIG_DIR_PATH`** | `.` | **Configuration directory path.** Where the `.env` file and settings reside. |
+| **`LOG_DIR_PATH`** | `logs` | **Logs directory path.** Where application error and activity logs are written. |
+| **`COVERS_DIR_PATH`** | `data/covers` | **Covers storage path.** Folder where downloaded book cover images are saved. |
+| **`BACKUPS_DIR_PATH`** | `backups` | **Backups folder path.** Folder where automatic database backups are exported. |
+
+#### 2. Network & Server Configuration
+
+| Parameter | Default value | Description |
+|-----------|---------------|-------------|
+| **`API_HOST`** | `127.0.0.1` | **Network bind address.** `127.0.0.1` allows local access only. Set to `0.0.0.0` to allow other computers on your network to connect to this server. |
+| **`API_PORT`** | `8888` | **Port.** The network port used to access the BCD interface and API. |
+| **`CORS_ORIGINS`** | `http://localhost:3000, http://localhost:8888` | Allowed origins for web requests (mostly used in development). |
+
+#### 3. Client & Portable Mode Options
+
+| Parameter | Default value | Description |
+|-----------|---------------|-------------|
+| **`CLIENT_ONLY`** | `false` | **Client-only mode.** If set to `true`, this machine will not run a database or local server. It will act purely as a terminal connecting to the remote server IP specified in `API_HOST`. |
+| **`UI_MODE`** | `webview` | **Startup interface.** Choose which window opens on startup:<br>- `webview`: Native desktop application window.<br>- `browser`: Opens the management portal in your system browser.<br>- `kids`: Launches the kid-friendly student client. |
+| **`KIDS_CLIENT_PATH`** | *(empty)* | **Student client executable path.** Absolute or relative path to the BCD Kids student application executable (e.g. `BCD-Kids.exe` or `./BCD-Kids.x86_64`). |
+| **`AUTO_UPDATE`** | `true` | **Automatic updates.** If `true`, checks GitHub for newer portable releases at startup and offers to update. |
+
+#### 4. Security & Authentication
+
+| Parameter | Default value | Description |
+|-----------|---------------|-------------|
+| **`AUTH_USERNAME`** | *(empty)* | **Admin/Librarian username.** Fill this to password-protect the librarian interface. |
+| **`AUTH_PASSWORD`** | *(empty)* | **Admin/Librarian password.** Must be set along with `AUTH_USERNAME` to enable authentication. |
+| **`AUTH_SCHEME`** | `basic` | **Authentication protocol.** Choose `basic` (standard, high compatibility) or `digest` (more secure over HTTP). |
+
+#### 5. External Cataloging APIs (ISBN Lookups)
+*Toggle these to enable/disable or rate-limit external books metadata search engines.*
+
+| Parameter | Default value | Description |
+|-----------|---------------|-------------|
+| **`BNF_ENABLED`** | `true` | Enable/disable lookup on the French National Library (BnF). |
+| **`BNF_API_URL`** | `https://catalogue.bnf.fr/api/SRU` | API endpoint for BnF. |
+| **`BNF_RATE_LIMIT`** | `1` | Rate limit for BnF requests (requests per second; BnF requests maximum 1 req/sec). |
+| **`GOOGLE_BOOKS_ENABLED`** | `true` | Enable/disable lookup on Google Books. |
+| **`GOOGLE_BOOKS_API_KEY`** | *(empty)* | Optional API key to increase Google Books quota. |
+| **`GOOGLE_BOOKS_RATE_LIMIT`** | `1` | Rate limit for Google Books (requests per second). |
+| **`SUDOC_ENABLED`** | `true` | Enable/disable lookup on SUDOC (French university library catalog, great fallback). |
+| **`SUDOC_API_URL`** | `https://www.sudoc.abes.fr/cbs/sru/` | API endpoint for SUDOC. |
+| **`SUDOC_RATE_LIMIT`** | `1` | Rate limit for SUDOC requests (requests per second). |
+
+#### 6. Development & Logs
+
+| Parameter | Default value | Description |
+|-----------|---------------|-------------|
+| **`LOG_LEVEL`** | `INFO` | Verbosity of logs (`DEBUG`, `INFO`, `WARNING`, `ERROR`). |
+| **`ENVIRONMENT`** | `production` | Set to `development` to enable hot reload and detailed debug tools. |
+
+
+

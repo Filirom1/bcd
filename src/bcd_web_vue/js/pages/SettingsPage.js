@@ -14,6 +14,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner.js';
 import SettingsForm from '../components/settings/SettingsForm.js';
 import BackupSection from '../components/settings/BackupSection.js';
 import CoverSection from '../components/settings/CoverSection.js';
+import EnvSection from '../components/settings/EnvSection.js';
 import DataMaintenanceSection from '../components/settings/DataMaintenanceSection.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 
@@ -25,6 +26,7 @@ export default defineComponent({
         SettingsForm,
         BackupSection,
         CoverSection,
+        EnvSection,
         DataMaintenanceSection,
         HelpPanel
     },
@@ -141,6 +143,7 @@ export default defineComponent({
                 <backup-section class="mt-2" />
                 <cover-section class="mt-2" />
                 <data-maintenance-section class="mt-2" />
+                <env-section class="mt-2" />
                 <div v-if="appVersion" class="mt-3 text-muted small text-end">
                     {{ t('settings.app_version') }} v{{ appVersion }} &mdash; <a href="https://github.com/Filirom1/bcd" target="_blank" rel="noopener">{{ t('settings.open_source') }}</a>
                 </div>

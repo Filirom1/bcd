@@ -57,11 +57,13 @@ class Settings(BaseSettings):
 
     # Paths Configurable (overridable in .env)
     # Default behavior fallback to get_data_dir(), get_config_dir() or standard paths
-    data_dir_path: str = ""
-    config_dir_path: str = ""
-    log_dir_path: str = ""
-    covers_dir_path: str = ""
-    backups_dir_path: str = ""
+    # Set these in your .env to override default ./data, ./config, ./logs, ./data/covers, and ./backups directories.
+    # Useful for packaging under Linux (e.g., /var/lib/bcd, /var/log/bcd, /etc/bcd)
+    data_dir_path: str = ""       # Defaults to ./data (or app_dir/data in portable mode)
+    config_dir_path: str = ""     # Defaults to . (or app_dir/config in portable mode)
+    log_dir_path: str = ""        # Defaults to ./logs (or app_dir/logs in portable mode)
+    covers_dir_path: str = ""     # Defaults to ./data/covers
+    backups_dir_path: str = ""    # Defaults to ./backups
 
     # Database
     database_url: str = _get_database_url()

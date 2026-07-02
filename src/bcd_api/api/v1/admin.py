@@ -51,6 +51,26 @@ class SettingsUpdate(BaseModel):
     updates: Dict[str, Any]
 
 
+@router.get("/env")
+def get_env_file_content():
+    """Read the contents of the current .env file."""
+    from ...core.config import _get_env_file_path
+    p = Path(_get_env_file_path())
+    if not p.exists():
+        return {"content": ""}
+    return {"content": p.read_text(encoding="utf-8")}
+
+
+@router.put("/env")
+def update_env_file_content(payload: dict):
+    """Overwrite the contents of the current .env file."""
+    from ...core.config import _get_env_file_path
+    p = Path(_get_env_file_path())
+    content = payload.get("content", "")
+    p.write_text(content, encoding="utf-8")
+    return {"content": content}
+
+
 @router.get("/settings")
 def get_settings(
     db: Session = Depends(get_db)
