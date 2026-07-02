@@ -44,7 +44,15 @@ def configure(google_api_key: Optional[str] = None) -> None:
     _google_api_key = google_api_key or None
 
 
-def migrate_covers_to_isbn13(covers_dir: Path = Path("data/covers"),
+def _get_covers_dir() -> Path:
+    """Return the covers directory, configurable from settings/env."""
+    from src.bcd_api.core.config import settings
+    if settings.covers_dir_path:
+        return Path(settings.covers_dir_path)
+    return Path("data/covers")
+
+
+def migrate_covers_to_isbn13(covers_dir: Optional[Path] = None,
                               db: Optional[Session] = None) -> None:
     """Rename any ISBN-10 cover files to their ISBN-13 equivalent.
 
@@ -52,6 +60,9 @@ def migrate_covers_to_isbn13(covers_dir: Path = Path("data/covers"),
     a successful migration so subsequent startups skip the disk scan entirely.
     Updates cover_image in the DB when a session is provided.
     """
+    if covers_dir is None:
+        covers_dir = _get_covers_dir()
+
     if not covers_dir.exists():
         return
 
@@ -198,13 +209,16 @@ def _try_geobib(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
 # Public API
 # ---------------------------------------------------------------------------
 
-def find_cached_cover(isbn: str, covers_dir: Path = Path("data/covers")) -> Optional[str]:
+def find_cached_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str]:
     """Return the canonical cover filename if it already exists on disk, else None.
 
     Uses the same ISBN normalisation and ISBN-13 canonical naming as
     ``download_cover`` so the two functions always agree on filenames.
     Does **not** attempt any network download.
     """
+    if covers_dir is None:
+        covers_dir = _get_covers_dir()
+
     if not isbn:
         return None
     isbn = isbn.strip()
@@ -221,7 +235,7 @@ def find_cached_cover(isbn: str, covers_dir: Path = Path("data/covers")) -> Opti
     return dest.name if dest.exists() else None
 
 
-def download_cover(isbn: str, covers_dir: Path = Path("data/covers")) -> Optional[str]:
+def download_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str]:
     """
     Download a book cover image, trying multiple providers in cascade.
 
@@ -233,6 +247,9 @@ def download_cover(isbn: str, covers_dir: Path = Path("data/covers")) -> Optiona
         Filename (e.g. '9782070368228.jpg') on success, None if no cover found.
         Idempotent: returns the cached filename if the file already exists.
     """
+    if covers_dir is None:
+        covers_dir = _get_covers_dir()
+
     if not isbn:
         return None
 

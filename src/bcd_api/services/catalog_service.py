@@ -46,7 +46,7 @@ def _download_cover(isbn: str) -> Optional[str]:
     Idempotent: returns the cached filename if the file already exists.
     """
     from . import cover_service
-    return cover_service.download_cover(isbn, covers_dir=Path("data/covers"))
+    return cover_service.download_cover(isbn, covers_dir=None)
 
 
 _EAN13_PERIODICAL_RE = re.compile(r"^977(\d{7})\d{3}$")

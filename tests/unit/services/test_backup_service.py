@@ -48,6 +48,7 @@ def mock_settings(temp_db):
     """Mock settings with temporary database path"""
     with patch('src.bcd_api.services.backup_service.settings') as mock:
         mock.database_url = f"sqlite:///{temp_db}"
+        mock.backups_dir_path = ""
         yield mock
 
 

@@ -34,10 +34,15 @@ def _get_env_file_path() -> str:
 # Determine database URL based on mode
 def _get_database_url() -> str:
     """Get default database URL based on portable mode."""
+    import os
+    env_db_url = os.environ.get("DATABASE_URL")
+    if env_db_url:
+        return env_db_url
     if is_portable():
         db_path = get_data_dir() / "bcd.db"
         return f"sqlite:///{db_path}"
     return "sqlite:///./data/bcd.db"
+
 
 
 class Settings(BaseSettings):
@@ -49,6 +54,14 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    # Paths Configurable (overridable in .env)
+    # Default behavior fallback to get_data_dir(), get_config_dir() or standard paths
+    data_dir_path: str = ""
+    config_dir_path: str = ""
+    log_dir_path: str = ""
+    covers_dir_path: str = ""
+    backups_dir_path: str = ""
 
     # Database
     database_url: str = _get_database_url()

@@ -72,13 +72,20 @@ def get_database_path() -> Path:
         raise ValueError("Backup service only supports SQLite databases")
 
 
+def _get_backups_dir() -> Path:
+    """Get standard/configured backups directory."""
+    if settings.backups_dir_path:
+        return Path(settings.backups_dir_path)
+    return Path("./backups")
+
+
 def create_backup(output_path: Optional[str] = None) -> BackupMetadata:
     """
     Create a backup of the database.
 
     Args:
         output_path: Optional custom backup path. If None, creates timestamped backup
-                    in ./backups/ directory
+                    in configured backups directory
 
     Returns:
         BackupMetadata: Metadata about the created backup
@@ -96,7 +103,7 @@ def create_backup(output_path: Optional[str] = None) -> BackupMetadata:
         # Determine output path
         if output_path is None:
             # Create backups directory if it doesn't exist
-            backup_dir = Path("./backups")
+            backup_dir = _get_backups_dir()
             backup_dir.mkdir(exist_ok=True)
 
             # Generate timestamped filename
@@ -166,7 +173,7 @@ def restore_backup(backup_file: str) -> bool:
         db_path = get_database_path()
 
         # Create a safety backup of current database before restore
-        safety_backup_dir = Path("./backups/pre_restore")
+        safety_backup_dir = _get_backups_dir() / "pre_restore"
         safety_backup_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safety_backup = safety_backup_dir / f"pre_restore_{timestamp}.db"
@@ -205,17 +212,20 @@ def restore_backup(backup_file: str) -> bool:
         raise
 
 
-def list_backups(backup_dir: str = "./backups") -> List[BackupMetadata]:
+def list_backups(backup_dir: Optional[str] = None) -> List[BackupMetadata]:
     """
     List all available backup files.
 
     Args:
-        backup_dir: Directory to search for backups (default: ./backups)
+        backup_dir: Directory to search for backups (default: configured backups dir)
 
     Returns:
         List[BackupMetadata]: List of backup metadata, sorted by creation time (newest first)
     """
-    backup_path = Path(backup_dir)
+    if backup_dir is None:
+        backup_path = _get_backups_dir()
+    else:
+        backup_path = Path(backup_dir)
 
     if not backup_path.exists():
         logger.info(f"Backup directory does not exist: {backup_path}")
@@ -234,18 +244,21 @@ def list_backups(backup_dir: str = "./backups") -> List[BackupMetadata]:
     return backups
 
 
-def cleanup_old_backups(keep_days: int = 30, backup_dir: str = "./backups") -> int:
+def cleanup_old_backups(keep_days: int = 30, backup_dir: Optional[str] = None) -> int:
     """
     Remove backup files older than specified days.
 
     Args:
         keep_days: Number of days to keep backups (default: 30)
-        backup_dir: Directory containing backups (default: ./backups)
+        backup_dir: Directory containing backups (default: configured backups dir)
 
     Returns:
         int: Number of backups deleted
     """
-    backups = list_backups(backup_dir)
+    if backup_dir is None:
+        backups = list_backups()
+    else:
+        backups = list_backups(backup_dir)
     deleted_count = 0
     cutoff_date = datetime.now() - timedelta(days=keep_days)
 

@@ -349,7 +349,7 @@ try:
 except OSError:
     pass
 
-_covers_dir = Path("data/covers")
+_covers_dir = Path(settings.covers_dir_path) if settings.covers_dir_path else Path("data/covers")
 _covers_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/covers", StaticFiles(directory=str(_covers_dir)), name="covers")
 
