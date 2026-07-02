@@ -16,20 +16,16 @@ var book_data: Dictionary
 
 func _ready() -> void:
 	_action_btn.focus_entered.connect(func():
-		_action_btn.add_theme_stylebox_override("normal", _action_btn.get_theme_stylebox("hover"))
-		_action_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+		ThemeManager.apply_focus_style(_action_btn)
 	)
 	_action_btn.focus_exited.connect(func():
-		_action_btn.remove_theme_stylebox_override("normal")
-		_action_btn.remove_theme_color_override("font_color")
+		ThemeManager.remove_focus_style(_action_btn)
 	)
 	_detail_btn.focus_entered.connect(func():
-		_detail_btn.add_theme_stylebox_override("normal", _detail_btn.get_theme_stylebox("hover"))
-		_detail_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+		ThemeManager.apply_focus_style(_detail_btn)
 	)
 	_detail_btn.focus_exited.connect(func():
-		_detail_btn.remove_theme_stylebox_override("normal")
-		_detail_btn.remove_theme_color_override("font_color")
+		ThemeManager.remove_focus_style(_detail_btn)
 	)
 
 func grab_first_focus() -> void:

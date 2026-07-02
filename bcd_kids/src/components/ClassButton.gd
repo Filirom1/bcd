@@ -11,12 +11,10 @@ var _cls_data: Dictionary
 
 func _ready() -> void:
 	focus_entered.connect(func():
-		add_theme_stylebox_override("normal", get_theme_stylebox("hover"))
-		add_theme_color_override("font_color", ThemeManager.TEXT)
+		ThemeManager.apply_focus_style(self)
 	)
 	focus_exited.connect(func():
-		remove_theme_stylebox_override("normal")
-		remove_theme_color_override("font_color")
+		ThemeManager.remove_focus_style(self)
 	)
 
 func setup(cls: Dictionary) -> void:

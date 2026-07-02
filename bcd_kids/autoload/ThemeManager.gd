@@ -332,3 +332,18 @@ static func animate_error_shake(node: Control) -> void:
 		tween.tween_property(node, "position:x", original_pos.x + 10, 0.05)
 		tween.tween_property(node, "position:x", original_pos.x - 10, 0.05)
 	tween.tween_property(node, "position", original_pos, 0.05)
+
+# ============================================================================
+# Keyboard navigation focus style helper (matching hover look)
+# ============================================================================
+
+static func apply_focus_style(btn: Button) -> void:
+	btn.add_theme_stylebox_override("normal", btn.get_theme_stylebox("hover"))
+	var hover_color := btn.get_theme_color("font_hover_color")
+	btn.add_theme_color_override("font_color", hover_color)
+	btn.add_theme_color_override("font_focus_color", hover_color)
+
+static func remove_focus_style(btn: Button) -> void:
+	btn.remove_theme_stylebox_override("normal")
+	btn.remove_theme_color_override("font_color")
+	btn.remove_theme_color_override("font_focus_color")

@@ -189,9 +189,7 @@ func _update_counter() -> void:
 		_count_lbl.remove_theme_color_override("font_color")
 
 func _apply_focus_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", btn.get_theme_stylebox("hover"))
-	btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+	ThemeManager.apply_focus_style(btn)
 
 func _remove_focus_style(btn: Button) -> void:
-	btn.remove_theme_stylebox_override("normal")
-	btn.remove_theme_color_override("font_color")
+	ThemeManager.remove_focus_style(btn)
