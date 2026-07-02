@@ -100,13 +100,13 @@ export default defineComponent({
 
         // Auto-regenerate when count or starting ID changes (debounced)
         let _regenTimer = null;
-        const scheduleRegen = () => {
+        const scheduleRegen = (delay = 400) => {
             clearTimeout(_regenTimer);
-            _regenTimer = setTimeout(() => { generateIds(); }, 400);
+            _regenTimer = setTimeout(() => { generateIds(); }, delay);
         };
-        watch(labelCount, scheduleRegen);
-        watch(startId, scheduleRegen);
-        watch(contiguous, scheduleRegen);
+        watch(labelCount, () => scheduleRegen(400));
+        watch(startId, () => scheduleRegen(1200));
+        watch(contiguous, () => scheduleRegen(400));
 
         // Re-render barcodes when computed height changes (label height edited)
         watch(barcodeHeight, async () => {
