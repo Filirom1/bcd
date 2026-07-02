@@ -63,6 +63,10 @@
 		"hold_ready_for": "📌 Set aside for {name} ({class})",
 		"hold_ready_title": "📌 Hold ready!",
 		"hold_ready_instruction": "Please set this book aside for this borrower.",
+		"shelve_title": "📚 Where to shelve this book?",
+		"shelve_instruction": "Please put the book back in its place on the shelf.",
+		"shelf_label": "Shelf:",
+		"call_num_label": "Call Number:",
 		"returned_today": "Books returned today:",
 		"scan_books_placeholder": "Scan books...",
 		"ranger_a": "shelve at"

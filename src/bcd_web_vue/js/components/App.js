@@ -57,9 +57,13 @@ export default defineComponent({
                 });
                 const returned = result.items?.[0];
                 const titleDisplay = returned?.display_title || returned?.title || itemId;
-                const shelfInfo = returned?.shelf_location
-                    ? ` — ${t('circulation.ranger')} : ${returned.shelf_location}`
-                    : '';
+                
+                let locationParts = [];
+                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
+                if (returned?.call_number) locationParts.push(returned.call_number);
+                
+                const locationText = locationParts.length > 0 ? locationParts.join(' / ') : '-';
+                const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
                 success(`✓ ${titleDisplay}${shelfInfo}`);
                 if (returned?.hold_ready) {
                     const hr = returned.hold_ready;

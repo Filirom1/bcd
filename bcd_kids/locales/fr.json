@@ -63,6 +63,10 @@
 		"hold_ready_for": "📌 Mettre de côté pour {name} ({class})",
 		"hold_ready_title": "📌 Réservation à traiter !",
 		"hold_ready_instruction": "Mettre ce livre de côté pour cet élève.",
+		"shelve_title": "📚 Où ranger ce livre ?",
+		"shelve_instruction": "Merci de ranger le livre à sa place sur l'étagère.",
+		"shelf_label": "Étagère :",
+		"call_num_label": "Cote :",
 		"returned_today": "Livres rendus aujourd'hui:",
 		"scan_books_placeholder": "Scannez des livres...",
 		"ranger_a": "ranger à"

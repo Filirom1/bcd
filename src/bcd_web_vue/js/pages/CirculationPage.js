@@ -483,7 +483,13 @@ export default defineComponent({
 
                 const returned = result.items?.[0];
                 const titleDisplay = returned?.display_title || returned?.title || itemId;
-                const shelfInfo = returned?.shelf_location ? ` — ${t('circulation.ranger')} : ${returned.shelf_location}` : '';
+                
+                let locationParts = [];
+                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
+                if (returned?.call_number) locationParts.push(returned.call_number);
+                
+                const locationText = locationParts.length > 0 ? locationParts.join(' / ') : '-';
+                const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
                 success(`✓ ${titleDisplay}${shelfInfo}`);
 
                 // Show hold_ready notification so librarian knows to set the book aside
@@ -693,6 +699,7 @@ export default defineComponent({
                                             <th class="text-muted fw-normal" style="width: 2rem;">#</th>
                                             <th class="text-muted fw-normal">{{ t('catalog.inventory_number') }}</th>
                                             <th class="text-muted fw-normal">{{ t('catalog.title') }}</th>
+                                            <th class="text-muted fw-normal">{{ t('catalog.shelf_location_call_number') }}</th>
                                             <th class="text-muted fw-normal">{{ t('circulation.returned_at') }}</th>
                                         </tr>
                                     </thead>
@@ -709,10 +716,6 @@ export default defineComponent({
                                                 <span v-if="item.was_overdue" class="badge bg-danger ms-1">
                                                     {{ t('circulation.overdue_label') }}
                                                 </span>
-                                                <div v-if="item.shelf_location || item.call_number" class="d-flex flex-wrap align-items-center gap-1 mt-1">
-                                                    <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
-                                                    <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
-                                                </div>
                                                 <div v-if="item.hold_ready" class="alert alert-warning mt-2 mb-0 py-2 px-3">
                                                     <div class="d-flex align-items-center">
                                                         <i class="bi bi-bookmark-star-fill fs-5 me-2"></i>
@@ -730,6 +733,13 @@ export default defineComponent({
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td class="align-middle">
+                                                <div v-if="item.shelf_location || item.call_number" class="d-flex flex-wrap align-items-center gap-1">
+                                                    <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
+                                                    <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
+                                                </div>
+                                                <span v-else class="text-muted small">-</span>
                                             </td>
                                             <td class="small text-muted align-middle">{{ formatReturnTime(item.returned_date) }}</td>
                                         </tr>
