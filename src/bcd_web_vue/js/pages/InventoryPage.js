@@ -30,7 +30,7 @@ import AdminDropdown from '../components/admin/AdminDropdown.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import ConfirmDialog from '../components/admin/ConfirmDialog.js';
 import ItemEditForm from '../components/catalog/ItemEditForm.js';
-import RecordEditForm from '../components/catalog/RecordEditForm.js';
+import RecordDetail from '../components/catalog/RecordDetail.js';
 
 export default defineComponent({
     name: 'InventoryPage',
@@ -46,7 +46,7 @@ export default defineComponent({
         HelpPanel,
         ConfirmDialog,
         ItemEditForm,
-        RecordEditForm
+        RecordDetail
     },
 
     setup() {
@@ -745,12 +745,14 @@ export default defineComponent({
                 @saved="handleItemSaved"
             />
 
-            <!-- Record Edit Modal -->
-            <record-edit-form
+            <!-- Record Detail / Edit Modal -->
+            <record-detail
                 v-if="editingRecord"
-                :show="showRecordEditModal"
+                :record-id="editingRecord.id"
                 :record="editingRecord"
+                :show="showRecordEditModal"
                 :settings="settings"
+                initial-mode="edit"
                 @update:show="showRecordEditModal = $event"
                 @saved="handleRecordSaved"
                 @deleted="handleRecordDeleted"

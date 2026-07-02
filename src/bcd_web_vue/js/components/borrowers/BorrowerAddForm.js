@@ -8,9 +8,13 @@
 
 const { ref, watch } = Vue;
 const { useI18n } = VueI18n;
+import BorrowerFields from './BorrowerFields.js';
 
 export default {
   name: 'BorrowerAddForm',
+  components: {
+    BorrowerFields
+  },
   props: {
     show: {
       type: Boolean,
@@ -202,163 +206,12 @@ export default {
             </div>
 
             <form @submit.prevent="handleSubmit">
-              <!-- Borrower ID -->
-              <div class="mb-3">
-                <label for="add-borrower-id" class="form-label">
-                  {{ t('admin.borrower.edit.borrower_id') }} *
-                </label>
-                <div class="input-group">
-                  <input
-                    type="text"
-                    class="form-control"
-                    :class="{ 'is-invalid': errors.borrower_id }"
-                    id="add-borrower-id"
-                    data-testid="input-borrower-id"
-                    v-model="formData.borrower_id"
-                    :placeholder="isLoadingNextId ? t('admin.borrower.add.next_id_loading') : t('admin.borrower.edit.borrower_id_placeholder')"
-                    :disabled="isLoadingNextId"
-                    required
-                  />
-                  <span v-if="isLoadingNextId" class="input-group-text">
-                    <span class="spinner-border spinner-border-sm"></span>
-                  </span>
-                </div>
-                <div v-if="errors.borrower_id" class="invalid-feedback d-block" data-testid="error-borrower-id">
-                  {{ errors.borrower_id }}
-                </div>
-                <small class="form-text text-muted">
-                  {{ t('admin.borrower.add.next_id_help') }}
-                </small>
-              </div>
-
-              <!-- First Name -->
-              <div class="mb-3">
-                <label for="add-first-name" class="form-label">
-                  {{ t('admin.borrower.edit.first_name') }} *
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.first_name }"
-                  id="add-first-name"
-                  data-testid="input-first-name"
-                  v-model="formData.first_name"
-                  :placeholder="t('admin.borrower.edit.first_name_placeholder')"
-                  required
-                />
-                <div v-if="errors.first_name" class="invalid-feedback" data-testid="error-first-name">
-                  {{ errors.first_name }}
-                </div>
-              </div>
-
-              <!-- Last Name -->
-              <div class="mb-3">
-                <label for="add-last-name" class="form-label">
-                  {{ t('admin.borrower.edit.last_name') }} *
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': errors.last_name }"
-                  id="add-last-name"
-                  data-testid="input-last-name"
-                  v-model="formData.last_name"
-                  :placeholder="t('admin.borrower.edit.last_name_placeholder')"
-                  required
-                />
-                <div v-if="errors.last_name" class="invalid-feedback" data-testid="error-last-name">
-                  {{ errors.last_name }}
-                </div>
-              </div>
-
-              <!-- Role -->
-              <div class="mb-3">
-                <label for="add-role" class="form-label">
-                  {{ t('admin.borrower.edit.role') }} *
-                </label>
-                <select
-                  class="form-select"
-                  :class="{ 'is-invalid': errors.role }"
-                  id="add-role"
-                  data-testid="select-role"
-                  v-model="formData.role"
-                  required
-                >
-                  <option value="student">{{ getRoleDisplayName('student') }}</option>
-                  <option value="teacher">{{ getRoleDisplayName('teacher') }}</option>
-                  <option value="staff">{{ getRoleDisplayName('staff') }}</option>
-                </select>
-                <div v-if="errors.role" class="invalid-feedback" data-testid="error-role">
-                  {{ errors.role }}
-                </div>
-              </div>
-
-              <!-- Class -->
-              <div class="mb-3">
-                <label for="add-class" class="form-label">
-                  {{ t('admin.borrower.edit.class') }}
-                </label>
-                <select
-                  class="form-select"
-                  id="add-class"
-                  data-testid="select-class"
-                  v-model="formData.class_id"
-                  :disabled="isLoadingClasses"
-                >
-                  <option :value="null">{{ t('admin.borrower.edit.no_class') }}</option>
-                  <option v-for="cls in classes" :key="cls.id" :value="cls.id">
-                    {{ cls.name }}{{ cls.homeroom_teacher ? ' (' + cls.homeroom_teacher + ')' : '' }}
-                  </option>
-                </select>
-                <small v-if="formData.role === 'student'" class="form-text text-muted">
-                  {{ t('admin.borrower.edit.class_help_student') }}
-                </small>
-              </div>
-
-              <!-- Email -->
-              <div class="mb-3">
-                <label for="add-email" class="form-label">
-                  {{ t('admin.borrower.edit.email') }}
-                </label>
-                <input
-                  type="email"
-                  class="form-control"
-                  id="add-email"
-                  data-testid="input-email"
-                  v-model="formData.email"
-                  :placeholder="t('admin.borrower.edit.email_placeholder')"
-                />
-              </div>
-
-              <!-- Phone -->
-              <div class="mb-3">
-                <label for="add-phone" class="form-label">
-                  {{ t('admin.borrower.edit.phone') }}
-                </label>
-                <input
-                  type="tel"
-                  class="form-control"
-                  id="add-phone"
-                  data-testid="input-phone"
-                  v-model="formData.phone"
-                  :placeholder="t('admin.borrower.edit.phone_placeholder')"
-                />
-              </div>
-
-              <!-- Notes -->
-              <div class="mb-3">
-                <label for="add-notes" class="form-label">
-                  {{ t('admin.borrower.edit.notes') }}
-                </label>
-                <textarea
-                  class="form-control"
-                  id="add-notes"
-                  data-testid="input-notes"
-                  v-model="formData.notes"
-                  rows="3"
-                  :placeholder="t('admin.borrower.edit.notes_placeholder')"
-                ></textarea>
-              </div>
+              <borrower-fields
+                v-model="formData"
+                :errors="errors"
+                :classes="classes"
+                :is-loading-classes="isLoadingClasses"
+              />
             </form>
           </div>
 

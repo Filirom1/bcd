@@ -23,7 +23,7 @@ import { useGlobalModal } from '../composables/useGlobalModal.js';
 import AdminDropdown from '../components/admin/AdminDropdown.js';
 import Pagination from '../components/ui/Pagination.js';
 import BulkEditModal from '../components/catalog/BulkEditModal.js';
-import RecordEditForm from '../components/catalog/RecordEditForm.js';
+import RecordDetail from '../components/catalog/RecordDetail.js';
 import ProgressIndicator from '../components/admin/ProgressIndicator.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 
@@ -38,7 +38,7 @@ export default defineComponent({
         AdminDropdown,
         Pagination,
         BulkEditModal,
-        RecordEditForm,
+        RecordDetail,
         ProgressIndicator,
         HelpPanel
     },
@@ -650,12 +650,14 @@ export default defineComponent({
                 @execute="handleExecuteBulkOperation"
             />
 
-            <!-- Record Edit Modal -->
-            <record-edit-form
+            <!-- Record Detail / Edit Modal -->
+            <record-detail
                 v-if="editingRecord"
-                :show="showRecordEditModal"
+                :record-id="editingRecord.id"
                 :record="editingRecord"
+                :show="showRecordEditModal"
                 :settings="settings"
+                initial-mode="edit"
                 @update:show="showRecordEditModal = $event"
                 @saved="handleRecordSaved"
                 @deleted="handleRecordDeleted"

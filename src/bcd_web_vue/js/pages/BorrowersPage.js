@@ -19,7 +19,7 @@ import BorrowerFilters from '../components/borrowers/BorrowerFilters.js';
 import BorrowerList from '../components/borrowers/BorrowerList.js';
 import BorrowerImport from '../components/borrowers/BorrowerImport.js';
 import BulkEditModal from '../components/borrowers/BulkEditModal.js';
-import BorrowerEditForm from '../components/borrowers/BorrowerEditForm.js';
+import BorrowerDetail from '../components/borrowers/BorrowerDetail.js';
 import BorrowerAddForm from '../components/borrowers/BorrowerAddForm.js';
 import AdminDropdown from '../components/admin/AdminDropdown.js';
 import Pagination from '../components/ui/Pagination.js';
@@ -42,7 +42,7 @@ export default defineComponent({
         BorrowerList,
         BorrowerImport,
         BulkEditModal,
-        BorrowerEditForm,
+        BorrowerDetail,
         BorrowerAddForm,
         AdminDropdown,
         Pagination,
@@ -140,14 +140,18 @@ export default defineComponent({
                 @execute="handleBulkOperation"
             ></bulk-edit-modal>
 
-            <!-- Edit Single Borrower Modal -->
-            <borrower-edit-form
-                :show="showEditModal"
+            <!-- Edit Single Borrower / Detail Modal -->
+            <borrower-detail
+                v-if="selectedBorrower && showEditModal"
+                :borrower-id="selectedBorrower.borrower_id"
                 :borrower="selectedBorrower"
+                :show="showEditModal"
+                initial-mode="edit"
                 @update:show="showEditModal = $event"
                 @saved="handleBorrowerSaved"
                 @deleted="handleBorrowerDeleted"
-            ></borrower-edit-form>
+                @close="showEditModal = false"
+            />
 
             <!-- Add Borrower Modal -->
             <borrower-add-form
