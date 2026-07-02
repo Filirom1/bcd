@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -760,6 +760,127 @@ def backfill_covers(db: Session = Depends(get_db)):
 
     logger.info(f"Cover backfill: {updated}/{len(records)} records updated")
     return {"updated": updated, "scanned": len(records)}
+
+
+import threading
+
+_download_lock = threading.Lock()
+_download_status = {
+    "running": False,
+    "processed": 0,
+    "total": 0,
+    "found": 0,
+    "last_processed_isbn": None,
+}
+
+def _download_missing_covers_task():
+    global _download_status
+    from ...core.database import SessionLocal
+    from ...models.bibliographic_record import BiblographicRecord
+    from ...services.cover_service import download_cover, find_cached_cover
+    import time
+
+    covers_dir = Path("data/covers")
+    to_download = []
+
+    db = SessionLocal()
+    try:
+        # Scanne et associe d'abord les fichiers déjà présents (comme le backfill)
+        records = db.query(BiblographicRecord).filter(
+            BiblographicRecord.cover_image == None,
+            BiblographicRecord.isbn != None,
+            BiblographicRecord.isbn != "",
+        ).all()
+
+        for r in records:
+            fname = find_cached_cover(r.isbn, covers_dir=covers_dir)
+            if fname:
+                r.cover_image = fname
+                db.commit()
+                continue
+            to_download.append((r.id, r.isbn))
+    except Exception as e:
+        logger.error(f"Error scanning/backfilling existing covers: {e}")
+    finally:
+        db.close()
+
+    total = len(to_download)
+    with _download_lock:
+        _download_status["total"] = total
+        _download_status["processed"] = 0
+        _download_status["found"] = 0
+        _download_status["running"] = True
+
+    try:
+        for idx, (rec_id, isbn) in enumerate(to_download):
+            with _download_lock:
+                if not _download_status["running"]:
+                    break
+
+            try:
+                fname = download_cover(isbn, covers_dir=covers_dir)
+                if fname:
+                    db_update = SessionLocal()
+                    try:
+                        rec = db_update.query(BiblographicRecord).filter(BiblographicRecord.id == rec_id).first()
+                        if rec:
+                            rec.cover_image = fname
+                            db_update.commit()
+                            with _download_lock:
+                                _download_status["found"] += 1
+                    finally:
+                        db_update.close()
+            except Exception as e:
+                logger.error(f"Error downloading cover for ISBN {isbn}: {e}")
+
+            with _download_lock:
+                _download_status["processed"] = idx + 1
+                _download_status["last_processed_isbn"] = isbn
+
+            # Petit sleep pour ne pas spammer les APIs (1 par minute, soit 60s)
+            time.sleep(60.0)
+
+    except Exception as e:
+        logger.error(f"Background cover download loop failed: {e}")
+    finally:
+        with _download_lock:
+            _download_status["running"] = False
+
+
+@router.post("/covers/download-missing")
+def start_download_missing_covers(background_tasks: BackgroundTasks):
+    """Start a background task to download covers for records with an ISBN but no cover."""
+    global _download_status
+    with _download_lock:
+        if _download_status["running"]:
+            return {"status": "already_running", "message": "Cover download is already running."}
+        _download_status["running"] = True
+        _download_status["processed"] = 0
+        _download_status["total"] = 0
+        _download_status["found"] = 0
+        _download_status["last_processed_isbn"] = None
+
+    background_tasks.add_task(_download_missing_covers_task)
+    return {"status": "started", "message": "Background cover download started."}
+
+
+@router.get("/covers/download-missing/status")
+def get_download_missing_covers_status():
+    """Get the status of the background cover download task."""
+    with _download_lock:
+        return _download_status
+
+
+@router.post("/covers/download-missing/cancel")
+def cancel_download_missing_covers():
+    """Cancel the background cover download task."""
+    global _download_status
+    with _download_lock:
+        if _download_status["running"]:
+            _download_status["running"] = False
+            return {"status": "cancelling", "message": "Cover download cancellation requested."}
+        return {"status": "not_running", "message": "Cover download is not running."}
+
 
 
 @router.post("/data-maintenance/set-acquisition-dates")
