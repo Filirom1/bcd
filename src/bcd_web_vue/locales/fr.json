@@ -1013,6 +1013,7 @@
     "condition_lost": "Perdu",
     "condition_withdrawn": "Retiré",
     "loanable": "Empruntable",
+    "status_not_loanable": "Non empruntable",
     "shelf_location": "Emplacement"
   },
   "validation": {

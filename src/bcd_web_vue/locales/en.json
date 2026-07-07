@@ -1012,6 +1012,7 @@
     "condition_lost": "Lost",
     "condition_withdrawn": "Withdrawn",
     "loanable": "Loanable",
+    "status_not_loanable": "Not loanable",
     "shelf_location": "Location"
   },
   "validation": {
