@@ -304,47 +304,24 @@ jobs:
           tar -czf "${PKG}.tar.gz" "$PKG"
           sha256sum "${PKG}.tar.gz" > "${PKG}.tar.gz.sha256"
 
+      # ── Extract Release Notes from CHANGELOG.md ─────────────────────────────
+      - name: Extract Release Notes
+        id: release_notes
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          # Find version header block in CHANGELOG.md and extract everything up to next ## header
+          sed -n "/## \[$VERSION\]/,/## /p" CHANGELOG.md | sed '$d' > release_notes.md
+          # If empty or not found, fallback to header
+          if [ ! -s release_notes.md ]; then
+            echo "## [$VERSION]" > release_notes.md
+          fi
+
       # ── GitHub Release ─────────────────────────────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: BCD v${{ steps.get_version.outputs.VERSION }}
-          body: |
-            # BCD v${{ steps.get_version.outputs.VERSION }}
-
-            Chaque archive contient le **serveur BCD** (API + interface web) et le **client BCD Kids** (interface élèves).
-
-            ## Téléchargements
-
-            | Plateforme | Fichier |
-            |------------|---------|
-            | Windows 10/11 | `BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip` |
-            | Linux x86_64  | `BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz` |
-
-            ## Installation Windows
-
-            1. Extraire le ZIP
-            2. Lancer `bcd.exe` pour démarrer le serveur
-            3. Lancer `BCD-Kids.exe` pour l'interface élèves
-
-            ## Installation Linux
-
-            1. `tar -xzf BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz`
-            2. `./bcd` pour démarrer le serveur
-            3. `./BCD-Kids.x86_64` pour l'interface élèves
-
-            ## Vérification des archives
-
-            ```
-            # Windows (PowerShell)
-            Get-FileHash BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip -Algorithm SHA256
-
-            # Linux
-            sha256sum -c BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz.sha256
-            ```
-
-            ---
-            **Commit** : ${{ github.sha }}
+          body_path: release_notes.md
           files: |
             BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip
             BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip.sha256
