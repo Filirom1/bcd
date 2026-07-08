@@ -40,9 +40,10 @@ def get_data_dir() -> Path:
     Returns:
         Path to data directory.
     """
-    from src.bcd_api.core.config import settings
-    if settings.data_dir_path:
-        data_dir = Path(settings.data_dir_path)
+    import os
+
+    if os.environ.get("DATA_DIR_PATH"):
+        data_dir = Path(os.environ["DATA_DIR_PATH"])
     else:
         data_dir = get_app_dir() / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -57,9 +58,10 @@ def get_config_dir() -> Path:
     Returns:
         Path to config directory.
     """
-    from src.bcd_api.core.config import settings
-    if settings.config_dir_path:
-        config_dir = Path(settings.config_dir_path)
+    import os
+
+    if os.environ.get("CONFIG_DIR_PATH"):
+        config_dir = Path(os.environ["CONFIG_DIR_PATH"])
     else:
         config_dir = get_app_dir() / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
