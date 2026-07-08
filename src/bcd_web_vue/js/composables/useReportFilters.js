@@ -61,8 +61,8 @@ export function useReportFilters(t, audienceLabel, extraFilters = {}) {
                 if (cf.taux_rotation_max !== null && (item[tauxField] ?? 0) > cf.taux_rotation_max) return false;
             }
             if (excludeKey !== 'pub_year') {
-                if (cf.pub_year_min != null && item.publication_year && item.publication_year < cf.pub_year_min) return false;
-                if (cf.pub_year_max != null && item.publication_year && item.publication_year > cf.pub_year_max) return false;
+                if (cf.pub_year_min != null && (!item.publication_year || item.publication_year < cf.pub_year_min)) return false;
+                if (cf.pub_year_max != null && (!item.publication_year || item.publication_year > cf.pub_year_max)) return false;
             }
             return true;
         });
