@@ -362,6 +362,7 @@ class TestVerifyBackupEndpoint:
         # Since we're using a mock_backup_service, we need to create a temp dir
         # to simulate the backups directory, or just test that the endpoint
         # properly returns 404 when the file doesn't exist
+        mock_backup_service._get_backups_dir.return_value = Path("./backups_temp_not_exist_or_mocked")
         response = client.get("/api/v1/admin/backups/verify/nonexistent.db")
 
         assert response.status_code == 404
@@ -398,6 +399,7 @@ class TestBackupEndpointsIntegration:
         """Test complete backup and restore cycle"""
         with patch('src.bcd_api.services.backup_service.settings') as mock_settings:
             mock_settings.database_url = f"sqlite:///{temp_test_db}"
+            mock_settings.backups_dir_path = "backups"
 
             with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
                 mock_engine.dispose = MagicMock()

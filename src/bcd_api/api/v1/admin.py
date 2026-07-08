@@ -308,7 +308,8 @@ def verify_backup_endpoint(filename: str):
         Verification status
     """
     try:
-        backup_path = Path("./backups") / filename
+        backup_dir = backup_service._get_backups_dir()
+        backup_path = backup_dir / filename
 
         if not backup_path.exists():
             raise HTTPException(
