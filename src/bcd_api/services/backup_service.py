@@ -172,17 +172,28 @@ def restore_backup(backup_file: str) -> bool:
 
         db_path = get_database_path()
 
-        # Create a safety backup of current database before restore
+        # Create a WAL-safe safety backup of current database before restore.
+        # A raw copy of only the main .db file can miss committed transactions
+        # that still live in the -wal sidecar file.
         safety_backup_dir = _get_backups_dir() / "pre_restore"
         safety_backup_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safety_backup = safety_backup_dir / f"pre_restore_{timestamp}.db"
 
         logger.warning(f"Creating safety backup before restore: {safety_backup}")
-        shutil.copy2(db_path, safety_backup)
+        create_backup(str(safety_backup))
 
-        # Close all connections
+        # Close all SQLAlchemy connections before replacing the database file.
         engine.dispose()
+
+        # Remove WAL sidecar files from the database being replaced. Leaving an
+        # old WAL next to a newly-copied main database can produce stale or
+        # incompatible state after restore. The -shm file is an ephemeral WAL
+        # index and should be removed too.
+        for sidecar in (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm")):
+            if sidecar.exists():
+                logger.info(f"Removing SQLite sidecar before restore: {sidecar}")
+                sidecar.unlink()
 
         # Perform restore
         logger.warning(f"Restoring database from backup: {backup_path}")
@@ -199,6 +210,10 @@ def restore_backup(backup_file: str) -> bool:
             # Restore failed, rollback to safety backup
             logger.error(f"Restored database integrity check failed: {result}")
             logger.warning("Rolling back to safety backup")
+            for sidecar in (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm")):
+                if sidecar.exists():
+                    logger.info(f"Removing SQLite sidecar before rollback: {sidecar}")
+                    sidecar.unlink()
             shutil.copy2(safety_backup, db_path)
             raise IOError("Database restore failed integrity check")
 

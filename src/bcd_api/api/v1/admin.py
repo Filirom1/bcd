@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -265,6 +265,92 @@ def restore_backup_endpoint(
         raise HTTPException(
             status_code=500,
             detail=f"Restore failed: {str(e)}"
+        )
+
+
+@router.get("/backups/{filename}/download")
+def download_backup_endpoint(filename: str):
+    """
+    Download a specific backup file.
+    """
+    from fastapi.responses import FileResponse
+    try:
+        backup_dir = backup_service._get_backups_dir()
+        # Prevent directory traversal attacks
+        safe_filename = Path(filename).name
+        backup_path = (backup_dir / safe_filename).resolve()
+
+        if not backup_path.exists() or not str(backup_path).startswith(str(backup_dir.resolve())):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Backup file not found: {filename}"
+            )
+
+        return FileResponse(
+            path=backup_path,
+            media_type="application/x-sqlite3",
+            filename=safe_filename
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Download failed: {str(e)}"
+        )
+
+
+@router.post("/backups/import")
+async def import_backup_endpoint(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload and import/restore a database backup file.
+    """
+    import shutil
+    from datetime import datetime
+    try:
+        # Create backups directory if it doesn't exist
+        backup_dir = backup_service._get_backups_dir()
+        backup_dir.mkdir(exist_ok=True)
+
+        # Generate a safe filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        temp_filepath = backup_dir / f"imported_backup_{timestamp}.db"
+
+        # Save uploaded file
+        with open(temp_filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Verify backup integrity
+        if not backup_service.verify_backup(str(temp_filepath)):
+            # Delete invalid file
+            if temp_filepath.exists():
+                temp_filepath.unlink()
+            raise HTTPException(
+                status_code=400,
+                detail="The uploaded file is not a valid SQLite database or integrity check failed."
+            )
+
+        # Close session before restore
+        db.close()
+
+        # Perform restore from the uploaded file
+        success = backup_service.restore_backup(str(temp_filepath))
+
+        return {
+            "success": success,
+            "message": "Database successfully imported and restored.",
+            "backup_file": str(temp_filepath),
+            "warning": "A safety backup of the previous database was created in ./backups/pre_restore/"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database import failed: {str(e)}"
         )
 
 

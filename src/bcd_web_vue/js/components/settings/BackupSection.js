@@ -23,6 +23,8 @@ export default defineComponent({
         const creating = ref(false);
         const restoring = ref(null);   // filename being restored, or null
         const cleaning = ref(false);
+        const importing = ref(false);
+        const fileInput = ref(null);
 
         const newestBackup = computed(() => backups.value[0] || null);
 
@@ -82,6 +84,63 @@ export default defineComponent({
             }
         };
 
+        const downloadBackup = (backup) => {
+            const url = `${apiClient.baseURL}/admin/backups/${backup.filename}/download`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', backup.filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        const exportCurrentDb = async () => {
+            try {
+                creating.value = true;
+                const data = await apiClient.post('/admin/backup', {});
+                success(t('settings.backup_created', { filename: data.backup.filename }));
+                await loadBackups();
+                downloadBackup(data.backup);
+            } catch (error) {
+                handleError(error);
+            } finally {
+                creating.value = false;
+            }
+        };
+
+        const triggerImport = () => {
+            if (fileInput.value) {
+                fileInput.value.click();
+            }
+        };
+
+        const importBackup = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!window.confirm(t('settings.backup_import_confirm'))) {
+                event.target.value = '';
+                return;
+            }
+
+            try {
+                importing.value = true;
+                const formData = new FormData();
+                formData.append('file', file);
+
+                await apiClient.post('/admin/backups/import', formData);
+                success(t('settings.backup_import_success'));
+                await loadBackups();
+            } catch (error) {
+                handleError(error);
+            } finally {
+                importing.value = false;
+                if (fileInput.value) {
+                    fileInput.value.value = '';
+                }
+            }
+        };
+
         const restoreBackup = async (backup) => {
             if (!window.confirm(t('settings.backup_restore_confirm'))) return;
             try {
@@ -124,6 +183,8 @@ export default defineComponent({
             creating,
             restoring,
             cleaning,
+            importing,
+            fileInput,
             newestBackup,
             ageBadgeClass,
             statusAlertClass,
@@ -131,6 +192,10 @@ export default defineComponent({
             statusText,
             formatDate,
             createBackup,
+            downloadBackup,
+            exportCurrentDb,
+            triggerImport,
+            importBackup,
             restoreBackup,
             cleanupOldBackups
         };
@@ -164,13 +229,25 @@ export default defineComponent({
             </div>
 
             <!-- Action buttons -->
-            <div class="col-12 mb-3 d-flex gap-2 flex-wrap">
-                <button class="btn btn-primary" @click="createBackup" :disabled="creating || loadingList">
+            <div class="col-12 mb-3 d-flex gap-2 flex-wrap align-items-center">
+                <button class="btn btn-primary" @click="createBackup" :disabled="creating || loadingList || importing">
                     <span v-if="creating" class="spinner-border spinner-border-sm me-1" role="status"></span>
                     <i v-else class="bi bi-cloud-arrow-up me-1"></i>
                     {{ creating ? t('settings.backup_creating') : t('settings.backup_create') }}
                 </button>
-                <button class="btn btn-outline-danger" @click="cleanupOldBackups" :disabled="cleaning || loadingList">
+                <button class="btn btn-outline-success" @click="exportCurrentDb" :disabled="creating || loadingList || importing">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i>
+                    {{ t('settings.backup_download_db') }}
+                </button>
+                
+                <input type="file" ref="fileInput" accept=".db" @change="importBackup" style="display: none" />
+                <button class="btn btn-outline-primary" @click="triggerImport" :disabled="creating || loadingList || importing">
+                    <span v-if="importing" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    <i v-else class="bi bi-file-earmark-arrow-up me-1"></i>
+                    {{ t('settings.backup_import') }}
+                </button>
+
+                <button class="btn btn-outline-danger" @click="cleanupOldBackups" :disabled="cleaning || loadingList || importing">
                     <span v-if="cleaning" class="spinner-border spinner-border-sm me-1" role="status"></span>
                     <i v-else class="bi bi-trash me-1"></i>
                     {{ t('settings.backup_delete_old') }}
@@ -201,15 +278,25 @@ export default defineComponent({
                                     </span>
                                 </td>
                                 <td>
-                                    <button
-                                        class="btn btn-sm btn-outline-warning"
-                                        @click="restoreBackup(backup)"
-                                        :disabled="restoring !== null || creating"
-                                    >
-                                        <span v-if="restoring === backup.filename" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                        <i v-else class="bi bi-arrow-counterclockwise me-1"></i>
-                                        {{ restoring === backup.filename ? t('settings.backup_restoring') : t('settings.backup_restore') }}
-                                    </button>
+                                    <div class="d-flex gap-1">
+                                        <button
+                                            class="btn btn-sm btn-outline-primary"
+                                            @click="downloadBackup(backup)"
+                                            :disabled="restoring !== null || creating || importing"
+                                        >
+                                            <i class="bi bi-download me-1"></i>
+                                            {{ t('settings.backup_download') }}
+                                        </button>
+                                        <button
+                                            class="btn btn-sm btn-outline-warning"
+                                            @click="restoreBackup(backup)"
+                                            :disabled="restoring !== null || creating || importing"
+                                        >
+                                            <span v-if="restoring === backup.filename" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                            <i v-else class="bi bi-arrow-counterclockwise me-1"></i>
+                                            {{ restoring === backup.filename ? t('settings.backup_restoring') : t('settings.backup_restore') }}
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

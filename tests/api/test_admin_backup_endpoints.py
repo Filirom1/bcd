@@ -457,3 +457,71 @@ class TestBackupEndpointsIntegration:
             cleanup_response = client.delete("/api/v1/admin/backups/cleanup?keep_days=30")
             assert cleanup_response.status_code == 200
             assert cleanup_response.json()["deleted_count"] == 1
+
+
+class TestDownloadBackupEndpoint:
+    """Test GET /admin/backups/{filename}/download endpoint"""
+
+    def test_download_success(self, client, mock_backup_service):
+        """Test successful download of a backup file"""
+        from pathlib import Path
+        backups_dir = Path("./backups")
+        backups_dir.mkdir(exist_ok=True)
+        test_backup = backups_dir / "test_download.db"
+        test_backup.touch()
+
+        try:
+            # Configure mock_backup_service's _get_backups_dir to point to actual dir
+            mock_backup_service._get_backups_dir.return_value = backups_dir
+
+            response = client.get("/api/v1/admin/backups/test_download.db/download")
+            assert response.status_code == 200
+            assert response.headers["content-type"] == "application/x-sqlite3"
+        finally:
+            if test_backup.exists():
+                test_backup.unlink()
+
+    def test_download_nonexistent(self, client, mock_backup_service):
+        """Test downloading a backup that doesn't exist"""
+        mock_backup_service._get_backups_dir.return_value = Path("./backups")
+        response = client.get("/api/v1/admin/backups/nonexistent_file.db/download")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"]
+
+    def test_download_traversal_prevention(self, client, mock_backup_service):
+        """Test directory traversal prevention"""
+        mock_backup_service._get_backups_dir.return_value = Path("./backups")
+        # If we request a filename like "invalid_file.db", it shouldn't allow escaping or access
+        response = client.get("/api/v1/admin/backups/invalid_file.db/download")
+        assert response.status_code == 404
+
+
+class TestImportBackupEndpoint:
+    """Test POST /admin/backups/import endpoint"""
+
+    def test_import_invalid_db(self, client, mock_backup_service):
+        """Test importing/uploading an invalid database backup"""
+        mock_backup_service._get_backups_dir.return_value = Path("./backups")
+        mock_backup_service.verify_backup.return_value = False
+
+        file_payload = {"file": ("test_invalid.db", b"not-a-sqlite-db", "application/octet-stream")}
+        response = client.post("/api/v1/admin/backups/import", files=file_payload)
+
+        assert response.status_code == 400
+        assert "not a valid SQLite database" in response.json()["detail"]
+
+    def test_import_success(self, client, mock_backup_service):
+        """Test successful upload and restoration of backup"""
+        mock_backup_service._get_backups_dir.return_value = Path("./backups")
+        mock_backup_service.verify_backup.return_value = True
+        mock_backup_service.restore_backup.return_value = True
+
+        file_payload = {"file": ("test_valid.db", b"valid-db-bytes", "application/octet-stream")}
+        response = client.post("/api/v1/admin/backups/import", files=file_payload)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert "Database successfully imported and restored" in data["message"]
+        mock_backup_service.restore_backup.assert_called_once()
+
