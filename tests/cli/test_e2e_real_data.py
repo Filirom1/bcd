@@ -65,6 +65,8 @@ from pathlib import Path
 
 import pytest
 import requests
+
+pytestmark = [pytest.mark.e2e, pytest.mark.external, pytest.mark.slow]
 from click.testing import CliRunner
 
 # Import CLI app

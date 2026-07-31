@@ -397,3 +397,193 @@ def test_bulk_mark_inventoried(db_session: Session):
 
     # Verify all items have same timestamp
     assert item1.last_inventoried_at == item2.last_inventoried_at == item3.last_inventoried_at
+
+
+def test_bulk_update_items(db_session: Session):
+    """Test bulk update of items and their records."""
+    # ARRANGE
+    record = BiblographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+        target_audience="child"
+    )
+    db_session.add(record)
+    db_session.flush()
+
+    item1 = Item(
+        item_id="0001",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=True,
+    )
+    item2 = Item(
+        item_id="0002",
+        bibliographic_record_id=record.id,
+        status="on_loan",  # status="on_loan" should skip status update
+        condition="good",
+        loanable=True,
+    )
+    db_session.add_all([item1, item2])
+    db_session.commit()
+
+    # ACT
+    result = inventory_service.bulk_update_items(
+        db_session,
+        item_ids=["0001", "0002"],
+        item_updates={"status": "in_repair", "condition": "damaged"},
+        record_updates={"target_audience": "youth", "medium_type": "Livre"}
+    )
+
+    # ASSERT
+    assert result["items_updated"] == 2
+    assert result["items_skipped_on_loan"] == 1
+    assert result["records_updated"] == 1
+    
+    db_session.refresh(item1)
+    db_session.refresh(item2)
+    db_session.refresh(record)
+
+    # item1 status and condition should be updated
+    assert item1.status == "in_repair"
+    assert item1.condition == "damaged"
+
+    # item2 is on_loan so its status update should be skipped, but condition should still be updated
+    assert item2.status == "on_loan"
+    assert item2.condition == "damaged"
+
+    # Record fields should be updated
+    assert record.target_audience == "youth"
+    assert record.medium_type == "Livre"
+
+
+def test_delete_items_bulk_and_orphans(db_session: Session):
+    """Test bulk deletion of items, skipping on_loan, cancelling holds, and orphan cleanup."""
+    from src.bcd_api.models.hold import Hold
+    from src.bcd_api.models.borrower import Borrower
+
+    # ARRANGE
+    record1 = BiblographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+        total_items=2
+    )
+    record2 = BiblographicRecord(
+        isbn="978-2203301160",
+        title="Tintin au Tibet",
+        authors='["Hergé"]',
+        publication_year=1960,
+        medium_type="Livre",
+        total_items=1
+    )
+    db_session.add_all([record1, record2])
+    db_session.flush()
+
+    item1 = Item(
+        item_id="0001",
+        bibliographic_record_id=record1.id,
+        status="available",
+    )
+    item2 = Item(
+        item_id="0002",
+        bibliographic_record_id=record1.id,
+        status="on_loan",  # skipped from deletion
+    )
+    item3 = Item(
+        item_id="0003",
+        bibliographic_record_id=record2.id,
+        status="available",  # will become orphan
+    )
+    db_session.add_all([item1, item2, item3])
+    db_session.flush()
+
+    borrower = Borrower(
+        borrower_id="B001",
+        first_name="Alice",
+        last_name="Dupont",
+        full_name="Alice Dupont",
+        role="student",
+        active=True
+    )
+    db_session.add(borrower)
+    db_session.flush()
+
+    # Place a hold on record2 (which will be deleted)
+    hold = Hold(
+        borrower_id=borrower.id,
+        bibliographic_record_id=record2.id,
+        hold_date=datetime.now(timezone.utc),
+        queue_position=1
+    )
+    db_session.add(hold)
+    db_session.commit()
+
+    # ACT 1 - Delete items in bulk
+    delete_result = inventory_service.delete_items_bulk(db_session, ["0001", "0002", "0003"])
+
+    # ASSERT 1
+    assert delete_result["items_deleted"] == 2  # 0001 and 0003
+    assert delete_result["items_skipped_on_loan"] == 1  # 0002
+    assert delete_result["holds_cancelled"] == 1  # Hold on record2 cancelled
+    assert delete_result["orphan_records_created"] == 1  # record2 total_items became 0
+
+    # Record 1 still has item2, so it's not orphan. Record 2 has 0 items, so it's orphan.
+    db_session.refresh(record1)
+    db_session.refresh(record2)
+    assert record1.total_items == 1
+    assert record2.total_items == 0
+
+    # ACT 2 - Get Orphans
+    orphans_result = inventory_service.get_orphan_records(db_session)
+    assert orphans_result["count"] == 1
+    assert orphans_result["records"][0]["id"] == record2.id
+
+    # ACT 3 - Delete Orphans
+    cleanup_result = inventory_service.delete_orphan_records(db_session)
+    assert cleanup_result["records_deleted"] == 1
+
+    # Record 2 should be gone
+    deleted_rec = db_session.query(BiblographicRecord).filter(BiblographicRecord.id == record2.id).first()
+    assert deleted_rec is None
+
+
+def test_get_items_csv(db_session: Session):
+    """Test generating CSV for a list of items."""
+    # ARRANGE
+    record = BiblographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+    )
+    db_session.add(record)
+    db_session.flush()
+
+    item = Item(
+        item_id="0001",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        call_number="C-EXU",
+        shelf_location="Shelf A",
+    )
+    db_session.add(item)
+    db_session.commit()
+
+    # ACT
+    csv_str = inventory_service.get_items_csv(db_session, ["0001"])
+
+    # ASSERT
+    assert "0001" in csv_str
+    assert "Le Petit Prince" in csv_str
+    assert "Antoine de Saint-Exupéry" in csv_str
+    assert "C-EXU" in csv_str
+    assert "Shelf A" in csv_str
+

@@ -13,6 +13,14 @@ from src.bcd_api.main import app
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 
+def pytest_collection_modifyitems(config, items):
+    """Keep E2E tests out of fast suites unless explicitly requested."""
+    e2e = pytest.mark.e2e
+    for item in items:
+        if "/tests/e2e/" in str(item.fspath):
+            item.add_marker(e2e)
+
+
 @pytest.fixture(scope="function")
 def db_engine():
     """Create a test database engine."""

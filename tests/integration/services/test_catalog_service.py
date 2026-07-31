@@ -61,6 +61,12 @@ from unittest.mock import patch
 
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def disable_cover_download_for_catalog_tests(monkeypatch):
+    """Keep catalog integration tests local; cover providers are tested separately."""
+    monkeypatch.setattr("src.bcd_api.services.catalog_service._download_cover", lambda isbn: None)
+
 from src.bcd_api.core.exceptions import (
     BiblographicRecordNotFoundException,
     ConflictError,

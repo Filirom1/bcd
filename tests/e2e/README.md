@@ -67,6 +67,21 @@ HEADED=1 pytest tests/e2e/test_us1_circulation.py -v
 pytest tests/e2e/test_us1_circulation.py::TestUS1CirculationBasics::test_us1_ac1_borrower_info_displays -v
 ```
 
+### `e2e-to-be-removed` lifecycle
+
+`e2e_to_be_removed` is a pytest marker for a legacy E2E scenario whose behavioral contract is now covered by a fast JavaScript test. The hyphenated review label is **`e2e-to-be-removed`**; Python marker names use underscores.
+
+Marked tests are deliberately retained and continue to run with the E2E suite. Do not exclude or delete one solely because it has this marker. Remove it only in a dedicated review after confirming that:
+
+- the matching JS test covers the success and error contract;
+- a separate E2E smoke test still protects the critical browser-to-server journey where needed;
+- the candidate itself has no unique accessibility, browser, or database assertion.
+
+```bash
+# Inspect the candidates without removing them from normal E2E CI
+pytest tests/e2e -m e2e_to_be_removed -v
+```
+
 ### Advanced Options
 
 ```bash
@@ -324,10 +339,10 @@ From spec.md:
 
 From the plan:
 
-- [ ] **Reliability**: 99.9% pass rate on CI
-- [ ] **Coverage**: 100% of critical paths + 90% of acceptance scenarios
-- [ ] **Speed**: Full suite <5 min, critical path <2 min
-- [ ] **Maintainability**: Page Object Model, <10% code duplication
+- [ ] **Reliability**: tests pass consistently in CI
+- [ ] **Coverage**: critical paths and acceptance scenarios are covered
+- [ ] **Speed**: the full suite and critical paths meet their agreed performance budgets
+- [ ] **Maintainability**: use the Page Object Model and keep duplication low
 - [ ] **Isolation**: Tests pass in any order, parallel execution works
 
 ---

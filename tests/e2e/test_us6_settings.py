@@ -50,6 +50,7 @@ class TestUS6BasicSettings:
         saved_duration = settings_page.get_loan_duration()
         assert saved_duration == new_duration, f"Duration should be {new_duration}"
 
+    @pytest.mark.e2e_to_be_removed
     def test_us6_ac3_display_current_settings_on_load(
         self,
         settings_page,
@@ -86,6 +87,7 @@ class TestUS6BasicSettings:
 class TestUS6SettingsValidation:
     """Test settings form validation."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us6_ac4_validation_prevents_invalid_values(
         self,
         page,

@@ -150,6 +150,7 @@ export default defineComponent({
 
         return {
             isbn,
+            normalizeISBN,
             isbnInput,
             loading,
             lookupISBN,

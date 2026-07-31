@@ -87,6 +87,7 @@ class TestUS5OverdueReport:
         # Assert - Report should show overdue items
         assert page.locator('table, .report-container').count() > 0
 
+    @pytest.mark.e2e_to_be_removed
     def test_us5_ac2_filter_overdue_by_class(
         self,
         page,
@@ -163,6 +164,7 @@ class TestUS5OverdueReport:
 class TestUS5StatisticsReports:
     """Test statistical reports (never-borrowed, most popular)."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us5_ac3_never_borrowed_report(
         self,
         page,
@@ -200,6 +202,7 @@ class TestUS5StatisticsReports:
             # Assert - Should show never-borrowed items
             assert page.locator('table, .report-container').count() > 0
 
+    @pytest.mark.e2e_to_be_removed
     def test_us5_ac4_most_borrowed_report_with_chart(
         self,
         page,

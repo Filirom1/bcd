@@ -1,0 +1,19 @@
+{
+  "name": "bcd-web-test-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npm run test:js && pytest tests",
+    "test:fast": "npm run test:js && pytest tests -m 'not e2e and not slow'",
+    "test:js": "vitest run",
+    "test:js:watch": "vitest",
+    "test:js:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "2.4.6",
+    "@vitest/coverage-v8": "4.1.10",
+    "jsdom": "^25.0.1",
+    "vitest": "4.1.10",
+    "vue": "3.4.21"
+  }
+}

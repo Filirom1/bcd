@@ -54,6 +54,9 @@ pkgs.mkShell {
 
     # Additional tools
     sqlite
+    # Development-only: runs the Web UI unit/component test suite. The
+    # application itself continues to use its vendored browser dependencies.
+    nodejs_22
 
     chromium
   ];

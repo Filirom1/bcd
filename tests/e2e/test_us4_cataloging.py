@@ -27,6 +27,7 @@ class TestUS4ISBNLookup:
     """Test ISBN lookup and BNF integration."""
 
     @patch('src.bcd_api.services.bnf_service.search_by_isbn')
+    @pytest.mark.e2e_to_be_removed
     def test_us4_ac1_isbn_lookup_retrieves_bnf_data(
         self,
         mock_bnf,
@@ -67,6 +68,7 @@ class TestUS4ISBNLookup:
             # (Check if title field has value)
 
     @patch('src.bcd_api.services.bnf_service.search_by_isbn')
+    @pytest.mark.e2e_to_be_removed
     def test_us4_ac2_scan_bcd_barcode_creates_item(
         self,
         mock_bnf,
@@ -119,6 +121,7 @@ class TestUS4ISBNLookup:
 class TestUS4ManualEntry:
     """Test manual cataloging without BNF lookup."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us4_ac3_bnf_not_found_manual_entry(
         self,
         page,
@@ -144,6 +147,7 @@ class TestUS4ManualEntry:
         # Then submit
         # Assert - Record created
 
+    @pytest.mark.e2e_to_be_removed
     def test_us4_ac5_manual_entry_with_validation(
         self,
         page,
@@ -183,6 +187,7 @@ class TestUS4ManualEntry:
 class TestUS4DuplicateHandling:
     """Test handling of duplicate ISBNs."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us4_ac4_duplicate_isbn_add_copy(
         self,
         page,
@@ -223,6 +228,7 @@ class TestUS4DuplicateHandling:
 class TestUS4KeyboardEntry:
     """Test keyboard/manual entry without scanner."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us4_ac6_manual_barcode_entry_works(
         self,
         page,

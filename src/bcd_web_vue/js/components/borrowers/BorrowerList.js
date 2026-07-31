@@ -112,7 +112,8 @@ export default {
 
         // Emit selection change
         const emitSelectionChange = () => {
-            emit('selection-changed', selectedBorrowerIds.value);
+            // Emit a snapshot so later selection changes cannot mutate past payloads.
+            emit('selection-changed', [...selectedBorrowerIds.value]);
         };
 
         // Check if borrower is selected

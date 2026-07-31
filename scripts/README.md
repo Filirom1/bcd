@@ -45,9 +45,10 @@ python scripts/bump_version.py patch --push
 
 ### Backend Python
 
-1. Vérifier tests:
+1. Vérifier les tests (les commandes sont explicites : aucun filtre global ne masque les tests non marqués):
    ```bash
-   pytest tests/unit tests/integration
+   pytest tests -m "not external and not e2e and not slow"  # fast phase with coverage gate
+   pytest tests -m "slow or external or e2e"                # remaining phase, exactly once
    ```
 
 2. Bumper version et push:

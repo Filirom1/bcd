@@ -16,6 +16,7 @@ IMPROVEMENTS:
 
 import re
 
+import pytest
 from playwright.sync_api import expect
 
 from tests.e2e.helpers.wait_for_app import wait_for_vue_app
@@ -24,8 +25,13 @@ from tests.e2e.helpers.wait_for_app import wait_for_vue_app
 class TestAdminDropdownBorrowers:
     """Test admin dropdown on Borrowers page."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_admin_dropdown_visible_on_borrowers_page(self, page, server_url, db_session):
-        """Admin dropdown button is visible on Borrowers page."""
+        """Admin dropdown button is visible on Borrowers page.
+
+        Superseded by the fast AdminDropdown contextual rendering contract.
+        Retained as an E2E candidate until explicit removal review.
+        """
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)  # ✅ Smart wait
 
@@ -34,8 +40,13 @@ class TestAdminDropdownBorrowers:
         expect(admin_button).to_be_visible()
         expect(admin_button).to_contain_text('Admin')
 
+    @pytest.mark.e2e_to_be_removed
     def test_admin_dropdown_menu_items_borrowers(self, page, server_url, db_session):
-        """Admin dropdown shows correct menu items for Borrowers page."""
+        """Admin dropdown shows correct menu items for Borrowers page.
+
+        Superseded by the fast AdminDropdown contextual menu contract.
+        Retained as an E2E candidate until explicit removal review.
+        """
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)
 
@@ -90,8 +101,13 @@ class TestAdminDropdownBorrowers:
 class TestAdminDropdownCatalog:
     """Test admin dropdown on Catalog page."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_admin_dropdown_visible_on_catalog_page(self, page, server_url, db_session):
-        """Admin dropdown button is visible on Catalog page."""
+        """Admin dropdown button is visible on Catalog page.
+
+        Superseded by the fast AdminDropdown contextual rendering contract.
+        Retained as an E2E candidate until explicit removal review.
+        """
         page.goto(f"{server_url}/#/catalog")
         wait_for_vue_app(page)
 
@@ -99,8 +115,13 @@ class TestAdminDropdownCatalog:
         expect(admin_button).to_be_visible()
         expect(admin_button).to_contain_text('Admin')
 
+    @pytest.mark.e2e_to_be_removed
     def test_admin_dropdown_menu_items_catalog(self, page, server_url, db_session):
-        """Admin dropdown shows correct menu items for Catalog page."""
+        """Admin dropdown shows correct menu items for Catalog page.
+
+        Superseded by the fast AdminDropdown contextual menu contract.
+        Retained as an E2E candidate until explicit removal review.
+        """
         page.goto(f"{server_url}/#/catalog")
         wait_for_vue_app(page)
 
@@ -131,8 +152,13 @@ class TestAdminDropdownCatalog:
 class TestAdminDropdownConditionalEnabling:
     """Test conditional enabling/disabling of admin dropdown menu items."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_edit_disabled_when_no_selection(self, page, server_url, db_session):
-        """Bulk Edit is disabled when selectedCount = 0."""
+        """Bulk Edit is disabled when selectedCount = 0.
+
+        Superseded by the fast `AdminDropdown` selection-state contract test.
+        Retained as an E2E candidate until explicit removal review.
+        """
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)
 
@@ -143,8 +169,13 @@ class TestAdminDropdownConditionalEnabling:
         bulk_edit = page.locator('[data-testid="admin-menu-bulk-edit"]')
         expect(bulk_edit).to_have_class(re.compile(r'disabled'))
 
+    @pytest.mark.e2e_to_be_removed
     def test_edit_selected_disabled_when_no_selection(self, page, server_url, db_session):
-        """Edit Selected is disabled when selectedCount = 0."""
+        """Edit Selected is disabled when selectedCount = 0.
+
+        Superseded by the fast `AdminDropdown` selection-state contract test.
+        Retained as an E2E candidate until explicit removal review.
+        """
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)
 
@@ -154,10 +185,15 @@ class TestAdminDropdownConditionalEnabling:
         edit_selected = page.locator('[data-testid="admin-menu-edit-selected"]')
         expect(edit_selected).to_have_class(re.compile(r'disabled'))
 
+    @pytest.mark.e2e_to_be_removed
     def test_edit_selected_enabled_when_exactly_one_selected(
         self, page, server_url, borrower_factory, db_session
     ):
-        """Edit Selected is enabled when exactly 1 borrower selected."""
+        """Edit Selected is enabled when exactly 1 borrower selected.
+
+        Superseded by the fast `AdminDropdown` selection-state contract test.
+        Retained as an E2E candidate until explicit removal review.
+        """
         borrower_factory.create_batch(3)
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)
@@ -174,10 +210,15 @@ class TestAdminDropdownConditionalEnabling:
         edit_selected = page.locator('[data-testid="admin-menu-edit-selected"]')
         expect(edit_selected).not_to_have_class(re.compile(r'disabled'))
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_edit_enabled_when_two_or_more_selected(
         self, page, server_url, borrower_factory, db_session
     ):
-        """Bulk Edit is enabled when 2+ borrowers selected."""
+        """Bulk Edit is enabled when multiple borrowers are selected.
+
+        Superseded by the fast `AdminDropdown` selection-state contract test.
+        Retained as an E2E candidate until explicit removal review.
+        """
         borrower_factory.create_batch(3)
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)
@@ -213,8 +254,7 @@ class TestAdminDropdownImportExport:
         import_item.click()
 
         # Assert - Import modal or file input should appear
-        page.wait_for_timeout(1000)
-        # TODO: Add stable selector for import modal when implemented
+        expect(page.locator('#csv-file')).to_be_visible()
 
     def test_import_accessible_from_admin_dropdown_catalog(
         self, page, server_url, db_session
@@ -229,8 +269,7 @@ class TestAdminDropdownImportExport:
         import_item = page.locator('[data-testid="admin-menu-import"]')
         import_item.click()
 
-        page.wait_for_timeout(1000)
-        # TODO: Add stable selector for import modal
+        expect(page.locator('#csv-file-catalog')).to_be_visible()
 
     def test_export_accessible_from_admin_dropdown_catalog(
         self, page, server_url, item_factory, db_session
@@ -258,8 +297,13 @@ class TestAdminDropdownImportExport:
 class TestAdminDropdownI18n:
     """Test internationalization of admin dropdown."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_admin_dropdown_labels_in_english(self, page, server_url, db_session):
-        """Admin dropdown shows English labels when locale is EN."""
+        """Admin dropdown shows English labels when locale is EN.
+
+        Superseded by the fast AdminDropdown English-label contract.
+        Retained as an E2E candidate until explicit removal review.
+        """
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)
 

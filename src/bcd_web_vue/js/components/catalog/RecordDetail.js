@@ -150,34 +150,6 @@ export default defineComponent({
             errors.value = {};
         };
 
-        // Watch for initialMode or show changes to reset edit mode
-        watch(
-            () => [props.initialMode, props.show],
-            ([newMode, newShow]) => {
-                if (newShow) {
-                    isEditMode.value = newMode === 'edit';
-                }
-            },
-            { immediate: true }
-        );
-
-        // Watch for recordId, record and show changes to load data
-        watch(
-            () => [props.recordId, props.show, props.record],
-            async ([newId, newShow, newRecord]) => {
-                if (newShow) {
-                    if (newRecord) {
-                        record.value = newRecord;
-                        initForm(newRecord);
-                    }
-                    if (newId) {
-                        await loadRecord(newId);
-                    }
-                }
-            },
-            { immediate: true }
-        );
-
         const loadRecord = async (recId) => {
             try {
                 loading.value = true;
@@ -230,6 +202,34 @@ export default defineComponent({
                 console.error('Error loading record items:', error);
             }
         };
+
+        // Watch for initialMode or show changes to reset edit mode
+        watch(
+            () => [props.initialMode, props.show],
+            ([newMode, newShow]) => {
+                if (newShow) {
+                    isEditMode.value = newMode === 'edit';
+                }
+            },
+            { immediate: true }
+        );
+
+        // Watch for recordId, record and show changes to load data
+        watch(
+            () => [props.recordId, props.show, props.record],
+            async ([newId, newShow, newRecord]) => {
+                if (newShow) {
+                    if (newRecord) {
+                        record.value = newRecord;
+                        initForm(newRecord);
+                    }
+                    if (newId) {
+                        await loadRecord(newId);
+                    }
+                }
+            },
+            { immediate: true }
+        );
 
         const reloadAllData = async () => {
             if (record.value && record.value.id) {

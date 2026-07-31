@@ -69,8 +69,9 @@ class TestCreateBibliographicRecord:
         assert result.language == "fre"
         assert result.page_count == 100
 
+    @patch("src.bcd_api.services.catalog_service._download_cover", return_value=None)
     @patch("src.bcd_api.services.catalog_service.search_by_isbn")
-    def test_create_record_bnf_lookup_failed(self, mock_search, db_session):
+    def test_create_record_bnf_lookup_failed(self, mock_search, mock_download_cover, db_session):
         """Test creating record when BNF lookup fails."""
         mock_search.return_value = None  # Not found
 

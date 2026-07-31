@@ -661,6 +661,7 @@ export default defineComponent({
                 @update:show="showRecordEditModal = $event"
                 @saved="handleRecordSaved"
                 @deleted="handleRecordDeleted"
+                @view-borrower="openBorrower"
             />
 
             <!-- Progress Indicator (for bulk operations with 100+ records) -->

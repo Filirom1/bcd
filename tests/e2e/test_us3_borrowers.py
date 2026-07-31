@@ -36,6 +36,7 @@ from tests.e2e.helpers.wait_for_app import wait_for_vue_app
 class TestUS3BorrowerList:
     """Test borrower list, search, and filtering."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us3_ac1_filter_by_class(
         self,
         borrowers_page,
@@ -84,6 +85,7 @@ class TestUS3BorrowerList:
         filtered_count = borrowers_page.get_borrower_count()
         assert filtered_count >= 2, "Should show borrowers from CP-A"
 
+    @pytest.mark.e2e_to_be_removed
     def test_us3_ac2_search_by_name(
         self,
         borrowers_page,
@@ -111,6 +113,7 @@ class TestUS3BorrowerList:
         results_count = borrowers_page.get_borrower_count()
         assert results_count >= 1, "Search should find BENALI"
 
+    @pytest.mark.e2e_to_be_removed
     def test_us3_ac7_overdue_warning_icons(
         self,
         borrowers_page,
@@ -157,6 +160,7 @@ class TestUS3BorrowerList:
 class TestUS3BorrowerDetail:
     """Test borrower detail view and cross-navigation."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us3_ac3_detail_shows_full_info(
         self,
         borrowers_page,
@@ -236,6 +240,7 @@ class TestUS3BorrowerDetail:
 class TestUS3BorrowerBlocking:
     """Test borrower blocking/unblocking functionality."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us3_ac10_block_borrower_modal_opens(
         self,
         page,
@@ -244,6 +249,9 @@ class TestUS3BorrowerBlocking:
     ):
         """
         US3-AC10: Block borrower button opens modal with reason dropdown.
+
+        Superseded by the fast BorrowerActions modal and validation contract test.
+        Retained as an E2E candidate until explicit removal review.
 
         Arrange: Create active borrower
         Act: Click "Block Borrower" button
@@ -347,6 +355,7 @@ class TestUS3BorrowerBlocking:
 class TestUS3RenewAll:
     """Test Renew All functionality from borrower detail page."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us3_ac13_renew_all_items_success(
         self,
         page,
@@ -404,6 +413,7 @@ class TestUS3RenewAll:
             success_msg = page.locator('.alert-success, .toast-success')
             # Should show "Renewed 3 item(s) successfully"
 
+    @pytest.mark.e2e_to_be_removed
     def test_us3_ac14_renew_all_mixed_status(
         self,
         page,

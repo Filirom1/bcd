@@ -33,7 +33,8 @@ jobs:
         run: playwright install chromium
       - name: Initialize database
         run: alembic upgrade head
-      - run: pytest -m "unit or not unit" -v
+      - name: Run complete Python test suite
+        run: pytest tests -v
 
   # ═══════════════════════════════════════════════════════════════════════════
   # JOB 2 : Build BCD serveur — Windows (PyInstaller, cross-compile impossible,

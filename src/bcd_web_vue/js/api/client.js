@@ -92,13 +92,42 @@ export class ApiClient {
      * @returns {Promise<any>} Response data
      * @throws {ApiError}
      */
+    /**
+     * Make HTTP request
+     * @private
+     * @param {string} url - Full URL
+     * @param {Object} options - Fetch options
+     * @param {boolean} isFormData - Whether the request body is FormData
+     * @returns {Promise<any>} Response data
+     * @throws {ApiError}
+     */
     async _request(url, options = {}, isFormData = false) {
-        this._setLoading(true);
+        const skipGlobalLoading = options.skipGlobalLoading === true;
+        if (!skipGlobalLoading) {
+            this._setLoading(true);
+        }
 
         try {
+            // Extract custom fetch options, excluding client-specific options
+            const { responseType = 'json', skipGlobalLoading: _, ...fetchOptions } = options;
+
+            // Merge default headers with any custom headers
+            const requestHeaders = this._getHeaders(isFormData);
+            if (options.headers) {
+                if (options.headers instanceof Headers) {
+                    for (const [key, value] of options.headers.entries()) {
+                        requestHeaders.set(key, value);
+                    }
+                } else {
+                    Object.entries(options.headers).forEach(([key, value]) => {
+                        requestHeaders.set(key, value);
+                    });
+                }
+            }
+
             const response = await fetch(url, {
-                ...options,
-                headers: this._getHeaders(isFormData)
+                ...fetchOptions,
+                headers: requestHeaders
             });
 
             if (!response.ok) {
@@ -110,6 +139,17 @@ export class ApiClient {
                 return null;
             }
 
+            // Parse response based on requested responseType
+            if (responseType === 'blob') {
+                return await response.blob();
+            }
+            if (responseType === 'text') {
+                return await response.text();
+            }
+            if (responseType === 'arraybuffer') {
+                return await response.arrayBuffer();
+            }
+
             return await response.json();
         } catch (error) {
             if (error instanceof ApiError) {
@@ -119,7 +159,9 @@ export class ApiClient {
             // Network error or other fetch failure
             throw ApiError.networkError(error);
         } finally {
-            this._setLoading(false);
+            if (!skipGlobalLoading) {
+                this._setLoading(false);
+            }
         }
     }
 
@@ -127,11 +169,12 @@ export class ApiClient {
      * GET request
      * @param {string} endpoint - API endpoint (e.g., '/borrowers/101')
      * @param {Object} [params] - Query parameters
+     * @param {Object} [options] - Optional fetch options
      * @returns {Promise<any>}
      */
-    async get(endpoint, params = {}) {
+    async get(endpoint, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
-        return this._request(url, { method: 'GET' });
+        return this._request(url, { method: 'GET', ...options });
     }
 
     /**
@@ -139,15 +182,17 @@ export class ApiClient {
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
+     * @param {Object} [options] - Optional fetch options
      * @returns {Promise<any>}
      */
-    async post(endpoint, data, params = {}) {
+    async post(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
         const isFormData = data instanceof FormData;
 
         return this._request(url, {
             method: 'POST',
-            body: isFormData ? data : JSON.stringify(data)
+            body: isFormData ? data : JSON.stringify(data),
+            ...options
         }, isFormData);
     }
 
@@ -156,15 +201,17 @@ export class ApiClient {
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
+     * @param {Object} [options] - Optional fetch options
      * @returns {Promise<any>}
      */
-    async put(endpoint, data, params = {}) {
+    async put(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
         const isFormData = data instanceof FormData;
 
         return this._request(url, {
             method: 'PUT',
-            body: isFormData ? data : JSON.stringify(data)
+            body: isFormData ? data : JSON.stringify(data),
+            ...options
         }, isFormData);
     }
 
@@ -173,27 +220,35 @@ export class ApiClient {
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
+     * @param {Object} [options] - Optional fetch options
      * @returns {Promise<any>}
      */
-    async patch(endpoint, data, params = {}) {
+    async patch(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
         const isFormData = data instanceof FormData;
 
         return this._request(url, {
             method: 'PATCH',
-            body: isFormData ? data : JSON.stringify(data)
+            body: isFormData ? data : JSON.stringify(data),
+            ...options
         }, isFormData);
     }
 
     /**
      * DELETE request
      * @param {string} endpoint - API endpoint
+     * @param {Object} [data] - Optional request body
      * @param {Object} [params] - Query parameters
+     * @param {Object} [options] - Optional fetch options
      * @returns {Promise<any>}
      */
-    async delete(endpoint, params = {}) {
+    async delete(endpoint, data = null, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
-        return this._request(url, { method: 'DELETE' });
+        const requestOptions = { method: 'DELETE', ...options };
+        if (data !== null) {
+            requestOptions.body = JSON.stringify(data);
+        }
+        return this._request(url, requestOptions);
     }
 }
 

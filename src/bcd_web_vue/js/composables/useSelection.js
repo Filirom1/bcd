@@ -60,7 +60,7 @@ export function useSelection() {
      * @param {Array} items - Array of items with id property
      */
     const toggleSelectAll = (items) => {
-        if (selectedIds.value.size === items.length) {
+        if (isAllSelected(items)) {
             clearSelection();
         } else {
             selectAll(items);
@@ -81,16 +81,18 @@ export function useSelection() {
      * @returns {boolean}
      */
     const isAllSelected = (items) => {
-        return items.length > 0 && selectedIds.value.size === items.length;
+        return items.length > 0 && items.every(item => selectedIds.value.has(item.id));
     };
 
     /**
-     * Check if some (but not all) items are selected
+     * Check if some (but not all) current items are selected.
+     * Selections from a previous page or filter must not change this state.
      * @param {Array} items - Array of items
      * @returns {boolean}
      */
     const isSomeSelected = (items) => {
-        return selectedIds.value.size > 0 && selectedIds.value.size < items.length;
+        const selectedCurrentItems = items.filter(item => selectedIds.value.has(item.id));
+        return selectedCurrentItems.length > 0 && selectedCurrentItems.length < items.length;
     };
 
     return {

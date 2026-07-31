@@ -815,3 +815,155 @@ class TestActiveLoansReport:
         assert len(active_loans) == 1
         assert active_loans[0]["item_id"] == "780"  # The non-returned one
         assert active_loans[0]["is_overdue"] is True
+
+
+class TestAdditionalReports:
+    """Test get_collection_stats and advanced report filtering."""
+
+    def test_get_collection_stats_various(self, db_session):
+        """Test getting collection statistics with different filters."""
+        # Create records
+        rec1 = BiblographicRecord(
+            title="Book A", isbn="111", medium_type="Livre", target_audience="child", publication_year=2020
+        )
+        rec2 = BiblographicRecord(
+            title="Periodical B", isbn="222", medium_type="Périodique", target_audience="youth", publication_year=2021
+        )
+        db_session.add_all([rec1, rec2])
+        db_session.flush()
+
+        # Create items
+        item1 = Item(
+            item_id="1111", bibliographic_record_id=rec1.id, condition="good", acquisition_date=date(2025, 1, 1)
+        )
+        item2 = Item(
+            item_id="2222", bibliographic_record_id=rec2.id, condition="damaged", acquisition_date=date(2020, 6, 1)
+        )
+        db_session.add_all([item1, item2])
+        db_session.commit()
+
+        # Call stats - excluding periodicals (only rec1/item1)
+        stats1 = report_service.get_collection_stats(
+            db_session, crew_method="never_inventoried", min_age_years=0.1, exclude_periodicals=True
+        )
+        assert stats1["total_count"] == 1
+        assert len(stats1["breakdowns"]["medium_type"]) == 1
+        assert stats1["breakdowns"]["medium_type"][0]["value"] == "Livre"
+
+        # Call stats - including periodicals (rec1 & rec2)
+        stats2 = report_service.get_collection_stats(
+            db_session, crew_method="never_inventoried", min_age_years=0, exclude_periodicals=False
+        )
+        assert stats2["total_count"] == 2
+        # Check condition breakdown
+        cond_breakdown = {b["value"]: b["count"] for b in stats2["breakdowns"]["condition"]}
+        assert cond_breakdown.get("good") == 1
+        assert cond_breakdown.get("damaged") == 1
+
+        # Test damaged_old crew method
+        stats_damaged = report_service.get_collection_stats(
+            db_session, crew_method="damaged_old", min_age_years=0, exclude_periodicals=False
+        )
+        assert stats_damaged["total_count"] == 1  # item2 is damaged and old
+
+    def test_get_never_borrowed_items_filters(self, db_session):
+        """Test getting never borrowed items with all filters applied."""
+        rec = BiblographicRecord(
+            title="Never Borrowed Book",
+            isbn="333",
+            medium_type="Livre",
+            target_audience="child",
+            level="easy",
+            publication_year=2022
+        )
+        db_session.add(rec)
+        db_session.flush()
+
+        item = Item(
+            item_id="3333",
+            bibliographic_record_id=rec.id,
+            acquisition_date=date(2025, 9, 15)  # matches 2025-2026 academic year
+        )
+        db_session.add(item)
+        db_session.commit()
+
+        # Query with filters
+        items = report_service.get_never_borrowed_items(
+            db_session,
+            academic_year="2025-2026",
+            level="easy",
+            target_audience="child",
+            medium_type="Livre",
+            min_age_days=1,
+            limit=5
+        )
+
+        assert len(items) == 1
+        assert items[0]["item_id"] == "3333"
+        assert items[0]["title"] == "Never Borrowed Book"
+
+    def test_get_most_borrowed_titles_filters(self, db_session):
+        """Test get_most_borrowed_titles with month/week periods and criteria filters."""
+        # Create classes/borrowers
+        class_obj = Class(name="CP-A")
+        db_session.add(class_obj)
+        db_session.flush()
+
+        borrower = Borrower(
+            borrower_id="201",
+            first_name="Alice",
+            last_name="B",
+            full_name="Alice B",
+            role="student",
+            class_id=class_obj.id,
+            active=True,
+        )
+        db_session.add(borrower)
+        db_session.flush()
+
+        rec = BiblographicRecord(
+            title="Popular Book",
+            isbn="444",
+            medium_type="Livre",
+            target_audience="youth"
+        )
+        db_session.add(rec)
+        db_session.flush()
+
+        item = Item(item_id="4444", bibliographic_record_id=rec.id)
+        db_session.add(item)
+        db_session.flush()
+
+        # Add recent loan (3 days ago)
+        tx = CirculationTransaction(
+            borrower_id=borrower.id,
+            item_id=item.id,
+            bibliographic_record_id=rec.id,
+            checkout_date=datetime.utcnow() - timedelta(days=3),
+            due_date=date.today() + timedelta(days=10)
+        )
+        db_session.add(tx)
+        db_session.commit()
+
+        # Get most borrowed - week
+        titles_week = report_service.get_most_borrowed_titles(
+            db_session, period="week", medium_type="Livre", target_audience="youth"
+        )
+        assert len(titles_week) == 1
+        assert titles_week[0]["title"] == "Popular Book"
+
+        # Get most borrowed - month
+        titles_month = report_service.get_most_borrowed_titles(
+            db_session, period="month"
+        )
+        assert len(titles_month) == 1
+
+    def test_get_circulation_statistics_periods(self, db_session):
+        """Test get_circulation_statistics with monthly and all-time periods."""
+        # Just run queries to cover period blocks
+        stats_month = report_service.get_circulation_statistics(db_session, period="month")
+        assert stats_month["period"] == "Last 30 days"
+
+        stats_all = report_service.get_circulation_statistics(db_session, period="all-time")
+        assert stats_all["period"] == "All time"
+

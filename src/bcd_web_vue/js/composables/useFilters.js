@@ -63,7 +63,9 @@ export function useFilters(initialFilters = {}, options = {}) {
      * @param {string} key - Filter key to clear
      */
     const clearFilter = (key) => {
-        filters.value[key] = initialFilters[key] || null;
+        filters.value[key] = Object.hasOwn(initialFilters, key)
+            ? initialFilters[key]
+            : null;
     };
 
     /**

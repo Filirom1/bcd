@@ -508,6 +508,9 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
     for item in deletable_items:
         db.delete(item)
 
+    # Flush deletes to database so count queries below see the updated state (important when autoflush=False)
+    db.flush()
+
     # Update parent record counters
     orphan_records_created = 0
     for record_id in record_ids:

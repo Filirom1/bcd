@@ -848,7 +848,7 @@ def backfill_covers(db: Session = Depends(get_db)):
     from ...models.bibliographic_record import BiblographicRecord
     from ...services.cover_service import find_cached_cover
 
-    covers_dir = Path(settings.covers_dir_path) if settings.covers_dir_path else Path("data/covers")
+    covers_dir = Path(app_settings.covers_dir_path) if app_settings.covers_dir_path else Path("data/covers")
     records = db.query(BiblographicRecord).filter(
         BiblographicRecord.cover_image == None,
         BiblographicRecord.isbn != None,
