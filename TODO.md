@@ -524,15 +524,20 @@ Le Web dispose de tests Playwright de parcours, ce qui est positif. La suite Pyt
 
 **Constat**
 
-Pyright est en mode `basic`, mais les diagnostics les plus utiles au refactoring (`reportGeneralTypeIssues`, arguments, retours, appels et opérateurs) sont désactivés. Des services retournent encore de nombreux dictionnaires non structurés et les endpoints de mise à jour acceptent des `dict`. Plusieurs fonctions publiques GDScript n'annoncent pas leur type de retour. Côté Web, les modèles JSDoc ne sont pas vérifiés contre OpenAPI : `models/item.js` documente notamment `damaged` comme statut et omet `on_hold`/`withdrawn`, contrairement à `ItemStatus`; `RecordDetail.js` teste aussi un statut d'article impossible `overdue`, qui appartient aux circulations.
+Pyright est en mode `basic` avec de nombreuses règles désactivées (`none`). Lors de l'analyse statique du code Python, plusieurs défauts de typage et incohérences importantes ont été relevés :
+- Des variables non définies (comme l'absence d'import de `BiblographicRecord` dans `admin.py`, corrigée).
+- Des dictionnaires d'API ou de découverte réseau faiblement typés (comme dans `mdns.py` avec `PeerInfo` qui était en `total=False` et générait des risques d'accès `KeyError` au runtime, désormais typé proprement avec `NotRequired`).
+- Des réassignations dynamiques de types incompatibles (comme l'argument `value: str` converti en `bool`/`int`/`float` dans `config.py` de la CLI, corrigé avec l'utilisation de `typed_value`).
+- Les suites de tests de l'API et des services externes possèdent des erreurs de typage résiduelles (indices optionnels non subscriptables dans `test_sudoc_service.py` et accès par crochets sur des modèles Pydantic `ReturnResponse`/`RenewResponse` dans `test_circulation_holds_endpoints.py`).
 
 **Actions**
 
-1. Réactiver une catégorie Pyright à la fois, avec une baseline explicite plutôt qu'une désactivation globale.
-2. Introduire des schémas Pydantic, `TypedDict` ou dataclasses aux frontières de modules.
-3. Ajouter les types de retour GDScript sur les autoloads et APIs publiques.
-4. Faire bloquer les nouvelles erreurs, sans exiger la correction de tout l'historique en une seule PR.
-5. Générer ou valider les contrats JSDoc Web à partir d'OpenAPI afin que statuts, champs et paginations ne dérivent plus silencieusement.
+1. Corriger les erreurs de typage restantes dans les fichiers de tests identifiés par Pyright (ex. indexation Pydantic dans `test_circulation_holds_endpoints.py`).
+2. Réactiver une catégorie Pyright à la fois dans `pyproject.toml` (par exemple réactiver `reportArgumentType`, `reportReturnType`, `reportCallIssue`, `reportAttributeAccessIssue` en mode `warning` ou `error`), avec une baseline explicite plutôt qu'une désactivation globale.
+3. Introduire des schémas Pydantic, `TypedDict` ou dataclasses aux frontières de modules pour éviter l'usage de dictionnaires bruts non documentés.
+4. Ajouter les types de retour GDScript sur les autoloads et APIs publiques.
+5. Faire bloquer les nouvelles erreurs de typage par la CI, sans exiger la correction de tout l'historique en une seule PR.
+6. Générer ou valider les contrats JSDoc Web à partir d'OpenAPI afin que statuts, champs et paginations ne dérivent plus silencieusement.
 
 **Terminé quand** : le typage détecte réellement les signatures incompatibles introduites par un changement.
 

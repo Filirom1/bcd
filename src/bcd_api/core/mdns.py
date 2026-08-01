@@ -14,7 +14,7 @@ warning and all public functions become no-ops so the server starts normally.
 import logging
 import re
 import socket
-from typing import TypedDict
+from typing import TypedDict, NotRequired
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ _peers: dict[str, "PeerInfo"] = {}     # mDNS service name → PeerInfo
 
 
 # ── Public types ─────────────────────────────────────────────────────────────
-class PeerInfo(TypedDict, total=False):
+class PeerInfo(TypedDict):
     """Snapshot of a discovered BCD peer."""
     name: str            # full mDNS service name (internal key)
     library_code: str    # raw library_code from the peer's TXT record
@@ -39,7 +39,7 @@ class PeerInfo(TypedDict, total=False):
     addresses: list[str] # IPv4 addresses
     port: int
     url: str             # convenience http://<ip>:<port>
-    local: bool          # True only for this instance (always first in list)
+    local: NotRequired[bool]          # True only for this instance (always first in list)
 
 
 def normalize_hostname(library_code: str) -> str:
@@ -159,17 +159,18 @@ def get_peers() -> list[PeerInfo]:
         if addresses:
             props: dict[str, str] = {
                 (k.decode() if isinstance(k, bytes) else k): (
-                    v.decode() if isinstance(v, bytes) else v
+                    v.decode() if isinstance(v, bytes) else (v or "")
                 )
                 for k, v in (_service_info.properties or {}).items()
             }
+            port = _service_info.port or 0
             self_peer: PeerInfo = {
                 "name": _own_service_name,
                 "library_code": props.get("library_code", ""),
                 "host": _service_info.server or "",
                 "addresses": addresses,
-                "port": _service_info.port,
-                "url": f"http://{addresses[0]}:{_service_info.port}",
+                "port": port,
+                "url": f"http://{addresses[0]}:{port}",
                 "local": True,
             }
             peers = [self_peer] + peers
@@ -231,21 +232,22 @@ class _BCDServiceListener:
         # TXT record values are bytes in older zeroconf versions
         props: dict[str, str] = {
             (k.decode() if isinstance(k, bytes) else k): (
-                v.decode() if isinstance(v, bytes) else v
+                v.decode() if isinstance(v, bytes) else (v or "")
             )
             for k, v in (info.properties or {}).items()
         }
 
         library_code = props.get("library_code", "")
         primary_ip = addresses[0]
+        port = info.port or 0
 
         peer: PeerInfo = {
             "name": name,
             "library_code": library_code,
             "host": info.server or "",
             "addresses": addresses,
-            "port": info.port,
-            "url": f"http://{primary_ip}:{info.port}",
+            "port": port,
+            "url": f"http://{primary_ip}:{port}",
         }
 
         _peers[name] = peer
