@@ -666,6 +666,23 @@ Le projet préserve la contrainte critique de n'avoir aucun outil de build oblig
 
 **Terminé quand** : les fichiers JS modifiés sont validés statiquement par `tsc --noEmit` en tâche de fond (CI) sans nécessiter de compilation en production.
 
+### [ ] P2.11 — Corriger la dette technique de structure et de couplage Python
+
+**Constat**
+
+L'analyse de l'architecture backend a mis en évidence plusieurs foyers de dette structurelle :
+1. **La coquille de nommage `BiblographicRecord`** : Le modèle central de données de l'application est écrit avec une faute d'orthographe (il manque le second "i" de "bibliographique"). Cette écriture s'est propagée dans les modèles SQLAlchemy, les schémas Pydantic, la base de données SQLite, le Web UI et le client Godot.
+2. **Duplication de logique de désérialisation JSON** : Des helpers comme `_deserialize_authors` ou la conversion d'auteurs/mots-clés de formats JSON vers texte brut sont dupliqués à travers les services de rapports, d'exports, d'inventaire et les tests.
+3. **Dépendances circulaires résolues via imports locaux dynamiques** : Le couplage fort entre domaines (ex: inventaire dépendant de la recherche catalogue, et catalogue dépendant de la génération d'identifiants d'inventaire) force l'utilisation massive d'imports de modules au sein même du corps des fonctions pour éviter des dépendances circulaires Python.
+
+**Actions**
+
+1. Documenter et planifier une PR dédiée ou une future migration majeure si la faute d'orthographe `BiblographicRecord` doit être unifiée (renommage de table SQLAlchemy + refactoring global).
+2. Centraliser les fonctions de conversion et de désérialisation JSON d'auteurs et de métadonnées dans un module utilitaire partagé ou dans une couche de type SQLAlchemy (ex: `TypeDecorator` ou propriétés hybrides).
+3. Découpler les domaines de service (par exemple via des événements de domaine, des signaux ou des façades de services) pour éliminer le besoin d'imports inline dynamiques et clarifier les dépendances de couche.
+
+**Terminé quand** : le couplage et les duplications logiques du backend sont réduits, et les conversions de types s'exécutent de manière centralisée.
+
 ## Points à préserver
 
 - Séparation services/modèles déjà bien installée dans la majorité du backend.
