@@ -9,6 +9,7 @@
 const { ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import BorrowerFields from './BorrowerFields.js';
+import { apiClient } from '../../api/client.js';
 
 export default {
   name: 'BorrowerAddForm',
@@ -49,9 +50,7 @@ export default {
     const loadClasses = async () => {
       isLoadingClasses.value = true;
       try {
-        const response = await fetch('/api/v1/classes?limit=500');
-        if (!response.ok) throw new Error('Failed to load classes');
-        classes.value = await response.json();
+        classes.value = await apiClient.get('/classes', { limit: 500 });
       } catch (error) {
         console.error('Error loading classes:', error);
         classes.value = [];
@@ -66,9 +65,7 @@ export default {
     const loadNextAvailableId = async () => {
       isLoadingNextId.value = true;
       try {
-        const response = await fetch('/api/v1/borrowers/next-available-id');
-        if (!response.ok) throw new Error('Failed to load next ID');
-        const data = await response.json();
+        const data = await apiClient.get('/borrowers/next-available-id');
         formData.value.borrower_id = data.next_id;
       } catch (error) {
         console.error('Error loading next available ID:', error);
@@ -119,36 +116,24 @@ export default {
       errors.value = {};
 
       try {
-        const response = await fetch('/api/v1/borrowers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData.value)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          if (response.status === 409) {
-            errors.value.borrower_id = t('errors.BORROWER_ID_NOT_AVAILABLE');
-          } else if (response.status === 400) {
-            if (errorData.detail && errorData.detail.includes('borrower_id')) {
-              errors.value.borrower_id = errorData.detail;
-            } else if (errorData.detail && errorData.detail.includes('role')) {
-              errors.value.role = errorData.detail;
-            } else {
-              errors.value.general = errorData.detail || t('admin.borrower.add.error');
-            }
-          } else {
-            errors.value.general = errorData.detail || t('admin.borrower.add.error');
-          }
-          return;
-        }
-
-        const newBorrower = await response.json();
+        const newBorrower = await apiClient.post('/borrowers', formData.value);
         emit('created', newBorrower);
         closeModal();
       } catch (error) {
         console.error('Error creating borrower:', error);
-        errors.value.general = t('admin.borrower.add.error');
+        if (error.statusCode === 409) {
+          errors.value.borrower_id = t('errors.BORROWER_ID_NOT_AVAILABLE');
+        } else if (error.statusCode === 400) {
+          if (error.message && error.message.includes('borrower_id')) {
+            errors.value.borrower_id = error.message;
+          } else if (error.message && error.message.includes('role')) {
+            errors.value.role = error.message;
+          } else {
+            errors.value.general = error.message || t('admin.borrower.add.error');
+          }
+        } else {
+          errors.value.general = error.message || t('admin.borrower.add.error');
+        }
       } finally {
         isSubmitting.value = false;
       }

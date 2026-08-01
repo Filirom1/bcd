@@ -9,7 +9,7 @@
  */
 
 const { ref } = Vue;
-import { ApiError } from '../models/error.js';
+import { apiClient } from '../api/client.js';
 
 export function useBulkOperations(resourceType) {
     const loading = ref(false);
@@ -37,25 +37,14 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/borrowers/bulk-edit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    operation: 'change_class',
-                    borrower_ids: borrowerIds,
-                    target_class_id: targetClassId
-                })
+            const result = await apiClient.post('/admin/borrowers/bulk-edit', {
+                operation: 'change_class',
+                borrower_ids: borrowerIds,
+                target_class_id: targetClassId
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -81,25 +70,14 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/borrowers/bulk-edit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    operation: 'change_role',
-                    borrower_ids: borrowerIds,
-                    target_role: targetRole
-                })
+            const result = await apiClient.post('/admin/borrowers/bulk-edit', {
+                operation: 'change_role',
+                borrower_ids: borrowerIds,
+                target_role: targetRole
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -124,23 +102,12 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/borrowers/bulk-delete', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    borrower_ids: borrowerIds
-                })
+            const result = await apiClient.post('/admin/borrowers/bulk-delete', {
+                borrower_ids: borrowerIds
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -166,24 +133,13 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/catalog/bulk-edit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    record_ids: recordIds,
-                    ...fields
-                })
+            const result = await apiClient.post('/admin/catalog/bulk-edit', {
+                record_ids: recordIds,
+                ...fields
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -208,23 +164,12 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/catalog/bulk-delete', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    record_ids: recordIds
-                })
+            const result = await apiClient.post('/admin/catalog/bulk-delete', {
+                record_ids: recordIds
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -248,20 +193,7 @@ export function useBulkOperations(resourceType) {
         error.value = null;
 
         try {
-            const response = await fetch(`/api/v1/catalog/records/${recordId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
-            return await response.json();
+            return await apiClient.patch(`/catalog/records/${recordId}`, data);
         } catch (err) {
             error.value = err.message;
             throw err;
@@ -281,20 +213,7 @@ export function useBulkOperations(resourceType) {
         error.value = null;
 
         try {
-            const response = await fetch(`/api/v1/catalog/items/${itemId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
-            return await response.json();
+            return await apiClient.patch(`/catalog/items/${itemId}`, data);
         } catch (err) {
             error.value = err.message;
             throw err;

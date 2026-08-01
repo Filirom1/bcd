@@ -13,6 +13,8 @@
 const { defineComponent, ref, computed } = Vue;
 const { useI18n } = VueI18n;
 
+import { apiClient } from '../api/client.js';
+
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
@@ -118,20 +120,9 @@ export default defineComponent({
             }
 
             try {
-                const response = await fetch('/api/v1/inventory/export-csv', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ item_ids: itemIds })
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
+                const blob = await apiClient.post('/inventory/export-csv', { item_ids: itemIds }, {}, { responseType: 'blob' });
 
                 // Download CSV file
-                const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -152,12 +143,7 @@ export default defineComponent({
          */
         const handleCleanupOrphans = async () => {
             try {
-                const response = await fetch('/api/v1/admin/catalog/orphan-records');
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                const data = await response.json();
+                const data = await apiClient.get('/admin/catalog/orphan-records');
                 orphanRecords.value = data.records || [];
 
                 if (data.count === 0) {
@@ -180,15 +166,7 @@ export default defineComponent({
             showOrphanConfirm.value = false;
 
             try {
-                const response = await fetch('/api/v1/admin/catalog/orphan-records', {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                const data = await response.json();
+                const data = await apiClient.delete('/admin/catalog/orphan-records');
                 success(t('inventory.admin.success', { count: data.records_deleted }));
             } catch (error) {
                 handleError(error, 'inventory.admin.error');
@@ -277,23 +255,11 @@ export default defineComponent({
             }
 
             try {
-                const response = await fetch('/api/v1/inventory/items/bulk-update', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        item_ids: itemIds,
-                        item_updates: pendingBulkEdit.value.item_updates || {},
-                        record_updates: pendingBulkEdit.value.record_updates || {}
-                    })
+                const data = await apiClient.post('/inventory/items/bulk-update', {
+                    item_ids: itemIds,
+                    item_updates: pendingBulkEdit.value.item_updates || {},
+                    record_updates: pendingBulkEdit.value.record_updates || {}
                 });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                const data = await response.json();
 
                 // Update the items in the working table with the changes we just applied
                 const itemUpdates = pendingBulkEdit.value.item_updates || {};
@@ -391,21 +357,9 @@ export default defineComponent({
             const itemIds = Array.from(selectedIds.value).filter(id => id != null && id !== '');
 
             try {
-                const response = await fetch('/api/v1/inventory/items/bulk', {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        item_ids: itemIds
-                    })
+                const data = await apiClient.delete('/inventory/items/bulk', {
+                    item_ids: itemIds
                 });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                const data = await response.json();
 
                 // Remove deleted items from working table
                 inventoryTable.removeItems(itemIds);
@@ -439,9 +393,7 @@ export default defineComponent({
         const handleEditRecord = async (item) => {
             if (!item.bibliographic_record_id) return;
             try {
-                const response = await fetch(`/api/v1/catalog/bibliographic/${item.bibliographic_record_id}`);
-                if (!response.ok) throw new Error('Failed to load record');
-                editingRecord.value = await response.json();
+                editingRecord.value = await apiClient.get(`/catalog/bibliographic/${item.bibliographic_record_id}`);
                 showRecordEditModal.value = true;
             } catch (error) {
                 handleError(error, 'catalog.fetch_error');
@@ -467,15 +419,7 @@ export default defineComponent({
 
             // Refresh the item by fetching latest data from API
             try {
-                const response = await fetch(`/api/v1/inventory/items/${updatedItem.item_id}`, {
-                    method: 'PATCH'
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                const freshItem = await response.json();
+                const freshItem = await apiClient.patch(`/inventory/items/${updatedItem.item_id}`, {});
 
                 // Update item in working table
                 inventoryTable.addItem({

@@ -57,6 +57,7 @@ export default defineComponent({
 
             const filename = files[locale.value] || files.en;
 
+            // Direct fetch is used here because these are local static Markdown resource files, not API endpoints
             try {
                 const res = await fetch(`/help/${locale.value}/${filename}`);
                 if (!res.ok) throw new Error(res.status);

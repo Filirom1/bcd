@@ -10,6 +10,7 @@ import Pagination from '../ui/Pagination.js';
 import BorrowerDeleteDialog from './BorrowerDeleteDialog.js';
 import BorrowerFields from './BorrowerFields.js';
 import { useBlockReasonTranslation } from '../../composables/useBlockReasonTranslation.js';
+import { apiClient } from '../../api/client.js';
 
 export default {
     name: 'BorrowerDetail',
@@ -593,13 +594,8 @@ export default {
             error.value = '';
 
             try {
-                const response = await fetch(`/api/v1/borrowers/${targetId}?detail=true`);
+                const data = await apiClient.get(`/borrowers/${targetId}`, { detail: true });
 
-                if (!response.ok) {
-                    throw new Error(t('borrowers.error_load_failed'));
-                }
-
-                const data = await response.json();
                 borrower.value = data;
                 initForm(data);
                 currentLoans.value = data.current_loans || [];
@@ -607,8 +603,7 @@ export default {
 
                 // Load active holds for this borrower
                 try {
-                    const holdsResp = await fetch(`/api/v1/holds/borrower/${data.id}`);
-                    holds.value = holdsResp.ok ? await holdsResp.json() : [];
+                    holds.value = await apiClient.get(`/holds/borrower/${data.id}`);
                 } catch {
                     holds.value = [];
                 }
@@ -625,12 +620,7 @@ export default {
         const loadClasses = async () => {
             isLoadingClasses.value = true;
             try {
-                const response = await fetch('/api/v1/classes?limit=500');
-                if (!response.ok) {
-                    throw new Error('Failed to load classes');
-                }
-                const data = await response.json();
-                classes.value = data;
+                classes.value = await apiClient.get('/classes', { limit: 500 });
             } catch (error) {
                 console.error('Error loading classes:', error);
                 classes.value = [];
@@ -651,8 +641,7 @@ export default {
             if (!q) { holdResults.value = []; holdFormMessage.value = null; return; }
             holdSearchLoading.value = true;
             try {
-                const resp = await fetch(`/api/v1/catalog/bibliographic/search?q=${encodeURIComponent(q)}&limit=6`);
-                const data = await resp.json();
+                const data = await apiClient.get('/catalog/bibliographic/search', { q, limit: 6 });
                 holdResults.value = data.records || data.items || [];
             } catch {
                 holdResults.value = [];
@@ -665,40 +654,37 @@ export default {
         const createHold = async (biblioId) => {
             holdFormMessage.value = null;
             try {
-                const resp = await fetch('/api/v1/holds', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        borrower_id: borrower.value.id,
-                        bibliographic_record_id: biblioId,
-                        created_by: 'web-ui'
-                    })
+                await apiClient.post('/holds', {
+                    borrower_id: borrower.value.id,
+                    bibliographic_record_id: biblioId,
+                    created_by: 'web-ui'
                 });
-                if (!resp.ok) {
-                    const err = await resp.json();
-                    const msg = err.error_code === 'HOLD_LIMIT_EXCEEDED'
-                        ? t('holds.hold_limit_exceeded', { limit: err.context?.limit ?? '' })
-                        : (err.error || t('errors.generic'));
-                    holdFormMessage.value = { type: 'error', text: msg };
-                    return;
-                }
                 holdSearch.value = '';
                 holdResults.value = [];
                 holdFormMessage.value = null;
                 // Reload holds
-                const holdsResp = await fetch(`/api/v1/holds/borrower/${borrower.value.id}`);
-                holds.value = holdsResp.ok ? await holdsResp.json() : [];
-            } catch {
-                holdFormMessage.value = { type: 'error', text: t('errors.generic') };
+                try {
+                    holds.value = await apiClient.get(`/holds/borrower/${borrower.value.id}`);
+                } catch {
+                    holds.value = [];
+                }
+            } catch (err) {
+                const msg = err.code === 'hold_limit_exceeded'
+                    ? t('holds.hold_limit_exceeded', { limit: err.details?.limit ?? '' })
+                    : (err.message || t('errors.generic'));
+                holdFormMessage.value = { type: 'error', text: msg };
             }
         };
 
         // Cancel a hold
         const cancelHold = async (holdId) => {
             try {
-                await fetch(`/api/v1/holds/${holdId}`, { method: 'DELETE' });
-                const holdsResp = await fetch(`/api/v1/holds/borrower/${borrower.value.id}`);
-                holds.value = holdsResp.ok ? await holdsResp.json() : [];
+                await apiClient.delete(`/holds/${holdId}`);
+                try {
+                    holds.value = await apiClient.get(`/holds/borrower/${borrower.value.id}`);
+                } catch {
+                    holds.value = [];
+                }
             } catch {
                 // ignore
             }
@@ -709,15 +695,13 @@ export default {
             if (!borrower.value) return;
             historyLoading.value = true;
             try {
-                const params = new URLSearchParams({
+                const params = {
                     page: historyPage.value,
                     page_size: historyPageSize.value,
-                });
-                if (historyDateFrom.value) params.set('date_from', historyDateFrom.value);
-                if (historyDateTo.value) params.set('date_to', historyDateTo.value);
-                const resp = await fetch(`/api/v1/circulation/borrower/${borrower.value.borrower_id}/history?${params}`);
-                if (!resp.ok) throw new Error('Failed to load history');
-                const data = await resp.json();
+                };
+                if (historyDateFrom.value) params.date_from = historyDateFrom.value;
+                if (historyDateTo.value) params.date_to = historyDateTo.value;
+                const data = await apiClient.get(`/circulation/borrower/${borrower.value.borrower_id}/history`, params);
                 historyItems.value = data.history || [];
                 historyPagination.value = data.pagination || null;
                 historyLoaded.value = true;
@@ -778,27 +762,18 @@ export default {
 
         const handleDeleteConfirm = async (bId) => {
             try {
-                const response = await fetch(`/api/v1/borrowers/${bId}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    if (response.status === 400) {
-                        errors.value.general = errorData.detail;
-                    } else {
-                        errors.value.general = t('admin.error_delete_borrower');
-                    }
-                    showDeleteDialog.value = false;
-                    return;
-                }
+                await apiClient.delete(`/borrowers/${bId}`);
 
                 showDeleteDialog.value = false;
                 emit('deleted', bId);
                 close();
             } catch (error) {
                 console.error('Error deleting borrower:', error);
-                errors.value.general = t('errors.network_error');
+                if (error.statusCode === 400) {
+                    errors.value.general = error.message;
+                } else {
+                    errors.value.general = t('admin.error_delete_borrower');
+                }
                 showDeleteDialog.value = false;
             }
         };
@@ -835,34 +810,7 @@ export default {
             errors.value = {};
 
             try {
-                const response = await fetch(`/api/v1/borrowers/${borrower.value.borrower_id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData.value)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-
-                    if (response.status === 409) {
-                        errors.value.borrower_id = t('errors.BORROWER_ID_NOT_AVAILABLE');
-                    } else if (response.status === 400) {
-                        if (errorData.detail && errorData.detail.includes('borrower_id')) {
-                            errors.value.borrower_id = errorData.detail;
-                        } else if (errorData.detail && errorData.detail.includes('role')) {
-                            errors.value.role = errorData.detail;
-                        } else {
-                            errors.value.general = errorData.detail || t('admin.borrower.edit.error');
-                        }
-                    } else {
-                        errors.value.general = errorData.detail || t('admin.borrower.edit.error');
-                    }
-                    return;
-                }
-
-                const updatedBorrower = await response.json();
+                const updatedBorrower = await apiClient.patch(`/borrowers/${borrower.value.borrower_id}`, formData.value);
                 borrower.value = updatedBorrower;
                 initForm(updatedBorrower);
                 emit('saved', updatedBorrower);
@@ -875,7 +823,19 @@ export default {
                 }
             } catch (error) {
                 console.error('Error updating borrower:', error);
-                errors.value.general = t('admin.borrower.edit.error');
+                if (error.statusCode === 409) {
+                    errors.value.borrower_id = t('errors.BORROWER_ID_NOT_AVAILABLE');
+                } else if (error.statusCode === 400) {
+                    if (error.message && error.message.includes('borrower_id')) {
+                        errors.value.borrower_id = error.message;
+                    } else if (error.message && error.message.includes('role')) {
+                        errors.value.role = error.message;
+                    } else {
+                        errors.value.general = error.message || t('admin.borrower.edit.error');
+                    }
+                } else {
+                    errors.value.general = error.message || t('admin.borrower.edit.error');
+                }
             } finally {
                 isSubmitting.value = false;
             }

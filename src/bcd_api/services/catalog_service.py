@@ -1049,3 +1049,126 @@ def get_available_item_ids(
             "Alphanumeric ID generation not yet implemented. "
             "Please set id_format to 'numeric' in system settings."
         )
+
+
+def get_shelf_locations(db: Session) -> list[str]:
+    """Returns distinct non-empty shelf_location values, sorted."""
+    results = (
+        db.query(Item.shelf_location)
+        .filter(Item.shelf_location.isnot(None), Item.shelf_location != "")
+        .distinct()
+        .order_by(Item.shelf_location)
+        .all()
+    )
+    return [r[0] for r in results]
+
+
+def enrich_bibliographic_records_with_availability(db: Session, records: list[BiblographicRecord]) -> list[dict]:
+    """
+    Enrich bibliographic records with availability, copy counts, and first item information.
+    Moves database queries out of the API presentation layer to the service layer.
+    """
+    import json
+    from sqlalchemy import case, func
+    from ..models.item import Item
+    from ..models.hold import Hold
+    from ...shared.constants import ItemStatus
+
+    record_ids = [r.id for r in records]
+
+    # Batch query: counts per record (total + available) in one pass
+    counts_rows = (
+        db.query(
+            Item.bibliographic_record_id,
+            func.count(Item.id).label("total"),
+            func.sum(
+                case((Item.status == ItemStatus.AVAILABLE.value, 1), else_=0)
+            ).label("available"),
+        )
+        .filter(Item.bibliographic_record_id.in_(record_ids))
+        .group_by(Item.bibliographic_record_id)
+        .all()
+    )
+    counts_by_record = {row.bibliographic_record_id: row for row in counts_rows}
+
+    # Batch query: active holds per record
+    holds_rows = (
+        db.query(Hold.bibliographic_record_id, func.count(Hold.id).label("holds"))
+        .filter(
+            Hold.bibliographic_record_id.in_(record_ids),
+            Hold.status.in_(["waiting", "ready"])
+        )
+        .group_by(Hold.bibliographic_record_id)
+        .all()
+    )
+    holds_by_record = {row.bibliographic_record_id: row.holds for row in holds_rows}
+
+    # Batch query: first item per record (available preferred, then any)
+    all_items = (
+        db.query(Item)
+        .filter(Item.bibliographic_record_id.in_(record_ids))
+        .order_by(
+            Item.bibliographic_record_id,
+            case((Item.status == ItemStatus.AVAILABLE.value, 0), else_=1),
+            Item.id,
+        )
+        .all()
+    )
+    first_item_by_record: dict = {}
+    for item in all_items:
+        if item.bibliographic_record_id not in first_item_by_record:
+            first_item_by_record[item.bibliographic_record_id] = item
+
+    records_with_availability = []
+    for r in records:
+        counts = counts_by_record.get(r.id)
+        total_count = counts.total if counts else 0
+        available_count = int(counts.available or 0) if counts else 0
+        active_holds_count = holds_by_record.get(r.id, 0)
+
+        first_item = first_item_by_record.get(r.id)
+
+        # Deserialize authors if it's a JSON string
+        authors = r.authors
+        if isinstance(authors, str):
+            try:
+                authors = json.loads(authors)
+            except (json.JSONDecodeError, TypeError):
+                authors = []
+        elif authors is None:
+            authors = []
+
+        # Convert to dict and add availability fields
+        record_dict = {
+            "id": r.id,
+            "record_id": r.id,
+            "isbn": r.isbn,
+            "isbn_value": r.isbn_value,
+            "identifier_type": r.identifier_type,
+            "title": r.title,
+            "subtitle": r.subtitle,
+            "authors": authors,
+            "publisher": r.publisher,
+            "publication_year": r.publication_year,
+            "collection": r.collection,
+            "series_number": r.series_number,
+            "medium_type": r.medium_type,
+            "target_audience": r.target_audience,
+            "level": r.level,
+            "language": r.language,
+            "binding_type": r.binding_type,
+            "page_count": r.page_count,
+            "has_illustrations": r.has_illustrations,
+            "total_items": total_count,
+            "total_copies": total_count,
+            "available_copies": available_count,
+            "active_holds_count": active_holds_count,
+            "cover_image": r.cover_image,
+            "first_item_id": first_item.item_id if first_item else None,
+            "shelf_location": first_item.shelf_location if first_item else None,
+            "call_number": first_item.call_number if first_item else None,
+        }
+        records_with_availability.append(record_dict)
+
+    return records_with_availability
+

@@ -35,6 +35,7 @@ from ...schemas.admin import (
 from ...schemas.inventory import OrphanDeleteResponse, OrphanRecordsResponse
 from ...schemas.system_settings import SystemSettingsResponse
 from ...services import (
+    admin_service,
     archive_service,
     backup_service,
     borrower_service,
@@ -537,25 +538,12 @@ def health_check(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
 
         # Get database statistics
-        from ...models.bibliographic_record import BiblographicRecord
-        from ...models.borrower import Borrower
-        from ...models.circulation import CirculationTransaction
-        from ...models.item import Item
-
-        borrower_count = db.query(Borrower).count()
-        biblio_count = db.query(BiblographicRecord).count()
-        item_count = db.query(Item).count()
-        circulation_count = db.query(CirculationTransaction).count()
+        counts = admin_service.get_health_stats(db)
 
         return {
             "status": "healthy",
             "database": "connected",
-            "counts": {
-                "borrowers": borrower_count,
-                "bibliographic_records": biblio_count,
-                "items": item_count,
-                "circulations": circulation_count,
-            },
+            "counts": counts,
         }
 
     except Exception as e:
@@ -845,28 +833,9 @@ def backfill_covers(db: Session = Depends(get_db)):
     Returns:
         {"updated": N, "scanned": M}
     """
-    from ...models.bibliographic_record import BiblographicRecord
-    from ...services.cover_service import find_cached_cover
-
-    covers_dir = Path(app_settings.covers_dir_path) if app_settings.covers_dir_path else Path("data/covers")
-    records = db.query(BiblographicRecord).filter(
-        BiblographicRecord.cover_image == None,
-        BiblographicRecord.isbn != None,
-        BiblographicRecord.isbn != "",
-    ).all()
-
-    updated = 0
-    for record in records:
-        fname = find_cached_cover(record.isbn, covers_dir=covers_dir)
-        if fname:
-            record.cover_image = fname
-            updated += 1
-
-    if updated:
-        db.commit()
-
-    logger.info(f"Cover backfill: {updated}/{len(records)} records updated")
-    return {"updated": updated, "scanned": len(records)}
+    res = admin_service.backfill_covers_logic(db, app_settings.covers_dir_path)
+    logger.info(f"Cover backfill: {res['updated']}/{res['scanned']} records updated")
+    return res
 
 
 import threading
@@ -883,7 +852,6 @@ _download_status = {
 def _download_missing_covers_task():
     global _download_status
     from ...core.database import SessionLocal
-    from ...models.bibliographic_record import BiblographicRecord
     from ...services.cover_service import download_cover, find_cached_cover
     import time
 
@@ -893,11 +861,7 @@ def _download_missing_covers_task():
     db = SessionLocal()
     try:
         # Scanne et associe d'abord les fichiers déjà présents (comme le backfill)
-        records = db.query(BiblographicRecord).filter(
-            BiblographicRecord.cover_image == None,
-            BiblographicRecord.isbn != None,
-            BiblographicRecord.isbn != "",
-        ).all()
+        records = admin_service.get_records_without_covers(db)
 
         for r in records:
             fname = find_cached_cover(r.isbn, covers_dir=covers_dir)
@@ -1003,31 +967,6 @@ def set_acquisition_dates_from_publication_year(db: Session = Depends(get_db)):
     Returns:
         {"updated_count": N}
     """
-    from datetime import date
-
-    from ...models.bibliographic_record import BiblographicRecord
-    from ...models.item import Item
-
-    # Find items without acquisition_date that have a publication_year
-    items = (
-        db.query(Item)
-        .join(BiblographicRecord)
-        .filter(
-            Item.acquisition_date == None,
-            BiblographicRecord.publication_year != None,
-        )
-        .all()
-    )
-
-    updated_count = 0
-    for item in items:
-        year = item.bibliographic_record.publication_year
-        if year and 1000 <= year <= 2100:
-            item.acquisition_date = date(year, 1, 1)
-            updated_count += 1
-
-    if updated_count:
-        db.commit()
-
-    logger.info(f"Acquisition date maintenance: {updated_count} items updated")
-    return {"updated_count": updated_count}
+    res = admin_service.set_acquisition_dates_from_publication_year(db)
+    logger.info(f"Acquisition date maintenance: {res['updated_count']} items updated")
+    return res

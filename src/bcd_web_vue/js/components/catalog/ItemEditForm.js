@@ -16,6 +16,7 @@ import DeweyPicker from '../ui/DeweyPicker.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import Modal from '../ui/Modal.js';
 import { useAppState } from '../../composables/useAppState.js';
+import { apiClient } from '../../api/client.js';
 
 export default {
   name: 'ItemEditForm',
@@ -133,39 +134,24 @@ export default {
         };
 
         // Use item_id (barcode) in URL, not database id
-        const response = await fetch(`/api/v1/catalog/items/${props.item.item_id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
+        const updatedItem = await apiClient.patch(`/catalog/items/${props.item.item_id}`, payload);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-
-          // Handle specific error cases
-          if (response.status === 409) {
-            // Duplicate barcode
-            errors.value.barcode = t('errors.DUPLICATE_BARCODE', {
-              barcode: formData.value.barcode,
-              existing_item_id: errorData.existing_item_id || '?'
-            });
-          } else if (response.status === 400) {
-            // Validation error
-            errors.value.general = errorData.detail || t('errors.validation_failed');
-          } else {
-            errors.value.general = errorData.detail || t('errors.unknown_error');
-          }
-          return;
-        }
-
-        const updatedItem = await response.json();
         emit('saved', updatedItem);
         closeModal();
       } catch (error) {
         console.error('Error updating item:', error);
-        errors.value.general = t('errors.network_error');
+        if (error.statusCode === 409) {
+          // Duplicate barcode
+          errors.value.barcode = t('errors.DUPLICATE_BARCODE', {
+            barcode: formData.value.barcode,
+            existing_item_id: error.details?.existing_item_id || '?'
+          });
+        } else if (error.statusCode === 400) {
+          // Validation error
+          errors.value.general = error.message || t('errors.validation_failed');
+        } else {
+          errors.value.general = error.message || t('errors.unknown_error');
+        }
       } finally {
         isSubmitting.value = false;
       }

@@ -30,6 +30,7 @@ import { useAdminShortcuts, altHeld } from '../composables/useKeyboardShortcuts.
 import { ApiError } from '../models/error.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
+import { apiClient } from '../api/client.js';
 
 const { defineComponent } = Vue;
 const { useI18n } = VueI18n;
@@ -214,19 +215,13 @@ export default defineComponent({
 
             try {
                 // Build query parameters
-                const params = new URLSearchParams({
+                const params = {
                     page: currentPage.value,
                     page_size: pageSize.value,
                     ...filters.value
-                });
+                };
 
-                const response = await fetch(`/api/v1/borrowers?${params}`);
-
-                if (!response.ok) {
-                    throw new Error(t('borrowers.error_load_failed'));
-                }
-
-                const data = await response.json();
+                const data = await apiClient.get('/borrowers', params);
 
                 // Handle paginated response
                 if (data.items) {
@@ -446,27 +441,11 @@ export default defineComponent({
 
             try {
                 // Call export endpoint
-                const response = await fetch('/api/v1/borrowers/export', {
-                    method: 'GET',
-                });
+                const blob = await apiClient.get('/borrowers/export', {}, { responseType: 'blob' });
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || t('borrowers.export_failed'));
-                }
-
-                // Get filename from Content-Disposition header
-                const disposition = response.headers.get('Content-Disposition');
                 let filename = 'borrowers_export.csv';
-                if (disposition) {
-                    const matches = disposition.match(/filename="?([^"]+)"?/);
-                    if (matches && matches[1]) {
-                        filename = matches[1];
-                    }
-                }
 
                 // Trigger download
-                const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;

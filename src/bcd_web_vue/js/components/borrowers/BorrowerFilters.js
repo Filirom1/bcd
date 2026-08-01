@@ -13,6 +13,8 @@
  * - NEW: Emit events to parent, parent handles API calls
  */
 
+import { apiClient } from '../../api/client.js';
+
 export default {
     name: 'BorrowerFilters',
 
@@ -208,10 +210,7 @@ export default {
         // Load classes from API
         const loadClasses = async () => {
             try {
-                const response = await fetch('/api/v1/classes');
-                if (response.ok) {
-                    classes.value = await response.json();
-                }
+                classes.value = await apiClient.get('/classes');
             } catch (error) {
                 console.error('Error loading classes:', error);
             }

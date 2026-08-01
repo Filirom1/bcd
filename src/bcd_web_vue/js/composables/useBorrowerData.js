@@ -1,3 +1,5 @@
+import { apiClient } from '../api/client.js';
+
 const { ref } = Vue;
 
 /**
@@ -15,22 +17,21 @@ export function useBorrowerData() {
      * @throws {Error} If the API request fails
      */
     const fetchBorrowers = async (classIds = null, pageSize = 500) => {
-        const params = new URLSearchParams({
+        const params = {
             page: 1,
             page_size: pageSize
-        });
+        };
 
         if (classIds) {
-            params.set('class_id', classIds);
+            params.class_id = classIds;
         }
 
-        const response = await fetch(`/api/v1/borrowers?${params}`);
-        if (!response.ok) {
+        try {
+            const data = await apiClient.get('/borrowers', params);
+            return data.items || data.borrowers || [];
+        } catch (error) {
             throw new Error('Failed to load borrowers');
         }
-
-        const data = await response.json();
-        return data.items || data.borrowers || [];
     };
 
     /**
@@ -40,10 +41,7 @@ export function useBorrowerData() {
      */
     const fetchSettings = async () => {
         try {
-            const response = await fetch('/api/v1/admin/settings');
-            if (response.ok) {
-                return await response.json();
-            }
+            return await apiClient.get('/admin/settings');
         } catch (err) {
             console.error('Failed to load settings:', err);
         }

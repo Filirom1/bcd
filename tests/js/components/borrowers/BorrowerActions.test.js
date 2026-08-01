@@ -47,7 +47,7 @@ describe('BorrowerActions', () => {
         await flushPromises();
 
         expect(fetchMock).toHaveBeenCalledWith(
-            '/api/v1/borrowers/B-201/block?reason=Lost%20Book%20-%20Not%20returned',
+            expect.stringContaining('/api/v1/borrowers/B-201/block?reason=Lost+Book+-+Not+returned'),
             expect.objectContaining({ method: 'POST' })
         );
         expect(wrapper.emitted('action-completed')).toEqual([['block']]);
@@ -92,7 +92,7 @@ describe('BorrowerActions', () => {
         await wrapper.get('button.btn-primary').trigger('click');
         await flushPromises();
 
-        expect(fetchMock).toHaveBeenCalledWith('/api/v1/circulation/renew', expect.objectContaining({
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/v1/circulation/renew'), expect.objectContaining({
             method: 'POST',
             body: JSON.stringify({ borrower_id: 'B-201', item_ids: null })
         }));

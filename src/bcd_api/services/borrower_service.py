@@ -12,7 +12,7 @@ Handles business logic for borrower management including:
 import logging
 import unicodedata
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -710,3 +710,57 @@ def bulk_delete_borrowers(
         "failed_count": 0,
         "operation": "bulk_delete_borrowers"
     }
+
+
+def enrich_borrower(db: Session, borrower: Borrower, settings: Any = None) -> Borrower:
+    """Enrich a single borrower object with class, circulation, and limit stats."""
+    from datetime import date
+    from sqlalchemy import and_
+    from ..models import Class
+    from ..models.circulation import CirculationTransaction
+    from . import settings_service
+
+    if settings is None:
+        settings = settings_service.get_settings(db)
+
+    # Get current loans count
+    current_loans_count = db.query(CirculationTransaction).filter(
+        and_(
+            CirculationTransaction.borrower_id == borrower.id,
+            CirculationTransaction.return_date.is_(None)
+        )
+    ).count()
+
+    # Get overdue count
+    overdue_count = db.query(CirculationTransaction).filter(
+        and_(
+            CirculationTransaction.borrower_id == borrower.id,
+            CirculationTransaction.return_date.is_(None),
+            CirculationTransaction.due_date < date.today()
+        )
+    ).count()
+
+    # Determine loan limit based on role
+    loan_limit = (
+        settings.loan_limit_teacher
+        if borrower.role in ("teacher", "staff")
+        else settings.loan_limit_default
+    )
+
+    # Class details
+    class_name, homeroom_teacher = None, None
+    if borrower.class_id:
+        class_obj = db.query(Class).filter(Class.id == borrower.class_id).first()
+        if class_obj:
+            class_name = class_obj.name
+            homeroom_teacher = class_obj.homeroom_teacher
+
+    borrower.current_loans_count = current_loans_count
+    borrower.loan_limit = loan_limit
+    borrower.loan_limit_warning = settings.loan_limit_warning
+    borrower.overdue_count = overdue_count
+    borrower.class_name = class_name
+    borrower.homeroom_teacher = homeroom_teacher
+
+    return borrower
+

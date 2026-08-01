@@ -82,7 +82,7 @@ describe('BorrowerAddForm', () => {
         await flushPromises();
 
         expect(fetchMock).toHaveBeenLastCalledWith(
-            '/api/v1/borrowers',
+            expect.stringContaining('/api/v1/borrowers'),
             expect.objectContaining({
                 method: 'POST',
                 body: JSON.stringify({

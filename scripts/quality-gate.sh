@@ -108,6 +108,15 @@ else
     report_check "JavaScript Vitest tests pass" "FAIL" "One or more JavaScript tests failed. Review output above."
 fi
 
+echo "📋 Check 7: No direct fetch calls to /api/v1 (except client.js/app.js)"
+echo "--------------------------------------------------------"
+DIRECT_FETCH_ERRORS=$(rg "fetch\(['\"\`]/api/v1" src/bcd_web_vue/js/ --glob '!src/bcd_web_vue/js/api/client.js' --glob '!src/bcd_web_vue/js/app.js' 2>/dev/null || true)
+if [ -z "$DIRECT_FETCH_ERRORS" ]; then
+    report_check "No direct fetch calls to /api/v1 in components or pages" "PASS"
+else
+    report_check "No direct fetch calls to /api/v1 in components or pages" "FAIL" "Found direct fetch() calls to /api/v1:\n$DIRECT_FETCH_ERRORS"
+fi
+
 echo "=================================================="
 echo "📊 Quality Gate Summary"
 echo "=================================================="

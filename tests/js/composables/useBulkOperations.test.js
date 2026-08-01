@@ -40,7 +40,7 @@ describe('useBulkOperations', () => {
         await bulk.bulkChangeClass([1, 2], 8);
 
         expect(fetchMock).toHaveBeenCalledWith(
-            '/api/v1/admin/borrowers/bulk-edit',
+            expect.stringContaining('/api/v1/admin/borrowers/bulk-edit'),
             expect.objectContaining({
                 method: 'POST',
                 body: JSON.stringify({
@@ -63,7 +63,7 @@ describe('useBulkOperations', () => {
         await bulk.bulkDeleteBorrowers([1, 2, 3]);
 
         expect(fetchMock).toHaveBeenCalledWith(
-            '/api/v1/admin/borrowers/bulk-delete',
+            expect.stringContaining('/api/v1/admin/borrowers/bulk-delete'),
             expect.objectContaining({
                 method: 'POST',
                 body: JSON.stringify({

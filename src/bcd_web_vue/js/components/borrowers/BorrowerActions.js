@@ -17,6 +17,7 @@
 
 import { useNotification } from '../../composables/useNotification.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
+import { apiClient } from '../../api/client.js';
 
 export default {
     name: 'BorrowerActions',
@@ -273,21 +274,11 @@ export default {
                     combinedReason = combinedReason.substring(0, 200);
                 }
 
-                const encodedReason = encodeURIComponent(combinedReason);
-                const response = await fetch(
-                    `/api/v1/borrowers/${props.borrower.borrower_id}/block?reason=${encodedReason}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    }
+                await apiClient.post(
+                    `/borrowers/${props.borrower.borrower_id}/block`,
+                    null,
+                    { reason: combinedReason }
                 );
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || t('borrowers.error_block_failed'));
-                }
 
                 showSuccess(t('borrowers.borrower_blocked_success'));
 
@@ -321,20 +312,10 @@ export default {
             unblockLoading.value = true;
 
             try {
-                const response = await fetch(
-                    `/api/v1/borrowers/${props.borrower.borrower_id}/unblock`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    }
+                await apiClient.post(
+                    `/borrowers/${props.borrower.borrower_id}/unblock`,
+                    null
                 );
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || t('borrowers.error_unblock_failed'));
-                }
 
                 showSuccess(t('borrowers.borrower_unblocked_success'));
 
@@ -360,32 +341,10 @@ export default {
             try {
                 showInfo(t('circulation.renewing'));
 
-                const response = await fetch('/api/v1/circulation/renew', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        borrower_id: props.borrower.borrower_id,
-                        item_ids: null  // null = renew all eligible
-                    })
+                const data = await apiClient.post('/circulation/renew', {
+                    borrower_id: props.borrower.borrower_id,
+                    item_ids: null  // null = renew all eligible
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-
-                    // Check for specific error codes
-                    if (errorData.error_code === 'NO_RENEWABLE_ITEMS') {
-                        showWarning(t('circulation.no_renewable_items') || errorData.error || 'No items can be renewed at this time');
-                        return; // Exit gracefully without throwing
-                    }
-
-                    // Handle other errors
-                    throw new Error(errorData.error || errorData.detail || t('common.renew_error'));
-                }
-
-                const data = await response.json();
 
                 // Build message based on results
                 let message, type;
@@ -413,6 +372,11 @@ export default {
                 emit('action-completed', 'renew');
 
             } catch (error) {
+                // Check for specific error codes
+                if (error.code === 'no_renewable_items') {
+                    showWarning(t('circulation.no_renewable_items') || error.message || 'No items can be renewed at this time');
+                    return; // Exit gracefully without throwing
+                }
                 handleError(error);
             } finally {
                 renewLoading.value = false;

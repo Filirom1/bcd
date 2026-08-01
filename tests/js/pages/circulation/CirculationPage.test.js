@@ -21,6 +21,12 @@ function mockBorrowerRequests() {
         if (endpoint === '/holds/borrower/1') {
             return [];
         }
+        if (endpoint === '/admin/settings') {
+            return {
+                borrower_barcode_prefix: '%',
+                item_barcode_prefix: '.'
+            };
+        }
         throw new Error(`Unexpected GET request: ${endpoint}`);
     });
 }

@@ -454,30 +454,16 @@ export default defineComponent({
                 exportLoading.value = true;
 
                 // Call export endpoint
-                const response = await fetch('/api/v1/catalog/export', {
-                    method: 'GET',
+                const blob = await apiClient.get('/catalog/export', {}, {
                     headers: {
                         'Accept': 'text/csv'
-                    }
+                    },
+                    responseType: 'blob'
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.detail || 'Export failed');
-                }
-
-                // Get filename from Content-Disposition header or generate default
-                const contentDisposition = response.headers.get('Content-Disposition');
                 let filename = 'catalog_export.csv';
-                if (contentDisposition) {
-                    const match = contentDisposition.match(/filename=([^;]+)/);
-                    if (match) {
-                        filename = match[1].replace(/"/g, '');
-                    }
-                }
 
                 // Download file
-                const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -488,9 +474,7 @@ export default defineComponent({
                 document.body.removeChild(a);
 
                 // Show success notification
-                const recordCount = response.headers.get('X-Record-Count') || '?';
-                const itemCount = response.headers.get('X-Item-Count') || '?';
-                success(t('catalog.export_success') + ` (${recordCount} records, ${itemCount} items)`);
+                success(t('catalog.export_success'));
 
             } catch (err) {
                 console.error('Export failed:', err);

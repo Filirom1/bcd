@@ -17,6 +17,7 @@ import { ApiError } from '../../models/error.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
+import { apiClient } from '../../api/client.js';
 
 export default defineComponent({
     name: 'RecordDetail',
@@ -160,9 +161,7 @@ export default defineComponent({
                 itemCurrentLoan.value = null;
 
                 // Load record details
-                const recordResponse = await fetch(`/api/v1/catalog/bibliographic/${recId}`);
-                if (!recordResponse.ok) throw new Error('Failed to load record');
-                const recData = await recordResponse.json();
+                const recData = await apiClient.get(`/catalog/bibliographic/${recId}`);
                 record.value = recData;
                 initForm(recData);
 
@@ -170,8 +169,11 @@ export default defineComponent({
                 await loadRecordItems(recId);
 
                 // Load active holds for this record
-                const holdsResponse = await fetch(`/api/v1/holds/bibliographic/${recId}`);
-                holds.value = holdsResponse.ok ? (await holdsResponse.json()) : [];
+                try {
+                    holds.value = await apiClient.get(`/holds/bibliographic/${recId}`);
+                } catch {
+                    holds.value = [];
+                }
 
             } catch (error) {
                 console.error('Error loading record:', error);
@@ -185,9 +187,7 @@ export default defineComponent({
 
         const loadRecordItems = async (recId) => {
             try {
-                const itemsResponse = await fetch(`/api/v1/catalog/bibliographic/${recId}/items`);
-                if (!itemsResponse.ok) throw new Error('Failed to load items');
-                const itemsData = await itemsResponse.json();
+                const itemsData = await apiClient.get(`/catalog/bibliographic/${recId}/items`);
                 const rawItems = Array.isArray(itemsData) ? itemsData : (itemsData.items || []);
                 if (record.value && record.value.medium_type === 'P\u00e9riodique') {
                     rawItems.sort((a, b) => {
@@ -235,8 +235,11 @@ export default defineComponent({
             if (record.value && record.value.id) {
                 await loadRecordItems(record.value.id);
                 if (activeTab.value === 'holds') {
-                    const holdsResponse = await fetch(`/api/v1/holds/bibliographic/${record.value.id}`);
-                    holds.value = holdsResponse.ok ? (await holdsResponse.json()) : holds.value;
+                    try {
+                        holds.value = await apiClient.get(`/holds/bibliographic/${record.value.id}`);
+                    } catch {
+                        // Keep current holds on error
+                    }
                 }
                 if (activeTab.value === 'history' && itemHistoryLoaded.value) {
                     await loadItemHistory();
@@ -273,10 +276,7 @@ export default defineComponent({
         };
 
         const fetchBorrowers = async (query, signal) => {
-            const url = `/api/v1/borrowers?q=${encodeURIComponent(query)}&limit=10`;
-            const resp = await fetch(url, { signal });
-            if (!resp.ok) throw new Error('Failed to fetch borrowers');
-            const data = await resp.json();
+            const data = await apiClient.get('/borrowers', { q: query, limit: 10 }, { signal });
             return data.items || [];
         };
 
@@ -298,29 +298,23 @@ export default defineComponent({
             reserveLoading.value = true;
             reserveMessage.value = null;
             try {
-                const resp = await fetch('/api/v1/holds', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        borrower_id: borrower.id,
-                        bibliographic_record_id: record.value.id,
-                        created_by: 'web-ui'
-                    })
+                await apiClient.post('/holds', {
+                    borrower_id: borrower.id,
+                    bibliographic_record_id: record.value.id,
+                    created_by: 'web-ui'
                 });
-                if (!resp.ok) {
-                    const err = await resp.json();
-                    const msg = err.error_code === 'HOLD_LIMIT_EXCEEDED'
-                        ? t('holds.hold_limit_exceeded', { limit: err.context?.limit ?? '' })
-                        : (err.error || t('errors.generic'));
-                    reserveMessage.value = { type: 'danger', text: msg };
-                    return;
-                }
                 reserveMessage.value = { type: 'success', text: t('holds.hold_created_for', { name: `${borrower.first_name} ${borrower.last_name}` }) };
                 reserveBorrowerQuery.value = '';
-                const holdsResponse = await fetch(`/api/v1/holds/bibliographic/${record.value.id}`);
-                holds.value = holdsResponse.ok ? (await holdsResponse.json()) : holds.value;
-            } catch {
-                reserveMessage.value = { type: 'danger', text: t('errors.generic') };
+                try {
+                    holds.value = await apiClient.get(`/holds/bibliographic/${record.value.id}`);
+                } catch {
+                    // Keep holds on error
+                }
+            } catch (err) {
+                const msg = err.code === 'hold_limit_exceeded'
+                    ? t('holds.hold_limit_exceeded', { limit: err.details?.limit ?? '' })
+                    : (err.message || t('errors.generic'));
+                reserveMessage.value = { type: 'danger', text: msg };
             } finally {
                 reserveLoading.value = false;
             }
@@ -331,15 +325,13 @@ export default defineComponent({
             if (!firstItem) return;
             itemHistoryLoading.value = true;
             try {
-                const params = new URLSearchParams({
+                const params = {
                     page: itemHistoryPage.value,
                     page_size: 20,
-                });
-                if (itemHistoryDateFrom.value) params.set('date_from', itemHistoryDateFrom.value);
-                if (itemHistoryDateTo.value) params.set('date_to', itemHistoryDateTo.value);
-                const resp = await fetch(`/api/v1/circulation/item/${firstItem.item_id}/history?${params}`);
-                if (!resp.ok) throw new Error('Failed to load item history');
-                const data = await resp.json();
+                };
+                if (itemHistoryDateFrom.value) params.date_from = itemHistoryDateFrom.value;
+                if (itemHistoryDateTo.value) params.date_to = itemHistoryDateTo.value;
+                const data = await apiClient.get(`/circulation/item/${firstItem.item_id}/history`, params);
                 itemHistoryItems.value = data.history || [];
                 itemHistoryPagination.value = data.pagination || null;
                 itemCurrentLoan.value = data.current_loan || null;
@@ -436,16 +428,7 @@ export default defineComponent({
             }
 
             try {
-                const response = await fetch(`/api/v1/catalog/items/${item.item_id}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    const apiError = await ApiError.fromResponse(response);
-                    handleError(apiError);
-                    return;
-                }
-
+                await apiClient.delete(`/catalog/items/${item.item_id}`);
                 reloadAllData();
             } catch (error) {
                 console.error('Error deleting item:', error);
@@ -490,25 +473,7 @@ export default defineComponent({
                     }
                 });
 
-                const response = await fetch(`/api/v1/catalog/records/${record.value.id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    if (response.status === 400) {
-                        errors.value.general = errorData.detail || t('errors.validation_failed');
-                    } else {
-                        errors.value.general = errorData.detail || t('errors.unknown_error');
-                    }
-                    return;
-                }
-
-                const updatedRecord = await response.json();
+                const updatedRecord = await apiClient.patch(`/catalog/records/${record.value.id}`, payload);
                 record.value = updatedRecord;
                 emit('saved', updatedRecord);
 
@@ -519,7 +484,11 @@ export default defineComponent({
                 }
             } catch (error) {
                 console.error('Error updating record:', error);
-                errors.value.general = t('errors.network_error');
+                if (error.statusCode === 400) {
+                    errors.value.general = error.message || t('errors.validation_failed');
+                } else {
+                    errors.value.general = error.message || t('errors.unknown_error');
+                }
             } finally {
                 isSubmitting.value = false;
             }
@@ -531,20 +500,7 @@ export default defineComponent({
 
         const handleDeleteConfirm = async (recordIdValue) => {
             try {
-                const response = await fetch(`/api/v1/catalog/records/${recordIdValue}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    if (response.status === 400) {
-                        errors.value.general = errorData.detail;
-                    } else {
-                        errors.value.general = t('admin.error_delete_record');
-                    }
-                    showDeleteDialog.value = false;
-                    return;
-                }
+                await apiClient.delete(`/catalog/records/${recordIdValue}`);
 
                 showDeleteDialog.value = false;
                 emit('deleted', recordIdValue);

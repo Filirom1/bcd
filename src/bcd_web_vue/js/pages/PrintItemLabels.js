@@ -3,6 +3,7 @@ const { useI18n } = VueI18n;
 import { useBarcodeRenderer } from '../composables/useBarcodeRenderer.js';
 import { useBorrowerData } from '../composables/useBorrowerData.js';
 import { LABEL_FORMATS, DEFAULT_FORMAT_ID } from '../config/labelFormats.js';
+import { apiClient } from '../api/client.js';
 
 export default defineComponent({
     name: 'PrintItemLabels',
@@ -132,19 +133,14 @@ export default defineComponent({
             loading.value = true;
             error.value = null;
             try {
-                const params = new URLSearchParams({ count: labelCount.value });
+                const params = { count: labelCount.value };
                 if (startId.value && startId.value.trim() !== '') {
-                    params.set('start_from', startId.value.trim());
+                    params.start_from = startId.value.trim();
                 }
                 if (!contiguous.value) {
-                    params.set('contiguous', 'false');
+                    params.contiguous = 'false';
                 }
-                const response = await fetch('/api/v1/catalog/items/available-ids?' + params);
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.detail || 'Failed to generate IDs');
-                }
-                const data = await response.json();
+                const data = await apiClient.get('/catalog/items/available-ids', params);
                 generatedIds.value = data.ids;
                 loading.value = false;
                 await nextTick();

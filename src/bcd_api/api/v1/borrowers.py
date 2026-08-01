@@ -31,24 +31,10 @@ router = APIRouter(prefix="/borrowers", tags=["borrowers"])
 
 
 def _get_borrower_class_info(db: Session, borrower) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Get class name and homeroom teacher for a borrower.
-
-    Args:
-        db: Database session
-        borrower: Borrower model instance
-
-    Returns:
-        Tuple of (class_name, homeroom_teacher), both can be None
-    """
-    if not borrower.class_id:
+    """Deprecated: class info is now populated via borrower_service.enrich_borrower."""
+    if not borrower:
         return None, None
-
-    from ...models import Class
-    class_obj = db.query(Class).filter(Class.id == borrower.class_id).first()
-    if class_obj:
-        return class_obj.name, class_obj.homeroom_teacher
-    return None, None
+    return getattr(borrower, "class_name", None), getattr(borrower, "homeroom_teacher", None)
 
 
 @router.post("", response_model=BorrowerResponse, status_code=status.HTTP_201_CREATED)
@@ -417,25 +403,18 @@ def get_borrower(
 
     # Get loan limit based on role from system settings
     settings = settings_service.get_settings(db)
-    loan_limit = (
-        settings.loan_limit_teacher
-        if borrower.role == "teacher"
-        else settings.loan_limit_default
-    )
-
-    # Get class name and homeroom teacher if borrower has a class
-    class_name, homeroom_teacher = _get_borrower_class_info(db, borrower)
+    borrower_service.enrich_borrower(db, borrower, settings)
 
     borrower_detailed = BorrowerDetailed(
         **borrower.__dict__,
         barcode=borrower.barcode,  # Computed property not in __dict__
-        current_loans_count=details["current_loans_count"],
+        current_loans_count=borrower.current_loans_count,
         total_checkouts=details["total_checkouts"],
-        overdue_count=details["overdue_count"],
-        loan_limit=loan_limit,
-        loan_limit_warning=settings.loan_limit_warning,
-        class_name=class_name,
-        homeroom_teacher=homeroom_teacher,
+        overdue_count=borrower.overdue_count,
+        loan_limit=borrower.loan_limit,
+        loan_limit_warning=borrower.loan_limit_warning,
+        class_name=borrower.class_name,
+        homeroom_teacher=borrower.homeroom_teacher,
     )
 
     # If detail requested, include current loans only.
@@ -519,45 +498,7 @@ def list_borrowers(
 
     # Enrich borrowers with circulation data and loan limits
     settings = settings_service.get_settings(db)
-    enriched_borrowers = []
-
-    for borrower in borrowers:
-        # Get current loans count
-        current_loans_count = db.query(CirculationTransaction).filter(
-            and_(
-                CirculationTransaction.borrower_id == borrower.id,
-                CirculationTransaction.return_date.is_(None)
-            )
-        ).count()
-
-        # Get overdue count
-        overdue_count = db.query(CirculationTransaction).filter(
-            and_(
-                CirculationTransaction.borrower_id == borrower.id,
-                CirculationTransaction.return_date.is_(None),
-                CirculationTransaction.due_date < date.today()
-            )
-        ).count()
-
-        # Determine loan limit based on role
-        loan_limit = (
-            settings.loan_limit_teacher
-            if borrower.role in ("teacher", "staff")
-            else settings.loan_limit_default
-        )
-
-        # Get class name and homeroom teacher if borrower has a class
-        class_name, homeroom_teacher = _get_borrower_class_info(db, borrower)
-
-        # Add attributes to borrower object
-        borrower.current_loans_count = current_loans_count
-        borrower.loan_limit = loan_limit
-        borrower.loan_limit_warning = settings.loan_limit_warning
-        borrower.overdue_count = overdue_count
-        borrower.class_name = class_name
-        borrower.homeroom_teacher = homeroom_teacher
-
-        enriched_borrowers.append(borrower)
+    enriched_borrowers = [borrower_service.enrich_borrower(db, borrower, settings) for borrower in borrowers]
 
     # Calculate page and page_size from limit/offset for response
     calculated_page = (actual_offset // actual_limit) + 1 if actual_limit > 0 else 1

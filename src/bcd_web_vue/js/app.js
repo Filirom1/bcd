@@ -31,14 +31,15 @@ async function initApp() {
         const { locale, saveSettings } = useAppState();
 
         // Fetch settings early so components (e.g. sidebar) can read library_code
+        // We use apiClient with skipGlobalLoading to avoid triggering global loading indicator during bootstrap
         try {
-            const settingsData = await fetch('/api/v1/admin/settings').then(r => r.ok ? r.json() : null);
+            const settingsData = await apiClient.get('/admin/settings', {}, { skipGlobalLoading: true });
             if (settingsData) saveSettings(settingsData);
         } catch (e) {
             // Non-fatal: sidebar will show empty until settings load
         }
 
-        // Load translation messages
+        // Load translation messages (direct fetch is justified as these are local static JSON resources)
         const [frMessages, enMessages] = await Promise.all([
             fetch('/locales/fr.json').then(async r => {
                 if (!r.ok) throw new Error(`Failed to load fr.json: ${r.status}`);
