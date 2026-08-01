@@ -683,6 +683,48 @@ L'analyse de l'architecture backend a mis en évidence plusieurs foyers de dette
 
 **Terminé quand** : le couplage et les duplications logiques du backend sont réduits, et les conversions de types s'exécutent de manière centralisée.
 
+### [ ] P2.12 — Introduire un Event Bus léger pour les rafraîchissements inter-composants
+
+**Constat**
+
+La communication asynchrone entre composants disjoints (comme recharger la liste du catalogue lorsqu'un exemplaire est retourné depuis une modale globale) repose sur des hacks réactifs comme `catalogRefreshTick.value++`. Ce modèle est difficile à tracer, peu robuste et complexe à faire évoluer pour d'autres observateurs.
+
+**Actions**
+
+1. Implémenter un système d'Event Bus ou Pub/Sub ultra-léger et autonome en JS pur (sans dépendance externe).
+2. Remplacer les compteurs pivots (`catalogRefreshTick`, etc.) par des émissions et écoutes d'événements explicites (ex. `events.emit('catalog:refresh')`).
+3. S'assurer que les écoutes d'événements sont correctement nettoyées lors du démontage des composants (`onBeforeUnmount`) pour éviter les fuites de mémoire.
+
+**Terminé quand** : aucun composant n'utilise de variable numérique artificielle pour déclencher des rafraîchissements asynchrones chez un voisin.
+
+### [ ] P2.13 — Centraliser les styles CSS spécifiques et éliminer la dérive visuelle (UI Drift)
+
+**Constat**
+
+Plusieurs pages et composants déclarent des règles CSS personnalisées ou des balises `<style>` locales pour des comportements d'alignement, de défilement ou d' overlays. Cela crée des divergences esthétiques (marges, ombres, hauteurs) et nuit à la cohérence de l'interface vis-à-vis du client Godot.
+
+**Actions**
+
+1. Inventorier et extraire tous les styles CSS éparpillés dans les composants JS pour les centraliser dans `css/app.css`.
+2. Standardiser les classes utilitaires pour les composants récurrents (ex: zones de scroll fixe, masques de chargement).
+3. S'assurer de la compatibilité visuelle sur les vieux écrans à basse résolution (taille de police minimale, contrastes).
+
+**Terminé quand** : aucun composant JS ne contient de bloc de styles CSS embarqués ou de style en ligne pour la mise en page.
+
+### [ ] P2.14 — Rendre le cycle de démarrage (Bootstrap) asynchrone tolérant aux pannes
+
+**Constat**
+
+L'initialisation de l'application (`initApp` dans `app.js`) attend de manière bloquante le chargement des fichiers JSON de traduction et des paramètres d'administration via l'API. En cas de latence serveur ou de coupure réseau lors du démarrage, l'interface reste blanche et bloquée sans retour visuel possible pour l'utilisateur.
+
+**Actions**
+
+1. Monter l'application Vue immédiatement avec un écran d'attente interactif, et déléguer le chargement asynchrone des ressources à un état de bootstrapping Vue.
+2. Ajouter un timeout réseau et un bouton de diagnostic / tentative de reconnexion en cas d'échec du chargement des paramètres d'initialisation.
+3. Afficher un message d'erreur clair et convivial pour l'utilisateur au lieu de laisser l'écran blanc.
+
+**Terminé quand** : le démarrage de l'application affiche un spinner et un mécanisme de secours en cas d'indisponibilité temporaire du serveur au démarrage.
+
 ## Points à préserver
 
 - Séparation services/modèles déjà bien installée dans la majorité du backend.
