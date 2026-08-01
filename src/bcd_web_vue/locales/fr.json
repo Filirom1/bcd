@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "BCD - Système de Bibliothèque",
-    "subtitle": "Gestion de bibliothèque scolaire"
+    "subtitle": "Gestion de bibliothèque scolaire",
+    "loading_app": "Chargement de l'application..."
   },
   "navigation": {
     "circulation": "Circulation",
@@ -15,7 +16,13 @@
     "collections": "Fonds",
     "inventory": "Inventaire",
     "settings": "Paramètres",
-    "help": "Aide"
+    "help": "Aide",
+    "catalog_detail": "Détail du catalogue",
+    "borrower_detail": "Détail emprunteur",
+    "overdue_notices": "Feuillets de retard",
+    "print_borrowers_reference": "Impression - Fiches de référence",
+    "print_student_cards": "Impression - Cartes bibliothèque",
+    "print_item_labels": "Impression - Étiquettes articles"
   },
   "circulation": {
     "title": "Circulation",
@@ -77,6 +84,7 @@
     "due_back_on": "Retour prévu le",
     "item_unavailable_for_checkout": "Cet article ne peut pas être emprunté pour le moment",
     "currently_borrowed": "Actuellement emprunté",
+    "loans": "prêts",
     "no_current_loans": "Aucun emprunt en cours",
     "no_history": "Aucun historique de circulation",
     "confirm_quick_return": "Retourner l'article {item_id} ?",
@@ -145,6 +153,11 @@
   },
   "catalog": {
     "title": "Catalogue",
+    "unknown_author": "Auteur inconnu",
+    "unknown_title": "Titre inconnu",
+    "medium_book": "Livre",
+    "copies_label": "ex.",
+    "status_en_cours": "En cours",
     "add_item": "Ajouter",
     "search": "Rechercher",
     "search_placeholder": "Titre, auteur, ISBN...",
@@ -255,6 +268,8 @@
   },
   "borrowers": {
     "title": "Emprunteurs",
+    "block_reason": "Motif de blocage",
+    "import_errors": "Erreurs d'importation",
     "search": "Rechercher un emprunteur",
     "search_placeholder": "Nom, ID...",
     "filter_by_class": "Filtrer par classe",
@@ -386,6 +401,7 @@
     "collection": "Collection/Série",
     "series_number": "Numéro de volume",
     "language": "Langue",
+    "placeholder_language": "ex: fr, en",
     "binding_type": "Type de reliure",
     "level": "Niveau de lecture",
     "medium_type": "Type de support",
@@ -446,6 +462,7 @@
     "manual_entry": "Saisie manuelle",
     "manual_entry_link": "Saisir les données manuellement (sans ISBN/ISSN)",
     "error_no_isbn": "Veuillez saisir un ISBN ou un ISSN",
+    "error_title_required": "Le titre est obligatoire",
     "isbn_not_found": "ISBN/ISSN {isbn} introuvable dans aucun catalogue",
     "isbn_already_exists": "ISBN/ISSN existe déjà dans le catalogue : {title}. Passons à l'ajout d'exemplaires.",
     "lookup_error": "Erreur lors de la recherche ISBN/ISSN",
@@ -870,6 +887,9 @@
     "required": "La numérotation est requise pour un périodique"
   },
   "common": {
+    "error": "Erreur",
+    "no_data": "Aucune donnée disponible",
+    "overdue": "En retard",
     "save": "Enregistrer",
     "saving": "Enregistrement...",
     "cancel": "Annuler",
@@ -928,6 +948,8 @@
     "per_page": "par page"
   },
   "errors": {
+    "invalid_year_range": "Année invalide",
+    "must_be_positive": "Doit être supérieur à 0",
     "borrower_not_found": "Emprunteur {borrower_id} introuvable",
     "item_not_found": "Article {item_id} introuvable",
     "item_unavailable": "Article {item_id} non disponible",
@@ -1244,6 +1266,7 @@
       "error": "Erreur lors de la numérisation : {error}"
     },
     "search": {
+      "period_loans": "prêts",
       "filters": "Filtres de recherche",
       "text_search": "Recherche textuelle",
       "text_search_placeholder": "Titre, auteur, ISBN, cote...",

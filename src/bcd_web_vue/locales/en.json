@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "BCD - Library System",
-    "subtitle": "School library management"
+    "subtitle": "School library management",
+    "loading_app": "Loading application..."
   },
   "navigation": {
     "circulation": "Circulation",
@@ -15,7 +16,13 @@
     "collections": "Collections",
     "inventory": "Inventory",
     "settings": "Settings",
-    "help": "Help"
+    "help": "Help",
+    "catalog_detail": "Catalog Detail",
+    "borrower_detail": "Borrower Detail",
+    "overdue_notices": "Overdue Notices",
+    "print_borrowers_reference": "Print - Borrower Reference Sheets",
+    "print_student_cards": "Print - Library Cards",
+    "print_item_labels": "Print - Item Labels"
   },
   "circulation": {
     "title": "Circulation",
@@ -77,6 +84,7 @@
     "due_back_on": "Due back on",
     "item_unavailable_for_checkout": "This item cannot be checked out at this time",
     "currently_borrowed": "Currently borrowed",
+    "loans": "loans",
     "no_current_loans": "No current loans",
     "no_history": "No circulation history",
     "confirm_quick_return": "Return item {item_id}?",
@@ -145,6 +153,11 @@
   },
   "catalog": {
     "title": "Catalog",
+    "unknown_author": "Unknown author",
+    "unknown_title": "Unknown title",
+    "medium_book": "Book",
+    "copies_label": "copies",
+    "status_en_cours": "On loan",
     "add_item": "Add",
     "search": "Search",
     "search_placeholder": "Title, author, ISBN...",
@@ -255,6 +268,8 @@
   },
   "borrowers": {
     "title": "Borrowers",
+    "block_reason": "Block Reason",
+    "import_errors": "Import Errors",
     "search": "Search borrower",
     "search_placeholder": "Name, ID...",
     "filter_by_class": "Filter by class",
@@ -386,6 +401,7 @@
     "collection": "Collection/Series",
     "series_number": "Volume Number",
     "language": "Language",
+    "placeholder_language": "e.g., fr, en",
     "binding_type": "Binding Type",
     "level": "Reading Level",
     "medium_type": "Medium Type",
@@ -445,6 +461,7 @@
     "manual_entry": "Manual entry",
     "manual_entry_link": "Enter data manually (without ISBN/ISSN)",
     "error_no_isbn": "Please enter an ISBN or ISSN",
+    "error_title_required": "The title is required",
     "isbn_not_found": "ISBN/ISSN {isbn} not found in any catalog",
     "isbn_already_exists": "ISBN/ISSN already exists in catalog: {title}. Proceeding to add physical copies.",
     "lookup_error": "Error looking up ISBN/ISSN",
@@ -869,6 +886,9 @@
     "required": "Issue number is required for a periodical"
   },
   "common": {
+    "error": "Error",
+    "no_data": "No data available",
+    "overdue": "Overdue",
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
@@ -927,6 +947,8 @@
     "per_page": "per page"
   },
   "errors": {
+    "invalid_year_range": "Invalid year range",
+    "must_be_positive": "Must be positive",
     "borrower_not_found": "Borrower {borrower_id} not found",
     "item_not_found": "Item {item_id} not found",
     "item_unavailable": "Item {item_id} unavailable",
@@ -1243,6 +1265,7 @@
       "error": "Error scanning item: {error}"
     },
     "search": {
+      "period_loans": "loans",
       "filters": "Search Filters",
       "text_search": "Text Search",
       "text_search_placeholder": "Title, author, ISBN, call number...",
