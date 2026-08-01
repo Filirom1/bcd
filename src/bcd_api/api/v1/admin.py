@@ -44,6 +44,8 @@ from ...services import (
     settings_service,
 )
 
+from ...models.bibliographic_record import BiblographicRecord
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
