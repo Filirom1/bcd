@@ -12,6 +12,7 @@ import { useAppState } from '../../composables/useAppState.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { usePagination } from '../../composables/usePagination.js';
 import ReportHeader from '../ui/ReportHeader.js';
+import { getJSON, setJSON } from '../../utils/storage.js';
 import DataTable from '../ui/DataTable.js';
 import Pagination from '../ui/Pagination.js';
 import TauxRotationPanel from './TauxRotationPanel.js';
@@ -99,17 +100,15 @@ export default defineComponent({
 
         // ── Column definitions + visibility ────────────────────────────────────
         const COL_IDS = ['crew_score', 'item_id', 'title', 'condition', 'shelf_location', 'age_days', 'publication_year', 'total_copies', 'period_loan_count'];
-        const COL_STORAGE_KEY = 'bcd_never_borrowed_cols';
+        const COL_STORAGE_KEY = 'never_borrowed_cols';
         const loadVisibleCols = () => {
-            try {
-                const s = localStorage.getItem(COL_STORAGE_KEY);
-                if (s) return COL_IDS.filter(id => JSON.parse(s).includes(id));
-            } catch (e) {}
+            const s = getJSON(COL_STORAGE_KEY);
+            if (s) return COL_IDS.filter(id => s.includes(id));
             return [...COL_IDS];
         };
         const visibleColumns = ref(loadVisibleCols());
         const showColDropdown = ref(false);
-        watch(visibleColumns, v => { try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(v)); } catch (e) {} });
+        watch(visibleColumns, v => setJSON(COL_STORAGE_KEY, v));
         const isColVisible = id => visibleColumns.value.includes(id);
         const toggleCol = id => {
             if (visibleColumns.value.includes(id)) visibleColumns.value = visibleColumns.value.filter(c => c !== id);

@@ -21,8 +21,9 @@
 
 const { ref, watch } = Vue;
 import { apiClient } from '../api/client.js';
+import { getJSON, setJSON } from '../utils/storage.js';
 
-const STORAGE_KEY = 'bcd_inventory_table_ids';
+const STORAGE_KEY = 'inventory_table_ids';
 
 export function useInventoryTable() {
     const items = ref([]);
@@ -33,11 +34,7 @@ export function useInventoryTable() {
      * Persist only item IDs to localStorage
      */
     const persist = () => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(itemIds.value));
-        } catch (error) {
-            console.error('Failed to persist inventory table IDs to localStorage:', error);
-        }
+        setJSON(STORAGE_KEY, itemIds.value);
     };
 
     /**
@@ -47,14 +44,12 @@ export function useInventoryTable() {
      */
     const restore = async () => {
         try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (!stored) {
+            const parsedIds = getJSON(STORAGE_KEY);
+            if (!parsedIds) {
                 items.value = [];
                 itemIds.value = [];
                 return;
             }
-
-            const parsedIds = JSON.parse(stored);
             if (!Array.isArray(parsedIds) || parsedIds.length === 0) {
                 items.value = [];
                 itemIds.value = [];

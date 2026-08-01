@@ -340,7 +340,7 @@ Un modèle de pagination existe dans `models/pagination.js`, mais les consommate
 
 **Terminé quand** : chaque composant consomme un modèle unique et une réponse mal formée produit une erreur explicite plutôt qu'une liste vide.
 
-### [ ] P1.8 — Initialiser les effets de l'état global une seule fois
+### [x] P1.8 — Initialiser les effets de l'état global une seule fois
 
 **Constat**
 
@@ -566,7 +566,7 @@ Les exceptions métier centralisées sont un bon socle, mais de nombreux `except
 
 **Terminé quand** : aucun fichier parallèle au code ne décrit une implémentation qui n'existe plus.
 
-### [ ] P2.5 — Centraliser et versionner la persistance locale Web
+### [x] P2.5 — Centraliser et versionner la persistance locale Web
 
 **Constat**
 

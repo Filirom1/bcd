@@ -4,49 +4,24 @@
  */
 
 const { ref, computed, watch } = Vue;
-
-// Safe localStorage access helper
-const safeGetItem = (key, defaultValue = null) => {
-    try {
-        return localStorage.getItem(key) || defaultValue;
-    } catch (e) {
-        console.warn(`localStorage.getItem('${key}') blocked by browser:`, e.message);
-        return defaultValue;
-    }
-};
-
-const safeSetItem = (key, value) => {
-    try {
-        localStorage.setItem(key, value);
-    } catch (e) {
-        console.warn(`localStorage.setItem('${key}') blocked by browser:`, e.message);
-    }
-};
-
-const safeRemoveItem = (key) => {
-    try {
-        localStorage.removeItem(key);
-    } catch (e) {
-        console.warn(`localStorage.removeItem('${key}') blocked by browser:`, e.message);
-    }
-};
+import { getItem, setItem, removeItem, getJSON, setJSON, clearStorage as apiClearStorage } from '../utils/storage.js';
 
 // Global reactive state (shared across all component instances)
-const locale = ref(safeGetItem('bcd_locale', 'fr'));
+const locale = ref(getItem('locale', 'fr'));
 const isLoading = ref(false);
 const settings = ref(null);
+
+// Persist locale changes to localStorage (declared once at module level to avoid duplicate watchers)
+watch(locale, (newLocale) => {
+    setItem('locale', newLocale);
+    document.documentElement.lang = newLocale;
+}, { immediate: true });
 
 /**
  * Application state composable
  * @returns {Object} App state and methods
  */
 export function useAppState() {
-    // Persist locale changes to localStorage
-    watch(locale, (newLocale) => {
-        safeSetItem('bcd_locale', newLocale);
-        document.documentElement.lang = newLocale;
-    }, { immediate: true });
-
     /**
      * Set locale and persist to localStorage
      * @param {string} newLocale - Locale code ('fr' or 'en')
@@ -76,14 +51,11 @@ export function useAppState() {
      * Load settings from localStorage
      */
     const loadSettings = () => {
-        const stored = safeGetItem('bcd_settings');
+        const stored = getJSON('settings');
         if (stored) {
-            try {
-                settings.value = JSON.parse(stored);
-            } catch (e) {
-                console.error('Failed to parse stored settings:', e);
-                settings.value = null;
-            }
+            settings.value = stored;
+        } else {
+            settings.value = null;
         }
     };
 
@@ -93,15 +65,14 @@ export function useAppState() {
      */
     const saveSettings = (newSettings) => {
         settings.value = newSettings;
-        safeSetItem('bcd_settings', JSON.stringify(newSettings));
+        setJSON('settings', newSettings);
     };
 
     /**
      * Clear all stored data
      */
     const clearStorage = () => {
-        safeRemoveItem('bcd_locale');
-        safeRemoveItem('bcd_settings');
+        apiClearStorage();
         locale.value = 'fr';
         settings.value = null;
     };

@@ -110,6 +110,7 @@ export default defineComponent({
             handleGlobalQuickReturn,
             handleGlobalViewBorrower,
             handleGlobalViewItem,
+            t,
         };
     },
 

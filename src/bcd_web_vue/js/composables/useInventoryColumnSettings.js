@@ -4,8 +4,9 @@
  */
 
 const { ref, watch } = Vue;
+import { getJSON, setJSON } from '../utils/storage.js';
 
-const STORAGE_KEY = 'bcd_inventory_columns';
+const STORAGE_KEY = 'inventory_columns';
 
 // Available columns for inventory working table
 // Includes all fields that can be modified via bulk edit
@@ -34,13 +35,9 @@ export const INVENTORY_AVAILABLE_COLUMNS = [
 export function useInventoryColumnSettings() {
     // Load from localStorage or use defaults
     const loadSettings = () => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                return JSON.parse(stored);
-            }
-        } catch (e) {
-            console.warn('Failed to load inventory column settings from localStorage', e);
+        const stored = getJSON(STORAGE_KEY);
+        if (stored) {
+            return stored;
         }
         // Return default columns
         return INVENTORY_AVAILABLE_COLUMNS.filter(col => col.default).map(col => col.id);
@@ -50,11 +47,7 @@ export function useInventoryColumnSettings() {
 
     // Save to localStorage when changed
     watch(visibleColumns, (newValue) => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newValue));
-        } catch (e) {
-            console.warn('Failed to save inventory column settings to localStorage', e);
-        }
+        setJSON(STORAGE_KEY, newValue);
     }, { deep: true });
 
     const isColumnVisible = (columnId) => {

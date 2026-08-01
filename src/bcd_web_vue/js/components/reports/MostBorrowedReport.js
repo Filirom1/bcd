@@ -18,12 +18,13 @@ import { useReportFilters } from '../../composables/useReportFilters.js';
 import ReportHeader from '../ui/ReportHeader.js';
 import Pagination from '../ui/Pagination.js';
 import BreakdownPanel from './BreakdownPanel.js';
+import { getJSON, setJSON } from '../../utils/storage.js';
 import FilterChips from './FilterChips.js';
 import TauxRotationPanel from './TauxRotationPanel.js';
 import PubYearPanel from './PubYearPanel.js';
 
 const PANEL_IDS = ['medium_type', 'taux_rotation', 'pub_year'];
-const HIDDEN_PANELS_KEY = 'bcd_most_borrowed_hidden_panels';
+const HIDDEN_PANELS_KEY = 'most_borrowed_hidden_panels';
 
 export default defineComponent({
     name: 'MostBorrowedReport',
@@ -46,8 +47,8 @@ export default defineComponent({
         } = useReportFilters(t, audienceLabel, { pub_year_min: null, pub_year_max: null });
 
         // ── Panel visibility ───────────────────────────────────────────────────
-        const saveHidden = hidden => { try { localStorage.setItem(HIDDEN_PANELS_KEY, JSON.stringify(hidden)); } catch (e) {} };
-        const loadHidden = () => { try { const s = localStorage.getItem(HIDDEN_PANELS_KEY); if (s) return JSON.parse(s); } catch (e) {} return []; };
+        const saveHidden = hidden => setJSON(HIDDEN_PANELS_KEY, hidden);
+        const loadHidden = () => getJSON(HIDDEN_PANELS_KEY, []);
         const hiddenPanels = ref(loadHidden());
         const visiblePanels = computed(() => PANEL_IDS.filter(id => !hiddenPanels.value.includes(id)));
         const showPanelDropdown = ref(false);
@@ -166,12 +167,10 @@ export default defineComponent({
 
         // ── Column visibility ──────────────────────────────────────────────────
         const COL_IDS_MB = ['rank', 'title', 'checkout_count', 'total_copies', 'taux_rotation'];
-        const COL_STORAGE_KEY_MB = 'bcd_most_borrowed_cols';
+        const COL_STORAGE_KEY_MB = 'most_borrowed_cols';
         const loadVisibleColsMB = () => {
-            try {
-                const s = localStorage.getItem(COL_STORAGE_KEY_MB);
-                if (s) return JSON.parse(s).filter(id => COL_IDS_MB.includes(id));
-            } catch (e) {}
+            const s = getJSON(COL_STORAGE_KEY_MB);
+            if (s) return s.filter(id => COL_IDS_MB.includes(id));
             return [...COL_IDS_MB];
         };
         const visibleCols = ref(loadVisibleColsMB());
@@ -181,12 +180,12 @@ export default defineComponent({
             visibleCols.value = visibleCols.value.includes(id)
                 ? visibleCols.value.filter(c => c !== id)
                 : [...visibleCols.value, id];
-            try { localStorage.setItem(COL_STORAGE_KEY_MB, JSON.stringify(visibleCols.value)); } catch (e) {}
+            setJSON(COL_STORAGE_KEY_MB, visibleCols.value);
         };
         const resetCols = () => {
             visibleCols.value = [...COL_IDS_MB];
             showColDropdown.value = false;
-            try { localStorage.setItem(COL_STORAGE_KEY_MB, JSON.stringify(visibleCols.value)); } catch (e) {}
+            setJSON(COL_STORAGE_KEY_MB, visibleCols.value);
         };
         const allColsMB = computed(() => [
             { key: 'rank',          label: '#' },
