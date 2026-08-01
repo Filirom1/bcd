@@ -31,119 +31,132 @@ const routes = [
         path: '/checkout',
         name: 'checkout',
         component: CirculationPage,
-        meta: { title: 'Emprunter' }
+        meta: { titleKey: 'navigation.checkout' }
     },
     {
         path: '/return',
         name: 'return',
         component: CirculationPage,
         props: { mode: 'return' },
-        meta: { title: 'Retourner' }
+        meta: { titleKey: 'navigation.return' }
     },
     {
         path: '/catalog',
         name: 'catalog',
         component: CatalogPage,
-        meta: { title: 'Catalogue' }
+        meta: { titleKey: 'navigation.catalog' }
     },
     {
         path: '/catalog/:id',
         name: 'catalog-detail',
         component: CatalogPage,
-        meta: { title: 'Détail du catalogue' }
+        meta: { titleKey: 'navigation.catalog_detail' }
     },
     {
         path: '/cataloging',
         name: 'cataloging',
         component: CatalogingPage,
-        meta: { title: 'Catalogage' }
+        meta: { titleKey: 'navigation.cataloging' }
     },
     {
         path: '/borrowers',
         name: 'borrowers',
         component: BorrowersPage,
-        meta: { title: 'Emprunteurs' }
+        meta: { titleKey: 'navigation.borrowers' }
     },
     {
         path: '/borrowers/:id',
         name: 'borrower-detail',
         component: BorrowersPage,
-        meta: { title: 'Détail emprunteur' }
+        meta: { titleKey: 'navigation.borrower_detail' }
     },
     {
         path: '/classes',
         name: 'classes',
         component: ClassesPage,
-        meta: { title: 'Classes' }
+        meta: { titleKey: 'navigation.classes' }
     },
     {
         path: '/reports/overdue/notices',
         name: 'overdue-notices',
         component: OverdueNotices,
-        meta: { title: 'Feuillets de retard', layout: 'print' }
+        meta: { titleKey: 'navigation.overdue_notices', layout: 'print' }
     },
     {
         path: '/reports/:type?',
         name: 'reports',
         component: ReportsPage,
-        meta: { title: 'Rapports' }
+        meta: { titleKey: 'navigation.reports' }
     },
     {
         path: '/collections',
         name: 'collections',
         component: CollectionsPage,
-        meta: { title: 'Fonds' }
+        meta: { titleKey: 'navigation.collections' }
     },
     {
         path: '/inventory',
         name: 'inventory',
         component: InventoryPage,
-        meta: { title: 'Inventaire' }
+        meta: { titleKey: 'navigation.inventory' }
     },
     {
         path: '/settings',
         name: 'settings',
         component: SettingsPage,
-        meta: { title: 'Paramètres' }
+        meta: { titleKey: 'navigation.settings' }
     },
     {
         path: '/print/borrowers/reference',
         name: 'print-borrower-reference',
         component: PrintBorrowerReference,
-        meta: { title: 'Impression - Fiches de reference', layout: 'print' }
+        meta: { titleKey: 'navigation.print_borrowers_reference', layout: 'print' }
     },
     {
         path: '/print/borrowers/cards',
         name: 'print-student-cards',
         component: PrintStudentCards,
-        meta: { title: 'Impression - Cartes bibliotheque', layout: 'print' }
+        meta: { titleKey: 'navigation.print_student_cards', layout: 'print' }
     },
     {
         path: '/print/catalog/labels',
         name: 'print-item-labels',
         component: PrintItemLabels,
-        meta: { title: 'Impression - Etiquettes articles', layout: 'print' }
+        meta: { titleKey: 'navigation.print_item_labels', layout: 'print' }
     }
 ];
 
 /**
  * Create router instance
+ * @param {Object} i18n - VueI18n instance
  * @returns {Router} Vue Router instance
  */
-export function createAppRouter() {
+export function createAppRouter(i18n) {
     const router = createRouter({
         history: createWebHashHistory(),
         routes
     });
 
-    // Update document title on route change
-    router.afterEach((to) => {
-        if (to.meta.title) {
+    const updateTitle = (to) => {
+        if (to && to.meta && to.meta.titleKey) {
             const { settings } = useAppState();
             const prefix = settings.value?.library_code || settings.value?.library_name || '';
-            document.title = prefix ? `${prefix} - ${to.meta.title}` : to.meta.title;
+            const translatedTitle = i18n ? i18n.global.t(to.meta.titleKey) : to.meta.titleKey;
+            document.title = prefix ? `${prefix} - ${translatedTitle}` : translatedTitle;
         }
+    };
+
+    // Update document title on route change
+    router.afterEach((to) => {
+        updateTitle(to);
     });
+
+    // Update document title on language change
+    if (i18n) {
+        Vue.watch(i18n.global.locale, () => {
+            updateTitle(router.currentRoute.value);
+        });
+    }
 
     return router;
 }

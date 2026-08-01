@@ -16,6 +16,12 @@ const mockItemsResponse = [
 ];
 
 beforeEach(() => {
+    globalThis.__testTranslate = (key) => {
+        if (key === 'item.status_available') return 'Available';
+        if (key === 'catalog.status_en_cours') return 'En cours';
+        return key;
+    };
+
     vi.spyOn(apiClient, 'get').mockImplementation(async (endpoint) => {
         if (endpoint === '/catalog/bibliographic/search') {
             return mockSearchResponse;

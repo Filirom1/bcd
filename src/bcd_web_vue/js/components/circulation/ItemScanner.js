@@ -87,17 +87,17 @@ export default defineComponent({
             const physicalItems = record.physical_items || [];
             const authors = record.authors && record.authors.length > 0
                 ? record.authors.join(', ')
-                : 'Unknown author';
+                : t('catalog.unknown_author');
 
             if (props.mode === 'return') {
                 const onLoanItems = physicalItems.filter(item => item.status === 'on_loan');
                 const itemId = onLoanItems[0]?.item_id || 'N/A';
-                const copyInfo = onLoanItems.length > 1 ? ` (${onLoanItems.length} ex.)` : '';
+                const copyInfo = onLoanItems.length > 1 ? ` (${onLoanItems.length} ${t('catalog.copies_label')})` : '';
                 return `
                     <div>
-                        <div class="fw-bold">${itemId} - ${record.title || 'Unknown'}${copyInfo}</div>
-                        <small class="text-muted">${authors} · ${record.medium_type || 'Book'}</small>
-                        <span class="badge bg-warning text-dark ms-2">En cours</span>
+                        <div class="fw-bold">${itemId} - ${record.title || t('catalog.unknown_title')}${copyInfo}</div>
+                        <small class="text-muted">${authors} · ${record.medium_type || t('catalog.medium_book')}</small>
+                        <span class="badge bg-warning text-dark ms-2">${t('catalog.status_en_cours')}</span>
                     </div>
                 `;
             }
@@ -107,15 +107,15 @@ export default defineComponent({
             const firstAvailable = availableItems.length > 0 ? availableItems[0] : physicalItems[0];
             const itemId = firstAvailable ? firstAvailable.item_id : 'N/A';
             const totalItems = record.total_items || 0;
-            const copyInfo = totalItems > 1 ? ` (${totalItems} copies)` : '';
+            const copyInfo = totalItems > 1 ? ` (${totalItems} ${t('catalog.copies_label')})` : '';
             const statusBadge = availableItems.length > 0
-                ? '<span class="badge bg-success ms-2">Available</span>'
-                : '<span class="badge bg-secondary ms-2">On loan</span>';
+                ? `<span class="badge bg-success ms-2">${t('item.status_available')}</span>`
+                : `<span class="badge bg-secondary ms-2">${t('item.status_on_loan')}</span>`;
 
             return `
                 <div>
-                    <div class="fw-bold">${itemId} - ${record.title || 'Unknown'}${copyInfo}</div>
-                    <small class="text-muted">${authors} · ${record.medium_type || 'Book'}</small>
+                    <div class="fw-bold">${itemId} - ${record.title || t('catalog.unknown_title')}${copyInfo}</div>
+                    <small class="text-muted">${authors} · ${record.medium_type || t('catalog.medium_book')}</small>
                     ${statusBadge}
                 </div>
             `;

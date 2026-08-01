@@ -282,8 +282,8 @@ export default defineComponent({
 
         const formatBorrowerResult = (borrower) => {
             const badges = [];
-            if (borrower.blocked) badges.push('<span class="badge bg-danger ms-2">Bloqué</span>');
-            if (borrower.has_overdue) badges.push('<span class="badge bg-warning text-dark ms-2">En retard</span>');
+            if (borrower.blocked) badges.push(`<span class="badge bg-danger ms-2">${t('circulation.status_blocked')}</span>`);
+            if (borrower.has_overdue) badges.push(`<span class="badge bg-warning text-dark ms-2">${t('circulation.overdue')}</span>`);
             return `
                 <div>
                     <div class="fw-bold">${borrower.borrower_id} - ${borrower.first_name} ${borrower.last_name}</div>

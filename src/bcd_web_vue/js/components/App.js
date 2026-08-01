@@ -121,7 +121,7 @@ export default defineComponent({
                 class="loading-overlay"
             >
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Chargement...</span>
+                    <span class="visually-hidden">{{ t('common.loading') }}</span>
                 </div>
             </div>
 
@@ -136,9 +136,9 @@ export default defineComponent({
                 <router-view v-if="appReady" :key="route.path" />
                 <div v-else class="text-center p-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Chargement...</span>
+                        <span class="visually-hidden">{{ t('common.loading') }}</span>
                     </div>
-                    <p class="mt-3 text-muted">Chargement de l'application...</p>
+                    <p class="mt-3 text-muted">{{ t('app.loading_app') }}</p>
                 </div>
             </main>
 

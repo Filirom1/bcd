@@ -62,8 +62,8 @@ export default defineComponent({
                 <div>
                     <div class="fw-bold">${borrower.borrower_id} - ${borrower.first_name} ${borrower.last_name}</div>
                     <small class="text-muted">
-                        ${borrower.class_name || 'N/A'} •
-                        ${borrower.current_loans_count || 0}/${borrower.loan_limit || 0} loans
+                        ${borrower.class_name || t('common.not_available')} •
+                        ${borrower.current_loans_count || 0}/${borrower.loan_limit || 0} ${t('circulation.loans')}
                     </small>
                     ${badges.join('')}
                 </div>

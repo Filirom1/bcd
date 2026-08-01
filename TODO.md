@@ -181,7 +181,7 @@ Les endpoints de mise à jour du catalogue acceptent en outre un `dict` non stru
 - Les erreurs 400/404/409 restent distinguables des erreurs 500.
 - Chaque endpoint d'écriture possède un schéma de requête.
 
-### [ ] P1.2 — Découper les modules Python devenus monolithiques
+### [x] P1.2 — Découper les modules Python devenus monolithiques
 
 **Constat**
 
@@ -263,7 +263,7 @@ Un remplacement mécanique de tous les appels n'est pas possible sans compléter
 - les quatre accès aux ressources statiques sont clairement distingués des appels REST ;
 - la CI empêche la réintroduction d'un appel API direct.
 
-### [ ] P1.4 — Décomposer les gros composants Web sans introduire de build obligatoire
+### [x] P1.4 — Décomposer les gros composants Web sans introduire de build obligatoire
 
 **Constat**
 
@@ -355,7 +355,7 @@ Les refs module-level de `useAppState.js` constituent volontairement un état gl
 
 **Terminé quand** : un changement de langue déclenche une seule persistance, quel que soit le nombre de consommateurs montés.
 
-### [ ] P1.9 — Terminer l'externalisation i18n du Web UI
+### [x] P1.9 — Terminer l'externalisation i18n du Web UI
 
 **Constat**
 

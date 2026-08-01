@@ -101,7 +101,7 @@ async function initApp() {
         });
 
         // Create router
-        const router = createAppRouter();
+        const router = createAppRouter(i18n);
 
         // Create Vue app
         const app = createApp(App);
