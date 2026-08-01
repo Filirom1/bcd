@@ -31,12 +31,16 @@ tests/e2e/
 │   └── item_factory.py            # Create test items/records
 ├── helpers/                       # Utilities
 │   └── performance.py             # Performance measurement
-├── test_us1_circulation.py        # US1 tests (exemplary)
-├── test_us2_catalog.py            # TODO
-├── test_us3_borrowers.py          # TODO
-├── test_us6_settings.py           # TODO
-├── test_cross_cutting.py          # TODO
-└── test_performance.py            # TODO
+├── test_us1_circulation.py        # US1 tests (Circulation basics)
+├── test_us2_catalog.py            # US2 tests (Catalog search)
+├── test_us3_borrowers.py          # US3 tests (Borrower management)
+├── test_us4_cataloging.py         # US4 tests (Cataloging with ISBN lookup)
+├── test_us5_reports.py            # US5 tests (Reports and statistics)
+├── test_us6_settings.py           # US6 tests (System settings)
+├── test_class_management.py       # Class CRUD and teachers listing
+├── test_single_borrower_edit.py   # Borrower editing and blocking
+├── test_bulk_operations.py        # Bulk record operations
+└── test_autocomplete_circulation.py # Autocomplete and scanner helpers
 ```
 
 ---

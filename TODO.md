@@ -551,7 +551,7 @@ Les exceptions métier centralisées sont un bon socle, mais de nombreux `except
 
 **Terminé quand** : une erreur inattendue reste visible avec sa cause, tandis qu'une erreur métier conserve son code et son message attendus.
 
-### [ ] P2.4 — Nettoyer les artefacts et documentations de dette obsolètes
+### [x] P2.4 — Nettoyer les artefacts et documentations de dette obsolètes
 
 **Constat**
 
