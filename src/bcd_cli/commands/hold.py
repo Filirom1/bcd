@@ -449,7 +449,7 @@ def ready_holds(api_url: str):
                             expires_display = "[yellow]1 jour[/yellow]"
                         else:
                             expires_display = f"{days_left} jours"
-                    except:
+                    except (ValueError, TypeError):
                         expires_display = exp_date
                 else:
                     expires_display = "-"

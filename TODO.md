@@ -536,7 +536,7 @@ Pyright est en mode `basic`, mais les diagnostics les plus utiles au refactoring
 
 **Terminé quand** : le typage détecte réellement les signatures incompatibles introduites par un changement.
 
-### [ ] P2.3 — Uniformiser la politique d'exceptions et de journalisation
+### [x] P2.3 — Uniformiser la politique d'exceptions et de journalisation
 
 **Constat**
 

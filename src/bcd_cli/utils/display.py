@@ -57,7 +57,7 @@ def format_date(d: Any) -> str:
     if isinstance(d, str):
         try:
             d = datetime.fromisoformat(d.replace("Z", "+00:00"))
-        except:
+        except ValueError:
             return d
     if isinstance(d, datetime):
         d = d.date()

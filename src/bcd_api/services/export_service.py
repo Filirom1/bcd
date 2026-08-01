@@ -105,7 +105,7 @@ class ExportService:
             raise ExportFailedException(
                 reason=str(e),
                 details={"error_type": type(e).__name__}
-            )
+            ) from e
 
     def _get_csv_fieldnames(self) -> List[str]:
         """Get CSV column names in Dublin Core format.
@@ -341,7 +341,7 @@ class ExportService:
             raise ExportFailedException(
                 reason=str(e),
                 details={"error_type": type(e).__name__}
-            )
+            ) from e
 
     def _borrower_to_dict(self, borrower: Borrower) -> dict:
         """Convert Borrower to BCD borrower CSV row.

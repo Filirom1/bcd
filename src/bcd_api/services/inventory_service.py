@@ -335,7 +335,7 @@ def search_items(
         try:
             import json
             authors_list = json.loads(authors) if authors else None
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError):
             authors_list = None
 
         # Calculate age in days if acquisition_date exists
@@ -584,7 +584,7 @@ def get_items_csv(db: Session, item_ids: list[str]) -> str:
             import json
             authors = json.loads(record.authors) if record.authors else []
             first_author = authors[0] if authors else ""
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError, IndexError):
             first_author = ""
 
         # Format dates
