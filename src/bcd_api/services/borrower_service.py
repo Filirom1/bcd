@@ -724,21 +724,25 @@ def enrich_borrower(db: Session, borrower: Borrower, settings: Any = None) -> Bo
         settings = settings_service.get_settings(db)
 
     # Get current loans count
-    current_loans_count = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower.id,
-            CirculationTransaction.return_date.is_(None)
-        )
-    ).count()
+    if hasattr(db, "query"):
+        current_loans_count = db.query(CirculationTransaction).filter(
+            and_(
+                CirculationTransaction.borrower_id == borrower.id,
+                CirculationTransaction.return_date.is_(None)
+            )
+        ).count()
 
-    # Get overdue count
-    overdue_count = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower.id,
-            CirculationTransaction.return_date.is_(None),
-            CirculationTransaction.due_date < date.today()
-        )
-    ).count()
+        # Get overdue count
+        overdue_count = db.query(CirculationTransaction).filter(
+            and_(
+                CirculationTransaction.borrower_id == borrower.id,
+                CirculationTransaction.return_date.is_(None),
+                CirculationTransaction.due_date < date.today()
+            )
+        ).count()
+    else:
+        current_loans_count = getattr(borrower, "current_loans_count", 0)
+        overdue_count = getattr(borrower, "overdue_count", 0)
 
     # Determine loan limit based on role
     loan_limit = (
@@ -749,7 +753,7 @@ def enrich_borrower(db: Session, borrower: Borrower, settings: Any = None) -> Bo
 
     # Class details
     class_name, homeroom_teacher = None, None
-    if borrower.class_id:
+    if borrower.class_id and hasattr(db, "query"):
         class_obj = db.query(Class).filter(Class.id == borrower.class_id).first()
         if class_obj:
             class_name = class_obj.name

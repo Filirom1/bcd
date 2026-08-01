@@ -405,17 +405,19 @@ def get_borrower(
     settings = settings_service.get_settings(db)
     borrower_service.enrich_borrower(db, borrower, settings)
 
-    borrower_detailed = BorrowerDetailed(
-        **borrower.__dict__,
-        barcode=borrower.barcode,  # Computed property not in __dict__
-        current_loans_count=borrower.current_loans_count,
-        total_checkouts=details["total_checkouts"],
-        overdue_count=borrower.overdue_count,
-        loan_limit=borrower.loan_limit,
-        loan_limit_warning=borrower.loan_limit_warning,
-        class_name=borrower.class_name,
-        homeroom_teacher=borrower.homeroom_teacher,
-    )
+    borrower_dict = borrower.__dict__.copy()
+    borrower_dict.update({
+        "barcode": borrower.barcode,  # Computed property not in __dict__
+        "current_loans_count": details["current_loans_count"],
+        "total_checkouts": details["total_checkouts"],
+        "overdue_count": details["overdue_count"],
+        "loan_limit": borrower.loan_limit,
+        "loan_limit_warning": borrower.loan_limit_warning,
+        "class_name": borrower.class_name,
+        "homeroom_teacher": borrower.homeroom_teacher,
+    })
+
+    borrower_detailed = BorrowerDetailed(**borrower_dict)
 
     # If detail requested, include current loans only.
     # Full paginated history is available via GET /circulation/borrower/{id}/history
