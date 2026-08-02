@@ -89,16 +89,8 @@ def test_get_peers_various_configurations():
     mdns._peers.clear()
 
 
-def run(coro):
-    import asyncio
-    loop = asyncio.new_event_loop()
-    try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
-
-
-def test_listener_and_async_add_service():
+@pytest.mark.asyncio
+async def test_listener_and_async_add_service():
     listener = mdns._BCDServiceListener()
 
     # Test update_service simply calls add_service (mocking add_service)
@@ -128,7 +120,7 @@ def test_listener_and_async_add_service():
         # Mock request to complete immediately
         mock_info_instance.async_request = AsyncMock()
 
-        run(listener._async_add_service(None, mdns.BCD_SERVICE_TYPE, "remote_peer"))
+        await listener._async_add_service(None, mdns.BCD_SERVICE_TYPE, "remote_peer")
 
         assert "remote_peer" in mdns._peers
         peer = mdns._peers["remote_peer"]
@@ -141,14 +133,15 @@ def test_listener_and_async_add_service():
     mdns._own_service_name = None
 
 
-def test_mdns_lifecycle():
+@pytest.mark.asyncio
+async def test_mdns_lifecycle():
     # 1. start_mdns with empty library code does nothing
-    run(mdns.start_mdns("", 8888))
+    await mdns.start_mdns("", 8888)
     assert mdns._zeroconf is None
 
     # 2. start_mdns with local IP resolution error
     with patch("src.bcd_api.core.mdns.get_local_ip", side_effect=OSError("No network")):
-        run(mdns.start_mdns("my-lib", 8888))
+        await mdns.start_mdns("my-lib", 8888)
         assert mdns._zeroconf is None
 
     # 3. Successful start, stop, and restart of mdns
@@ -161,7 +154,7 @@ def test_mdns_lifecycle():
          patch("zeroconf.asyncio.AsyncZeroconf", return_value=mock_async_zc), \
          patch("zeroconf.asyncio.AsyncServiceBrowser") as mock_browser_class:
 
-        run(mdns.start_mdns("my-lib", 8888))
+        await mdns.start_mdns("my-lib", 8888)
 
         assert mdns._zeroconf is mock_async_zc
         assert mdns._service_info is not None
@@ -172,7 +165,7 @@ def test_mdns_lifecycle():
         mock_browser_class.assert_called_once()
 
         # Restart mdns
-        run(mdns.restart_mdns("new-lib", 9999))
+        await mdns.restart_mdns("new-lib", 9999)
         # Verify it unregistered old and registered new (or closed and opened new)
         assert mdns._service_info.port == 9999
 
@@ -181,7 +174,7 @@ def test_mdns_lifecycle():
         mock_browser_instance.async_cancel = AsyncMock()
         mdns._browser = mock_browser_instance
 
-        run(mdns.stop_mdns())
+        await mdns.stop_mdns()
 
         assert mdns._zeroconf is None
         assert mdns._service_info is None

@@ -158,7 +158,7 @@ def test_get_web_assets_invalid_mode():
 def test_render_spa_html_source(monkeypatch):
     """Test SPA HTML rendering in source mode (escaped code, no markers left)."""
     # Create fake spa-shell.html
-    shell_content = "<html><head><!-- BCD_HEAD_ASSETS --></head><body><h1>__BCD_LIBRARY_CODE__</h1><!-- BCD_BODY_ASSETS --></body></html>"
+    shell_content = "<html><head><!-- BCD_IMPORT_MAP --><!-- BCD_HEAD_ASSETS --></head><body><h1>__BCD_LIBRARY_CODE__</h1><!-- BCD_BODY_ASSETS --></body></html>"
 
     original_read_text = Path.read_text
 
@@ -193,13 +193,17 @@ def test_render_spa_html_source(monkeypatch):
     # Check that markers are replaced
     assert "<!-- BCD_HEAD_ASSETS -->" not in html_out
     assert "<!-- BCD_BODY_ASSETS -->" not in html_out
+    assert "<!-- BCD_IMPORT_MAP -->" not in html_out
     assert "__BCD_LIBRARY_CODE__" not in html_out
 
     # Check that app.js version-busting is added
     assert "app.js?v=1.2.3" in html_out
 
-    # Check that node_modules are loaded
+    # Check that development globals and the browser import map are loaded
     assert "/node_modules/vue/dist/vue.global.prod.js" in html_out
+    assert '"chart.js": "/node_modules/chart.js/dist/chart.js"' in html_out
+    assert '"@kurkle/color": "/node_modules/@kurkle/color/dist/color.esm.js"' in html_out
+    assert '"marked": "/node_modules/marked/lib/marked.esm.js"' in html_out
 
 
 def test_render_spa_html_build(monkeypatch):

@@ -195,6 +195,8 @@ export default defineComponent({
             { key: 'taux_rotation', label: t('reports.tauxRotation.label') },
         ]);
 
+        const printReport = () => window.print();
+
         watch(period, loadReport);
         onMounted(loadReport);
 
@@ -212,14 +214,14 @@ export default defineComponent({
             openRecord,
             PANEL_IDS, PANEL_LABELS, hiddenPanels, visiblePanels, showPanelDropdown,
             isPanelVisible, togglePanel, resetPanels,
-            pubYearItems,
+            pubYearItems, printReport,
             COL_IDS_MB, allColsMB, visibleCols, showColDropdown, isColVisible, toggleCol, resetCols,
         };
     },
 
     template: `
 <div>
-    <report-header :title="t('reports.mostBorrowed.title')" @print="() => window.print()" />
+    <report-header :title="t('reports.mostBorrowed.title')" @print="printReport" />
 
     <!-- Method + period selector -->
     <div class="card mb-3">

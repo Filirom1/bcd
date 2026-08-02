@@ -81,15 +81,20 @@ export default defineComponent({
             }
         };
 
-        watch([() => props.section, locale], fetchHelp, { immediate: true });
+        const renderedMarkdown = ref('');
 
-        const renderedMarkdown = computed(() => {
-            if (!rawMd.value) return '';
-            // Rewrite relative image paths to absolute paths for correct resolution
-            // ../images/file.png → /help/images/file.png
-            const mdWithAbsolutePaths = rawMd.value.replace(/\.\.\/(images\/[^)]+)/g, '/help/$1');
-            return marked.parse(mdWithAbsolutePaths);
-        });
+        watch(rawMd, async (value) => {
+            if (!value) {
+                renderedMarkdown.value = '';
+                return;
+            }
+            // Load Markdown only after help content has actually been fetched.
+            const { marked } = await import('marked');
+            const mdWithAbsolutePaths = value.replace(/\.\.\/(images\/[^)]+)/g, '/help/$1');
+            renderedMarkdown.value = marked.parse(mdWithAbsolutePaths);
+        }, { immediate: true });
+
+        watch([() => props.section, locale], fetchHelp, { immediate: true });
 
         return {
             t,

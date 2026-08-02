@@ -1,3 +1,5 @@
+import { getBarcodeLibrary } from '../vendor/jsbarcode-adapter.js';
+
 const { ref } = Vue;
 
 /**
@@ -18,7 +20,8 @@ export function useBarcodeRenderer() {
      * @param {boolean} options.displayValue - Show text below barcode
      * @param {number} options.margin - Margin around barcode
      */
-    const renderBarcodes = (options = {}) => {
+    const renderBarcodes = async (options = {}) => {
+        const JsBarcode = await getBarcodeLibrary();
         const defaults = {
             format: 'CODE39',
             width: 2,

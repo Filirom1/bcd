@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe('useBarcodeRenderer', () => {
-    it('calls JsBarcode on elements matching class with correct dataset', () => {
+    it('calls JsBarcode on elements matching class with correct dataset', async () => {
         const barcodeStub = vi.fn();
         vi.stubGlobal('JsBarcode', barcodeStub);
 
@@ -25,7 +25,7 @@ describe('useBarcodeRenderer', () => {
         `;
 
         const renderer = useBarcodeRenderer();
-        renderer.renderBarcodes({ format: 'CODE128', height: 40 });
+        await renderer.renderBarcodes({ format: 'CODE128', height: 40 });
 
         expect(barcodeStub).toHaveBeenCalledTimes(2);
         expect(barcodeStub).toHaveBeenNthCalledWith(

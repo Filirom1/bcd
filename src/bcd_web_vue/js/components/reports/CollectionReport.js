@@ -7,6 +7,7 @@
 
 const { defineComponent, ref, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
 const { useI18n } = VueI18n;
+import { Chart, BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip } from 'chart.js';
 import { apiClient } from '../../api/client.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -348,6 +349,8 @@ export default defineComponent({
             return p;
         };
 
+        const printReport = () => window.print();
+
         const loadStats = async () => {
             statsLoading.value = true;
             try {
@@ -508,7 +511,8 @@ export default defineComponent({
         };
 
         const rebuildCharts = () => {
-            if (typeof Chart === 'undefined' || !stats.value) return;
+            if (!stats.value) return;
+            Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
             destroyCharts();
 
             const pubEl = document.getElementById('chart-pub-year');
@@ -666,12 +670,13 @@ export default defineComponent({
             scoreHistogram, scoreHistMax, scoreRange, scoreBarColor, isScoreInRange,
             sliderScoreMin, sliderScoreMax, scoreFillStyle, clampScoreMin, clampScoreMax, applyScoreRange,
             crewScoreFilter,
+            printReport,
         };
     },
 
     template: `
 <div>
-    <report-header :title="t('reports.crew.title')" @print="() => window.print()" />
+    <report-header :title="t('reports.crew.title')" @print="printReport" />
 
     <!-- CREW method selector -->
     <div class="card mb-3">

@@ -54,7 +54,9 @@ try {
 
     // Replace the placeholders with production script entries
     // Head assets placeholder is deleted because Vite manages head styling injection automatically
-    let tempHtml = `${temporaryEntryMarker}\n${shellHtml.replace("<!-- BCD_HEAD_ASSETS -->", "")}`;
+    let tempHtml = `${temporaryEntryMarker}\n${shellHtml
+        .replace("<!-- BCD_IMPORT_MAP -->", "")
+        .replace("<!-- BCD_HEAD_ASSETS -->", "")}`;
     tempHtml = tempHtml.replace(
         "<!-- BCD_BODY_ASSETS -->",
         '<script type="module" src="/js/production-entry.js"></script>'

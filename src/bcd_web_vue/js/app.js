@@ -42,20 +42,20 @@ async function initApp() {
         // Load translation messages (direct fetch is justified as these are local static JSON resources)
         const [frMessages, enMessages] = await Promise.all([
             fetch('/locales/fr.json').then(async r => {
+                const text = await r.text();
                 if (!r.ok) throw new Error(`Failed to load fr.json: ${r.status}`);
                 try {
-                    return await r.json();
+                    return JSON.parse(text);
                 } catch (e) {
-                    const text = await r.text();
                     throw new Error(`Invalid JSON in fr.json: ${text.substring(0, 100)}`);
                 }
             }),
             fetch('/locales/en.json').then(async r => {
+                const text = await r.text();
                 if (!r.ok) throw new Error(`Failed to load en.json: ${r.status}`);
                 try {
-                    return await r.json();
+                    return JSON.parse(text);
                 } catch (e) {
-                    const text = await r.text();
                     throw new Error(`Invalid JSON in en.json: ${text.substring(0, 100)}`);
                 }
             })

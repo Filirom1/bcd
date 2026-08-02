@@ -27,10 +27,13 @@ describe('HelpPanel', () => {
             global: { mocks: { $t: key => key } }
         });
         await flushPromises();
+        await flushPromises();
 
         expect(fetchMock).toHaveBeenCalledWith('/help/fr/emprunter.md');
         expect(wrapper.vm.error).toBe(false);
-        expect(wrapper.vm.renderedMarkdown).toBe('<p>### Étape 1</p>');
+        await vi.waitFor(() => {
+            expect(wrapper.vm.renderedMarkdown).toBe('<h3>Étape 1</h3>\n');
+        });
     });
 
     it('updates help file content on language switch', async () => {

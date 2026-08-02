@@ -5,21 +5,23 @@
 
 const { createRouter, createWebHashHistory } = VueRouter;
 
-// Import all page components
+// Keep the two most common workflows in the initial bundle. Less frequent screens
+// are loaded on navigation so old machines do not parse the whole application at startup.
 import { useAppState } from './composables/useAppState.js';
 import CirculationPage from './pages/CirculationPage.js';
 import CatalogPage from './pages/CatalogPage.js';
-import CatalogingPage from './pages/CatalogingPage.js';
-import BorrowersPage from './pages/BorrowersPage.js';
 import ClassesPage from './pages/ClassesPage.js';
-import ReportsPage from './pages/ReportsPage.js';
-import CollectionsPage from './pages/CollectionsPage.js';
-import SettingsPage from './pages/SettingsPage.js';
-import PrintBorrowerReference from './pages/PrintBorrowerReference.js';
-import PrintStudentCards from './pages/PrintStudentCards.js';
-import PrintItemLabels from './pages/PrintItemLabels.js';
-import InventoryPage from './pages/InventoryPage.js';
-import OverdueNotices from './components/reports/OverdueNotices.js';
+
+const CatalogingPage = () => import('./pages/CatalogingPage.js');
+const BorrowersPage = () => import('./pages/BorrowersPage.js');
+const ReportsPage = () => import('./pages/ReportsPage.js');
+const CollectionsPage = () => import('./pages/CollectionsPage.js');
+const SettingsPage = () => import('./pages/SettingsPage.js');
+const PrintBorrowerReference = () => import('./pages/PrintBorrowerReference.js');
+const PrintStudentCards = () => import('./pages/PrintStudentCards.js');
+const PrintItemLabels = () => import('./pages/PrintItemLabels.js');
+const InventoryPage = () => import('./pages/InventoryPage.js');
+const OverdueNotices = () => import('./components/reports/OverdueNotices.js');
 
 // Route definitions
 const routes = [

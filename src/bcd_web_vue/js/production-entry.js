@@ -8,24 +8,22 @@ import "../css/main.css";
 import "../css/loading.css";
 import "../css/print-labels.css";
 
-// Import Bootstrap JS bundle (includes Popper.js, required for offcanvas help panel and dropdowns)
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
+// Only the Bootstrap behaviors used by the UI are loaded. Modal markup is
+// implemented in Vue; dropdowns and the help offcanvas use these modules.
+import "bootstrap/js/dist/dropdown.js";
+import "bootstrap/js/dist/offcanvas.js";
 
 // 2. Import core libraries
 import * as Vue from "vue";
 import * as VueRouter from "vue-router";
 import { createI18n, useI18n } from "vue-i18n";
-import { marked } from "marked";
-import JsBarcode from "jsbarcode";
-import { Chart } from "chart.js/auto"; // Use auto registration for full features
+// Feature-specific libraries are imported by the components that use them.
+// Vite tree-shakes these imports and keeps route-specific code in lazy chunks.
 
 // 3. Populate globalThis bridge BEFORE importing app.js
 globalThis.Vue = Vue;
 globalThis.VueRouter = VueRouter;
 globalThis.VueI18n = { createI18n, useI18n };
-globalThis.marked = marked;
-globalThis.JsBarcode = JsBarcode;
-globalThis.Chart = Chart;
 
 // 4. Dynamically import app.js to ensure globals are registered first
 import("./app.js").catch((err) => {

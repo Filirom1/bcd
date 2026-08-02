@@ -97,6 +97,18 @@ def render_spa_html(
     # For source (dev) mode, we load the spa-shell.html and dynamically inject dev assets
     shell_html = assets_config.html_path.read_text(encoding="utf-8")
 
+    import_map = """
+    <script type="importmap">
+    {
+        "imports": {
+            "chart.js": "/node_modules/chart.js/dist/chart.js",
+            "@kurkle/color": "/node_modules/@kurkle/color/dist/color.esm.js",
+            "marked": "/node_modules/marked/lib/marked.esm.js"
+        }
+    }
+    </script>
+"""
+
     head_assets = """
     <!-- Bootstrap 5.3.3 CSS -->
     <link href="/node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -137,6 +149,7 @@ def render_spa_html(
 """
 
     rendered = shell_html.replace("__BCD_LIBRARY_CODE__", escaped_code)
+    rendered = rendered.replace("<!-- BCD_IMPORT_MAP -->", import_map)
     rendered = rendered.replace("<!-- BCD_HEAD_ASSETS -->", head_assets)
     rendered = rendered.replace("<!-- BCD_BODY_ASSETS -->", body_assets)
 

@@ -79,18 +79,24 @@ def test_production_build_page_loads_and_is_functional(context, server_url: str)
     is_vue = page.evaluate("() => typeof Vue === 'object'")
     is_router = page.evaluate("() => typeof VueRouter === 'object'")
     is_i18n = page.evaluate("() => typeof VueI18n === 'object'")
-    is_marked = page.evaluate("() => typeof marked === 'function'")
-    is_barcode = page.evaluate("() => typeof JsBarcode === 'function'")
-    is_chart = page.evaluate("() => typeof Chart === 'function'")
 
     assert is_vue, "Vue is not globally available"
     assert is_router, "VueRouter is not globally available"
     assert is_i18n, "VueI18n is not globally available"
-    assert is_marked, "marked is not globally available"
-    assert is_barcode, "JsBarcode is not globally available"
-    assert is_chart, "Chart is not globally available"
+    # Chart.js and JsBarcode are intentionally lazy. Marked is loaded by the
+    # mounted HelpPanel, whose existing E2E coverage verifies its rendering.
+    assert page.evaluate("() => typeof Chart === 'undefined'")
+    assert page.evaluate("() => typeof JsBarcode === 'undefined'")
 
-    # 4. Verify Markdown Help Panel is functional (features marked)
+    # Lazy-loading contract: feature libraries must not be part of the initial
+    # checkout payload. Existing E2E tests cover the UI behavior; this test
+    # additionally checks the network boundary of the production build.
+    initial_urls = set(static_requests)
+    assert any("marked" in url for url in initial_urls)
+    assert not any("JsBarcode" in url for url in initial_urls)
+    assert not any("ReportsPage" in url for url in initial_urls)
+
+    # 4. Verify Markdown Help Panel is functional and loads Marked lazily.
     # The help button should be visible in the page header
     help_button = page.locator('button[data-bs-toggle="offcanvas"]').first
     expect(help_button).to_be_visible()
@@ -104,5 +110,6 @@ def test_production_build_page_loads_and_is_functional(context, server_url: str)
     markdown_content = panel.locator(".help-markdown")
     markdown_content.wait_for(timeout=5000)
     expect(markdown_content).to_be_visible()
+    assert any("marked" in url for url in static_requests)
     # Confirm it contains formatted HTML text translated to French (default locale)
     expect(markdown_content).to_contain_text("Étape")
