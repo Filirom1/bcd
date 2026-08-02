@@ -14,11 +14,26 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 
 def pytest_collection_modifyitems(config, items):
-    """Keep E2E tests out of fast suites unless explicitly requested."""
+    """Mark E2E tests and run them after tests that use pytest-asyncio.
+
+    ``sync_playwright`` owns an event loop for its session-scoped fixtures.
+    Keeping every E2E item at the end ensures that loop is never alive while
+    pytest-asyncio creates or tears down its own test loop.
+    """
     e2e = pytest.mark.e2e
+    regular_items = []
+    e2e_items = []
+
     for item in items:
         if "/tests/e2e/" in str(item.fspath):
             item.add_marker(e2e)
+
+        if item.get_closest_marker("e2e"):
+            e2e_items.append(item)
+        else:
+            regular_items.append(item)
+
+    items[:] = regular_items + e2e_items
 
 
 @pytest.fixture(scope="function")
