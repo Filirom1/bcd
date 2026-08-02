@@ -93,12 +93,7 @@ def get_settings(db: Session) -> SystemSettings:
     if not settings:
         raise NotFoundError("SystemSettings", "default")
 
-    # Backfill default rules if they are missing
-    if settings.catalog_call_number_rules is None:
-        settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
-        db.commit()
-        db.refresh(settings)
-
+    # Missing defaults are repaired during startup/migrations, not in a read path.
     return settings
 
 

@@ -210,25 +210,13 @@ def get_ready_holds(db: Session) -> List[Hold]:
     ).filter(Hold.status == "ready").order_by(Hold.available_date).all()
 
 
-def mark_hold_ready(
+def mark_hold_ready_in_transaction(
     db: Session,
     hold_id: int,
     expiration_days: int = DEFAULT_HOLD_EXPIRATION_DAYS
 ) -> Hold:
     """
-    Mark a hold as ready for pickup (item is now available).
-
-    Args:
-        db: Database session
-        hold_id: Hold ID
-        expiration_days: Days until hold expires
-
-    Returns:
-        Updated Hold object
-
-    Raises:
-        NotFoundError: If hold not found
-        ValidationError: If hold is not in waiting status
+    Mark a hold as ready for pickup (in-transaction helper, no commit).
     """
     hold = get_hold(db, hold_id)
 
@@ -239,24 +227,30 @@ def mark_hold_ready(
     hold.available_date = datetime.utcnow()
     hold.expiration_date = datetime.utcnow().date() + timedelta(days=expiration_days)
 
-    db.commit()
-    db.refresh(hold)
-
     return hold
 
 
-def fulfill_hold(db: Session, hold_id: int) -> None:
+def mark_hold_ready(
+    db: Session,
+    hold_id: int,
+    expiration_days: int = DEFAULT_HOLD_EXPIRATION_DAYS
+) -> Hold:
     """
-    Delete hold when item is checked out to borrower.
-    No history is kept to save database space.
+    Mark a hold as ready for pickup (item is now available).
+    """
+    try:
+        hold = mark_hold_ready_in_transaction(db, hold_id, expiration_days)
+        db.commit()
+        db.refresh(hold)
+        return hold
+    except Exception:
+        db.rollback()
+        raise
 
-    Args:
-        db: Database session
-        hold_id: Hold ID
 
-    Raises:
-        NotFoundError: If hold not found
-        ValidationError: If hold is not ready
+def fulfill_hold_in_transaction(db: Session, hold_id: int) -> None:
+    """
+    Delete hold when item is checked out (in-transaction helper, no commit).
     """
     hold = get_hold(db, hold_id)
 
@@ -270,20 +264,24 @@ def fulfill_hold(db: Session, hold_id: int) -> None:
 
     # Delete the hold instead of marking as fulfilled
     db.delete(hold)
-    db.commit()
 
     # Reorder queue for this bibliographic record
-    _reorder_queue_after_removal(db, bibliographic_record_id, queue_position)
+    _reorder_queue_after_removal_in_transaction(db, bibliographic_record_id, queue_position)
 
 
-def cancel_hold(db: Session, hold_id: int) -> None:
+def fulfill_hold(db: Session, hold_id: int) -> None:
+    """Delete a hold as an autonomous transaction."""
+    try:
+        fulfill_hold_in_transaction(db, hold_id)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+
+def cancel_hold_in_transaction(db: Session, hold_id: int) -> None:
     """
-    Delete a hold (cancellation).
-    No history is kept to save database space.
-
-    Args:
-        db: Database session
-        hold_id: Hold ID
+    Delete a hold (cancellation) (in-transaction helper, no commit).
     """
     hold = get_hold(db, hold_id)
 
@@ -295,24 +293,28 @@ def cancel_hold(db: Session, hold_id: int) -> None:
 
     # Delete the hold instead of marking as cancelled
     db.delete(hold)
-    db.commit()
 
     # Reorder queue
-    _reorder_queue_after_removal(db, bibliographic_record_id, queue_position)
+    _reorder_queue_after_removal_in_transaction(db, bibliographic_record_id, queue_position)
 
 
-def _reorder_queue_after_removal(
+def cancel_hold(db: Session, hold_id: int) -> None:
+    """Delete a hold as an autonomous transaction."""
+    try:
+        cancel_hold_in_transaction(db, hold_id)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+
+def _reorder_queue_after_removal_in_transaction(
     db: Session,
     bibliographic_record_id: int,
     removed_position: int
 ):
     """
-    Reorder queue positions after a hold is removed/fulfilled/cancelled.
-
-    Args:
-        db: Database session
-        bibliographic_record_id: Bibliographic record ID
-        removed_position: Position of removed hold
+    Reorder queue positions (in-transaction helper, no commit).
     """
     # Get all waiting holds with position > removed_position
     holds_to_reorder = db.query(Hold).filter(
@@ -327,26 +329,26 @@ def _reorder_queue_after_removal(
     for hold in holds_to_reorder:
         hold.queue_position -= 1
 
+
+def _reorder_queue_after_removal(
+    db: Session,
+    bibliographic_record_id: int,
+    removed_position: int
+):
+    """
+    Reorder queue positions after a hold is removed/fulfilled/cancelled.
+    """
+    _reorder_queue_after_removal_in_transaction(db, bibliographic_record_id, removed_position)
     db.commit()
 
 
-def auto_fill_holds_on_return(
+def auto_fill_holds_on_return_in_transaction(
     db: Session,
     bibliographic_record_id: int,
     expiration_days: int = DEFAULT_HOLD_EXPIRATION_DAYS
 ) -> Optional[Hold]:
     """
-    Automatically mark the next waiting hold as ready when an item is returned.
-
-    This should be called by the circulation service when an item is returned.
-
-    Args:
-        db: Database session
-        bibliographic_record_id: Bibliographic record ID of returned item
-        expiration_days: Days until hold expires
-
-    Returns:
-        Hold that was marked ready, or None if no waiting holds
+    Automatically mark the next waiting hold as ready (in-transaction helper, no commit).
     """
     # Get first waiting hold (position 1)
     next_hold = db.query(Hold).filter(
@@ -358,6 +360,27 @@ def auto_fill_holds_on_return(
     ).first()
 
     if next_hold:
-        return mark_hold_ready(db, next_hold.id, expiration_days)
+        return mark_hold_ready_in_transaction(db, next_hold.id, expiration_days)
 
     return None
+
+
+def auto_fill_holds_on_return(
+    db: Session,
+    bibliographic_record_id: int,
+    expiration_days: int = DEFAULT_HOLD_EXPIRATION_DAYS
+) -> Optional[Hold]:
+    """
+    Automatically mark the next waiting hold as ready when an item is returned.
+    """
+    try:
+        hold = auto_fill_holds_on_return_in_transaction(
+            db, bibliographic_record_id, expiration_days
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    if hold:
+        db.refresh(hold)
+    return hold

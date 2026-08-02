@@ -885,3 +885,250 @@ class TestReturnItemsIncludesShelfLocation:
         returned = response.items[0]
         assert "shelf_location" in returned
         assert returned["shelf_location"] is None
+
+
+class TestPhase0CharacterizationScenarios:
+    """Phase 0: Characterization and robustness tests for circulation."""
+
+    def test_checkout_items_atomic_rollback(
+        self, db_session, test_borrower_student, test_item_available, test_item_available_2, multiple_borrowers
+    ):
+        """
+        GIVEN: Borrower exists, and two items (one available, one already checked out to someone else)
+        WHEN: Attempting a multi-item checkout
+        THEN: The entire transaction is rolled back, and the available item remains available
+        """
+        # Arrange - Checkout the second item to another borrower
+        circulation_service.checkout_items(
+            db=db_session,
+            borrower_id=multiple_borrowers[0].borrower_id,
+            item_ids=[test_item_available_2.item_id]
+        )
+        assert test_item_available_2.status == "on_loan"
+        assert test_item_available.status == "available"
+
+        # Act & Assert - Try to check out both to our main borrower
+        with pytest.raises(ConflictError):
+            circulation_service.checkout_items(
+                db=db_session,
+                borrower_id=test_borrower_student.borrower_id,
+                item_ids=[test_item_available.item_id, test_item_available_2.item_id]
+            )
+
+        # Verify that the available item is still available (atomic rollback check)
+        db_session.refresh(test_item_available)
+        assert test_item_available.status == "available"
+
+    def test_checkout_duplicate_item_ids_rejected(
+        self, db_session, test_borrower_student, test_item_available
+    ):
+        """
+        GIVEN: Borrower exists and one item is available
+        WHEN: Attempting a checkout with a duplicate item_id in the list
+        THEN: The operation fails or handles it cleanly (we reject duplicate scanning of same ID)
+        """
+        # Act & Assert
+        from src.bcd_api.core.exceptions import ConflictError, ValidationError
+        with pytest.raises((ConflictError, ValidationError)):
+            circulation_service.checkout_items(
+                db=db_session,
+                borrower_id=test_borrower_student.borrower_id,
+                item_ids=[test_item_available.item_id, test_item_available.item_id]
+            )
+
+    def test_renew_blocked_by_active_hold_waiting(
+        self, db_session, test_borrower_student, test_item_available, multiple_borrowers
+    ):
+        """
+        GIVEN: An item is checked out to borrower A, and a hold (waiting) is placed on it by borrower B
+        WHEN: Borrower A attempts to renew the loan
+        THEN: The renewal is blocked because there is a waiting reservation
+        """
+        from src.bcd_api.services import hold_service
+        from src.bcd_api.core.exceptions import ItemHasHoldsException, ValidationError
+
+        # Arrange: Checkout item to main borrower
+        circulation_service.checkout_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[test_item_available.item_id]
+        )
+
+        # Place a waiting hold on this bibliographic record by another borrower
+        hold_service.create_hold(
+            db=db_session,
+            borrower_id=multiple_borrowers[0].id,
+            bibliographic_record_id=test_item_available.bibliographic_record_id,
+            created_by="librarian"
+        )
+
+        # Act
+        response = circulation_service.renew_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[test_item_available.item_id]
+        )
+
+        # Assert: The renewal must fail
+        assert response.failed_count == 1
+        assert response.renewed_count == 0
+        reason_lower = response.failed[0]["reason"].lower()
+        assert "hold" in reason_lower or "reservation" in reason_lower or "réservation" in reason_lower
+
+    def test_renew_blocked_by_active_hold_ready(
+        self, db_session, test_borrower_student, test_item_available, multiple_borrowers
+    ):
+        """
+        GIVEN: An item is checked out to borrower A, and a hold (ready) is placed on it by borrower B
+        WHEN: Borrower A attempts to renew the loan
+        THEN: The renewal is blocked because there is a ready reservation
+        """
+        from src.bcd_api.services import hold_service
+
+        # Arrange: Checkout item to main borrower
+        circulation_service.checkout_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[test_item_available.item_id]
+        )
+
+        # Create a ready hold for another borrower
+        hold = hold_service.create_hold(
+            db=db_session,
+            borrower_id=multiple_borrowers[0].id,
+            bibliographic_record_id=test_item_available.bibliographic_record_id,
+            created_by="librarian"
+        )
+        # Mark hold as ready
+        hold_service.mark_hold_ready(db=db_session, hold_id=hold.id)
+
+        # Act
+        response = circulation_service.renew_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[test_item_available.item_id]
+        )
+
+        # Assert: The renewal must fail
+        assert response.failed_count == 1
+        assert response.renewed_count == 0
+        reason_lower = response.failed[0]["reason"].lower()
+        assert "hold" in reason_lower or "reservation" in reason_lower or "réservation" in reason_lower
+
+
+class TestRefactoredCirculationSafety:
+    """Regression tests for transaction and policy boundaries."""
+
+    def test_return_hold_promotion_failure_rolls_back(
+        self, db_session, test_borrower_student, test_item_available,
+        multiple_borrowers, monkeypatch,
+    ):
+        from src.bcd_api.models.circulation import CirculationTransaction
+        from src.bcd_api.services import hold_service
+
+        item_id = test_item_available.item_id
+        circulation_service.checkout_items(
+            db_session, test_borrower_student.borrower_id, [item_id]
+        )
+        hold_service.create_hold(
+            db_session, multiple_borrowers[0].id,
+            test_item_available.bibliographic_record_id, "librarian",
+        )
+
+        def fail_promotion(*args, **kwargs):
+            raise RuntimeError("promotion failed")
+
+        monkeypatch.setattr(
+            hold_service, "auto_fill_holds_on_return_in_transaction", fail_promotion
+        )
+        with pytest.raises(RuntimeError, match="promotion failed"):
+            circulation_service.return_items(db_session, [item_id])
+
+        from src.bcd_api.models.item import Item
+        item = db_session.query(Item).filter(Item.item_id == item_id).one()
+        assert item.status == "on_loan"
+        assert db_session.query(CirculationTransaction).filter(
+            CirculationTransaction.item_id == item.id,
+            CirculationTransaction.return_date.is_(None),
+        ).count() == 1
+
+    def test_renew_unknown_borrower_raises_not_found(self, db_session, test_item_available):
+        from src.bcd_api.core.exceptions import NotFoundException
+
+        with pytest.raises(NotFoundException):
+            circulation_service.renew_items(
+                db_session, "UNKNOWN-BORROWER", [test_item_available.item_id]
+            )
+
+    def test_renew_technical_failure_rolls_back(
+        self, db_session, test_borrower_student, test_item_available, monkeypatch,
+    ):
+        from src.bcd_api.models.circulation import CirculationTransaction
+
+        item_id = test_item_available.item_id
+        circulation_service.checkout_items(
+            db_session, test_borrower_student.borrower_id, [item_id]
+        )
+        transaction = db_session.query(CirculationTransaction).filter(
+            CirculationTransaction.item_id == test_item_available.id,
+            CirculationTransaction.return_date.is_(None),
+        ).one()
+        old_due_date = transaction.due_date
+        old_count = transaction.renewal_count
+        original_flush = db_session.flush
+
+        def fail_flush(*args, **kwargs):
+            raise RuntimeError("database failure")
+
+        monkeypatch.setattr(db_session, "flush", fail_flush)
+        with pytest.raises(RuntimeError, match="database failure"):
+            circulation_service.renew_items(
+                db_session, test_borrower_student.borrower_id, [item_id]
+            )
+        monkeypatch.setattr(db_session, "flush", original_flush)
+        from src.bcd_api.models.item import Item
+        transaction = db_session.query(CirculationTransaction).join(Item).filter(
+            Item.item_id == item_id,
+            CirculationTransaction.return_date.is_(None),
+        ).one()
+        assert transaction.due_date == old_due_date
+        assert transaction.renewal_count == old_count
+
+    def test_checkout_two_copies_consumes_hold_once(
+        self, db_session, test_borrower_student, test_item_available, test_item_available_2,
+    ):
+        from src.bcd_api.models.hold import Hold
+        from src.bcd_api.services import hold_service
+
+        test_item_available_2.bibliographic_record_id = test_item_available.bibliographic_record_id
+        db_session.commit()
+        hold_service.create_hold(
+            db_session, test_borrower_student.id,
+            test_item_available.bibliographic_record_id, "librarian",
+        )
+        circulation_service.checkout_items(
+            db_session, test_borrower_student.borrower_id,
+            [test_item_available.item_id, test_item_available_2.item_id],
+        )
+        assert db_session.query(Hold).filter(
+            Hold.borrower_id == test_borrower_student.id,
+            Hold.bibliographic_record_id == test_item_available.bibliographic_record_id,
+            Hold.status.in_(["waiting", "ready"]),
+        ).count() == 0
+
+    def test_current_loans_can_renew_false_when_title_has_hold(
+        self, db_session, test_borrower_student, test_item_available, multiple_borrowers,
+    ):
+        from src.bcd_api.services import hold_service
+
+        circulation_service.checkout_items(
+            db_session, test_borrower_student.borrower_id, [test_item_available.item_id]
+        )
+        hold_service.create_hold(
+            db_session, multiple_borrowers[0].id,
+            test_item_available.bibliographic_record_id, "librarian",
+        )
+        loans = circulation_service.get_borrower_current_loans(
+            db_session, test_borrower_student.borrower_id
+        )
+        assert loans[0]["can_renew"] is False

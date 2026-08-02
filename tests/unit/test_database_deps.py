@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from sqlalchemy import text
 
 from src.bcd_api.core import database, deps
@@ -25,14 +26,18 @@ def test_get_settings_returns_existing():
     db.add.assert_not_called()
 
 
-def test_get_settings_creates_default_when_missing():
+def test_get_settings_raises_when_missing():
     db = MagicMock()
     db.query.return_value.filter.return_value.first.return_value = None
-    result = deps.get_settings(db)
-    assert result.id == 1
-    db.add.assert_called_once_with(result)
-    db.commit.assert_called_once()
-    db.refresh.assert_called_once_with(result)
+
+    from src.bcd_api.core.exceptions import NotFoundError
+
+    with pytest.raises(NotFoundError):
+        deps.get_settings(db)
+
+    db.add.assert_not_called()
+    db.commit.assert_not_called()
+    db.refresh.assert_not_called()
 
 
 def test_database_engine_supports_sqlite_queries():

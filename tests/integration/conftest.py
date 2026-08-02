@@ -43,11 +43,10 @@ def db_session(db_engine):
 
     Uses transaction rollback strategy to ensure database is clean between tests.
     """
-    # Create a connection and begin a transaction
+    # Bind a session to a dedicated connection. The service layer owns
+    # commit/rollback boundaries, and db_engine is function-scoped, so the
+    # engine itself provides test isolation.
     connection = db_engine.connect()
-    transaction = connection.begin()
-
-    # Create session bound to this connection
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=connection)
     session = SessionLocal()
 
@@ -72,9 +71,7 @@ def db_session(db_engine):
 
     yield session
 
-    # Rollback transaction to clean database state
     session.close()
-    transaction.rollback()
     connection.close()
 
 

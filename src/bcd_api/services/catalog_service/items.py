@@ -11,7 +11,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 
 from ....shared.constants import IDFormat
-from ...core.exceptions import ConflictError, NotFoundError, NotFoundException, ValidationError
+from ...core.exceptions import NotFoundError, NotFoundException
 from ...models.bibliographic_record import BiblographicRecord
 from ...models.item import Item
 from ...schemas.item import ItemCreate
@@ -106,22 +106,27 @@ def get_items_for_bibliographic_record(
         }
 
         if item.status == "on_loan":
+            from ..circulation import policy as circ_policy
+            from ..circulation.query_filters import active_loan_predicate
+
             active_loan = db.query(CirculationTransaction).filter(
                 and_(
                     CirculationTransaction.item_id == item.id,
-                    CirculationTransaction.return_date.is_(None)
+                    active_loan_predicate()
                 )
             ).options(
                 joinedload(CirculationTransaction.borrower)
             ).first()
 
             if active_loan:
+                is_overdue_val = circ_policy.is_overdue(active_loan.due_date, date.today())
+                days_overdue_val = circ_policy.overdue_days(active_loan.due_date, date.today())
                 item_dict["current_loan"] = {
                     "borrower_id": active_loan.borrower.borrower_id,
                     "borrower_name": active_loan.borrower.full_name,
                     "due_date": active_loan.due_date.strftime('%d/%m/%Y'),
-                    "is_overdue": active_loan.due_date < date.today(),
-                    "days_overdue": (date.today() - active_loan.due_date).days if active_loan.due_date < date.today() else 0
+                    "is_overdue": is_overdue_val,
+                    "days_overdue": days_overdue_val
                 }
 
         result.append(item_dict)
@@ -165,11 +170,12 @@ def _check_item_has_active_loan(db: Session, item: Item) -> Optional[dict]:
     Check if an item is currently on loan.
     """
     from ...models.circulation import CirculationTransaction
+    from ..circulation.query_filters import active_loan_predicate
 
     active_loan = db.query(CirculationTransaction).filter(
         and_(
             CirculationTransaction.item_id == item.id,
-            CirculationTransaction.return_date.is_(None)
+            active_loan_predicate()
         )
     ).first()
 

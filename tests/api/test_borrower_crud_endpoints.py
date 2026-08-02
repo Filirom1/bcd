@@ -137,7 +137,9 @@ def test_get_borrower_endpoint(monkeypatch):
     mock_settings_service.get_settings.return_value = SimpleNamespace(
         loan_limit_teacher=5,
         loan_limit_default=2,
-        loan_limit_warning=1
+        loan_limit_warning=1,
+        loan_duration_days=14,
+        renewal_limit=2,
     )
     monkeypatch.setitem(sys.modules, "bcd_api.services.settings_service", mock_settings_service)
     monkeypatch.setitem(sys.modules, "src.bcd_api.services.settings_service", mock_settings_service)
