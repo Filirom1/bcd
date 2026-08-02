@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCD</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <!-- BCD_HEAD_ASSETS -->
+</head>
+<body>
+    <div id="app">
+        <!-- Beautiful Loading Screen -->
+        <div class="bcd-loading">
+            <!-- Loading Content -->
+            <div class="bcd-loading-content">
+                <!-- Animated Book Icon -->
+                <div class="bcd-logo-container">
+                    <i class="bi bi-book bcd-book-icon"></i>
+                </div>
+
+                <!-- App Title (injected server-side from library_code) -->
+                <h1 class="bcd-title">__BCD_LIBRARY_CODE__</h1>
+                <p class="bcd-subtitle">Bibliothèque que Claude a Développée</p>
+
+                <!-- Progress Bar -->
+                <div class="bcd-loader">
+                    <div class="bcd-loader-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- BCD_BODY_ASSETS -->
+</body>
+</html>

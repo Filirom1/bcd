@@ -59,9 +59,8 @@ tests/js/
 Create a domain directory only when its first test is added. Do not create an
 alternative `unit/`, `spec/`, `__tests__/`, or source-adjacent test tree.
 
-The application remains build-free and keeps `src/bcd_web_vue/vendor/` for offline
-execution. Vitest, JSDOM, Vue, and Vue Test Utils are development-only dependencies.
-The test Vue version is deliberately aligned with the vendored bundle.
+The application is built for production using Vite (via `npm run build:web`). Vitest, JSDOM, Vue, and Vue Test Utils are development-only dependencies.
+The test Vue version is deliberately aligned with the npm package version used in the production build.
 
 ## Test placement and naming
 

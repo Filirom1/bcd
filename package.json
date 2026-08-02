@@ -7,13 +7,27 @@
     "test:fast": "npm run test:js && pytest tests -m 'not e2e and not slow'",
     "test:js": "vitest run",
     "test:js:watch": "vitest",
-    "test:js:coverage": "vitest run --coverage"
+    "test:js:coverage": "vitest run --coverage",
+    "build:web": "node scripts/build_web.mjs",
+    "verify:web-build": "npm run build:web && node scripts/verify_web_build.mjs",
+    "web": "python scripts/web_ui.py",
+    "test:web-production": "python scripts/web_ui.py --e2e"
+  },
+  "dependencies": {
+    "bootstrap": "5.3.3",
+    "bootstrap-icons": "1.11.3",
+    "chart.js": "4.4.3",
+    "jsbarcode": "3.11.6",
+    "marked": "9.1.6",
+    "vue": "3.4.21",
+    "vue-i18n": "9.14.5",
+    "vue-router": "4.2.5"
   },
   "devDependencies": {
-    "@vue/test-utils": "2.4.6",
     "@vitest/coverage-v8": "4.1.10",
-    "jsdom": "^25.0.1",
-    "vitest": "4.1.10",
-    "vue": "3.4.21"
+    "@vue/test-utils": "2.4.6",
+    "jsdom": "25.0.1",
+    "vite": "8.2.0",
+    "vitest": "4.1.10"
   }
 }

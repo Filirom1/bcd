@@ -1,6 +1,6 @@
 """Application configuration using Pydantic Settings."""
 
-from typing import List
+from typing import List, Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -111,6 +111,10 @@ class Settings(BaseSettings):
     # UI Mode (portable mode only)
     # UI_MODE: "webview" (native window), "browser" (system browser), or "kids" (launch Kids client)
     ui_mode: str = "webview"
+
+    # Web Assets Mode
+    # WEB_ASSETS_MODE: "source" (development ESM) or "build" (Vite production build)
+    web_assets_mode: Literal["source", "build"] = "source"
 
     # Client Only Mode
     # If True, does not start the local API server, only launches the specified UI client

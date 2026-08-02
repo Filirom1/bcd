@@ -1,8 +1,8 @@
 import { afterEach } from 'vitest';
 import * as Vue from 'vue';
 
-// The production SPA loads Vue, Vue Router, and Vue I18n as vendored browser
-// globals. Recreate the public contracts used by modules in the test runtime.
+// The source SPA expects Vue, Vue Router, and Vue I18n browser globals.
+// Recreate the public contracts used by modules in the test runtime.
 globalThis.Vue = Vue;
 globalThis.VueRouter = {
     useRoute: () => ({ query: {} }),

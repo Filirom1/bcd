@@ -67,13 +67,13 @@ This project validates that AI-assisted development with proper specifications c
 - Python 3.11+ (required for modern type hints)
 
 **Frontend**:
-- Vue 3.4.21 (reactive framework, vendored locally)
+- Vue 3.4.21 (reactive framework, managed via npm and loaded natively in dev)
 - Vue Router 4.2.5 (client-side routing)
-- Vue I18n 9.9.1 (internationalization)
+- Vue I18n 9.14.5 (internationalization)
 - Bootstrap 5.3.3 + Bootstrap Icons 1.11.3 (UI framework)
 - JsBarcode 3.11.6 (client-side barcode rendering)
-- No build tools (ES6 modules, direct browser support)
-- All dependencies vendored in `src/bcd_web_vue/vendor/` — works fully offline
+- No build tools in dev (ES6 modules, direct browser support via Node modules mounting)
+- Vite used exclusively for high-performance minified production builds (output to `build/web`)
 
 **Database**:
 - SQLite (development and small deployments)
@@ -98,7 +98,7 @@ bcd/
 │   ├── bcd_cli/              # CLI client
 │   │   └── commands/         # CLI command implementations
 │   │
-│   ├── bcd_web_vue/          # Vue 3 web UI
+│   ├── bcd_web_vue/          # Vue 3 web UI (source files)
 │   │   ├── js/
 │   │   │   ├── api/          # API client
 │   │   │   ├── components/   # Vue components
@@ -107,7 +107,7 @@ bcd/
 │   │   │   └── pages/        # Page components
 │   │   ├── locales/          # i18n translations
 │   │   ├── css/              # Styles
-│   │   └── vendor/           # Vendored JS/CSS deps (offline, see vendor.json)
+│   │   └── templates/        # SPA shell templates
 │   │
 │   └── shared/               # Shared constants/validators
 │
@@ -120,7 +120,6 @@ bcd/
 │
 ├── data/                     # Sample and fixture data
 ├── docs/                     # Documentation
-├── vendor.json               # Frontend dependency manifest (versions + download URLs)
 ├── specs/                    # Spec-kit specifications
 │   ├── 001-school-library-system/
 │   ├── 002-tauri-desktop-app/
@@ -151,6 +150,9 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install all dependencies (including dev, CLI, converters)
 pip install -e ".[dev]"
+
+# Install Web UI dependencies (required once for source mode, tests, and builds)
+npm ci
 
 # Initialize database
 alembic upgrade head
@@ -459,16 +461,28 @@ def checkout_item(db: Session, borrower_id: str, item_id: str):
 
 **No Build Tools**: Components use ES6 modules loaded directly by the browser.
 
-**Vendor Dependencies** (locally hosted in `src/bcd_web_vue/vendor/`, works offline):
+**Dependencies** (managed via npm, works fully offline in production package):
 - Vue 3.4.21
 - Vue Router 4.2.5
-- Vue I18n 9.9.1
+- Vue I18n 9.14.5
 - Bootstrap 5.3.3 + Bootstrap Icons 1.11.3
 - JsBarcode 3.11.6
 
-To update a dependency, edit `vendor.json` and re-run:
+The development environment is build-free and maps `node_modules` paths natively.
+To generate the optimized production assets inside `build/web/`, run:
 ```bash
-python scripts/download-vendor.py
+npm run build:web
+```
+And to verify the build structure:
+```bash
+npm run verify:web-build
+```
+
+Use the unified workflow for production checks and manual testing:
+```bash
+npm run web -- --manual             # FastAPI serves build/web/ at 127.0.0.1:8000
+npm run web -- --e2e                # production Playwright smoke test
+npm run web -- --portable --manual  # package and launch the PyInstaller executable
 ```
 
 ### Component Structure

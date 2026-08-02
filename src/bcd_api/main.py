@@ -16,6 +16,7 @@ from src.bcd_api.api.v1.router import api_router
 from src.bcd_api.core import mdns
 from src.bcd_api.core.auth import DigestAuthMiddleware, is_auth_enabled
 from src.bcd_api.core.config import settings
+from src.bcd_api.core.web_assets import get_web_assets, render_spa_html
 from src.bcd_api.core.exceptions import BCDException
 from src.bcd_api.core.logging_config import setup_logging
 from src.bcd_api.services.bnf_service import configure as configure_bnf
@@ -58,18 +59,20 @@ except ImportError:
         return Path(".")
 
 
-# Web UI directory (Vue 3 implementation)
-# Set based on portable mode or development mode
+# Web UI configuration and help assets
 if is_portable():
-    # In portable mode, web UI is bundled in _internal or next to executable
-    web_resource = get_bundled_resource("bcd_web_vue")
-    WEB_DIR = str(web_resource) if web_resource else "bcd_web_vue"
     # Help documentation is bundled separately
     help_resource = get_bundled_resource("docs/help")
     HELP_DIR = str(help_resource) if help_resource else "docs/help"
 else:
-    WEB_DIR = "src/bcd_web_vue"
     HELP_DIR = "docs/help"
+
+# Resolve web assets mode & paths
+web_assets_config = get_web_assets(
+    is_portable_fn=is_portable,
+    config_settings=settings,
+    bundled_resource_fn=get_bundled_resource,
+)
 
 
 @asynccontextmanager
@@ -133,33 +136,31 @@ app.add_middleware(DigestAuthMiddleware)
 async def add_cache_headers(request: Request, call_next):
     """Add Cache-Control headers for static assets.
 
-    Vendor files never change between releases — tell WebView2/browsers to
-    cache them for a full year (immutable).  App JS and locale files may
-    change on update, so we allow 1 hour before revalidation.
-    This avoids redundant HDD seeks on every app launch after the first.
+    In source (development) mode, disable caching for all static, locales,
+    node_modules, and covers assets to avoid stale file issues.
 
-    In development mode, disable caching to avoid stale file issues.
+    In built (production) mode, assets with content hashes are cached forever,
+    while locales and other assets use specific revalidation and expiration rules.
     """
     response = await call_next(request)
     path = request.url.path
 
-    # In development, disable caching for all static files
-    if settings.environment == "development":
-        if path.startswith(("/static/", "/locales/", "/assets/", "/covers/")):
+    if web_assets_config.is_source:
+        if path.startswith(("/static/", "/locales/", "/node_modules/", "/covers/")):
             response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             response.headers["Pragma"] = "no-cache"
             response.headers["Expires"] = "0"
     else:
-        # Production caching behavior
-        if path.startswith("/static/vendor/"):
+        # Production (built) caching behavior
+        if path.startswith("/static/assets/"):
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         elif path.startswith("/locales/"):
             # Always revalidate locale files so translation updates apply immediately.
-            # ETags (from StaticFiles) allow 304 responses — no extra bandwidth.
             response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        elif path.startswith("/static/favicon."):
+            response.headers["Cache-Control"] = "public, max-age=3600"
         elif (
             path.startswith("/static/")
-            or path.startswith("/assets/")
             or path.startswith("/covers/")
         ):
             response.headers["Cache-Control"] = "public, max-age=3600"
@@ -339,15 +340,12 @@ async def health_check():
 
 
 # Mount static assets (JS, CSS, images, etc.)
-_web_dir = Path(WEB_DIR)
-app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
-app.mount("/locales", StaticFiles(directory=str(_web_dir / "locales")), name="locales")
-try:
-    _assets_dir = _web_dir / "assets"
-    if _assets_dir.is_dir():
-        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="assets")
-except OSError:
-    pass
+app.mount("/static", StaticFiles(directory=str(web_assets_config.web_dir)), name="static")
+app.mount("/locales", StaticFiles(directory=str(web_assets_config.locales_dir)), name="locales")
+
+# Mount node_modules only in dev (source) mode and non-portable
+if web_assets_config.is_source:
+    app.mount("/node_modules", StaticFiles(directory="node_modules"), name="node_modules")
 
 _covers_dir = Path(settings.covers_dir_path) if settings.covers_dir_path else Path("data/covers")
 _covers_dir.mkdir(parents=True, exist_ok=True)
@@ -361,22 +359,16 @@ if _help_dir.is_dir():
 
 async def _serve_spa() -> HTMLResponse:
     """Serve SPA index.html with library_code injected and cache-busting version."""
-    html = (_web_dir / "index.html").read_text(encoding="utf-8")
-
-    # Inject library_code into loading screen
-    html = html.replace(
-        '<h1 class="bcd-title"></h1>',
-        f'<h1 class="bcd-title">{_cached_library_code}</h1>',
+    content = render_spa_html(
+        assets_config=web_assets_config,
+        library_code=_cached_library_code,
+        app_version=settings.app_version,
     )
-
-    # Add cache-busting version to static assets (app.js, CSS, etc.)
-    # This ensures browsers fetch new files after upgrades
-    html = html.replace(
-        'src="/static/js/app.js',
-        f'src="/static/js/app.js?v={settings.app_version}',
-    )
-
-    return HTMLResponse(content=html)
+    response = HTMLResponse(content=content)
+    # Ensure cache-control is set on HTML SPA
+    if not web_assets_config.is_source:
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 # Catch-all SPA route — must be last to avoid intercepting API / static / locales routes

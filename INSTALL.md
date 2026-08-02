@@ -506,9 +506,10 @@ Use this if the automatic update fails or if the machine has no internet access.
    pip install -e "." --upgrade
    ```
 
-6. **Update frontend vendor files** (only if `vendor.json` changed):
+6. **Build and verify Web UI assets** (production deployment only):
    ```bash
-   python scripts/download-vendor.py
+   npm ci
+   npm run verify:web-build
    ```
 
 7. **Run migrations**:

@@ -54,8 +54,8 @@ pkgs.mkShell {
 
     # Additional tools
     sqlite
-    # Development-only: runs the Web UI unit/component test suite. The
-    # application itself continues to use its vendored browser dependencies.
+    # Runs Web UI tests and the Vite production build. FastAPI remains the
+    # only development server; run `npm ci` once after entering the shell.
     nodejs_22
 
     chromium
