@@ -22,7 +22,22 @@ export default defineComponent({
     setup(props, { emit }) {
         const { t } = useI18n();
 
+        // Create a reactive local clone of the settings prop
+        const localSettings = ref({});
+        watch(() => props.settings, (newVal) => {
+            if (newVal) {
+                localSettings.value = { ...newVal };
+            }
+        }, { immediate: true, deep: true });
+
+        // Keep props.settings synchronized for test compatibility and parent observers
+        watch(localSettings, (newVal) => {
+            Object.assign(props.settings, newVal);
+        }, { deep: true });
+
         const handleSubmit = () => {
+            // Re-apply to props.settings for backward compatibility
+            Object.assign(props.settings, localSettings.value);
             emit('save');
         };
 
@@ -37,7 +52,7 @@ export default defineComponent({
 
         const deweyColorsList = computed(() => {
             try {
-                const parsed = JSON.parse(props.settings.dewey_colors || 'null');
+                const parsed = JSON.parse(localSettings.value.dewey_colors || 'null');
                 if (Array.isArray(parsed) && parsed.length === 10) return parsed;
             } catch {}
             return DEFAULT_DEWEY_COLORS;
@@ -46,25 +61,31 @@ export default defineComponent({
         const updateDeweyColor = (n, hex) => {
             const colors = [...deweyColorsList.value];
             colors[n] = hex;
-            props.settings.dewey_colors = JSON.stringify(colors);
+            const colorsStr = JSON.stringify(colors);
+            localSettings.value.dewey_colors = colorsStr;
+            props.settings.dewey_colors = colorsStr;
         };
 
         const toggleDeweyColor = (n) => {
             const colors = [...deweyColorsList.value];
             colors[n] = colors[n] ? null : DEFAULT_DEWEY_COLORS[n];
-            props.settings.dewey_colors = JSON.stringify(colors);
+            const colorsStr = JSON.stringify(colors);
+            localSettings.value.dewey_colors = colorsStr;
+            props.settings.dewey_colors = colorsStr;
         };
 
         const shelfLocationsList = computed(() => {
             try {
-                const parsed = JSON.parse(props.settings.catalog_shelf_locations || 'null');
+                const parsed = JSON.parse(localSettings.value.catalog_shelf_locations || 'null');
                 if (Array.isArray(parsed)) return parsed;
             } catch {}
             return [];
         });
 
         const updateShelfLocations = (list) => {
-            props.settings.catalog_shelf_locations = JSON.stringify(list);
+            const listStr = JSON.stringify(list);
+            localSettings.value.catalog_shelf_locations = listStr;
+            props.settings.catalog_shelf_locations = listStr;
         };
 
         const addShelfLocation = () => {
@@ -91,7 +112,7 @@ export default defineComponent({
 
         const localRules = ref([]);
 
-        watch(() => props.settings.catalog_call_number_rules, (newVal) => {
+        watch(() => localSettings.value.catalog_call_number_rules, (newVal) => {
             try {
                 const parsed = JSON.parse(newVal || '[]');
                 if (JSON.stringify(parsed) !== JSON.stringify(localRules.value)) {
@@ -103,12 +124,14 @@ export default defineComponent({
         }, { immediate: true });
 
         watch(localRules, (newVal) => {
-            props.settings.catalog_call_number_rules = JSON.stringify(newVal);
+            const rulesStr = JSON.stringify(newVal);
+            localSettings.value.catalog_call_number_rules = rulesStr;
+            props.settings.catalog_call_number_rules = rulesStr;
         }, { deep: true });
 
         const mediumTypesOptions = computed(() => {
-            if (!props.settings.catalog_medium_types) return [];
-            return props.settings.catalog_medium_types.split(',').map(s => s.trim()).filter(s => s);
+            if (!localSettings.value.catalog_medium_types) return [];
+            return localSettings.value.catalog_medium_types.split(',').map(s => s.trim()).filter(s => s);
         });
 
         const shelfLocationLabels = computed(() => {
@@ -156,7 +179,8 @@ export default defineComponent({
             addCallNumberRule,
             removeCallNumberRule,
             moveCallNumberRuleUp,
-            moveCallNumberRuleDown
+            moveCallNumberRuleDown,
+            settings: localSettings
         };
     },
 

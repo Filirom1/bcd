@@ -387,7 +387,7 @@ L'infrastructure i18n est largement utilisée, mais des textes utilisateur reste
 
 **Terminé quand** : une même erreur métier produit le même code et le même message quel que soit le composant qui l'affiche.
 
-### [ ] P1.11 — Rétablir le flux de données unidirectionnel dans les paramètres
+### [x] P1.11 — Rétablir le flux de données unidirectionnel dans les paramètres
 
 **Constat**
 
