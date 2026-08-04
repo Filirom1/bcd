@@ -425,7 +425,7 @@ Les chargements de `RecordDetail.js` et `BorrowerDetail.js`, les recherches cata
 
 **Terminé quand** : une réponse obsolète ne peut jamais modifier l'écran courant ni son indicateur de chargement.
 
-### [ ] P1.13 — Centraliser les dates civiles et leur formatage
+### [x] P1.13 — Centraliser les dates civiles et leur formatage
 
 **Constat**
 
