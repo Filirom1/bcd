@@ -646,6 +646,21 @@ Le même parseur de listes séparées par des virgules est redéfini dans au moi
 
 **Terminé quand** : une règle pure partagée n'existe qu'en un endroit et peut être testée sans monter un composant.
 
+### [ ] P2.10 — Introduire un contrôle de typage statique progressif via JSDoc et tsc
+
+**Constat**
+
+Le projet préserve la contrainte critique de n'avoir aucun outil de build obligatoire en production (vendored browser global). Cependant, l'absence de vérification statique des contrats d'API (comme `ApiError`, les structures de notices ou les types de paramètres) augmente le risque de régressions lors des refactorisations JS, et complique la détection d'erreurs en amont.
+
+**Actions**
+
+1. Configurer un fichier `tsconfig.json` ou `jsconfig.json` en mode `"checkJs": true`, `"noEmit": true` pour guider le compilateur `tsc` en mode linter de types uniquement.
+2. Typer progressivement les modèles centraux (`models/item.js`, `models/borrower.js`) et les signatures d'API à l'aide de blocs de commentaires standard **JSDoc** (comme `@typedef` et `@type`).
+3. Activer le contrôle `@ts-check` de manière progressive fichier par fichier (en commençant par les utilitaires purs comme `utils/storage.js` et `utils/callNumber.js`).
+4. Ajouter une validation `npm run type-check` lancée lors de la CI pour garantir l'absence d'incohérences de typage.
+
+**Terminé quand** : les fichiers JS modifiés sont validés statiquement par `tsc --noEmit` en tâche de fond (CI) sans nécessiter de compilation en production.
+
 ## Points à préserver
 
 - Séparation services/modèles déjà bien installée dans la majorité du backend.
