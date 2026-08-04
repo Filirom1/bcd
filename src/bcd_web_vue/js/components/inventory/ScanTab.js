@@ -90,7 +90,7 @@ export default defineComponent({
                 success(t('inventory.scan.item_scanned', { barcode: itemId }));
 
             } catch (err) {
-                if (err.response && err.response.status === 404) {
+                if (err.statusCode === 404) {
                     error(t('inventory.scan.item_not_found', { barcode: itemId }));
                 } else {
                     error(t('inventory.scan.error', { barcode: itemId }));

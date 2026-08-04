@@ -132,7 +132,7 @@ export default defineComponent({
                 }
 
             } catch (err) {
-                if (err.status === 404) {
+                if (err.statusCode === 404) {
                     showError(t('circulation.error_borrower_not_found', {
                         borrower_id: borrowerId
                     }));

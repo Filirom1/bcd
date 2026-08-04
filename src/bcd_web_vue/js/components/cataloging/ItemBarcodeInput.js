@@ -190,7 +190,7 @@ export default defineComponent({
                 }, 100);
 
             } catch (err) {
-                if (err.error_code === 'DUPLICATE_ITEM_ID') {
+                if (err.code === 'duplicate_item_id') {
                     showError(t('cataloging.error_barcode_exists', {
                         barcode: barcodeValue
                     }));

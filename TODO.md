@@ -372,7 +372,7 @@ L'infrastructure i18n est largement utilisée, mais des textes utilisateur reste
 
 **Terminé quand** : les parcours principaux n'affichent aucun texte français en anglais, aucun texte anglais en français et aucune clé brute.
 
-### [ ] P1.10 — Uniformiser le contrat d'erreur consommé par les composants
+### [x] P1.10 — Uniformiser le contrat d'erreur consommé par les composants
 
 **Constat**
 
