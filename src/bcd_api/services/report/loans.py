@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from ...models.bibliographic_record import BiblographicRecord
+from ...models.bibliographic_record import BibliographicRecord
 from ...models.borrower import Borrower
 from ...models.circulation import CirculationTransaction
 from ...models.class_model import Class
@@ -48,14 +48,14 @@ def get_overdue_items(
         CirculationTransaction,
         Borrower,
         Item,
-        BiblographicRecord,
+        BibliographicRecord,
         Class,
     ).join(
         Borrower, CirculationTransaction.borrower_id == Borrower.id
     ).join(
         Item, CirculationTransaction.item_id == Item.id
     ).join(
-        BiblographicRecord, Item.bibliographic_record_id == BiblographicRecord.id
+        BibliographicRecord, Item.bibliographic_record_id == BibliographicRecord.id
     ).outerjoin(
         Class, Borrower.class_id == Class.id
     ).filter(
@@ -143,10 +143,10 @@ def get_holds_report(
     """
     Get holds/reservations report with filtering by status and class.
     """
-    query = db.query(Hold, Borrower, BiblographicRecord, Class).join(
+    query = db.query(Hold, Borrower, BibliographicRecord, Class).join(
         Borrower, Hold.borrower_id == Borrower.id
     ).join(
-        BiblographicRecord, Hold.bibliographic_record_id == BiblographicRecord.id
+        BibliographicRecord, Hold.bibliographic_record_id == BibliographicRecord.id
     ).outerjoin(
         Class, Borrower.class_id == Class.id
     )
@@ -195,12 +195,12 @@ def get_active_loans(
     """
     Get all active loans (items currently checked out).
     """
-    query = db.query(CirculationTransaction, Borrower, Item, BiblographicRecord, Class).join(
+    query = db.query(CirculationTransaction, Borrower, Item, BibliographicRecord, Class).join(
         Borrower, CirculationTransaction.borrower_id == Borrower.id
     ).join(
         Item, CirculationTransaction.item_id == Item.id
     ).join(
-        BiblographicRecord, CirculationTransaction.bibliographic_record_id == BiblographicRecord.id
+        BibliographicRecord, CirculationTransaction.bibliographic_record_id == BibliographicRecord.id
     ).outerjoin(
         Class, Borrower.class_id == Class.id
     ).filter(

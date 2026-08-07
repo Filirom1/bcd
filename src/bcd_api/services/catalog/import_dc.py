@@ -11,7 +11,7 @@ from io import StringIO
 
 from sqlalchemy.orm import Session
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from .import_ import DublinCoreColumns, ImportResult, _normalize_isbn
 
@@ -33,7 +33,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
 
     Strategy:
     1. Group rows by ISBN or title
-    2. Create one BiblographicRecord per unique title
+    2. Create one BibliographicRecord per unique title
     3. Create one Item per row
     4. BULK INSERT for performance
 
@@ -160,8 +160,8 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
     # Check for existing records by ISBN
     if isbns_to_check:
         existing_by_isbn = (
-            db.query(BiblographicRecord)
-            .filter(BiblographicRecord.isbn.in_(isbns_to_check))
+            db.query(BibliographicRecord)
+            .filter(BibliographicRecord.isbn.in_(isbns_to_check))
             .all()
         )
         for record in existing_by_isbn:
@@ -172,9 +172,9 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
     # Check for existing records by TITLE (for records without ISBN)
     if titles_to_check:
         existing_by_title = (
-            db.query(BiblographicRecord)
-            .filter(BiblographicRecord.title.in_(titles_to_check))
-            .filter(BiblographicRecord.isbn.is_(None))  # Only match records without ISBN
+            db.query(BibliographicRecord)
+            .filter(BibliographicRecord.title.in_(titles_to_check))
+            .filter(BibliographicRecord.isbn.is_(None))  # Only match records without ISBN
             .all()
         )
         for record in existing_by_title:
@@ -192,7 +192,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
             created_biblios[biblio_key] = existing_records[biblio_key]
             continue
 
-        # Prepare data for BiblographicRecord (convert lists to JSON strings)
+        # Prepare data for BibliographicRecord (convert lists to JSON strings)
         db_data = biblio_data.copy()
 
         # Convert lists to JSON strings
@@ -203,8 +203,8 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
         if "keywords" in db_data and isinstance(db_data["keywords"], list):
             db_data["keywords"] = json.dumps(db_data["keywords"])
 
-        # Create BiblographicRecord object
-        db_record = BiblographicRecord(**db_data)
+        # Create BibliographicRecord object
+        db_record = BibliographicRecord(**db_data)
         new_biblio_objects.append((biblio_key, db_record))
 
     # Bulk insert bibliographic records
@@ -338,8 +338,8 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
                 .filter(Item.bibliographic_record_id == record_id)
                 .count()
             )
-            db.query(BiblographicRecord).filter(
-                BiblographicRecord.id == record_id
+            db.query(BibliographicRecord).filter(
+                BibliographicRecord.id == record_id
             ).update({"total_items": count}, synchronize_session=False)
 
     # SINGLE COMMIT for all operations

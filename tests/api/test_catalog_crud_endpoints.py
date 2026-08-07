@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import MagicMock
 
 from src.bcd_api.api.v1 import catalog
-from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
+from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
 
 
@@ -44,7 +44,7 @@ def test_create_bibliographic_record_endpoint(monkeypatch):
 
     monkeypatch.setattr(catalog.catalog_service, "create_bibliographic_record", mock_create)
 
-    req = BiblographicRecordCreate(
+    req = BibliographicRecordCreate(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors=["Antoine de Saint-Exupéry"],

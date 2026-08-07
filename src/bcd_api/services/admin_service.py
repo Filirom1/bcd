@@ -9,7 +9,7 @@ from datetime import date
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from ..models.bibliographic_record import BiblographicRecord
+from ..models.bibliographic_record import BibliographicRecord
 from ..models.borrower import Borrower
 from ..models.circulation import CirculationTransaction
 from ..models.item import Item
@@ -17,19 +17,19 @@ from ..models.item import Item
 logger = logging.getLogger(__name__)
 
 
-def get_records_without_covers(db: Session) -> list[BiblographicRecord]:
+def get_records_without_covers(db: Session) -> list[BibliographicRecord]:
     """Get all bibliographic records that don't have a cover image but have an ISBN."""
-    return db.query(BiblographicRecord).filter(
-        BiblographicRecord.cover_image == None,
-        BiblographicRecord.isbn != None,
-        BiblographicRecord.isbn != "",
+    return db.query(BibliographicRecord).filter(
+        BibliographicRecord.cover_image == None,
+        BibliographicRecord.isbn != None,
+        BibliographicRecord.isbn != "",
     ).all()
 
 
 def get_health_stats(db: Session) -> dict:
     """Get counts of core models in the system to assess health and size."""
     borrower_count = db.query(Borrower).count()
-    biblio_count = db.query(BiblographicRecord).count()
+    biblio_count = db.query(BibliographicRecord).count()
     item_count = db.query(Item).count()
     circulation_count = db.query(CirculationTransaction).count()
 
@@ -46,10 +46,10 @@ def backfill_covers_logic(db: Session, covers_dir_path: str) -> dict:
     from .external.cover import find_cached_cover
 
     covers_dir = Path(covers_dir_path) if covers_dir_path else Path("data/covers")
-    records = db.query(BiblographicRecord).filter(
-        BiblographicRecord.cover_image == None,
-        BiblographicRecord.isbn != None,
-        BiblographicRecord.isbn != "",
+    records = db.query(BibliographicRecord).filter(
+        BibliographicRecord.cover_image == None,
+        BibliographicRecord.isbn != None,
+        BibliographicRecord.isbn != "",
     ).all()
 
     updated = 0
@@ -70,10 +70,10 @@ def set_acquisition_dates_from_publication_year(db: Session) -> dict:
     # Find items without acquisition_date that have a publication_year
     items = (
         db.query(Item)
-        .join(BiblographicRecord)
+        .join(BibliographicRecord)
         .filter(
             Item.acquisition_date == None,
-            BiblographicRecord.publication_year != None,
+            BibliographicRecord.publication_year != None,
         )
         .all()
     )

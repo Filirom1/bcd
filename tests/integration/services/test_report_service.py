@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
@@ -35,7 +35,7 @@ class TestOverdueReports:
         db_session.add(borrower)
         db_session.flush()
 
-        biblio = BiblographicRecord(title="Test Book", authors="Test Author", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", authors="Test Author", medium_type="Livre")
         db_session.add(biblio)
         db_session.flush()
 
@@ -106,7 +106,7 @@ class TestOverdueReports:
 
         # Create overdue items for each borrower
         for idx, borrower in enumerate([borrower_a, borrower_b]):
-            biblio = BiblographicRecord(title=f"Book {idx}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {idx}", medium_type="Livre")
             db_session.add(biblio)
             db_session.flush()
 
@@ -175,7 +175,7 @@ class TestOverdueReports:
         # Create 2 overdue items for class A, 1 for class B
         for idx in range(3):
             borrower = borrower_a if idx < 2 else borrower_b
-            biblio = BiblographicRecord(title=f"Book {idx}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {idx}", medium_type="Livre")
             db_session.add(biblio)
             db_session.flush()
 
@@ -214,7 +214,7 @@ class TestNeverBorrowedReport:
 
     def test_get_never_borrowed_items(self, db_session):
         """Test getting items that have never been borrowed."""
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Never Borrowed Book",
             authors="Test Author",
             medium_type="Livre",
@@ -258,7 +258,7 @@ class TestMostBorrowedReport:
 
         # Create 2 books with different circulation counts
         for idx in [0, 1]:
-            biblio = BiblographicRecord(
+            biblio = BibliographicRecord(
                 title=f"Book {idx}",
                 authors="Test Author",
                 medium_type="Livre",
@@ -322,7 +322,7 @@ class TestCirculationStatistics:
 
         # Create items and circulations
         for i in range(3):
-            biblio = BiblographicRecord(title=f"Book {i}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {i}", medium_type="Livre")
             db_session.add(biblio)
             db_session.flush()
 
@@ -396,7 +396,7 @@ class TestBorrowerStatistics:
 
         # Create items
         for i in range(2):
-            biblio = BiblographicRecord(title=f"Book {i}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {i}", medium_type="Livre")
             db_session.add(biblio)
             db_session.flush()
 
@@ -463,7 +463,7 @@ class TestHoldsReport:
         db_session.add(borrower)
         db_session.flush()
 
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Reserved Book",
             authors="Test Author",
             medium_type="Livre"
@@ -536,7 +536,7 @@ class TestHoldsReport:
         db_session.add(borrower)
         db_session.flush()
 
-        biblio = BiblographicRecord(title="Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.flush()
 
@@ -612,7 +612,7 @@ class TestHoldsReport:
         db_session.add_all([borrower_a, borrower_b])
         db_session.flush()
 
-        biblio = BiblographicRecord(title="Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.flush()
 
@@ -666,7 +666,7 @@ class TestActiveLoansReport:
         db_session.flush()
 
         # Create active loan
-        biblio = BiblographicRecord(title="Checked Out Book", authors="Test Author", medium_type="Livre")
+        biblio = BibliographicRecord(title="Checked Out Book", authors="Test Author", medium_type="Livre")
         db_session.add(biblio)
         db_session.flush()
 
@@ -733,7 +733,7 @@ class TestActiveLoansReport:
 
         # Create active loans for each borrower
         for idx, borrower in enumerate([borrower_a, borrower_b]):
-            biblio = BiblographicRecord(title=f"Book {idx}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {idx}", medium_type="Livre")
             db_session.add(biblio)
             db_session.flush()
 
@@ -787,7 +787,7 @@ class TestActiveLoansReport:
 
         # Create one active loan and one returned loan
         for idx, is_returned in enumerate([False, True]):
-            biblio = BiblographicRecord(title=f"Book {idx}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {idx}", medium_type="Livre")
             db_session.add(biblio)
             db_session.flush()
 
@@ -827,10 +827,10 @@ class TestAdditionalReports:
     def test_get_collection_stats_various(self, db_session):
         """Test getting collection statistics with different filters."""
         # Create records
-        rec1 = BiblographicRecord(
+        rec1 = BibliographicRecord(
             title="Book A", isbn="111", medium_type="Livre", target_audience="child", publication_year=2020
         )
-        rec2 = BiblographicRecord(
+        rec2 = BibliographicRecord(
             title="Periodical B", isbn="222", medium_type="Périodique", target_audience="youth", publication_year=2021
         )
         db_session.add_all([rec1, rec2])
@@ -872,7 +872,7 @@ class TestAdditionalReports:
 
     def test_get_never_borrowed_items_filters(self, db_session):
         """Test getting never borrowed items with all filters applied."""
-        rec = BiblographicRecord(
+        rec = BibliographicRecord(
             title="Never Borrowed Book",
             isbn="333",
             medium_type="Livre",
@@ -926,7 +926,7 @@ class TestAdditionalReports:
         db_session.add(borrower)
         db_session.flush()
 
-        rec = BiblographicRecord(
+        rec = BibliographicRecord(
             title="Popular Book",
             isbn="444",
             medium_type="Livre",

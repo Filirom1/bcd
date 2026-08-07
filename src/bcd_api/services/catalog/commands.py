@@ -11,13 +11,13 @@ from src.bcd_api.core.exceptions import (
     NotFoundError,
     NotFoundException,
     ValidationError,
-    BiblographicRecordNotFoundException,
+    BibliographicRecordNotFoundException,
     DuplicateItemIDException,
     ItemHasActiveLoanException,
 )
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
-from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
+from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
 from src.shared.constants import MediumType
 from ._validation import (
@@ -35,14 +35,14 @@ logger = logging.getLogger(__name__)
 
 
 def create_bibliographic_record(
-    db: Session, record_data: BiblographicRecordCreate, isbn_lookup: bool = True
-) -> BiblographicRecord:
+    db: Session, record_data: BibliographicRecordCreate, isbn_lookup: bool = True
+) -> BibliographicRecord:
     """Create a new bibliographic record, optionally performing BNF ISBN lookup."""
     try:
         if record_data.isbn:
             existing = (
-                db.query(BiblographicRecord)
-                .filter(BiblographicRecord.isbn == record_data.isbn)
+                db.query(BibliographicRecord)
+                .filter(BibliographicRecord.isbn == record_data.isbn)
                 .first()
             )
             if existing:
@@ -77,7 +77,7 @@ def create_bibliographic_record(
             if filename:
                 db_data["cover_image"] = filename
 
-        db_record = BiblographicRecord(**db_data)
+        db_record = BibliographicRecord(**db_data)
         db.add(db_record)
         db.commit()
         db.refresh(db_record)
@@ -89,7 +89,7 @@ def create_bibliographic_record(
         raise
 
 
-def update_record(db: Session, record_id: int, update_data: dict) -> BiblographicRecord:
+def update_record(db: Session, record_id: int, update_data: dict) -> BibliographicRecord:
     """Update a single bibliographic record."""
     try:
         record = require_record(db, record_id)
@@ -145,8 +145,8 @@ def bulk_edit_records(
         raise ValidationError("No fields to update (all values are null)")
 
     try:
-        records = db.query(BiblographicRecord).filter(
-            BiblographicRecord.id.in_(record_ids)
+        records = db.query(BibliographicRecord).filter(
+            BibliographicRecord.id.in_(record_ids)
         ).all()
 
         if not records:
@@ -179,9 +179,9 @@ def bulk_delete_records(db: Session, record_ids: List[int]) -> dict:
         raise ValidationError("No record IDs provided")
 
     try:
-        records = db.query(BiblographicRecord)\
-            .options(joinedload(BiblographicRecord.items))\
-            .filter(BiblographicRecord.id.in_(record_ids))\
+        records = db.query(BibliographicRecord)\
+            .options(joinedload(BibliographicRecord.items))\
+            .filter(BibliographicRecord.id.in_(record_ids))\
             .all()
 
         if not records:
@@ -249,12 +249,12 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
         item_id = normalize_item_id(item_data.item_id, prefix)
 
         biblio_record = (
-            db.query(BiblographicRecord)
-            .filter(BiblographicRecord.id == item_data.bibliographic_record_id)
+            db.query(BibliographicRecord)
+            .filter(BibliographicRecord.id == item_data.bibliographic_record_id)
             .first()
         )
         if not biblio_record:
-            raise BiblographicRecordNotFoundException(item_data.bibliographic_record_id)
+            raise BibliographicRecordNotFoundException(item_data.bibliographic_record_id)
 
         validate_item_id_available(db, item_id)
 

@@ -17,9 +17,9 @@ from ...core.exceptions import (
     ExportTooLargeException,
 )
 from ...schemas.bibliographic_record import (
-    BiblographicRecordCreate,
-    BiblographicRecordResponse,
-    BiblographicRecordUpdate,
+    BibliographicRecordCreate,
+    BibliographicRecordResponse,
+    BibliographicRecordUpdate,
 )
 from ...schemas.common import PaginatedResponse
 from ...schemas.item import AvailableIDsResponse, ItemCreate, ItemResponse, ItemWithCurrentLoan, ItemUpdate
@@ -71,9 +71,9 @@ def lookup_isbn_endpoint(
     return data
 
 
-@router.post("/bibliographic", response_model=BiblographicRecordResponse, status_code=201)
+@router.post("/bibliographic", response_model=BibliographicRecordResponse, status_code=201)
 def create_bibliographic_record(
-    record_data: BiblographicRecordCreate,
+    record_data: BibliographicRecordCreate,
     db: Session = Depends(get_db),
     isbn_lookup: bool = Query(
         False, description="Automatically lookup ISBN in BNF catalog if provided"
@@ -177,7 +177,7 @@ def search_bibliographic_records(
     )
 
 
-@router.get("/bibliographic/{record_id}", response_model=BiblographicRecordResponse)
+@router.get("/bibliographic/{record_id}", response_model=BibliographicRecordResponse)
 def get_bibliographic_record(
     record_id: int,
     db: Session = Depends(get_db)
@@ -387,8 +387,8 @@ async def import_catalog(
     - item.fundingSource: Funding source
 
     **Import Strategy:**
-    1. Groups rows by ISBN (or Title if no ISBN) → creates one BiblographicRecord per title
-    2. Creates one Item per row linked to BiblographicRecord
+    1. Groups rows by ISBN (or Title if no ISBN) → creates one BibliographicRecord per title
+    2. Creates one Item per row linked to BibliographicRecord
     3. Skips duplicates (existing ISBNs and item_ids)
 
     **Response:**
@@ -514,10 +514,10 @@ def export_catalog(db: Session = Depends(get_db)):
 # === US6: Single Catalog Record/Item Editing ===
 
 
-@router.patch("/records/{record_id}", response_model=BiblographicRecordResponse)
+@router.patch("/records/{record_id}", response_model=BibliographicRecordResponse)
 def update_record_endpoint(
     record_id: int,
-    request: BiblographicRecordUpdate,
+    request: BibliographicRecordUpdate,
     db: Session = Depends(get_db)
 ):
     """

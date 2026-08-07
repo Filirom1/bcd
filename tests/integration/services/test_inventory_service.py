@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import ItemNotFoundException
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.services import inventory_service
 
@@ -20,7 +20,7 @@ from src.bcd_api.services import inventory_service
 def test_mark_item_inventoried_success(db_session: Session):
     """Test marking single item as inventoried sets last_inventoried_at."""
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -92,7 +92,7 @@ def test_mark_item_inventoried_not_found(db_session: Session):
 def test_search_with_never_inventoried_filter(db_session: Session):
     """Test search with never_inventoried=True returns only items with NULL last_inventoried_at."""
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -149,7 +149,7 @@ def test_search_with_rotation_filter(db_session: Session):
     from src.bcd_api.models.borrower import Borrower
     from src.bcd_api.models.circulation import CirculationTransaction
 
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -252,7 +252,7 @@ def test_search_results_capped_at_200(db_session: Session):
     db_session.commit()
 
     # Create 1 record
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -301,7 +301,7 @@ def test_search_with_no_limit_bypasses_cap(db_session: Session):
     db_session.commit()
 
     # Create 1 record
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -339,7 +339,7 @@ def test_search_with_no_limit_bypasses_cap(db_session: Session):
 def test_bulk_mark_inventoried(db_session: Session):
     """Test bulk_mark_inventoried updates all valid items and reports not found."""
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -405,7 +405,7 @@ def test_bulk_update_items(db_session: Session):
     from src.bcd_api.models.borrower import Borrower
 
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -492,7 +492,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
     from src.bcd_api.models.circulation import CirculationTransaction
 
     # ARRANGE
-    record1 = BiblographicRecord(
+    record1 = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -500,7 +500,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
         medium_type="Livre",
         total_items=2
     )
-    record2 = BiblographicRecord(
+    record2 = BibliographicRecord(
         isbn="978-2203301160",
         title="Tintin au Tibet",
         authors='["Hergé"]',
@@ -586,14 +586,14 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
     assert cleanup_result["records_deleted"] == 1
 
     # Record 2 should be gone
-    deleted_rec = db_session.query(BiblographicRecord).filter(BiblographicRecord.id == record2.id).first()
+    deleted_rec = db_session.query(BibliographicRecord).filter(BibliographicRecord.id == record2.id).first()
     assert deleted_rec is None
 
 
 def test_get_items_csv(db_session: Session):
     """Test generating CSV for a list of items."""
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -630,7 +630,7 @@ def test_get_items_csv(db_session: Session):
 def test_on_loan_status_without_active_transaction_is_accepted(db_session: Session):
     """Un item avec status=on_loan mais sans transaction active suit la décision item_update_decision."""
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -670,7 +670,7 @@ def test_item_with_active_transaction_ignored_in_deletion(db_session: Session):
     from src.bcd_api.models.circulation import CirculationTransaction
 
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',
@@ -721,7 +721,7 @@ def test_item_with_active_transaction_ignored_in_deletion(db_session: Session):
 def test_technical_rollback_reverts_batch_mutations(db_session: Session):
     """Rollback technique annule toutes les mutations du batch."""
     # ARRANGE
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors='["Antoine de Saint-Exupéry"]',

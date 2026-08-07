@@ -4,7 +4,7 @@ from fastapi import status
 
 from src.bcd_api.core.exceptions import (
     BCDException,
-    BiblographicRecordNotFoundException,
+    BibliographicRecordNotFoundException,
     BorrowerBlockedException,
     BorrowerNotFoundException,
     BusinessRuleViolation,
@@ -138,8 +138,8 @@ class TestCatalogExceptions:
     """Tests for catalog-related exceptions."""
 
     def test_bibliographic_record_not_found_exception(self):
-        """Test BiblographicRecordNotFoundException."""
-        exc = BiblographicRecordNotFoundException(biblio_id=123)
+        """Test BibliographicRecordNotFoundException."""
+        exc = BibliographicRecordNotFoundException(biblio_id=123)
         assert exc.status_code == status.HTTP_404_NOT_FOUND
         assert "123" in str(exc.detail)
         assert "Bibliographic record" in str(exc.detail)

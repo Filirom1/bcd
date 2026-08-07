@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 from fastapi import BackgroundTasks
 
 from ..core.database import SessionLocal
-from ..models.bibliographic_record import BiblographicRecord
+from ..models.bibliographic_record import BibliographicRecord
 from .admin_service import get_records_without_covers, backfill_covers_logic
 from .external.cover import download_cover, find_cached_cover
 
@@ -94,7 +94,7 @@ class CoverDownloadManager:
                     if fname:
                         db_update = SessionLocal()
                         try:
-                            rec = db_update.query(BiblographicRecord).filter(BiblographicRecord.id == rec_id).first()
+                            rec = db_update.query(BibliographicRecord).filter(BibliographicRecord.id == rec_id).first()
                             if rec:
                                 rec.cover_image = fname
                                 db_update.commit()

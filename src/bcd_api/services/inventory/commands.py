@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from src.shared.constants import ItemStatus
 from ...core.exceptions import ItemNotFoundException
-from ...models.bibliographic_record import BiblographicRecord
+from ...models.bibliographic_record import BibliographicRecord
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
 from ._validation import normalize_field_value
@@ -126,7 +126,7 @@ def bulk_update_items(
 
         # Deduplicate records from the selected items
         record_ids = {item.bibliographic_record_id for item in items}
-        records = db.query(BiblographicRecord).filter(BiblographicRecord.id.in_(record_ids)).all()
+        records = db.query(BibliographicRecord).filter(BibliographicRecord.id.in_(record_ids)).all()
 
         records_updated = 0
         other_copies_affected = 0
@@ -204,7 +204,7 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
         # Update parent record counters
         orphan_records_created = 0
         for record_id in record_ids:
-            record = db.query(BiblographicRecord).filter(BiblographicRecord.id == record_id).first()
+            record = db.query(BibliographicRecord).filter(BibliographicRecord.id == record_id).first()
             if record:
                 # Recount items for this record
                 item_count = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
@@ -236,8 +236,8 @@ def delete_orphan_records(db: Session) -> dict:
         # Get orphan record IDs
         orphan_ids = [
             record.id
-            for record in db.query(BiblographicRecord).filter(
-                ~db.query(Item).filter(Item.bibliographic_record_id == BiblographicRecord.id).exists()
+            for record in db.query(BibliographicRecord).filter(
+                ~db.query(Item).filter(Item.bibliographic_record_id == BibliographicRecord.id).exists()
             ).all()
         ]
 

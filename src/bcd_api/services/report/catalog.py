@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
 
-from ...models.bibliographic_record import BiblographicRecord
+from ...models.bibliographic_record import BibliographicRecord
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
 
@@ -46,10 +46,10 @@ def get_never_borrowed_items(
     borrowed_items = db.query(CirculationTransaction.item_id).distinct()
 
     query = db.query(
-        BiblographicRecord,
+        BibliographicRecord,
         Item,
     ).join(
-        Item, BiblographicRecord.id == Item.bibliographic_record_id
+        Item, BibliographicRecord.id == Item.bibliographic_record_id
     ).filter(
         Item.id.notin_(borrowed_items)
     )
@@ -68,19 +68,19 @@ def get_never_borrowed_items(
             )
 
     if level:
-        query = query.filter(BiblographicRecord.level.ilike(f"%{level}%"))
+        query = query.filter(BibliographicRecord.level.ilike(f"%{level}%"))
 
     if target_audience:
-        query = query.filter(BiblographicRecord.target_audience == target_audience)
+        query = query.filter(BibliographicRecord.target_audience == target_audience)
 
     if medium_type:
-        query = query.filter(BiblographicRecord.medium_type == medium_type)
+        query = query.filter(BibliographicRecord.medium_type == medium_type)
 
     if min_age_days:
         cutoff_date = date.today() - timedelta(days=min_age_days)
         query = query.filter(Item.acquisition_date <= cutoff_date)
 
-    query = query.order_by(BiblographicRecord.title)
+    query = query.order_by(BibliographicRecord.title)
 
     total_count = query.count()
 
@@ -147,16 +147,16 @@ def get_most_borrowed_titles(
         cutoff_date = None
 
     query = db.query(
-        BiblographicRecord.id,
-        BiblographicRecord.title,
-        BiblographicRecord.authors,
-        BiblographicRecord.publisher,
-        BiblographicRecord.publication_year,
-        BiblographicRecord.medium_type,
-        BiblographicRecord.target_audience,
+        BibliographicRecord.id,
+        BibliographicRecord.title,
+        BibliographicRecord.authors,
+        BibliographicRecord.publisher,
+        BibliographicRecord.publication_year,
+        BibliographicRecord.medium_type,
+        BibliographicRecord.target_audience,
         func.count(CirculationTransaction.id).label("checkout_count"),
     ).join(
-        Item, BiblographicRecord.id == Item.bibliographic_record_id
+        Item, BibliographicRecord.id == Item.bibliographic_record_id
     ).join(
         CirculationTransaction, Item.id == CirculationTransaction.item_id
     )
@@ -165,19 +165,19 @@ def get_most_borrowed_titles(
         query = query.filter(CirculationTransaction.checkout_date >= cutoff_date)
 
     if medium_type:
-        query = query.filter(BiblographicRecord.medium_type == medium_type)
+        query = query.filter(BibliographicRecord.medium_type == medium_type)
 
     if target_audience:
-        query = query.filter(BiblographicRecord.target_audience == target_audience)
+        query = query.filter(BibliographicRecord.target_audience == target_audience)
 
     query = query.group_by(
-        BiblographicRecord.id,
-        BiblographicRecord.title,
-        BiblographicRecord.authors,
-        BiblographicRecord.publisher,
-        BiblographicRecord.publication_year,
-        BiblographicRecord.medium_type,
-        BiblographicRecord.target_audience,
+        BibliographicRecord.id,
+        BibliographicRecord.title,
+        BibliographicRecord.authors,
+        BibliographicRecord.publisher,
+        BibliographicRecord.publication_year,
+        BibliographicRecord.medium_type,
+        BibliographicRecord.target_audience,
     ).order_by(
         desc("checkout_count")
     )

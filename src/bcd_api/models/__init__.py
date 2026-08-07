@@ -1,6 +1,6 @@
 """Database models for BCD library system."""
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
@@ -11,7 +11,7 @@ from src.bcd_api.models.system_settings import SystemSettings
 __all__ = [
     "Class",
     "Borrower",
-    "BiblographicRecord",
+    "BibliographicRecord",
     "Item",
     "CirculationTransaction",
     "Hold",

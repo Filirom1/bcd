@@ -12,7 +12,7 @@ from typing import List, Tuple
 from sqlalchemy.orm import Session, joinedload
 
 from src.bcd_api.core.exceptions import ExportFailedException, ExportTooLargeException
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from .import_ import DublinCoreColumns
 
@@ -52,8 +52,8 @@ class ExportService:
         try:
             # Query all bibliographic records with items
             records = (
-                self.db.query(BiblographicRecord)
-                .options(joinedload(BiblographicRecord.items))
+                self.db.query(BibliographicRecord)
+                .options(joinedload(BibliographicRecord.items))
                 .all()
             )
 
@@ -131,7 +131,7 @@ class ExportService:
             "item.fundingSource",
         ]
 
-    def _record_to_dict(self, record: BiblographicRecord, item: Item = None) -> dict:
+    def _record_to_dict(self, record: BibliographicRecord, item: Item = None) -> dict:
         """Convert bibliographic record and optional item to flat CSV dict.
 
         Args:

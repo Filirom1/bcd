@@ -228,7 +228,7 @@ class ItemHasHoldsException(BusinessRuleViolation):
         self.context = {"item_id": item_id, "holds_count": holds_count}
 
 
-class BiblographicRecordNotFoundException(NotFoundException):
+class BibliographicRecordNotFoundException(NotFoundException):
     """Bibliographic record not found."""
 
     def __init__(self, biblio_id: int):

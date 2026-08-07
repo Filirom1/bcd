@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.bcd_api.core.config import settings
 from src.bcd_api.core.exceptions import ConflictError
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.shared.constants import MediumType
 from ._validation import normalize_identifier
 
@@ -27,8 +27,8 @@ def lookup_isbn(db: Session, isbn: str) -> Optional[Dict[str, Any]]:
     normalized_isbn = normalize_identifier(isbn)
 
     # Check local database first
-    existing_record = db.query(BiblographicRecord).filter(
-        BiblographicRecord.isbn == normalized_isbn
+    existing_record = db.query(BibliographicRecord).filter(
+        BibliographicRecord.isbn == normalized_isbn
     ).first()
 
     if existing_record:

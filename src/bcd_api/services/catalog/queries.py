@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_, or_, case
 from sqlalchemy.orm import Session, joinedload
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.models.hold import Hold
 from src.shared.constants import IDFormat
@@ -15,12 +15,12 @@ from ._validation import require_record, require_item
 logger = logging.getLogger(__name__)
 
 
-def get_bibliographic_record(db: Session, record_id: int) -> BiblographicRecord:
+def get_bibliographic_record(db: Session, record_id: int) -> BibliographicRecord:
     """Retrieve bibliographic record by ID."""
     return require_record(db, record_id)
 
 
-def get_bibliographic_record_with_counts(db: Session, record_id: int) -> BiblographicRecord:
+def get_bibliographic_record_with_counts(db: Session, record_id: int) -> BibliographicRecord:
     """Retrieve bibliographic record by ID and compute the real total_items."""
     record = require_record(db, record_id)
     record.total_items = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
@@ -44,33 +44,33 @@ def search_bibliographic_records(
     shelf_location: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-) -> Tuple[List[BiblographicRecord], int]:
+) -> Tuple[List[BibliographicRecord], int]:
     """Search bibliographic records with filters."""
-    query = db.query(BiblographicRecord)
+    query = db.query(BibliographicRecord)
 
     if q:
         search_term = f"%{q}%"
         search_conditions = [
-            BiblographicRecord.title.ilike(search_term),
-            BiblographicRecord.subtitle.ilike(search_term),
-            BiblographicRecord.authors.ilike(search_term),
-            BiblographicRecord.publisher.ilike(search_term),
-            BiblographicRecord.collection.ilike(search_term),
-            BiblographicRecord.keywords.ilike(search_term),
-            BiblographicRecord.description.ilike(search_term),
+            BibliographicRecord.title.ilike(search_term),
+            BibliographicRecord.subtitle.ilike(search_term),
+            BibliographicRecord.authors.ilike(search_term),
+            BibliographicRecord.publisher.ilike(search_term),
+            BibliographicRecord.collection.ilike(search_term),
+            BibliographicRecord.keywords.ilike(search_term),
+            BibliographicRecord.description.ilike(search_term),
         ]
 
-        if BiblographicRecord.isbn is not None:
-            search_conditions.append(BiblographicRecord.isbn.ilike(search_term))
+        if BibliographicRecord.isbn is not None:
+            search_conditions.append(BibliographicRecord.isbn.ilike(search_term))
 
         if q.strip().isdigit():
-            search_conditions.append(BiblographicRecord.id == int(q.strip()))
+            search_conditions.append(BibliographicRecord.id == int(q.strip()))
 
         from sqlalchemy import exists
         search_conditions.append(
             exists().where(
                 and_(
-                    Item.bibliographic_record_id == BiblographicRecord.id,
+                    Item.bibliographic_record_id == BibliographicRecord.id,
                     Item.item_id.ilike(search_term)
                 )
             )
@@ -79,32 +79,32 @@ def search_bibliographic_records(
         query = query.filter(or_(*search_conditions))
 
     if title:
-        query = query.filter(BiblographicRecord.title.ilike(f"%{title}%"))
+        query = query.filter(BibliographicRecord.title.ilike(f"%{title}%"))
 
     if author:
-        query = query.filter(BiblographicRecord.authors.ilike(f"%{author}%"))
+        query = query.filter(BibliographicRecord.authors.ilike(f"%{author}%"))
 
     if isbn:
-        query = query.filter(BiblographicRecord.isbn == isbn)
+        query = query.filter(BibliographicRecord.isbn == isbn)
 
     if level:
-        query = query.filter(BiblographicRecord.level == level)
+        query = query.filter(BibliographicRecord.level == level)
 
     if language:
-        query = query.filter(BiblographicRecord.language == language)
+        query = query.filter(BibliographicRecord.language == language)
 
     if target_audience:
-        query = query.filter(BiblographicRecord.target_audience == target_audience)
+        query = query.filter(BibliographicRecord.target_audience == target_audience)
 
     if medium_type:
-        query = query.filter(BiblographicRecord.medium_type == medium_type)
+        query = query.filter(BibliographicRecord.medium_type == medium_type)
 
     if available_only:
         from sqlalchemy import exists
         query = query.filter(
             exists().where(
                 and_(
-                    Item.bibliographic_record_id == BiblographicRecord.id,
+                    Item.bibliographic_record_id == BibliographicRecord.id,
                     Item.status == "available"
                 )
             )
@@ -115,7 +115,7 @@ def search_bibliographic_records(
         query = query.filter(
             exists().where(
                 and_(
-                    Item.bibliographic_record_id == BiblographicRecord.id,
+                    Item.bibliographic_record_id == BibliographicRecord.id,
                     Item.status == "on_loan"
                 )
             )
@@ -126,7 +126,7 @@ def search_bibliographic_records(
         query = query.filter(
             exists().where(
                 and_(
-                    Hold.bibliographic_record_id == BiblographicRecord.id,
+                    Hold.bibliographic_record_id == BibliographicRecord.id,
                     Hold.status.in_(["waiting", "ready"])
                 )
             )
@@ -137,7 +137,7 @@ def search_bibliographic_records(
         query = query.filter(
             exists().where(
                 and_(
-                    Item.bibliographic_record_id == BiblographicRecord.id,
+                    Item.bibliographic_record_id == BibliographicRecord.id,
                     Item.shelf_location == shelf_location
                 )
             )

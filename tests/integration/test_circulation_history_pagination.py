@@ -12,7 +12,7 @@ All tests use service-layer integration (db_session fixture, AAA pattern).
 import json
 from datetime import date, datetime, timedelta
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
@@ -46,7 +46,7 @@ def _make_borrower(db, borrower_id, cls_id):
 
 
 def _make_biblio(db, title="Test Book"):
-    rec = BiblographicRecord(
+    rec = BibliographicRecord(
         title=title,
         authors=json.dumps(["Author, Test"]),
         publisher="Editions Test",

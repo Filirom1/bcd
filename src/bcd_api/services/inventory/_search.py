@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
-from ...models.bibliographic_record import BiblographicRecord
+from ...models.bibliographic_record import BibliographicRecord
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
 from ...models.system_settings import SystemSettings
@@ -59,14 +59,14 @@ def build_item_search_query(
     # Start with base query joining bibliographic_record with all needed fields
     query = db.query(
         Item,
-        BiblographicRecord.title,
-        BiblographicRecord.authors,
-        BiblographicRecord.level,
-        BiblographicRecord.target_audience,
-        BiblographicRecord.language,
-        BiblographicRecord.medium_type,
-        BiblographicRecord.publication_year
-    ).join(BiblographicRecord)
+        BibliographicRecord.title,
+        BibliographicRecord.authors,
+        BibliographicRecord.level,
+        BibliographicRecord.target_audience,
+        BibliographicRecord.language,
+        BibliographicRecord.medium_type,
+        BibliographicRecord.publication_year
+    ).join(BibliographicRecord)
 
     # Always add subquery for all-time circulation count per item
     circ_subquery = (
@@ -107,9 +107,9 @@ def build_item_search_query(
         q_safe = escape_like_pattern(q)
         query = query.filter(
             or_(
-                BiblographicRecord.title.ilike(f'%{q_safe}%', escape='\\'),
-                BiblographicRecord.authors.ilike(f'%{q_safe}%', escape='\\'),
-                BiblographicRecord.isbn.ilike(f'%{q_safe}%', escape='\\'),
+                BibliographicRecord.title.ilike(f'%{q_safe}%', escape='\\'),
+                BibliographicRecord.authors.ilike(f'%{q_safe}%', escape='\\'),
+                BibliographicRecord.isbn.ilike(f'%{q_safe}%', escape='\\'),
                 Item.call_number.ilike(f'%{q_safe}%', escape='\\')
             )
         )
@@ -157,28 +157,28 @@ def build_item_search_query(
 
     # Apply record-level filters
     if medium_type == "__none__":
-        query = query.filter(BiblographicRecord.medium_type.is_(None))
+        query = query.filter(BibliographicRecord.medium_type.is_(None))
     elif medium_type:
-        query = query.filter(BiblographicRecord.medium_type == medium_type)
+        query = query.filter(BibliographicRecord.medium_type == medium_type)
     if target_audience == "__none__":
-        query = query.filter(BiblographicRecord.target_audience.is_(None))
+        query = query.filter(BibliographicRecord.target_audience.is_(None))
     elif target_audience:
-        query = query.filter(BiblographicRecord.target_audience == target_audience)
+        query = query.filter(BibliographicRecord.target_audience == target_audience)
     if level == "__none__":
-        query = query.filter(BiblographicRecord.level.is_(None))
+        query = query.filter(BibliographicRecord.level.is_(None))
     elif level:
         level_safe = escape_like_pattern(level)
-        query = query.filter(BiblographicRecord.level.ilike(f'%{level_safe}%', escape='\\'))
+        query = query.filter(BibliographicRecord.level.ilike(f'%{level_safe}%', escape='\\'))
     if language == "__none__":
-        query = query.filter(BiblographicRecord.language.is_(None))
+        query = query.filter(BibliographicRecord.language.is_(None))
     elif language:
-        query = query.filter(BiblographicRecord.language == language)
+        query = query.filter(BibliographicRecord.language == language)
 
     # Apply publication year range
     if publication_year_min is not None:
-        query = query.filter(BiblographicRecord.publication_year >= publication_year_min)
+        query = query.filter(BibliographicRecord.publication_year >= publication_year_min)
     if publication_year_max is not None:
-        query = query.filter(BiblographicRecord.publication_year <= publication_year_max)
+        query = query.filter(BibliographicRecord.publication_year <= publication_year_max)
 
     # Filter items never borrowed (last_borrowed_at IS NULL)
     if never_borrowed:

@@ -613,7 +613,7 @@ class TestReturnWithHold:
         When: The item is returned
         Then: The return response includes hold_ready info with borrower details
         """
-        from src.bcd_api.models.bibliographic_record import BiblographicRecord
+        from src.bcd_api.models.bibliographic_record import BibliographicRecord
         from src.bcd_api.models.borrower import Borrower
         from src.bcd_api.models.class_model import Class
         from src.bcd_api.models.item import Item
@@ -650,7 +650,7 @@ class TestReturnWithHold:
         db_session.commit()
 
         # Create bibliographic record and item
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Harry Potter à l'école des sorciers",
             medium_type="Livre",
         )
@@ -740,7 +740,7 @@ class TestReturnWithHold:
         """
         from datetime import date, timedelta
 
-        from src.bcd_api.models.bibliographic_record import BiblographicRecord
+        from src.bcd_api.models.bibliographic_record import BibliographicRecord
         from src.bcd_api.models.borrower import Borrower
         from src.bcd_api.models.class_model import Class
         from src.bcd_api.models.item import Item
@@ -780,7 +780,7 @@ class TestReturnWithHold:
         db_session.add(borrower2)
         db_session.commit()
 
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Le Petit Prince",
             medium_type="Livre",
         )
@@ -858,11 +858,11 @@ class TestReturnItemsIncludesShelfLocation:
     ):
         import json
 
-        from src.bcd_api.models.bibliographic_record import BiblographicRecord
+        from src.bcd_api.models.bibliographic_record import BibliographicRecord
         from src.bcd_api.models.item import Item
 
         # Arrange: item without shelf_location
-        record = BiblographicRecord(title="Sans emplacement", authors=json.dumps(["A"]), medium_type="Livre")
+        record = BibliographicRecord(title="Sans emplacement", authors=json.dumps(["A"]), medium_type="Livre")
         db_session.add(record)
         db_session.flush()
         item = Item(item_id="NO_LOC_99", bibliographic_record_id=record.id, status="available", loanable=True)

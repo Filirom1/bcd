@@ -3,11 +3,11 @@
 # Common schemas
 # Bibliographic Record schemas
 from src.bcd_api.schemas.bibliographic_record import (
-    BiblographicRecordCreate,
-    BiblographicRecordResponse,
-    BiblographicRecordSummary,
-    BiblographicRecordUpdate,
-    BiblographicRecordWithAvailability,
+    BibliographicRecordCreate,
+    BibliographicRecordResponse,
+    BibliographicRecordSummary,
+    BibliographicRecordUpdate,
+    BibliographicRecordWithAvailability,
 )
 
 # Borrower schemas
@@ -88,11 +88,11 @@ __all__ = [
     "BorrowerSummary",
     "BorrowerDetailed",
     # Bibliographic Record
-    "BiblographicRecordCreate",
-    "BiblographicRecordUpdate",
-    "BiblographicRecordResponse",
-    "BiblographicRecordSummary",
-    "BiblographicRecordWithAvailability",
+    "BibliographicRecordCreate",
+    "BibliographicRecordUpdate",
+    "BibliographicRecordResponse",
+    "BibliographicRecordSummary",
+    "BibliographicRecordWithAvailability",
     # Item
     "ItemCreate",
     "ItemUpdate",

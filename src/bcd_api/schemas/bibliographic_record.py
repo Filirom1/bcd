@@ -1,4 +1,4 @@
-"""Pydantic schemas for BiblographicRecord model."""
+"""Pydantic schemas for BibliographicRecord model."""
 
 import json
 from typing import Optional
@@ -10,8 +10,8 @@ from src.shared.constants import BindingType, TargetAudience
 from src.shared.validators import clean_call_number
 
 
-class BiblographicRecordBase(BaseModel):
-    """Base schema for BiblographicRecord."""
+class BibliographicRecordBase(BaseModel):
+    """Base schema for BibliographicRecord."""
 
     isbn: Optional[str] = Field(
         None,
@@ -52,7 +52,7 @@ class BiblographicRecordBase(BaseModel):
     )
 
 
-class BiblographicRecordCreate(BiblographicRecordBase):
+class BibliographicRecordCreate(BibliographicRecordBase):
     """Schema for creating a new bibliographic record."""
 
     @field_validator("isbn", mode="before")
@@ -92,7 +92,7 @@ class BiblographicRecordCreate(BiblographicRecordBase):
     )
 
 
-class BiblographicRecordUpdate(BaseModel):
+class BibliographicRecordUpdate(BaseModel):
     """Schema for updating a bibliographic record."""
 
     isbn: Optional[str] = Field(None, max_length=22)
@@ -140,7 +140,7 @@ class BiblographicRecordUpdate(BaseModel):
     dewey_number: Optional[str] = None
 
 
-class BiblographicRecordResponse(BiblographicRecordBase, TimestampMixin):
+class BibliographicRecordResponse(BibliographicRecordBase, TimestampMixin):
     """Schema for bibliographic record response."""
 
     id: int
@@ -162,7 +162,7 @@ class BiblographicRecordResponse(BiblographicRecordBase, TimestampMixin):
         return v or []
 
 
-class BiblographicRecordSummary(BaseModel):
+class BibliographicRecordSummary(BaseModel):
     """Summary schema for bibliographic record (for lists)."""
 
     id: int
@@ -190,7 +190,7 @@ class BiblographicRecordSummary(BaseModel):
         return v or []
 
 
-class BiblographicRecordWithAvailability(BiblographicRecordResponse):
+class BibliographicRecordWithAvailability(BibliographicRecordResponse):
     """Bibliographic record with availability information."""
 
     available_items: int = Field(..., description="Number of available items")

@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.services.catalog.import_dc import (
     _map_dc_type_to_medium_type,
@@ -25,7 +25,7 @@ Harry Potter,978-0747532699,Rowling| J.K.,HP001,823.92"""
         assert len(result.errors) == 0
 
         # Verify bibliographic record
-        biblio = db_session.query(BiblographicRecord).first()
+        biblio = db_session.query(BibliographicRecord).first()
         assert biblio is not None
         assert biblio.title == "Harry Potter"
         # ISBN is normalized (hyphens removed)
@@ -57,7 +57,7 @@ Test Book,123456,Author One|Author Two,Illustrator One|Illustrator Two,Subject A
 
         assert result.records_created == 1
 
-        biblio = db_session.query(BiblographicRecord).first()
+        biblio = db_session.query(BibliographicRecord).first()
 
         # Authors should be stored as JSON
         import json
@@ -83,11 +83,11 @@ Test Book,123456,Author One|Author Two,Illustrator One|Illustrator Two,Subject A
 Book 2020,123,2020,B001"""
 
         result1 = import_dublin_core_csv(db_session, csv_content1)
-        biblio1 = db_session.query(BiblographicRecord).first()
+        biblio1 = db_session.query(BibliographicRecord).first()
         assert biblio1.publication_year == 2020
 
         # Clear session
-        db_session.query(BiblographicRecord).delete()
+        db_session.query(BibliographicRecord).delete()
         db_session.query(Item).delete()
         db_session.commit()
 
@@ -96,7 +96,7 @@ Book 2020,123,2020,B001"""
 Book 2021,456,2021-06-15,B002"""
 
         result2 = import_dublin_core_csv(db_session, csv_content2)
-        biblio2 = db_session.query(BiblographicRecord).first()
+        biblio2 = db_session.query(BibliographicRecord).first()
         assert biblio2.publication_year == 2021
 
     def test_page_count_extraction_from_format(self, db_session):
@@ -106,11 +106,11 @@ Book 2021,456,2021-06-15,B002"""
 Book One,123,300 pages,B001"""
 
         result1 = import_dublin_core_csv(db_session, csv_content1)
-        biblio1 = db_session.query(BiblographicRecord).first()
+        biblio1 = db_session.query(BibliographicRecord).first()
         assert biblio1.page_count == 300
 
         # Clear session
-        db_session.query(BiblographicRecord).delete()
+        db_session.query(BibliographicRecord).delete()
         db_session.query(Item).delete()
         db_session.commit()
 
@@ -119,7 +119,7 @@ Book One,123,300 pages,B001"""
 Book Two,456,173 p,B002"""
 
         result2 = import_dublin_core_csv(db_session, csv_content2)
-        biblio2 = db_session.query(BiblographicRecord).first()
+        biblio2 = db_session.query(BibliographicRecord).first()
         assert biblio2.page_count == 173
 
     def test_dc_type_to_medium_type_mapping(self, db_session):
@@ -129,11 +129,11 @@ Book Two,456,173 p,B002"""
 Text Book,123,Text,T001"""
 
         result = import_dublin_core_csv(db_session, csv_text)
-        biblio = db_session.query(BiblographicRecord).first()
+        biblio = db_session.query(BibliographicRecord).first()
         assert biblio.medium_type == "Livre"
 
         # Clear and test Sound -> CD
-        db_session.query(BiblographicRecord).delete()
+        db_session.query(BibliographicRecord).delete()
         db_session.query(Item).delete()
         db_session.commit()
 
@@ -141,7 +141,7 @@ Text Book,123,Text,T001"""
 Music Album,456,Sound,S001"""
 
         result = import_dublin_core_csv(db_session, csv_sound)
-        biblio = db_session.query(BiblographicRecord).first()
+        biblio = db_session.query(BibliographicRecord).first()
         assert biblio.medium_type == "CD"
 
     def test_rights_to_loanable_mapping(self, db_session):
@@ -155,7 +155,7 @@ Book One,123,Loanable,B001"""
         assert item.loanable is True
 
         # Clear and test "Not loanable" -> False
-        db_session.query(BiblographicRecord).delete()
+        db_session.query(BibliographicRecord).delete()
         db_session.query(Item).delete()
         db_session.commit()
 
@@ -189,7 +189,7 @@ Harry Potter,978-0747532699,Rowling| J.K.,HP003,823.92"""
         assert result.records_created == 1
         assert result.items_created == 3
 
-        biblio_count = db_session.query(BiblographicRecord).count()
+        biblio_count = db_session.query(BibliographicRecord).count()
         item_count = db_session.query(Item).count()
 
         assert biblio_count == 1
@@ -210,7 +210,7 @@ Custom Book,,CB002"""
     def test_skip_existing_isbn(self, db_session):
         """Test that existing ISBN is skipped"""
         # Create existing record with normalized ISBN (no hyphens)
-        existing = BiblographicRecord(
+        existing = BibliographicRecord(
             title="Existing Book",
             isbn="isbn:9780747532699",  # Now stored with isbn: prefix
             medium_type="Livre",
@@ -236,7 +236,7 @@ New Book,978-0747532699,NB001"""
     def test_skip_existing_item_id(self, db_session):
         """Test that existing item_id is skipped"""
         # Create existing biblio and item
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Existing Book",
             isbn="123456",
             medium_type="Livre",
@@ -322,7 +322,7 @@ Complete Book,978-1234567890,Author A|Author B,Illustrator C,keyword1|keyword2|k
         assert result.items_created == 1
 
         # Verify bibliographic record fields
-        biblio = db_session.query(BiblographicRecord).first()
+        biblio = db_session.query(BibliographicRecord).first()
         assert biblio.title == "Complete Book"
         assert biblio.isbn == "isbn:9781234567890"  # Stored with isbn: prefix
         assert biblio.publisher == "Test Publisher"
@@ -356,7 +356,7 @@ Complete Book,978-1234567890,Author A|Author B,Illustrator C,keyword1|keyword2|k
         assert len(result.errors) == 0
 
         # Verify database counts
-        biblio_count = db_session.query(BiblographicRecord).count()
+        biblio_count = db_session.query(BibliographicRecord).count()
         item_count = db_session.query(Item).count()
 
         assert biblio_count == 100

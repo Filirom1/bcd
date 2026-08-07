@@ -1,4 +1,4 @@
-"""BiblographicRecord model - represents the intellectual content/metadata of a title."""
+"""BibliographicRecord model - represents the intellectual content/metadata of a title."""
 
 from datetime import datetime, timezone
 from typing import Optional
@@ -10,7 +10,7 @@ from src.bcd_api.core.database import Base
 from src.shared.constants import BindingType, TargetAudience
 
 
-class BiblographicRecord(Base):
+class BibliographicRecord(Base):
     """Represents the intellectual content/metadata of a title (one record per title)."""
 
     __tablename__ = "bibliographic_record"
@@ -109,4 +109,4 @@ class BiblographicRecord(Base):
         return 'isbn'
 
     def __repr__(self):
-        return f"<BiblographicRecord(id={self.id}, isbn={self.isbn}, title={self.title})>"
+        return f"<BibliographicRecord(id={self.id}, isbn={self.isbn}, title={self.title})>"

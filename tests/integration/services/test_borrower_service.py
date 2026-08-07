@@ -3,7 +3,7 @@
 import json
 from datetime import datetime, timedelta
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
@@ -188,7 +188,7 @@ class TestBorrowerWithCirculationIntegration:
         )
 
         # Create bibliographic record and items
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             authors=json.dumps(["Test Author"]),
             isbn="9782080687346",
@@ -255,7 +255,7 @@ class TestBorrowerWithCirculationIntegration:
         )
 
         # Create item and overdue loan
-        biblio = BiblographicRecord(title="Test Book", authors=json.dumps(["Author"]), medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", authors=json.dumps(["Author"]), medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 

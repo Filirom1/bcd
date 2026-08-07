@@ -10,7 +10,7 @@ from src.bcd_api.core.exceptions import (
     NotFoundError,
     ValidationError,
 )
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.hold import Hold
@@ -42,7 +42,7 @@ class TestHoldCreation:
         db_session.commit()
 
         # Create bibliographic record
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )
@@ -81,7 +81,7 @@ class TestHoldCreation:
     def test_create_hold_borrower_not_found(self, db_session):
         """Test hold creation with non-existent borrower."""
         # Create bibliographic record
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -133,7 +133,7 @@ class TestHoldCreation:
         db_session.commit()
 
         # Create bibliographic record with item
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -170,7 +170,7 @@ class TestHoldCreation:
         db_session.commit()
 
         # Create bibliographic record without items
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -198,7 +198,7 @@ class TestHoldCreation:
         db_session.commit()
 
         # Create bibliographic record with item
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -247,7 +247,7 @@ class TestHoldCreation:
         db_session.commit()
 
         # Create bibliographic record with item
-        biblio = BiblographicRecord(title="Popular Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Popular Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -298,8 +298,8 @@ class TestHoldCreation:
         db_session.commit()
 
         # Create two bibliographic records each with an item
-        biblio1 = BiblographicRecord(title="Book One", medium_type="Livre")
-        biblio2 = BiblographicRecord(title="Book Two", medium_type="Livre")
+        biblio1 = BibliographicRecord(title="Book One", medium_type="Livre")
+        biblio2 = BibliographicRecord(title="Book Two", medium_type="Livre")
         db_session.add_all([biblio1, biblio2])
         db_session.commit()
 
@@ -348,7 +348,7 @@ class TestHoldCreation:
         # Create three bibliographic records each with an item
         biblios = []
         for i in range(1, 4):
-            biblio = BiblographicRecord(title=f"Book {i}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {i}", medium_type="Livre")
             db_session.add(biblio)
             db_session.commit()
             item = Item(item_id=f"00{i}", bibliographic_record_id=biblio.id, status="on_loan", loanable=True)
@@ -381,7 +381,7 @@ class TestHoldRetrieval:
         )
         db_session.add(borrower)
 
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -429,7 +429,7 @@ class TestHoldRetrieval:
         # Create multiple biblio records with items
         holds = []
         for i in range(3):
-            biblio = BiblographicRecord(title=f"Book {i}", medium_type="Livre")
+            biblio = BibliographicRecord(title=f"Book {i}", medium_type="Livre")
             db_session.add(biblio)
             db_session.commit()
 
@@ -457,7 +457,7 @@ class TestHoldRetrieval:
     def test_get_holds_for_bibliographic_record(self, db_session):
         """Test getting all holds for a bibliographic record."""
         # Create biblio record with item
-        biblio = BiblographicRecord(title="Popular Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Popular Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -517,7 +517,7 @@ class TestHoldStatusManagement:
         )
         db_session.add(borrower)
 
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -562,7 +562,7 @@ class TestHoldStatusManagement:
         )
         db_session.add(borrower)
 
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -601,7 +601,7 @@ class TestHoldStatusManagement:
         )
         db_session.add(borrower)
 
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -644,7 +644,7 @@ class TestHoldStatusManagement:
         )
         db_session.add(borrower)
 
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -695,7 +695,7 @@ class TestHoldQueueManagement:
         db_session.commit()
 
         # Create biblio with item
-        biblio = BiblographicRecord(title="Popular Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Popular Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -743,7 +743,7 @@ class TestAutoFillHolds:
         )
         db_session.add(borrower)
 
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -779,7 +779,7 @@ class TestAutoFillHolds:
     def test_auto_fill_no_waiting_holds(self, db_session):
         """Test auto-fill when no holds are waiting."""
         # Create biblio
-        biblio = BiblographicRecord(title="Test Book", medium_type="Livre")
+        biblio = BibliographicRecord(title="Test Book", medium_type="Livre")
         db_session.add(biblio)
         db_session.commit()
 
@@ -810,7 +810,7 @@ class TestReadyHoldExpiration:
             role="student",
             active=True,
         )
-        record = BiblographicRecord(title="Expired hold title", medium_type="Livre")
+        record = BibliographicRecord(title="Expired hold title", medium_type="Livre")
         db_session.add_all([first_borrower, second_borrower, record])
         db_session.commit()
         db_session.add(Item(
@@ -851,7 +851,7 @@ class TestReadyHoldExpiration:
             role="student",
             active=True,
         )
-        record = BiblographicRecord(title="Valid today", medium_type="Livre")
+        record = BibliographicRecord(title="Valid today", medium_type="Livre")
         db_session.add_all([borrower, record])
         db_session.commit()
         db_session.add(Item(

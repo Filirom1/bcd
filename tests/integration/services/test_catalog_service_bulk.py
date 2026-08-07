@@ -10,11 +10,11 @@ import pytest
 from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import ItemHasActiveLoanException, ValidationError
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.item import Item
-from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
+from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
 from src.bcd_api.services import catalog_service
 
@@ -27,7 +27,7 @@ class TestBulkEditRecords:
         # ARRANGE - Create test records
         records = []
         for i in range(3):
-            record_data = BiblographicRecordCreate(
+            record_data = BibliographicRecordCreate(
                 title=f"Test Book {i}",
                 authors=[f"Author {i}"],
                 language="eng"
@@ -60,8 +60,8 @@ class TestBulkEditRecords:
 
         # Verify database changes
         for record_id in record_ids:
-            record = db_session.query(BiblographicRecord).filter(
-                BiblographicRecord.id == record_id
+            record = db_session.query(BibliographicRecord).filter(
+                BibliographicRecord.id == record_id
             ).first()
             assert record.level == "CP"
             assert record.language == "fr"
@@ -72,7 +72,7 @@ class TestBulkEditRecords:
     def test_bulk_edit_records_null_values_unchanged(self, db_session: Session):
         """Test that null values in update mean 'no change'."""
         # ARRANGE
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"],
             language="eng"
@@ -99,7 +99,7 @@ class TestBulkEditRecords:
     def test_bulk_edit_records_only_valid_ids(self, db_session: Session):
         """Test that bulk edit only updates valid record IDs."""
         # ARRANGE - Create valid records
-        record1_data = BiblographicRecordCreate(
+        record1_data = BibliographicRecordCreate(
             title="Book 1",
             authors=["Author 1"]
         )
@@ -125,7 +125,7 @@ class TestBulkEditRecords:
     def test_bulk_edit_records_no_fields_error(self, db_session: Session):
         """Test error when no update fields provided."""
         # ARRANGE
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"]
         )
@@ -172,7 +172,7 @@ class TestBulkDeleteRecords:
         # ARRANGE - Create test records with items
         records = []
         for i in range(3):
-            record_data = BiblographicRecordCreate(
+            record_data = BibliographicRecordCreate(
                 title=f"Test Book {i}",
                 authors=[f"Author {i}"]
             )
@@ -208,8 +208,8 @@ class TestBulkDeleteRecords:
 
         # Verify records deleted
         for record_id in record_ids:
-            record = db_session.query(BiblographicRecord).filter(
-                BiblographicRecord.id == record_id
+            record = db_session.query(BibliographicRecord).filter(
+                BibliographicRecord.id == record_id
             ).first()
             assert record is None
 
@@ -220,7 +220,7 @@ class TestBulkDeleteRecords:
     def test_bulk_delete_records_cascade_deletes_items(self, db_session: Session):
         """Test CASCADE delete removes associated items even if on loan."""
         # ARRANGE - Create record with item on loan
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"]
         )
@@ -251,8 +251,8 @@ class TestBulkDeleteRecords:
         # ASSERT - Record and item deleted
         assert result["successful_count"] == 1
 
-        record_check = db_session.query(BiblographicRecord).filter(
-            BiblographicRecord.id == record.id
+        record_check = db_session.query(BibliographicRecord).filter(
+            BibliographicRecord.id == record.id
         ).first()
         assert record_check is None
 
@@ -264,7 +264,7 @@ class TestBulkDeleteRecords:
     def test_bulk_delete_records_only_valid_ids(self, db_session: Session):
         """Test that bulk delete only deletes valid record IDs."""
         # ARRANGE - Create one valid record
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Book 1",
             authors=["Author 1"]
         )
@@ -282,8 +282,8 @@ class TestBulkDeleteRecords:
 
         # ASSERT - Valid record deleted, invalid ID skipped
         assert result["successful_count"] == 1  # Only 1 record found and deleted
-        record_check = db_session.query(BiblographicRecord).filter(
-            BiblographicRecord.id == record.id
+        record_check = db_session.query(BibliographicRecord).filter(
+            BibliographicRecord.id == record.id
         ).first()
         assert record_check is None  # Record was deleted
 
@@ -303,7 +303,7 @@ class TestBulkDeleteRecords:
         # Arrange: Create 2 records, one with active loan
         record1 = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Safe to Delete",
                 isbn="9780123456780",
                 authors=["Author"]
@@ -313,7 +313,7 @@ class TestBulkDeleteRecords:
 
         record2 = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Has Active Loan",
                 isbn="9780123456781",
                 authors=["Author"]

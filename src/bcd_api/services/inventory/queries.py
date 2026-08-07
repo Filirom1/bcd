@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ...models.bibliographic_record import BiblographicRecord
+from ...models.bibliographic_record import BibliographicRecord
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
 from ...models.system_settings import SystemSettings
@@ -70,13 +70,13 @@ def search_items(
     items = []
     for result in results:
         item = result[0]  # Item object
-        title = result[1]  # title from BiblographicRecord
-        authors = result[2]  # authors JSON string from BiblographicRecord
-        level = result[3]  # level from BiblographicRecord
-        target_audience = result[4]  # target_audience from BiblographicRecord
-        language = result[5]  # language from BiblographicRecord
-        medium_type = result[6]  # medium_type from BiblographicRecord
-        publication_year = result[7]  # publication_year from BiblographicRecord
+        title = result[1]  # title from BibliographicRecord
+        authors = result[2]  # authors JSON string from BibliographicRecord
+        level = result[3]  # level from BibliographicRecord
+        target_audience = result[4]  # target_audience from BibliographicRecord
+        language = result[5]  # language from BibliographicRecord
+        medium_type = result[6]  # medium_type from BibliographicRecord
+        publication_year = result[7]  # publication_year from BibliographicRecord
         circulation_count = result[8]  # all-time loan count (always present)
 
         # Parse authors list
@@ -146,8 +146,8 @@ def get_orphan_records(db: Session) -> dict:
             - records (list): Orphan record details (id, title, isbn)
     """
     # Use real NOT EXISTS query
-    orphans = db.query(BiblographicRecord).filter(
-        ~db.query(Item).filter(Item.bibliographic_record_id == BiblographicRecord.id).exists()
+    orphans = db.query(BibliographicRecord).filter(
+        ~db.query(Item).filter(Item.bibliographic_record_id == BibliographicRecord.id).exists()
     ).all()
 
     records = [

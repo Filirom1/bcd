@@ -19,7 +19,7 @@ from src.bcd_api.core.exceptions import (
     ClassNotFoundException,
     ValidationError,
 )
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
@@ -366,7 +366,7 @@ class TestBulkDeleteBorrowers:
         )
 
         # Create bibliographic record and item
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             authors=json.dumps(["Author"]),
             isbn="9782080687346",
@@ -645,7 +645,7 @@ class TestBulkOperationsAtomicity:
         )
 
         # Create bibliographic record and item
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Active Loan Book",
             authors=json.dumps(["Author"]),
             isbn="9782080687346",
@@ -704,7 +704,7 @@ class TestBulkOperationsAtomicity:
             role="student",
         )
 
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Returned Book",
             authors=json.dumps(["Author"]),
             isbn="9782080687346",

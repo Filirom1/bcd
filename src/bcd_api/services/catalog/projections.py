@@ -5,7 +5,7 @@ from typing import Set, List
 from sqlalchemy import func, case
 from sqlalchemy.orm import Session
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.models.hold import Hold
 from src.shared.constants import ItemStatus
@@ -29,19 +29,19 @@ def refresh_total_items_in_transaction(db: Session, record_ids: Set[int]) -> Non
     counts_map = {rid: cnt for rid, cnt in counts}
 
     # Update records
-    records = db.query(BiblographicRecord).filter(BiblographicRecord.id.in_(record_ids)).all()
+    records = db.query(BibliographicRecord).filter(BibliographicRecord.id.in_(record_ids)).all()
     for record in records:
         record.total_items = counts_map.get(record.id, 0)
 
     # Any record_id without items should be set to 0
     for rid in record_ids:
         if rid not in counts_map:
-            record = db.query(BiblographicRecord).filter(BiblographicRecord.id == rid).first()
+            record = db.query(BibliographicRecord).filter(BibliographicRecord.id == rid).first()
             if record:
                 record.total_items = 0
 
 
-def availability_by_record(db: Session, records: List[BiblographicRecord]) -> List[dict]:
+def availability_by_record(db: Session, records: List[BibliographicRecord]) -> List[dict]:
     """
     Enrich bibliographic records with availability, copy counts, and first item information.
     Batch queries are used to avoid N+1 queries.

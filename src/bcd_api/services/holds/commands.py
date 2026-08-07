@@ -18,7 +18,7 @@ from ...core.exceptions import (
     NotFoundError,
     ValidationError,
 )
-from ...models.bibliographic_record import BiblographicRecord
+from ...models.bibliographic_record import BibliographicRecord
 from ...models.borrower import Borrower
 from ...models.hold import Hold
 from ...models.item import Item
@@ -56,8 +56,8 @@ def create_hold_in_transaction(
             f"Borrower {borrower.borrower_id} is blocked: {borrower.blocked_reason}"
         )
 
-    biblio = db.query(BiblographicRecord).filter(
-        BiblographicRecord.id == bibliographic_record_id
+    biblio = db.query(BibliographicRecord).filter(
+        BibliographicRecord.id == bibliographic_record_id
     ).first()
     if not biblio:
         raise NotFoundError("Bibliographic record", bibliographic_record_id)

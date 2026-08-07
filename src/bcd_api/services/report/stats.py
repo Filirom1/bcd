@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
-from ...models.bibliographic_record import BiblographicRecord
+from ...models.bibliographic_record import BibliographicRecord
 from ...models.borrower import Borrower
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
@@ -41,8 +41,8 @@ def get_collection_stats(
                     exclude_target_audience=False, exclude_condition=False,
                     exclude_pub_year=False, exclude_acq_year=False):
         """Build the base filtered query for aggregations."""
-        q = db.query(Item, BiblographicRecord).join(
-            BiblographicRecord, Item.bibliographic_record_id == BiblographicRecord.id
+        q = db.query(Item, BibliographicRecord).join(
+            BibliographicRecord, Item.bibliographic_record_id == BibliographicRecord.id
         )
 
         if crew_method == "never_borrowed":
@@ -72,18 +72,18 @@ def get_collection_stats(
             q = q.filter(Item.acquisition_date <= cutoff)
 
         if exclude_periodicals:
-            q = q.filter(BiblographicRecord.medium_type != "Périodique")
+            q = q.filter(BibliographicRecord.medium_type != "Périodique")
 
         if medium_type and not exclude_medium_type:
-            q = q.filter(BiblographicRecord.medium_type == medium_type)
+            q = q.filter(BibliographicRecord.medium_type == medium_type)
         if target_audience and not exclude_target_audience:
-            q = q.filter(BiblographicRecord.target_audience == target_audience)
+            q = q.filter(BibliographicRecord.target_audience == target_audience)
         if condition and not exclude_condition:
             q = q.filter(Item.condition == condition)
         if pub_year_min is not None and not exclude_pub_year:
-            q = q.filter(BiblographicRecord.publication_year >= pub_year_min)
+            q = q.filter(BibliographicRecord.publication_year >= pub_year_min)
         if pub_year_max is not None and not exclude_pub_year:
-            q = q.filter(BiblographicRecord.publication_year <= pub_year_max)
+            q = q.filter(BibliographicRecord.publication_year <= pub_year_max)
         if acq_year_min is not None and not exclude_acq_year:
             q = q.filter(func.strftime("%Y", Item.acquisition_date) >= str(acq_year_min))
         if acq_year_max is not None and not exclude_acq_year:
@@ -107,20 +107,20 @@ def get_collection_stats(
         )
         return [{"value": r[0], "count": r[1], "damaged_count": r[2] or 0} for r in rows]
 
-    medium_rows = _breakdown(_base_query(db, exclude_medium_type=True), BiblographicRecord.medium_type)
-    audience_rows = _breakdown(_base_query(db, exclude_target_audience=True), BiblographicRecord.target_audience)
+    medium_rows = _breakdown(_base_query(db, exclude_medium_type=True), BibliographicRecord.medium_type)
+    audience_rows = _breakdown(_base_query(db, exclude_target_audience=True), BibliographicRecord.target_audience)
     condition_rows = _breakdown(_base_query(db, exclude_condition=True), Item.condition)
 
     pub_q = _base_query(db, exclude_pub_year=True)
     pub_rows = (
         pub_q.with_entities(
-            BiblographicRecord.publication_year,
+            BibliographicRecord.publication_year,
             func.count(Item.id).label("count"),
             func.sum(case((Item.condition == "damaged", 1), else_=0)).label("damaged_count"),
         )
-        .filter(BiblographicRecord.publication_year.isnot(None))
-        .group_by(BiblographicRecord.publication_year)
-        .order_by(BiblographicRecord.publication_year)
+        .filter(BibliographicRecord.publication_year.isnot(None))
+        .group_by(BibliographicRecord.publication_year)
+        .order_by(BibliographicRecord.publication_year)
         .all()
     )
     pub_histogram = [{"year": r[0], "count": r[1], "damaged_count": r[2] or 0} for r in pub_rows]

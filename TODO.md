@@ -620,7 +620,7 @@ Des `catch {}` ou `.catch(() => {})` subsistent dans le catalogue, les paramètr
 
 **Terminé quand** : aucune erreur n'est avalée sans justification et aucun payload métier n'est écrit par défaut dans la console.
 
-### [ ] P2.8 — Rendre les composants réutilisables indépendants du DOM global
+### [x] P2.8 — Rendre les composants réutilisables indépendants du DOM global
 
 **Constat**
 
@@ -689,7 +689,7 @@ L'analyse de l'architecture backend a mis en évidence plusieurs foyers de dette
 
 **Terminé quand** : le couplage et les duplications logiques du backend sont réduits, et les conversions de types s'exécutent de manière centralisée.
 
-### [ ] P2.12 — Introduire un Event Bus léger pour les rafraîchissements inter-composants
+### [x] P2.12 — Introduire un Event Bus léger pour les rafraîchissements inter-composants
 
 **Constat**
 

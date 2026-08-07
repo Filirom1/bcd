@@ -70,7 +70,7 @@ class CirculationTransaction(Base):
     # Relationships
     borrower = relationship("Borrower", back_populates="circulation_transactions")
     item = relationship("Item", back_populates="circulation_transactions")
-    bibliographic_record = relationship("BiblographicRecord", back_populates="circulation_transactions")
+    bibliographic_record = relationship("BibliographicRecord", back_populates="circulation_transactions")
 
     @property
     def is_overdue(self) -> bool:

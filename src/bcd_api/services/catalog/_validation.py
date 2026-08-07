@@ -6,13 +6,13 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import NotFoundError, NotFoundException, ConflictError
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 
 
-def require_record(db: Session, record_id: int) -> BiblographicRecord:
+def require_record(db: Session, record_id: int) -> BibliographicRecord:
     """Verify record exists and return it, raising NotFoundError otherwise."""
-    record = db.query(BiblographicRecord).filter(BiblographicRecord.id == record_id).first()
+    record = db.query(BibliographicRecord).filter(BibliographicRecord.id == record_id).first()
     if not record:
         raise NotFoundError("Bibliographic record", record_id)
     return record
