@@ -293,7 +293,7 @@ La règle du dépôt interdit la construction de layout via `Node.new()`/`add_ch
 
 **Terminé quand** : couleurs, tailles, marges et structure visuelle peuvent être modifiées dans les `.tscn`/ressources de thème sans éditer la logique.
 
-### [ ] P1.6 — Éliminer le N+1 du scanner Web et rendre l'annulation effective
+### [x] P1.6 — Éliminer le N+1 du scanner Web et rendre l'annulation effective
 
 **Constat**
 
