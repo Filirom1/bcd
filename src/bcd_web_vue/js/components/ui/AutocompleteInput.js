@@ -7,6 +7,8 @@ const { defineComponent, ref, watch, computed, onMounted, onUnmounted, nextTick,
 const { useI18n } = VueI18n;
 import { useDebouncedAction } from '../../composables/useDebouncedAction.js';
 
+let autocompleteInstanceCounter = 0;
+
 export default defineComponent({
     name: 'AutocompleteInput',
 
@@ -57,6 +59,9 @@ export default defineComponent({
 
     setup(props, { emit }) {
         const { t } = useI18n();
+        const instanceId = ++autocompleteInstanceCounter;
+        const dropdownId = `autocomplete-dropdown-${instanceId}`;
+        const getItemId = (index) => `autocomplete-item-${instanceId}-${index}`;
 
         // Refs
         const inputRef = ref(null);
@@ -309,6 +314,8 @@ export default defineComponent({
             selectResult,
             handleSubmit,
             focusInput,
+            dropdownId,
+            getItemId,
             t
         };
     },
@@ -330,14 +337,14 @@ export default defineComponent({
                 role="combobox"
                 :aria-expanded="showDropdown"
                 :aria-autocomplete="'list'"
-                :aria-controls="showDropdown ? 'autocomplete-dropdown' : null"
-                :aria-activedescendant="selectedIndex >= 0 ? 'autocomplete-item-' + selectedIndex : null"
+                :aria-controls="showDropdown ? dropdownId : null"
+                :aria-activedescendant="selectedIndex >= 0 ? getItemId(selectedIndex) : null"
             />
 
             <!-- Dropdown -->
             <div
                 v-if="showDropdown"
-                id="autocomplete-dropdown"
+                :id="dropdownId"
                 ref="dropdownRef"
                 class="autocomplete-dropdown position-absolute w-100 bg-white border rounded shadow-sm mt-1"
                 style="max-height: 400px; overflow-y: auto; z-index: 1050;"
@@ -366,7 +373,7 @@ export default defineComponent({
                     v-else
                     v-for="(result, index) in results"
                     :key="index"
-                    :id="'autocomplete-item-' + index"
+                    :id="getItemId(index)"
                     class="autocomplete-item p-2 border-bottom"
                     :class="{ 'selected bg-light': index === selectedIndex }"
                     @click="selectResult(result)"

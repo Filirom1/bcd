@@ -142,4 +142,39 @@ describe('AutocompleteInput', () => {
         // Autocomplete should be bypassed on rapid input and submit the full code
         expect(wrapper.emitted('submit')).toEqual([['9782070612758']]);
     });
+
+    it('supports multiple simultaneous instances with unique IDs', async () => {
+        const wrapper1 = mount(AutocompleteInput, {
+            props: {
+                modelValue: '',
+                fetchResults: fetchSpy,
+                formatResult
+            },
+            global: { mocks: { $t: key => key } }
+        });
+
+        const wrapper2 = mount(AutocompleteInput, {
+            props: {
+                modelValue: '',
+                fetchResults: fetchSpy,
+                formatResult
+            },
+            global: { mocks: { $t: key => key } }
+        });
+
+        const id1 = wrapper1.vm.dropdownId;
+        const id2 = wrapper2.vm.dropdownId;
+
+        expect(id1).not.toBe(id2);
+        expect(wrapper1.find('input').attributes('aria-controls')).toBe(undefined);
+
+        // Open first dropdown
+        await wrapper1.get('input').setValue('ha');
+        vi.advanceTimersByTime(300);
+        await flushPromises();
+
+        expect(wrapper1.vm.showDropdown).toBe(true);
+        expect(wrapper2.vm.showDropdown).toBe(false);
+        expect(wrapper1.find('input').attributes('aria-controls')).toBe(id1);
+    });
 });

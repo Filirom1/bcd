@@ -35,6 +35,9 @@ export default defineComponent({
         const { error: showError } = useNotification();
         const { openRecord } = useGlobalModal();
 
+        const pubChartRef = ref(null);
+        const acqChartRef = ref(null);
+
         // ── Panel filters (structural — drive the API query) ──────────────────
         const crewMethod = ref('never_borrowed');
 
@@ -518,7 +521,7 @@ export default defineComponent({
             Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
             destroyCharts();
 
-            const pubEl = document.getElementById('chart-pub-year');
+            const pubEl = pubChartRef.value;
             if (pubEl && stats.value.pub_year_histogram.length > 0) {
                 const data = stats.value.pub_year_histogram;
                 pubChart = new Chart(pubEl.getContext('2d'), {
@@ -549,7 +552,7 @@ export default defineComponent({
                 });
             }
 
-            const acqEl = document.getElementById('chart-acq-year');
+            const acqEl = acqChartRef.value;
             if (acqEl && stats.value.acq_year_histogram.length > 0) {
                 const data = stats.value.acq_year_histogram;
                 const hasRange = crossFilters.value.acq_year_min !== null || crossFilters.value.acq_year_max !== null;
@@ -653,6 +656,7 @@ export default defineComponent({
         onBeforeUnmount(destroyCharts);
 
         return {
+            pubChartRef, acqChartRef,
             t, settings, formatAuthors,
             crewMethod, crewMethods,
             crossFilters, tauxRotationFilter, hasActiveFilters, activeChips,
@@ -855,7 +859,7 @@ export default defineComponent({
                         {{ t('reports.collectionReport.histoPubYear') }}
                     </div>
                     <div style="position:relative;height:160px;">
-                        <canvas id="chart-pub-year"></canvas>
+                        <canvas ref="pubChartRef"></canvas>
                     </div>
                     <!-- Dual range slider -->
                     <div class="mt-2 px-1" v-if="stats.pub_year_histogram.length">
@@ -905,7 +909,7 @@ export default defineComponent({
                         {{ t('reports.collectionReport.histoAcqYear') }}
                     </div>
                     <div style="position:relative;height:160px;">
-                        <canvas id="chart-acq-year"></canvas>
+                        <canvas ref="acqChartRef"></canvas>
                     </div>
                     <!-- Dual range slider -->
                     <div class="mt-2 px-1" v-if="stats.acq_year_histogram.length">

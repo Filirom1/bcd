@@ -70,4 +70,23 @@ describe('HelpPanel', () => {
         expect(wrapper.vm.error).toBe(true);
         expect(wrapper.vm.renderedMarkdown).toBe('');
     });
+
+    it('supports multiple simultaneous instances with unique IDs', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response('### Étape 1', { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const wrapper1 = mount(HelpPanel, {
+            props: { section: 'checkout' },
+            global: { mocks: { $t: key => key } }
+        });
+        const wrapper2 = mount(HelpPanel, {
+            props: { section: 'return' },
+            global: { mocks: { $t: key => key } }
+        });
+        await flushPromises();
+
+        expect(wrapper1.vm.offcanvasId).not.toBe(wrapper2.vm.offcanvasId);
+        expect(wrapper1.find('button').attributes('aria-controls')).toBe(wrapper1.vm.offcanvasId);
+        expect(wrapper2.find('button').attributes('aria-controls')).toBe(wrapper2.vm.offcanvasId);
+    });
 });

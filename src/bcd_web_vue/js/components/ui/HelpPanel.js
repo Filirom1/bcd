@@ -9,6 +9,8 @@ const { useI18n } = VueI18n;
 import { useAppState } from '../../composables/useAppState.js';
 import LoadingSpinner from './LoadingSpinner.js';
 
+let helpPanelInstanceCounter = 0;
+
 const SECTION_FILES = {
     checkout:     { fr: 'emprunter.md',   en: 'checkout.md' },
     return:       { fr: 'retourner.md',   en: 'return.md' },
@@ -38,6 +40,9 @@ export default defineComponent({
     setup(props) {
         const { t } = useI18n();
         const { locale } = useAppState();
+
+        const instanceId = ++helpPanelInstanceCounter;
+        const offcanvasId = `bcd-help-offcanvas-${instanceId}`;
 
         const rawMd = ref(null);
         const loading = ref(false);
@@ -100,7 +105,8 @@ export default defineComponent({
             t,
             loading,
             error,
-            renderedMarkdown
+            renderedMarkdown,
+            offcanvasId
         };
     },
 
@@ -111,8 +117,8 @@ export default defineComponent({
                 class="btn btn-outline-secondary btn-sm"
                 type="button"
                 data-bs-toggle="offcanvas"
-                data-bs-target="#bcd-help-offcanvas"
-                aria-controls="bcd-help-offcanvas"
+                :data-bs-target="'#' + offcanvasId"
+                :aria-controls="offcanvasId"
                 :title="t('help.button')"
             >
                 <i class="bi bi-question-circle me-1"></i>{{ t('help.button') }}
@@ -121,7 +127,7 @@ export default defineComponent({
             <!-- Offcanvas panel — rendered once, shown/hidden by Bootstrap -->
             <div
                 class="offcanvas offcanvas-end"
-                id="bcd-help-offcanvas"
+                :id="offcanvasId"
                 tabindex="-1"
                 :aria-label="t('help.button')"
                 style="width: min(480px, 100vw)"
