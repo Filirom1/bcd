@@ -1,6 +1,7 @@
 /**
  * Robust Date Utility for BCD Web UI
  * Centralizes civil dates parsing, formatting, and prevents timezone/UTC shift bugs.
+ * @ts-check
  */
 
 /**
@@ -18,7 +19,7 @@ export function getLocalCivilDate(date = new Date()) {
 
 /**
  * Parse a local civil date string (YYYY-MM-DD) without timezone shifts.
- * @param {string} dateStr - YYYY-MM-DD
+ * @param {string|null|undefined} dateStr - YYYY-MM-DD
  * @returns {Date|null} Date object representing local midnight
  */
 export function parseLocalCivilDate(dateStr) {
@@ -35,8 +36,9 @@ export function parseLocalCivilDate(dateStr) {
 /**
  * Format a local civil date string (YYYY-MM-DD) into a human readable format.
  * Uses active locale and avoids timezone/UTC shift bugs.
- * @param {string} dateStr - YYYY-MM-DD
+ * @param {string|null|undefined} dateStr - YYYY-MM-DD
  * @param {string} [locale='fr'] - 'fr' or 'en'
+ * @param {string|null} [dateFormat=null] - Date format pattern
  * @returns {string} Formatted date
  */
 export function formatCivilDate(dateStr, locale = 'fr', dateFormat = null) {
@@ -51,12 +53,12 @@ export function formatCivilDate(dateStr, locale = 'fr', dateFormat = null) {
 }
 
 /**
- * Format a timestamp (date + time) into a human readable localized string.
- * @param {string|Date} timestamp - ISO Timestamp or Date object
- * @param {string} [locale='fr'] - 'fr' or 'en'
- * @returns {string} Formatted date and time
+ * @param {Date} date
+ * @param {string} [pattern='DD/MM/YYYY']
+ * @returns {string}
  */
 export function formatDatePattern(date, pattern = 'DD/MM/YYYY') {
+    /** @type {Record<string, string>} */
     const values = {
         YYYY: String(date.getFullYear()),
         MM: String(date.getMonth() + 1).padStart(2, '0'),
@@ -65,6 +67,12 @@ export function formatDatePattern(date, pattern = 'DD/MM/YYYY') {
     return pattern.replace(/YYYY|MM|DD/g, token => values[token]);
 }
 
+/**
+ * Format a time.
+ * @param {string|Date|null|undefined} timestamp
+ * @param {string} [locale='fr']
+ * @returns {string}
+ */
 export function formatTime(timestamp, locale = 'fr') {
     if (!timestamp) return '';
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
@@ -72,6 +80,12 @@ export function formatTime(timestamp, locale = 'fr') {
     return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
 }
 
+/**
+ * Format date and time.
+ * @param {string|Date|null|undefined} timestamp
+ * @param {string} [locale='fr']
+ * @returns {string}
+ */
 export function formatDateTime(timestamp, locale = 'fr') {
     if (!timestamp) return '';
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;

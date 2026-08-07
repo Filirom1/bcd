@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * useSelection - Multi-select checkbox logic composable (DRY component)
  *
@@ -42,7 +43,7 @@ export function useSelection() {
 
     /**
      * Select all items from a list
-     * @param {Array} items - Array of items with id property
+     * @param {any[]} items - Array of items with id property
      */
     const selectAll = (items) => {
         selectedIds.value = new Set(items.map(item => item.id));
@@ -57,7 +58,7 @@ export function useSelection() {
 
     /**
      * Toggle select all (select all if none selected, clear if any selected)
-     * @param {Array} items - Array of items with id property
+     * @param {any[]} items - Array of items with id property
      */
     const toggleSelectAll = (items) => {
         if (isAllSelected(items)) {
@@ -69,7 +70,7 @@ export function useSelection() {
 
     /**
      * Get array of selected IDs
-     * @returns {Array}
+     * @returns {any[]}
      */
     const getSelectedIds = () => {
         return Array.from(selectedIds.value);
@@ -77,7 +78,7 @@ export function useSelection() {
 
     /**
      * Check if all items are selected
-     * @param {Array} items - Array of items
+     * @param {any[]} items - Array of items
      * @returns {boolean}
      */
     const isAllSelected = (items) => {
@@ -87,7 +88,7 @@ export function useSelection() {
     /**
      * Check if some (but not all) current items are selected.
      * Selections from a previous page or filter must not change this state.
-     * @param {Array} items - Array of items
+     * @param {any[]} items - Array of items
      * @returns {boolean}
      */
     const isSomeSelected = (items) => {

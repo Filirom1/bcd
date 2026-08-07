@@ -1,3 +1,12 @@
+// @ts-check
+import { apiClient } from '../api/client.js';
+
+/** @typedef {import('../models/item.js').BibliographicRecord} BibliographicRecord */
+/** @typedef {import('../models/item.js').Item} Item */
+/** @typedef {import('../models/borrower.js').Borrower} Borrower */
+
+const { ref } = Vue;
+
 /**
  * useBulkOperations - Bulk edit/delete API calls composable (DRY component)
  *
@@ -7,12 +16,9 @@
  * @param {string} resourceType - Type of resource ('borrowers' or 'catalog')
  * @returns {Object} Bulk operation methods and state
  */
-
-const { ref } = Vue;
-import { apiClient } from '../api/client.js';
-
 export function useBulkOperations(resourceType) {
     const loading = ref(false);
+    /** @type {import('vue').Ref<string|null>} */
     const error = ref(null);
     const progress = ref(0);
     const showProgress = ref(false);
@@ -28,7 +34,7 @@ export function useBulkOperations(resourceType) {
      * Bulk change class for borrowers
      * @param {Array<number>} borrowerIds - IDs of borrowers
      * @param {number} targetClassId - Target class ID
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkChangeClass = async (borrowerIds, targetClassId) => {
         loading.value = true;
@@ -46,7 +52,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -61,7 +67,7 @@ export function useBulkOperations(resourceType) {
      * Bulk change role for borrowers
      * @param {Array<number>} borrowerIds - IDs of borrowers
      * @param {string} targetRole - Target role (student/teacher/staff)
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkChangeRole = async (borrowerIds, targetRole) => {
         loading.value = true;
@@ -79,7 +85,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -93,7 +99,7 @@ export function useBulkOperations(resourceType) {
     /**
      * Bulk delete borrowers
      * @param {Array<number>} borrowerIds - IDs of borrowers to delete
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkDeleteBorrowers = async (borrowerIds) => {
         loading.value = true;
@@ -109,7 +115,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -124,7 +130,7 @@ export function useBulkOperations(resourceType) {
      * Bulk edit catalog records
      * @param {Array<number>} recordIds - IDs of records to edit
      * @param {Object} fields - Fields to update (target_audience, language, medium_type)
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkEditRecords = async (recordIds, fields) => {
         loading.value = true;
@@ -141,7 +147,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -155,7 +161,7 @@ export function useBulkOperations(resourceType) {
     /**
      * Bulk delete catalog records
      * @param {Array<number>} recordIds - IDs of records to delete
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkDeleteRecords = async (recordIds) => {
         loading.value = true;
@@ -171,7 +177,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -185,8 +191,8 @@ export function useBulkOperations(resourceType) {
     /**
      * Update single record
      * @param {number} recordId - Record ID
-     * @param {Object} data - Update data
-     * @returns {Promise<Object>} Updated record
+     * @param {Partial<BibliographicRecord>} data - Update data
+     * @returns {Promise<BibliographicRecord>} Updated record
      */
     const updateRecord = async (recordId, data) => {
         loading.value = true;
@@ -195,7 +201,7 @@ export function useBulkOperations(resourceType) {
         try {
             return await apiClient.patch(`/catalog/records/${recordId}`, data);
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -205,8 +211,8 @@ export function useBulkOperations(resourceType) {
     /**
      * Update single item
      * @param {number} itemId - Item ID
-     * @param {Object} data - Update data
-     * @returns {Promise<Object>} Updated item
+     * @param {Partial<Item>} data - Update data
+     * @returns {Promise<Item>} Updated item
      */
     const updateItem = async (itemId, data) => {
         loading.value = true;
@@ -215,7 +221,7 @@ export function useBulkOperations(resourceType) {
         try {
             return await apiClient.patch(`/catalog/items/${itemId}`, data);
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;

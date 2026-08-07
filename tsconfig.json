@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "strict": true,
+    "baseUrl": ".",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"]
+  },
+  "include": [
+    "src/bcd_web_vue/js/**/*.js",
+    "src/bcd_web_vue/js/globals.d.ts"
+  ]
+}

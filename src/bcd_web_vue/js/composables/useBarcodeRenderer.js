@@ -1,3 +1,4 @@
+// @ts-check
 import { getBarcodeLibrary } from '../vendor/jsbarcode-adapter.js';
 
 const { ref } = Vue;
@@ -13,12 +14,12 @@ export function useBarcodeRenderer() {
      * Render all barcodes on the page.
      * Searches for SVG elements with class 'barcode' and data-code attribute.
      *
-     * @param {Object} options - JsBarcode options to override defaults
-     * @param {string} options.format - Barcode format (CODE39, CODE128, etc.)
-     * @param {number} options.width - Bar width
-     * @param {number} options.height - Barcode height in pixels
-     * @param {boolean} options.displayValue - Show text below barcode
-     * @param {number} options.margin - Margin around barcode
+     * @param {Object} [options] - JsBarcode options to override defaults
+     * @param {string} [options.format] - Barcode format (CODE39, CODE128, etc.)
+     * @param {number} [options.width] - Bar width
+     * @param {number} [options.height] - Barcode height in pixels
+     * @param {boolean} [options.displayValue] - Show text below barcode
+     * @param {number} [options.margin] - Margin around barcode
      */
     const renderBarcodes = async (options = {}) => {
         const JsBarcode = await getBarcodeLibrary();
@@ -32,7 +33,8 @@ export function useBarcodeRenderer() {
 
         const barcodeOptions = { ...defaults, ...options };
 
-        document.querySelectorAll('.barcode').forEach((svg) => {
+        const elements = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.barcode'));
+        elements.forEach((svg) => {
             if (svg.dataset.code) {
                 JsBarcode(svg, svg.dataset.code, barcodeOptions);
             }

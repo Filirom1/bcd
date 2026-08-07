@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Column Settings Composable
  * Manages visible columns with localStorage persistence
@@ -8,7 +9,16 @@ import { getJSON, setJSON } from '../utils/storage.js';
 
 const STORAGE_KEY = 'catalog_columns';
 
+/**
+ * @typedef {Object} ColumnDefinition
+ * @property {string} id
+ * @property {string} label_en
+ * @property {string} label_fr
+ * @property {boolean} default
+ */
+
 // Available columns (18 total - matches SearchResults.js table columns)
+/** @type {ColumnDefinition[]} */
 export const AVAILABLE_COLUMNS = [
     // Basic information (default visible)
     { id: 'title', label_en: 'Title', label_fr: 'Titre', default: true },
@@ -55,10 +65,16 @@ export function useColumnSettings() {
         setJSON(STORAGE_KEY, newValue);
     }, { deep: true });
 
+    /**
+     * @param {string} columnId
+     */
     const isColumnVisible = (columnId) => {
         return visibleColumns.value.includes(columnId);
     };
 
+    /**
+     * @param {string} columnId
+     */
     const toggleColumn = (columnId) => {
         const index = visibleColumns.value.indexOf(columnId);
         if (index > -1) {

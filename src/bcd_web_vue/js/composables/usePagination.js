@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Pagination composable
  * Manages pagination state and calculations
@@ -6,12 +7,32 @@
 const { ref, computed, watch } = Vue;
 
 /**
+ * @typedef {Object} PaginationState
+ * @property {import('vue').Ref<number>} currentPage
+ * @property {import('vue').Ref<number>} pageSize
+ * @property {import('vue').Ref<number>} totalItems
+ * @property {import('vue').ComputedRef<number>} totalPages
+ * @property {import('vue').ComputedRef<number>} offset
+ * @property {import('vue').Ref<number>} limit
+ * @property {import('vue').ComputedRef<boolean>} hasNextPage
+ * @property {import('vue').ComputedRef<boolean>} hasPreviousPage
+ * @property {import('vue').ComputedRef<number>} firstItem
+ * @property {import('vue').ComputedRef<number>} lastItem
+ * @property {(page: number) => void} goToPage
+ * @property {() => void} nextPage
+ * @property {() => void} previousPage
+ * @property {(size: number) => void} setPageSize
+ * @property {(total: number) => void} setTotalItems
+ * @property {() => void} reset
+ */
+
+/**
  * Pagination composable
- * @param {Object} options - Configuration options
+ * @param {Object} [options] - Configuration options
  * @param {number} [options.initialPage=1] - Initial page number
  * @param {number} [options.pageSize=50] - Items per page
  * @param {number} [options.totalItems=0] - Total number of items
- * @returns {Object} Pagination state and methods
+ * @returns {PaginationState} Pagination state and methods
  */
 export function usePagination(options = {}) {
     const currentPage = ref(options.initialPage || 1);

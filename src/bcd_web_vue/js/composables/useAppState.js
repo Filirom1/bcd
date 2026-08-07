@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Global application state composable
  * Manages locale, loading state, and settings with localStorage persistence
@@ -9,6 +10,7 @@ import { getItem, setItem, removeItem, getJSON, setJSON, clearStorage as apiClea
 // Global reactive state (shared across all component instances)
 const locale = ref(getItem('locale', 'fr'));
 const isLoading = ref(false);
+/** @type {import('vue').Ref<import('../api/client.js').SystemSettings | null>} */
 const settings = ref(null);
 
 // Persist locale changes to localStorage (declared once at module level to avoid duplicate watchers)
@@ -61,7 +63,7 @@ export function useAppState() {
 
     /**
      * Save settings to localStorage
-     * @param {Object} newSettings - Settings object to save
+     * @param {import('../api/client.js').SystemSettings} newSettings - Settings object to save
      */
     const saveSettings = (newSettings) => {
         settings.value = newSettings;

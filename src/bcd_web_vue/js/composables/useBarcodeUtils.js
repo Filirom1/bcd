@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Barcode Utilities Composable
  * Helper functions for working with barcodes and IDs

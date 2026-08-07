@@ -6,6 +6,54 @@
 import { ApiError, ERROR_CODES } from '../models/error.js';
 
 /**
+ * @typedef {Object} HealthStatus
+ * @property {string} status - App status
+ * @property {string} version - App version
+ * @property {boolean} database_connected - Database status
+ */
+
+/**
+ * @typedef {Object} SystemSettings
+ * @property {number} id - Database auto-increment ID
+ * @property {string} id_format - ID Format: numeric or alphanumeric
+ * @property {string} id_validation_regex - Regex for validation
+ * @property {number} id_length_min - Minimum ID length
+ * @property {number} id_length_max - Maximum ID length
+ * @property {string} barcode_type - Barcode type (e.g. code39)
+ * @property {string} borrower_barcode_prefix - Borrower barcode prefix (e.g. %)
+ * @property {string} item_barcode_prefix - Item barcode prefix (e.g. .)
+ * @property {number} loan_limit_default - Default loan limit
+ * @property {number} loan_limit_warning - Warning threshold
+ * @property {number} loan_limit_teacher - Teacher loan limit
+ * @property {number} loan_duration_days - Loan duration in days
+ * @property {number} renewal_limit - Renewal limit
+ * @property {number} hold_expiration_days - Hold expiration in days
+ * @property {boolean} hold_queue_enabled - Hold queue status
+ * @property {number} max_holds_per_borrower - Maximum holds per borrower
+ * @property {string} language - Interface language: fr or en
+ * @property {string} date_format - Date format: DD/MM/YYYY
+ * @property {number} academic_year_start_month - Academic year start month
+ * @property {string} academic_year_current - Current academic year
+ * @property {string} library_name - Library name
+ * @property {string|null} library_code - Library code
+ * @property {string|null} [catalog_medium_types] - Comma separated medium types
+ * @property {string|null} [catalog_genres] - Comma separated genres
+ * @property {string|null} [catalog_languages] - Comma separated languages
+ * @property {string|null} [catalog_levels] - Comma separated levels
+ * @property {number} [inventory_search_result_limit] - Inventory search limit
+ * @property {string|null} [dewey_colors] - Dewey colors JSON or text
+ * @property {string|null} [catalog_shelf_locations] - Shelf locations JSON or text
+ * @property {string|null} [catalog_call_number_rules] - Call number rules JSON or text
+ */
+
+/**
+ * @typedef {Object} RequestOptions
+ * @property {'json'|'blob'|'text'|'arraybuffer'} [responseType]
+ * @property {boolean} [skipGlobalLoading]
+ * @property {HeadersInit} [headers]
+ */
+
+/**
  * API Client class
  */
 export class ApiClient {
@@ -25,6 +73,7 @@ export class ApiClient {
     /**
      * Update loading state
      * @private
+     * @param {boolean} isLoading
      */
     _setLoading(isLoading) {
         if (isLoading) {
@@ -86,19 +135,11 @@ export class ApiClient {
     /**
      * Make HTTP request
      * @private
+     * @template T
      * @param {string} url - Full URL
-     * @param {Object} options - Fetch options
+     * @param {RequestOptions & RequestInit} options - Fetch options
      * @param {boolean} isFormData - Whether the request body is FormData
-     * @returns {Promise<any>} Response data
-     * @throws {ApiError}
-     */
-    /**
-     * Make HTTP request
-     * @private
-     * @param {string} url - Full URL
-     * @param {Object} options - Fetch options
-     * @param {boolean} isFormData - Whether the request body is FormData
-     * @returns {Promise<any>} Response data
+     * @returns {Promise<T>} Response data
      * @throws {ApiError}
      */
     async _request(url, options = {}, isFormData = false) {
@@ -157,7 +198,7 @@ export class ApiClient {
             }
 
             // Network error or other fetch failure
-            throw ApiError.networkError(error);
+            throw ApiError.networkError(error instanceof Error ? error : new Error(String(error)));
         } finally {
             if (!skipGlobalLoading) {
                 this._setLoading(false);
@@ -167,10 +208,11 @@ export class ApiClient {
 
     /**
      * GET request
+     * @template T
      * @param {string} endpoint - API endpoint (e.g., '/borrowers/101')
      * @param {Object} [params] - Query parameters
-     * @param {Object} [options] - Optional fetch options
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
     async get(endpoint, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
@@ -179,11 +221,12 @@ export class ApiClient {
 
     /**
      * POST request
+     * @template T
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
-     * @param {Object} [options] - Optional fetch options
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
     async post(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
@@ -198,11 +241,12 @@ export class ApiClient {
 
     /**
      * PUT request
+     * @template T
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
-     * @param {Object} [options] - Optional fetch options
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
     async put(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
@@ -217,11 +261,12 @@ export class ApiClient {
 
     /**
      * PATCH request
+     * @template T
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
-     * @param {Object} [options] - Optional fetch options
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
     async patch(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
@@ -236,14 +281,16 @@ export class ApiClient {
 
     /**
      * DELETE request
+     * @template T
      * @param {string} endpoint - API endpoint
-     * @param {Object} [data] - Optional request body
+     * @param {any} [data] - Optional request body
      * @param {Object} [params] - Query parameters
-     * @param {Object} [options] - Optional fetch options
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
     async delete(endpoint, data = null, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
+        /** @type {any} */
         const requestOptions = { method: 'DELETE', ...options };
         if (data !== null) {
             requestOptions.body = JSON.stringify(data);

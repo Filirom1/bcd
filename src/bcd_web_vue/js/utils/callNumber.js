@@ -1,11 +1,15 @@
 /**
  * Call Number Generation Engine (Moteur de génération de cote)
  * Handles all pure logic for generating call numbers and suggesting shelf locations
+ * @ts-check
  */
 
 import { normalizeAscii } from './domain.js';
 
-// AUT1: first 1 uppercase letter of author's last name (NFD-normalized, no accents, only A-Z)
+/**
+ * @param {string[]|null|undefined} authors
+ * @returns {string}
+ */
 export function computeAut1(authors) {
     if (!authors || !authors.length) return '';
     const first = authors[0];
@@ -14,7 +18,10 @@ export function computeAut1(authors) {
     return cleanLastName.slice(0, 1);
 }
 
-// AUT3: first 3 uppercase letters of author's last name (NFD-normalized, no accents, only A-Z)
+/**
+ * @param {string[]|null|undefined} authors
+ * @returns {string}
+ */
 export function computeAut3(authors) {
     if (!authors || !authors.length) return '';
     const first = authors[0];
@@ -23,7 +30,11 @@ export function computeAut3(authors) {
     return cleanLastName.slice(0, 3);
 }
 
-// Clean string by stripping leading articles and trimming
+/**
+ * Clean string by stripping leading articles and trimming
+ * @param {string|null|undefined} text
+ * @returns {string}
+ */
 export function stripLeadingArticles(text) {
     if (!text) return '';
     let s = text.trim();
@@ -42,7 +53,12 @@ export function stripLeadingArticles(text) {
     return s;
 }
 
-// SER1: first 1 uppercase letter/digit of series/collection name (fallback to AUT1 if empty)
+/**
+ * SER1: first 1 uppercase letter/digit of series/collection name (fallback to AUT1 if empty)
+ * @param {string|null|undefined} collection
+ * @param {string} fallbackAut1
+ * @returns {string}
+ */
 export function computeSer1(collection, fallbackAut1) {
     if (!collection || !collection.trim()) return fallbackAut1;
     const cleaned = stripLeadingArticles(collection);
@@ -50,7 +66,12 @@ export function computeSer1(collection, fallbackAut1) {
     return normalized.slice(0, 1) || fallbackAut1;
 }
 
-// SER3: first 3 uppercase letters/digits of series/collection name (fallback to AUT3 if empty)
+/**
+ * SER3: first 3 uppercase letters/digits of series/collection name (fallback to AUT3 if empty)
+ * @param {string|null|undefined} collection
+ * @param {string} fallbackAut3
+ * @returns {string}
+ */
 export function computeSer3(collection, fallbackAut3) {
     if (!collection || !collection.trim()) return fallbackAut3;
     const cleaned = stripLeadingArticles(collection);
@@ -58,7 +79,11 @@ export function computeSer3(collection, fallbackAut3) {
     return normalized.slice(0, 3) || fallbackAut3;
 }
 
-// TIT1: first 1 uppercase letter/digit of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
+/**
+ * TIT1: first 1 uppercase letter/digit of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
+ * @param {string|null|undefined} title
+ * @returns {string}
+ */
 export function computeTit1(title) {
     if (!title) return '';
     const cleaned = stripLeadingArticles(title);
@@ -66,7 +91,11 @@ export function computeTit1(title) {
     return normalized.slice(0, 1);
 }
 
-// TIT3: first 3 uppercase letters/digits of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
+/**
+ * TIT3: first 3 uppercase letters/digits of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
+ * @param {string|null|undefined} title
+ * @returns {string}
+ */
 export function computeTit3(title) {
     if (!title) return '';
     const cleaned = stripLeadingArticles(title);
@@ -74,18 +103,28 @@ export function computeTit3(title) {
     return normalized.slice(0, 3);
 }
 
-// Suggest a shelf location based on medium type matching the available options
+/**
+ * Suggest a shelf location based on medium type matching the available options
+ * @param {string|null|undefined} mediumType
+ * @param {any[]|null|undefined} locations
+ * @returns {string}
+ */
 export function suggestShelfLocation(mediumType, locations) {
     if (!locations || !locations.length) return '';
     
-    const norm = (s) => s ? normalizeAscii(s).toLowerCase().replace(/s$/, '').trim() : '';
+    const norm = (/** @type {string|null|undefined} */ s) => s ? normalizeAscii(s).toLowerCase().replace(/s$/, '').trim() : '';
     const query = norm(mediumType);
     
-    const found = locations.find(l => norm(l.label) === query);
+    const found = locations.find((/** @type {any} */ l) => norm(l.label) === query);
     return found ? found.label : '';
 }
 
-// Check if string matches wildcard rule (e.g. "Documentaires*") without RegExp
+/**
+ * Check if string matches wildcard rule (e.g. "Documentaires*") without RegExp
+ * @param {string} str
+ * @param {string} rule
+ * @returns {boolean}
+ */
 export function matchWildcard(str, rule) {
     if (rule.startsWith('*') && rule.endsWith('*')) {
         return str.includes(rule.slice(1, -1));
@@ -101,9 +140,9 @@ export function matchWildcard(str, rule) {
 
 /**
  * Computes a suggested call number based on dynamic settings rules.
- * @param {Object} record - Bibliographic record details
- * @param {string} currentShelf - Current selected shelf location
- * @param {Array} rules - Rules list from settings
+ * @param {import('../models/item.js').BibliographicRecord} record - Bibliographic record details
+ * @param {string} [currentShelf] - Current selected shelf location
+ * @param {any[]} [rules] - Rules list from settings
  * @returns {string} Suggested call number
  */
 export function computeCallNumber(record, currentShelf = '', rules = []) {

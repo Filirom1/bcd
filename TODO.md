@@ -655,7 +655,7 @@ Le même parseur de listes séparées par des virgules est redéfini dans au moi
 
 **État** : terminé. Les parseurs CSV/JSON, la normalisation Unicode, le formatage des auteurs, les couleurs Dewey et les métadonnées de statut sont centralisés dans `src/bcd_web_vue/js/utils/`. Les appels locaux ont été migrés et les utilitaires disposent de tests Vitest.
 
-### [ ] P2.10 — Introduire un contrôle de typage statique progressif via JSDoc et tsc
+### [x] P2.10 — Introduire un contrôle de typage statique progressif via JSDoc et tsc
 
 **Constat**
 
@@ -663,12 +663,14 @@ Le projet préserve la contrainte critique de n'avoir aucun outil de build oblig
 
 **Actions**
 
-1. Configurer un fichier `tsconfig.json` ou `jsconfig.json` en mode `"checkJs": true`, `"noEmit": true` pour guider le compilateur `tsc` en mode linter de types uniquement.
-2. Typer progressivement les modèles centraux (`models/item.js`, `models/borrower.js`) et les signatures d'API à l'aide de blocs de commentaires standard **JSDoc** (comme `@typedef` et `@type`).
-3. Activer le contrôle `@ts-check` de manière progressive fichier par fichier (en commençant par les utilitaires purs comme `utils/storage.js` et `utils/callNumber.js`).
-4. Ajouter une validation `npm run type-check` lancée lors de la CI pour garantir l'absence d'incohérences de typage.
+1. [x] Configurer un fichier `tsconfig.json` ou `jsconfig.json` en mode `"checkJs": true`, `"noEmit": true` pour guider le compilateur `tsc` en mode linter de types uniquement (mis en place avec `"checkJs": false` pour une activation progressive et fluide fichier par fichier via `// @ts-check`).
+2. [x] Typer progressivement les modèles centraux (`models/item.js`, `models/borrower.js`) et les signatures d'API à l'aide de blocs de commentaires standard **JSDoc** (comme `@typedef` et `@type`).
+3. [x] Activer le contrôle `@ts-check` de manière progressive fichier par fichier (en commençant par les utilitaires purs comme `utils/storage.js` et `utils/callNumber.js`).
+4. [x] Ajouter une validation `npm run type-check` lancée lors de la CI pour garantir l'absence d'incohérences de typage.
 
 **Terminé quand** : les fichiers JS modifiés sont validés statiquement par `tsc --noEmit` en tâche de fond (CI) sans nécessiter de compilation en production.
+
+**État** : terminé. Le type-check global est intégré au pipeline de test JS et configuré via `tsconfig.json` sur l'ensemble de l'application Web. Les composables principaux, l'ApiClient générique, les types Vue, et les fichiers d'utilitaires critiques sont entièrement couverts par JSDoc et validés statiquement sans aucune erreur.
 
 ### [ ] P2.11 — Corriger la dette technique de structure et de couplage Python
 

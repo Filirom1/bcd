@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Inventory Column Settings Composable
  * Manages visible columns for inventory working table with localStorage persistence
@@ -8,8 +9,18 @@ import { getJSON, setJSON } from '../utils/storage.js';
 
 const STORAGE_KEY = 'inventory_columns';
 
+/**
+ * @typedef {Object} InventoryColumnDefinition
+ * @property {string} id
+ * @property {string} label_en
+ * @property {string} label_fr
+ * @property {boolean} default
+ * @property {string} group
+ */
+
 // Available columns for inventory working table
 // Includes all fields that can be modified via bulk edit
+/** @type {InventoryColumnDefinition[]} */
 export const INVENTORY_AVAILABLE_COLUMNS = [
     // Item identification
     { id: 'item_id', label_en: 'Barcode', label_fr: 'Code-barre', default: true, group: 'item' },
@@ -50,10 +61,16 @@ export function useInventoryColumnSettings() {
         setJSON(STORAGE_KEY, newValue);
     }, { deep: true });
 
+    /**
+     * @param {string} columnId
+     */
     const isColumnVisible = (columnId) => {
         return visibleColumns.value.includes(columnId);
     };
 
+    /**
+     * @param {string} columnId
+     */
     const toggleColumn = (columnId) => {
         const index = visibleColumns.value.indexOf(columnId);
         if (index > -1) {

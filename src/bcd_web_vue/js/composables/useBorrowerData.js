@@ -1,4 +1,11 @@
+/**
+ * Composable for fetching borrower data from the API.
+ * @ts-check
+ */
+
 import { apiClient } from '../api/client.js';
+
+/** @typedef {import('../models/borrower.js').Borrower} Borrower */
 
 const { ref } = Vue;
 
@@ -13,10 +20,11 @@ export function useBorrowerData() {
      *
      * @param {string|null} classIds - Optional class ID to filter by
      * @param {number} pageSize - Number of borrowers to fetch (default: 500)
-     * @returns {Promise<Array>} Array of borrower objects
+     * @returns {Promise<Borrower[]>} Array of borrower objects
      * @throws {Error} If the API request fails
      */
     const fetchBorrowers = async (classIds = null, pageSize = 500) => {
+        /** @type {Record<string, any>} */
         const params = {
             page: 1,
             page_size: pageSize

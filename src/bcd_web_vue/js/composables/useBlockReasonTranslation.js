@@ -1,3 +1,4 @@
+// @ts-check
 const { useI18n } = VueI18n;
 
 /**
@@ -8,6 +9,7 @@ export function useBlockReasonTranslation() {
     const { t } = useI18n();
 
     // Map database values (English) to i18n keys
+    /** @type {Record<string, string>} */
     const reasonKeyMap = {
         'Lost Book': 'borrowers.reason_lost_book',
         'Damaged Materials': 'borrowers.reason_damaged',

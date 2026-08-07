@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Reusable Report Composable
  * Handles data fetching, filtering, and state for all reports
@@ -6,6 +7,9 @@
 const { ref, computed } = Vue;
 import { apiClient } from '../api/client.js';
 
+/**
+ * @param {string} reportType - API report endpoint segment (e.g. 'most-borrowed')
+ */
 export function useReport(reportType) {
     const data = ref([]);
     const loading = ref(false);

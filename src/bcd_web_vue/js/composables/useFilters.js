@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Filters composable with URL synchronization
  * Manages filter state and syncs with URL query parameters
@@ -8,28 +9,31 @@ const { useRouter, useRoute } = VueRouter;
 
 /**
  * Filters composable
- * @param {Object} initialFilters - Initial filter values
+ * @template {Record<string, any>} F
+ * @param {F} [initialFilters] - Initial filter values
  * @param {Object} [options] - Configuration options
  * @param {boolean} [options.syncWithURL=true] - Whether to sync with URL
  * @returns {Object} Filter state and methods
  */
-export function useFilters(initialFilters = {}, options = {}) {
+export function useFilters(initialFilters = /** @type {F} */ ({}), options = {}) {
     const syncWithURL = options.syncWithURL !== false;
     const router = syncWithURL ? useRouter() : null;
     const route = syncWithURL ? useRoute() : null;
 
-    // Initialize filters from URL query params if syncing, otherwise use defaults
+        // Initialize filters from URL query params if syncing, otherwise use defaults
+    /** @type {import('vue').Ref<any>} */
     const filters = ref(
-        syncWithURL
-            ? { ...initialFilters, ...Object.fromEntries(Object.entries(route.query)) }
-            : { ...initialFilters }
+        syncWithURL && route
+            ? /** @type {F} */ ({ ...initialFilters, ...Object.fromEntries(Object.entries(route.query)) })
+            : /** @type {F} */ ({ ...initialFilters })
     );
 
     /**
      * Computed: Active filters count (non-empty values)
      */
     const activeFiltersCount = computed(() => {
-        return Object.values(filters.value).filter(val => {
+        const currentFilters = /** @type {Record<string, any>} */ (filters.value);
+        return Object.values(currentFilters).filter(val => {
             return val !== null && val !== undefined && val !== '';
         }).length;
     });
@@ -43,7 +47,7 @@ export function useFilters(initialFilters = {}, options = {}) {
 
     /**
      * Update a filter value
-     * @param {string} key - Filter key
+     * @param {keyof F} key - Filter key
      * @param {any} value - Filter value
      */
     const setFilter = (key, value) => {
@@ -60,7 +64,7 @@ export function useFilters(initialFilters = {}, options = {}) {
 
     /**
      * Clear a specific filter
-     * @param {string} key - Filter key to clear
+     * @param {keyof F} key - Filter key to clear
      */
     const clearFilter = (key) => {
         filters.value[key] = Object.hasOwn(initialFilters, key)
@@ -79,6 +83,7 @@ export function useFilters(initialFilters = {}, options = {}) {
      * Get API params object (excludes null/undefined/empty values)
      */
     const getApiParams = () => {
+        /** @type {Record<string, any>} */
         const params = {};
         Object.entries(filters.value).forEach(([key, value]) => {
             if (value !== null && value !== undefined && value !== '') {
@@ -93,6 +98,7 @@ export function useFilters(initialFilters = {}, options = {}) {
         watch(
             filters,
             (newFilters) => {
+                /** @type {Record<string, any>} */
                 const query = {};
                 Object.entries(newFilters).forEach(([key, value]) => {
                     if (value !== null && value !== undefined && value !== '') {

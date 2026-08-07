@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Centralized error handling composable
  * Handles ApiError instances with special cases and i18n integration
@@ -74,8 +75,9 @@ export function useErrorHandler(t) {
             return {};
         }
 
+        /** @type {Record<string, string>} */
         const fieldErrors = {};
-        const details = error.details || {};
+        const details = /** @type {Record<string, any>} */ (error.details || {});
 
         // Map API validation errors to field names
         Object.entries(details).forEach(([field, messages]) => {

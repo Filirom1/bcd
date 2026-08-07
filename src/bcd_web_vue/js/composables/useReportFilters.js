@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Shared composable for cross-filter state used by collection reports.
  * Handles: medium_type, target_audience, taux_rotation min/max.
@@ -8,7 +9,23 @@
 
 const { ref, computed } = Vue;
 
+/**
+ * @typedef {Object} CrossFilters
+ * @property {string|null} [medium_type]
+ * @property {string|null} [target_audience]
+ * @property {number|null} [taux_rotation_min]
+ * @property {number|null} [taux_rotation_max]
+ * @property {number|null} [pub_year_min]
+ * @property {number|null} [pub_year_max]
+ */
+
+/**
+ * @param {Function} t - vue-i18n translation function
+ * @param {Function} audienceLabel - label resolver for audience values
+ * @param {Partial<CrossFilters>} [extraFilters]
+ */
 export function useReportFilters(t, audienceLabel, extraFilters = {}) {
+    /** @type {import('vue').Ref<any>} */
     const crossFilters = ref({
         medium_type: null,
         target_audience: null,
@@ -21,13 +38,22 @@ export function useReportFilters(t, audienceLabel, extraFilters = {}) {
         Object.values(crossFilters.value).some(v => v !== null)
     );
 
+    /**
+     * @param {string} key
+     * @param {any} value
+     */
     const toggleBreakdown = (key, value) => {
+        const cf = /** @type {Record<string, any>} */ (crossFilters.value);
         crossFilters.value = {
             ...crossFilters.value,
-            [key]: crossFilters.value[key] === value ? null : value,
+            [key]: cf[key] === value ? null : value,
         };
     };
 
+    /**
+     * @param {string} key
+     * @param {Function|null} [resetFn]
+     */
     const clearFilter = (key, resetFn = null) => {
         if (key === 'taux_rotation') {
             crossFilters.value = { ...crossFilters.value, taux_rotation_min: null, taux_rotation_max: null };
@@ -39,8 +65,11 @@ export function useReportFilters(t, audienceLabel, extraFilters = {}) {
         if (resetFn) resetFn(key);
     };
 
+    /**
+     * @param {Function|null} [resetFn]
+     */
     const clearAllFilters = (resetFn = null) => {
-        const cleared = {};
+        const cleared = /** @type {Record<string, any>} */ ({});
         for (const k of Object.keys(crossFilters.value)) cleared[k] = null;
         crossFilters.value = cleared;
         if (resetFn) resetFn();
@@ -50,6 +79,10 @@ export function useReportFilters(t, audienceLabel, extraFilters = {}) {
      * Filter an item list applying all active cross-filters.
      * excludeKey: skip that filter (for breakdown distribution queries).
      * tauxField: which field to compare against taux_rotation min/max.
+     * @param {any[]} items
+     * @param {string|null} [excludeKey]
+     * @param {string} [tauxField]
+     * @returns {any[]}
      */
     const applyFilters = (items, excludeKey = null, tauxField = 'taux_rotation') => {
         const cf = crossFilters.value;
@@ -68,8 +101,15 @@ export function useReportFilters(t, audienceLabel, extraFilters = {}) {
         });
     };
 
-    /** Build a sorted [{ value, count }] breakdown for a given key. */
+    /** 
+     * Build a sorted [{ value, count }] breakdown for a given key.
+     * @param {any[]} allItems
+     * @param {string} key
+     * @param {string} [tauxField]
+     * @returns {Array<{value: string, count: number}>}
+     */
     const buildBreakdown = (allItems, key, tauxField = 'taux_rotation') => {
+        /** @type {Record<string, number>} */
         const counts = {};
         applyFilters(allItems, key, tauxField).forEach(item => {
             const val = item[key];

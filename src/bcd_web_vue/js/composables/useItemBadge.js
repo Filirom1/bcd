@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * useItemBadge composable
  *
@@ -29,15 +30,16 @@ import { parseJsonSetting } from '../utils/domain.js';
  */
 export function useItemBadge(settings) {
     // Parse catalog_shelf_locations once per settings change
+    /** @type {import('vue').ComputedRef<Array<{label: string, color?: string}>>} */
     const shelfLocations = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
 
     // Parse dewey_colors (10-element array of hex strings)
-    const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, null));
+    const deweyColors = computed(() => /** @type {string[]|null} */ (parseJsonSetting(settings.value?.dewey_colors, null)));
 
     /**
      * Returns an inline style object for a shelf-location badge.
      * @param {string|null} label
-     * @returns {{ background: string, color: string, border?: string, borderRadius: string }}
+     * @returns {Record<string, string>|null}
      */
     function getShelfBadge(label) {
         const base = { borderRadius: '4px', padding: '2px 6px', fontSize: '.75rem', fontWeight: '600', display: 'inline-block' };
@@ -63,7 +65,7 @@ export function useItemBadge(settings) {
      * Returns an inline style object for a call-number (cote) badge.
      * Color is derived from the first digit of the Dewey number in call_number.
      * @param {string|null} callNumber
-     * @returns {{ background: string, color: string, borderRadius: string }|null}
+     * @returns {Record<string, string>|null}
      */
     function getCoteBadge(callNumber) {
         const base = { borderRadius: '20px', padding: '2px 8px', fontSize: '.75rem', fontWeight: '600', display: 'inline-block' };

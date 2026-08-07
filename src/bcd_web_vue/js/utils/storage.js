@@ -1,6 +1,7 @@
 /**
  * Robust localStorage Adapter Utility
  * Centralizes localStorage access, exception handling, and JSON serialization.
+ * @ts-check
  */
 
 const PREFIX = 'bcd_';
@@ -26,7 +27,7 @@ export function getItem(key, fallback = null) {
         const value = localStorage.getItem(getPrefixedKey(key));
         return value !== null ? value : fallback;
     } catch (e) {
-        console.warn(`localStorage.getItem('${key}') blocked by browser:`, e.message);
+        console.warn(`localStorage.getItem('${key}') blocked by browser:`, e instanceof Error ? e.message : String(e));
         return fallback;
     }
 }
@@ -40,7 +41,7 @@ export function setItem(key, value) {
     try {
         localStorage.setItem(getPrefixedKey(key), value);
     } catch (e) {
-        console.warn(`localStorage.setItem('${key}') blocked by browser:`, e.message);
+        console.warn(`localStorage.setItem('${key}') blocked by browser:`, e instanceof Error ? e.message : String(e));
     }
 }
 
@@ -52,7 +53,7 @@ export function removeItem(key) {
     try {
         localStorage.removeItem(getPrefixedKey(key));
     } catch (e) {
-        console.warn(`localStorage.removeItem('${key}') blocked by browser:`, e.message);
+        console.warn(`localStorage.removeItem('${key}') blocked by browser:`, e instanceof Error ? e.message : String(e));
     }
 }
 
@@ -102,6 +103,6 @@ export function clearStorage() {
             localStorage.removeItem(key);
         }
     } catch (e) {
-        console.warn('localStorage.clear blocked by browser:', e.message);
+        console.warn('localStorage.clear blocked by browser:', e instanceof Error ? e.message : String(e));
     }
 }
