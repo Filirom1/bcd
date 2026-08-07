@@ -38,7 +38,7 @@ export default defineComponent({
     },
 
     setup(props) {
-        const { t, locale } = useI18n();
+        const { t, d, locale } = useI18n();
         const { openRecord } = useGlobalModal();
         const { settings: appSettings } = useAppState();
         const { getShelfBadge, getCoteBadge } = useItemBadge(appSettings);

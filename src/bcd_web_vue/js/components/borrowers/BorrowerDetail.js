@@ -13,6 +13,7 @@ import { useBlockReasonTranslation } from '../../composables/useBlockReasonTrans
 import { formatCivilDate } from '../../utils/date.js';
 import { formatAuthors } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 
 export default {
     name: 'BorrowerDetail',
@@ -645,7 +646,8 @@ export default {
             holdSearchLoading.value = true;
             try {
                 const data = await apiClient.get('/catalog/bibliographic/search', { q, limit: 6 });
-                holdResults.value = data.records || data.items || [];
+                const normalized = normalizeCollection(data);
+                holdResults.value = normalized.items;
             } catch {
                 holdResults.value = [];
             } finally {

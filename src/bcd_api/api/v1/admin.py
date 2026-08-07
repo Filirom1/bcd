@@ -74,7 +74,7 @@ def update_env_file_content(payload: dict):
     return {"content": content}
 
 
-@router.get("/settings")
+@router.get("/settings", response_model=SystemSettingsResponse)
 def get_settings(
     db: Session = Depends(get_db)
 ):
@@ -94,7 +94,7 @@ def get_settings(
     return settings
 
 
-@router.put("/settings")
+@router.put("/settings", response_model=SystemSettingsResponse)
 async def update_settings(
     settings_update: SettingsUpdate,
     db: Session = Depends(get_db),

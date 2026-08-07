@@ -8,6 +8,7 @@ const { defineComponent, computed, ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import { formatAuthors, parseCsv } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useNotification } from '../../composables/useNotification.js';
@@ -260,7 +261,8 @@ export default defineComponent({
                 const response = await apiClient.get(endpoint, params);
 
                 // Filter and add CREW scores to items
-                let items = response.items || [];
+                const normalized = normalizeCollection(response);
+                let items = normalized.items;
 
                 // Calculate CREW scores for all items first
                 items.forEach(item => {

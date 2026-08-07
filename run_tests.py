@@ -157,14 +157,9 @@ def main():
         description="BCD Unified Test Suite Runner (Python + JavaScript)"
     )
     parser.add_argument(
-        "--js",
-        action="store_true",
-        help="Run JavaScript unit/component tests only",
-    )
-    parser.add_argument(
-        "--python",
-        action="store_true",
-        help="Run Python backend/CLI tests only",
+        "suite",
+        choices=["python", "js", "all"],
+        help="Test suite to run: 'python', 'js', or 'all'",
     )
     parser.add_argument(
         "--fast",
@@ -190,10 +185,9 @@ def main():
     args = parser.parse_args()
     verbose = should_show_logs(args.verbose)
 
-    # If neither --js nor --python is specified, run both
-    run_all = not args.js and not args.python
-    run_js_suite = args.js or run_all
-    run_py_suite = args.python or run_all
+    # Determine which suites to run based on the mandatory 'suite' argument
+    run_js_suite = args.suite in ("js", "all")
+    run_py_suite = args.suite in ("python", "all")
 
     success = True
 

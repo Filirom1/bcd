@@ -6,6 +6,7 @@
 const { defineComponent, ref, onMounted, nextTick } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import AutocompleteInput from '../ui/AutocompleteInput.js';
 
 export default defineComponent({
@@ -38,7 +39,8 @@ export default defineComponent({
                     q: query,
                     limit: 10
                 }, { signal });
-                return response.items || [];
+                const normalized = normalizeCollection(response);
+                return normalized.items;
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     console.error('Error fetching borrowers:', error);

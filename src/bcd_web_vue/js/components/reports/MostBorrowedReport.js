@@ -11,6 +11,7 @@
 const { defineComponent, ref, computed, watch, onMounted } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { usePagination } from '../../composables/usePagination.js';
@@ -97,7 +98,8 @@ export default defineComponent({
             loading.value = true;
             try {
                 const response = await apiClient.get('/reports/most-borrowed', { period: period.value, limit: 500 });
-                allData.value = (response.titles || []).map(item => ({
+                const normalized = normalizeCollection(response, { fallbackItemsKey: 'titles' });
+                allData.value = normalized.items.map(item => ({
                     ...item,
                     taux_rotation: item.total_copies > 0
                         ? Math.round((item.checkout_count / item.total_copies) * 10) / 10

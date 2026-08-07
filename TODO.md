@@ -278,7 +278,7 @@ Plusieurs composants dépassent 700 à 1 000 lignes : `CollectionReport.js`, `Re
 
 **Terminé quand** : les règles pures sont testables sans monter une page complète et chaque gros composant a une responsabilité dominante.
 
-### [ ] P1.5 — Mettre le client Godot en conformité avec sa règle « zéro UI procédurale »
+### [I] P1.5 — Mettre le client Godot en conformité avec sa règle « zéro UI procédurale »
 
 **Constat**
 
@@ -317,7 +317,7 @@ La règle du dépôt interdit la construction de layout via `Node.new()`/`add_ch
 
 **Terminé quand** : une recherche scanner utilise un nombre constant de requêtes et une recherche remplacée ne peut plus modifier l'état courant.
 
-### [ ] P1.7 — Normaliser les contrats de collection et de pagination
+### [x] P1.7 — Normaliser les contrats de collection et de pagination
 
 **Constat**
 
@@ -441,7 +441,7 @@ Le Web mélange le formateur `vue-i18n`, `toLocaleDateString()`, `toLocaleTimeSt
 
 **Terminé quand** : la langue de l'OS n'influence plus l'affichage et une date civile locale ne change jamais de jour lors de sa sérialisation.
 
-### [ ] P1.14 — Exposer les paramètres structurés comme des structures, pas comme du JSON texte
+### [x] P1.14 — Exposer les paramètres structurés comme des structures, pas comme du JSON texte
 
 **Constat**
 

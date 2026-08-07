@@ -31,6 +31,7 @@ import { ApiError } from '../models/error.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { apiClient } from '../api/client.js';
+import { normalizeCollection } from '../models/pagination.js';
 
 const { defineComponent } = Vue;
 const { useI18n } = VueI18n;
@@ -223,15 +224,9 @@ export default defineComponent({
 
                 const data = await apiClient.get('/borrowers', params);
 
-                // Handle paginated response
-                if (data.items) {
-                    borrowers.value = data.items;
-                    setTotalItems(data.total);
-                } else {
-                    // Handle non-paginated response (fallback)
-                    borrowers.value = data;
-                    setTotalItems(data.length);
-                }
+                const normalized = normalizeCollection(data);
+                borrowers.value = normalized.items;
+                setTotalItems(normalized.pagination.total_items);
 
             } catch (error) {
                 handleError(error);

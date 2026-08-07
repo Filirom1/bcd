@@ -11,6 +11,7 @@
 const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useAppState } from '../../composables/useAppState.js';
 import InventorySearchResults from './InventorySearchResults.js';
@@ -88,8 +89,9 @@ export default defineComponent({
 
                 const response = await apiClient.get('/inventory/items/search', params);
 
-                searchResults.value = response.items;
-                totalCount.value = response.total_count;
+                const normalized = normalizeCollection(response);
+                searchResults.value = normalized.items;
+                totalCount.value = normalized.pagination.total_items;
                 displayedCount.value = response.displayed_count;
                 capped.value = response.capped;
                 archiveCutoffDate.value = response.archive_cutoff_date;

@@ -9,6 +9,7 @@ const { defineComponent, ref, computed, watch, onMounted, onBeforeUnmount, nextT
 const { useI18n } = VueI18n;
 import { Chart, BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip } from 'chart.js';
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useNotification } from '../../composables/useNotification.js';
@@ -370,7 +371,8 @@ export default defineComponent({
             tableLoading.value = true;
             try {
                 const response = await apiClient.get('/inventory/items/search', buildTableParams());
-                let items = response.items || [];
+                const normalized = normalizeCollection(response);
+                let items = normalized.items;
 
                 if (crewMethod.value === 'high_score') {
                     items.forEach(i => { const c = calculateCrewScore(i); i.crew_score = c.score; i.crew_reasons = c.reasons; i.taux_rotation = i.circulation_count || 0; });

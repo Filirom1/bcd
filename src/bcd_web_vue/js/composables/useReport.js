@@ -6,11 +6,13 @@
 
 const { ref, computed } = Vue;
 import { apiClient } from '../api/client.js';
+import { normalizeCollection } from '../models/pagination.js';
 
 /**
  * @param {string} reportType - API report endpoint segment (e.g. 'most-borrowed')
  */
 export function useReport(reportType) {
+    /** @type {import('vue').Ref<any[]>} */
     const data = ref([]);
     const loading = ref(false);
     const period = ref('year');
@@ -29,8 +31,8 @@ export function useReport(reportType) {
             if (mediumTypeFilter.value && mediumTypeFilter.value !== '') params.medium_type = mediumTypeFilter.value;
 
             const response = await apiClient.get(`/reports/${reportType}`, params);
-            // Different report types return data in different fields
-            data.value = response.data || response.items || response.titles || [];
+            const normalized = normalizeCollection(response);
+            data.value = normalized.items;
         } catch (error) {
             console.error(`Error loading ${reportType} report:`, error);
             data.value = [];

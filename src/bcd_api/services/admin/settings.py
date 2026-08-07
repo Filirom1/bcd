@@ -146,6 +146,8 @@ def update_settings(
 
     for key, value in updates.items():
         if key in allowed_fields and hasattr(settings, key):
+            if key in ("dewey_colors", "catalog_shelf_locations", "catalog_call_number_rules") and (isinstance(value, list) or isinstance(value, dict)):
+                value = json.dumps(value)
             setattr(settings, key, value)
 
     db.commit()

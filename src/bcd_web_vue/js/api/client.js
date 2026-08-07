@@ -13,6 +13,19 @@ import { ApiError, ERROR_CODES } from '../models/error.js';
  */
 
 /**
+ * @typedef {Object} ShelfLocation
+ * @property {string} label - Shelf location label
+ * @property {string|null} [color] - Shelf location badge color (hex)
+ */
+
+/**
+ * @typedef {Object} CallNumberRule
+ * @property {string|null} [medium_type] - Target medium type for this rule
+ * @property {string|null} [shelf_location] - Target shelf location for this rule
+ * @property {string} pattern - Call number pattern template
+ */
+
+/**
  * @typedef {Object} SystemSettings
  * @property {number} id - Database auto-increment ID
  * @property {string} id_format - ID Format: numeric or alphanumeric
@@ -41,9 +54,9 @@ import { ApiError, ERROR_CODES } from '../models/error.js';
  * @property {string|null} [catalog_languages] - Comma separated languages
  * @property {string|null} [catalog_levels] - Comma separated levels
  * @property {number} [inventory_search_result_limit] - Inventory search limit
- * @property {string|null} [dewey_colors] - Dewey colors JSON or text
- * @property {string|null} [catalog_shelf_locations] - Shelf locations JSON or text
- * @property {string|null} [catalog_call_number_rules] - Call number rules JSON or text
+ * @property {string[]|null} [dewey_colors] - List of 10 hex colors for Dewey classes
+ * @property {ShelfLocation[]|null} [catalog_shelf_locations] - List of configured shelf locations
+ * @property {CallNumberRule[]|null} [catalog_call_number_rules] - List of configured call number pattern rules
  */
 
 /**

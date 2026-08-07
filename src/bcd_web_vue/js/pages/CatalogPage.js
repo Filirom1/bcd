@@ -7,6 +7,7 @@ const { defineComponent, ref, reactive, computed, onMounted, watch } = Vue;
 const { useI18n } = VueI18n;
 const { useRoute, useRouter } = VueRouter;
 import { apiClient } from '../api/client.js';
+import { normalizeCollection } from '../models/pagination.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useAdminShortcuts, altHeld } from '../composables/useKeyboardShortcuts.js';
@@ -244,8 +245,9 @@ export default defineComponent({
 
                 const data = await apiClient.get('/catalog/bibliographic/search', params);
 
-                results.value = data.items || [];
-                totalItems.value = data.total || 0;
+                const normalized = normalizeCollection(data);
+                results.value = normalized.items;
+                totalItems.value = normalized.pagination.total_items;
 
                 // Update URL
                 updateURL();

@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../api/client.js';
+import { normalizeCollection } from '../models/pagination.js';
 
 /** @typedef {import('../models/borrower.js').Borrower} Borrower */
 
@@ -36,7 +37,8 @@ export function useBorrowerData() {
 
         try {
             const data = await apiClient.get('/borrowers', params);
-            return data.items || data.borrowers || [];
+            const normalized = normalizeCollection(data);
+            return normalized.items;
         } catch (error) {
             throw new Error('Failed to load borrowers');
         }

@@ -5,9 +5,10 @@
   "scripts": {
     "test": "npm run test:js && pytest tests",
     "test:fast": "npm run test:js && pytest tests -m 'not e2e and not slow'",
-    "test:js": "vitest run",
+    "type-check": "tsc --noEmit",
+    "test:js": "npm run type-check && vitest run",
     "test:js:watch": "vitest",
-    "test:js:coverage": "vitest run --coverage",
+    "test:js:coverage": "npm run type-check && vitest run --coverage",
     "build:web": "node scripts/build_web.mjs",
     "verify:web-build": "npm run build:web && node scripts/verify_web_build.mjs",
     "web": "python scripts/web_ui.py",
@@ -27,6 +28,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "@vue/test-utils": "2.4.6",
     "jsdom": "25.0.1",
+    "typescript": "^5.9.3",
     "vite": "8.2.0",
     "vitest": "4.1.10"
   }

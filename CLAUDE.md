@@ -56,11 +56,11 @@ python -m src.bcd_cli.main catalog import data/sample_bibliographic.csv
 The recommended way to run tests is using the unified central test runner:
 
 ```bash
-python run_tests.py             # Run all active Python + JS tests (complete suite)
-python run_tests.py --fast      # Run fast Python + JS tests (ideal before commit)
-python run_tests.py --js        # Run JavaScript Vitest tests only
-python run_tests.py --python    # Run Python Pytest tests only
-python run_tests.py --cov       # Run selected suites with coverage enabled
+python run_tests.py all         # Run all active Python + JS tests (complete suite)
+python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
+python run_tests.py js          # Run JavaScript Vitest tests only
+python run_tests.py python      # Run Python Pytest tests only
+python run_tests.py all --cov   # Run selected suites with coverage enabled
 ```
 
 Alternatively, you can run individual suites directly:

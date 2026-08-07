@@ -19,6 +19,7 @@
 const { defineComponent, ref, computed, onMounted, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import { useBarcodeUtils } from '../../composables/useBarcodeUtils.js';
 
 export default defineComponent({
@@ -123,7 +124,8 @@ export default defineComponent({
                     role: 'student',
                     limit: 500
                 });
-                roster.value = data.items || [];
+                const normalized = normalizeCollection(data);
+                roster.value = normalized.items;
             } catch (err) {
                 console.error('Failed to load roster:', err);
                 roster.value = [];

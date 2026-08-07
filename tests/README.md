@@ -23,11 +23,11 @@ tests/
 The recommended way to run tests is using the unified central test runner:
 
 ```bash
-python run_tests.py             # Run all active Python + JS tests (complete suite)
-python run_tests.py --fast      # Run fast Python + JS tests (ideal before commit)
-python run_tests.py --js        # Run JavaScript Vitest tests only
-python run_tests.py --python    # Run Python Pytest tests only
-python run_tests.py --cov       # Run with coverage collection enabled
+python run_tests.py all         # Run all active Python + JS tests (complete suite)
+python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
+python run_tests.py js          # Run JavaScript Vitest tests only
+python run_tests.py python      # Run Python Pytest tests only
+python run_tests.py all --cov   # Run with coverage collection enabled
 ```
 
 ### Direct suites and coverage

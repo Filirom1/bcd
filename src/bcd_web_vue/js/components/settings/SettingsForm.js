@@ -49,35 +49,32 @@ export default defineComponent({
         const DEFAULT_DEWEY_COLORS = DEWEY_DEFAULT_COLORS;
 
         const deweyColorsList = computed(() => {
-            const parsed = parseJsonSetting(localSettings.value.dewey_colors, null);
+            const parsed = localSettings.value.dewey_colors;
             return Array.isArray(parsed) && parsed.length === 10 ? parsed : DEFAULT_DEWEY_COLORS;
         });
 
         const updateDeweyColor = (n, hex) => {
             const colors = [...deweyColorsList.value];
             colors[n] = hex;
-            const colorsStr = JSON.stringify(colors);
-            localSettings.value.dewey_colors = colorsStr;
-            props.settings.dewey_colors = colorsStr;
+            localSettings.value.dewey_colors = colors;
+            props.settings.dewey_colors = colors;
         };
 
         const toggleDeweyColor = (n) => {
             const colors = [...deweyColorsList.value];
             colors[n] = colors[n] ? null : DEFAULT_DEWEY_COLORS[n];
-            const colorsStr = JSON.stringify(colors);
-            localSettings.value.dewey_colors = colorsStr;
-            props.settings.dewey_colors = colorsStr;
+            localSettings.value.dewey_colors = colors;
+            props.settings.dewey_colors = colors;
         };
 
         const shelfLocationsList = computed(() => {
-            const parsed = parseJsonSetting(localSettings.value.catalog_shelf_locations, null);
+            const parsed = localSettings.value.catalog_shelf_locations;
             return Array.isArray(parsed) ? parsed : [];
         });
 
         const updateShelfLocations = (list) => {
-            const listStr = JSON.stringify(list);
-            localSettings.value.catalog_shelf_locations = listStr;
-            props.settings.catalog_shelf_locations = listStr;
+            localSettings.value.catalog_shelf_locations = list;
+            props.settings.catalog_shelf_locations = list;
         };
 
         const addShelfLocation = () => {
@@ -106,7 +103,7 @@ export default defineComponent({
 
         watch(() => localSettings.value.catalog_call_number_rules, (newVal) => {
             try {
-                const parsed = parseJsonSetting(newVal, []);
+                const parsed = Array.isArray(newVal) ? newVal : [];
                 if (JSON.stringify(parsed) !== JSON.stringify(localRules.value)) {
                     localRules.value = parsed;
                 }
@@ -116,9 +113,8 @@ export default defineComponent({
         }, { immediate: true });
 
         watch(localRules, (newVal) => {
-            const rulesStr = JSON.stringify(newVal);
-            localSettings.value.catalog_call_number_rules = rulesStr;
-            props.settings.catalog_call_number_rules = rulesStr;
+            localSettings.value.catalog_call_number_rules = newVal;
+            props.settings.catalog_call_number_rules = newVal;
         }, { deep: true });
 
         const mediumTypesOptions = computed(() => {

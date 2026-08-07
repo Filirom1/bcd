@@ -5,9 +5,9 @@ import SettingsForm from '../../../../src/bcd_web_vue/js/components/settings/Set
 
 const settings = () => ({
     library_name: 'BCD',
-    dewey_colors: JSON.stringify(['#000000']),
-    catalog_shelf_locations: JSON.stringify([{ label: 'Fiction', color: '#ffffff' }]),
-    catalog_call_number_rules: JSON.stringify([{ medium_type: 'Book', shelf_location: 'Fiction', pattern: '' }]),
+    dewey_colors: ['#000000'],
+    catalog_shelf_locations: [{ label: 'Fiction', color: '#ffffff' }],
+    catalog_call_number_rules: [{ medium_type: 'Book', shelf_location: 'Fiction', pattern: '' }],
     catalog_medium_types: 'Book, Magazine'
 });
 
@@ -29,11 +29,11 @@ describe('SettingsForm', () => {
         wrapper.vm.addCallNumberRule();
         await wrapper.vm.$nextTick();
 
-        expect(JSON.parse(value.catalog_shelf_locations)).toEqual([
+        expect(value.catalog_shelf_locations).toEqual([
             { label: 'Fiction', color: '#ffffff' },
             { label: 'Non-fiction', color: null }
         ]);
-        expect(JSON.parse(value.catalog_call_number_rules)).toHaveLength(2);
+        expect(value.catalog_call_number_rules).toHaveLength(2);
     });
 
     it('emits save and reset actions', async () => {

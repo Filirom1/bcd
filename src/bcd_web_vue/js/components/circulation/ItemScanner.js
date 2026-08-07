@@ -6,6 +6,7 @@
 const { defineComponent, ref, onMounted, nextTick, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import AutocompleteInput from '../ui/AutocompleteInput.js';
 
 export default defineComponent({
@@ -47,9 +48,11 @@ export default defineComponent({
                     limit: 10
                 }, { signal });
 
+                const normalized = normalizeCollection(response);
+
                 // For each bibliographic record, fetch its items to get actual barcodes
                 const recordsWithItems = await Promise.all(
-                    (response.items || []).map(async (record) => {
+                    normalized.items.map(async (record) => {
                         try {
                             const items = await apiClient.get(`/catalog/bibliographic/${record.id}/items`, {}, { signal });
                             return {

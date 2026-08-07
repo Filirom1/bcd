@@ -219,11 +219,11 @@ tests/
 The recommended and simplest way to run all test suites is via the central unified runner:
 
 ```bash
-python run_tests.py             # Run all active Python + JS tests
-python run_tests.py --fast      # Run fast Python + JS tests (ideal before commit)
-python run_tests.py --js        # Run JavaScript Vitest tests only
-python run_tests.py --python    # Run Python Pytest tests only
-python run_tests.py --cov       # Run selected suites with coverage enabled
+python run_tests.py all         # Run all active Python + JS tests
+python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
+python run_tests.py js          # Run JavaScript Vitest tests only
+python run_tests.py python      # Run Python Pytest tests only
+python run_tests.py all --cov   # Run selected suites with coverage enabled
 ```
 
 Alternatively, you can run specific pytest suites manually:

@@ -57,6 +57,7 @@ pkgs.mkShell {
     # Runs Web UI tests and the Vite production build. FastAPI remains the
     # only development server; run `npm ci` once after entering the shell.
     nodejs_22
+    nodePackages.typescript
 
     chromium
   ];

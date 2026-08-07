@@ -120,6 +120,9 @@ jobs:
       - name: Install JavaScript test dependencies
         run: npm ci
 
+      - name: Run JavaScript static type checking
+        run: npm run type-check
+
       - name: Run JavaScript tests with coverage
         run: npm run test:js:coverage
 

@@ -19,6 +19,7 @@ import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 
 export default defineComponent({
     name: 'RecordDetail',
@@ -269,7 +270,8 @@ export default defineComponent({
 
         const fetchBorrowers = async (query, signal) => {
             const data = await apiClient.get('/borrowers', { q: query, limit: 10 }, { signal });
-            return data.items || [];
+            const normalized = normalizeCollection(data);
+            return normalized.items;
         };
 
         const formatBorrowerResult = (borrower) => {
