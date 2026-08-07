@@ -237,9 +237,12 @@ export default defineComponent({
                         break;
 
                     case 'item_not_available':
+                        const rawStatus = context.status || '';
+                        const statusKey = `item.status_${rawStatus}`;
+                        const translatedStatus = t(statusKey) === statusKey ? rawStatus : t(statusKey);
                         friendlyMessage = t('errors.item_not_available', {
                             item_id: context.item_id || barcode,
-                            status: context.status
+                            status: translatedStatus
                         });
                         break;
 
