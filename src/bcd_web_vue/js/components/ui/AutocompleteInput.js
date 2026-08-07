@@ -3,8 +3,9 @@
  * Reusable autocomplete input with debouncing, keyboard navigation, and barcode scanner support
  */
 
-const { defineComponent, ref, watch, computed, onMounted, onUnmounted, nextTick } = Vue;
+const { defineComponent, ref, watch, computed, onMounted, onUnmounted, nextTick, toRef } = Vue;
 const { useI18n } = VueI18n;
+import { useDebouncedAction } from '../../composables/useDebouncedAction.js';
 
 export default defineComponent({
     name: 'AutocompleteInput',
@@ -68,10 +69,14 @@ export default defineComponent({
         const selectedIndex = ref(-1);
 
         // Debounce and scanner detection
-        let debounceTimeout = null;
         let abortController = null;
         let lastKeystrokeTime = 0;
         let keystrokeTimes = [];
+
+        // Debounced search
+        const debouncedSearch = useDebouncedAction(() => {
+            fetchAutocomplete();
+        }, toRef(props, 'debounceMs'));
 
         // Computed
         const hasMinChars = computed(() => {
@@ -141,17 +146,6 @@ export default defineComponent({
             } finally {
                 loading.value = false;
             }
-        };
-
-        // Debounced search
-        const debouncedSearch = () => {
-            if (debounceTimeout) {
-                clearTimeout(debounceTimeout);
-            }
-
-            debounceTimeout = setTimeout(() => {
-                fetchAutocomplete();
-            }, props.debounceMs);
         };
 
         // Handle input change
@@ -259,10 +253,7 @@ export default defineComponent({
             }
 
             // Clear debounce timer
-            if (debounceTimeout) {
-                clearTimeout(debounceTimeout);
-                debounceTimeout = null;
-            }
+            debouncedSearch.cancel();
         };
 
         // Handle submit (Enter or button click)

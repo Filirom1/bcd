@@ -4,6 +4,7 @@
  */
 
 import { ApiError, ERROR_CODES } from '../models/error.js';
+import { downloadBlob } from '../utils/download.js';
 
 /**
  * @typedef {Object} HealthStatus
@@ -309,6 +310,33 @@ export class ApiClient {
             requestOptions.body = JSON.stringify(data);
         }
         return this._request(url, requestOptions);
+    }
+
+    /**
+     * Download a file from a GET endpoint
+     * @param {string} endpoint - API endpoint
+     * @param {string} filename - Filename for download
+     * @param {Object} [params] - Query parameters
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<void>}
+     */
+    async download(endpoint, filename, params = {}, options = {}) {
+        const blob = await this.get(endpoint, params, { ...options, responseType: 'blob' });
+        downloadBlob(blob, filename);
+    }
+
+    /**
+     * Download a file from a POST endpoint
+     * @param {string} endpoint - API endpoint
+     * @param {any} data - Request body
+     * @param {string} filename - Filename for download
+     * @param {Object} [params] - Query parameters
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<void>}
+     */
+    async downloadPost(endpoint, data, filename, params = {}, options = {}) {
+        const blob = await this.post(endpoint, data, params, { ...options, responseType: 'blob' });
+        downloadBlob(blob, filename);
     }
 }
 

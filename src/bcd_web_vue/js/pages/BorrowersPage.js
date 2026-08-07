@@ -437,20 +437,8 @@ export default defineComponent({
             exportLoading.value = true;
 
             try {
-                // Call export endpoint
-                const blob = await apiClient.get('/borrowers/export', {}, { responseType: 'blob' });
-
-                let filename = 'borrowers_export.csv';
-
-                // Trigger download
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
+                // Call export endpoint and trigger download
+                await apiClient.download('/borrowers/export', 'borrowers_export.csv');
 
                 // Show success message
                 const { success } = useNotification();

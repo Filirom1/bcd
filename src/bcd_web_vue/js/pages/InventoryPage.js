@@ -120,17 +120,8 @@ export default defineComponent({
             }
 
             try {
-                const blob = await apiClient.post('/inventory/export-csv', { item_ids: itemIds }, {}, { responseType: 'blob' });
-
-                // Download CSV file
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+                const filename = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
+                await apiClient.downloadPost('/inventory/export-csv', { item_ids: itemIds }, filename);
 
                 success(t('inventory.working_table.export_success'));
             } catch (error) {

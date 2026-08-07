@@ -205,4 +205,92 @@ describe('ApiClient', () => {
         expect(options.method).toBe('DELETE');
         expect(options.body).toBe('[1,2]');
     });
+
+    it('download helper performs GET request and triggers downloadBlob', async () => {
+        const mockBlob = new Blob(['csv data'], { type: 'text/csv' });
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            blob: async () => mockBlob
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const mockCreateObjectURL = vi.fn(() => 'blob:http://localhost/mock-uuid');
+        const mockRevokeObjectURL = vi.fn();
+        globalThis.URL.createObjectURL = mockCreateObjectURL;
+        globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
+
+        const appendSpy = vi.spyOn(document.body, 'appendChild');
+        const removeSpy = vi.spyOn(document.body, 'removeChild');
+
+        const originalCreateElement = document.createElement.bind(document);
+        const clickSpy = vi.fn();
+        vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
+            if (tagName === 'a') {
+                const el = originalCreateElement('a');
+                el.click = clickSpy;
+                return el;
+            }
+            return originalCreateElement(tagName);
+        });
+
+        const client = new ApiClient();
+        await client.download('/export', 'test.csv', { query: 'test' });
+
+        const [url, options] = fetchMock.mock.calls[0];
+        const parsedUrl = new URL(url);
+        expect(parsedUrl.pathname).toBe('/api/v1/export');
+        expect(parsedUrl.searchParams.get('query')).toBe('test');
+        expect(options.method).toBe('GET');
+
+        expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
+        expect(appendSpy).toHaveBeenCalled();
+        expect(clickSpy).toHaveBeenCalled();
+        expect(removeSpy).toHaveBeenCalled();
+        expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-uuid');
+    });
+
+    it('downloadPost helper performs POST request and triggers downloadBlob', async () => {
+        const mockBlob = new Blob(['csv data'], { type: 'text/csv' });
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            blob: async () => mockBlob
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const mockCreateObjectURL = vi.fn(() => 'blob:http://localhost/mock-uuid2');
+        const mockRevokeObjectURL = vi.fn();
+        globalThis.URL.createObjectURL = mockCreateObjectURL;
+        globalThis.URL.revokeObjectURL = mockRevokeObjectURL;
+
+        const appendSpy = vi.spyOn(document.body, 'appendChild');
+        const removeSpy = vi.spyOn(document.body, 'removeChild');
+
+        const originalCreateElement = document.createElement.bind(document);
+        const clickSpy = vi.fn();
+        vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
+            if (tagName === 'a') {
+                const el = originalCreateElement('a');
+                el.click = clickSpy;
+                return el;
+            }
+            return originalCreateElement(tagName);
+        });
+
+        const client = new ApiClient();
+        await client.downloadPost('/export', { ids: [1, 2] }, 'test.csv');
+
+        const [url, options] = fetchMock.mock.calls[0];
+        const parsedUrl = new URL(url);
+        expect(parsedUrl.pathname).toBe('/api/v1/export');
+        expect(options.method).toBe('POST');
+        expect(options.body).toBe('{"ids":[1,2]}');
+
+        expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
+        expect(appendSpy).toHaveBeenCalled();
+        expect(clickSpy).toHaveBeenCalled();
+        expect(removeSpy).toHaveBeenCalled();
+        expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/mock-uuid2');
+    });
 });

@@ -461,25 +461,12 @@ export default defineComponent({
             try {
                 exportLoading.value = true;
 
-                // Call export endpoint
-                const blob = await apiClient.get('/catalog/export', {}, {
+                // Call export endpoint and download file
+                await apiClient.download('/catalog/export', 'catalog_export.csv', {}, {
                     headers: {
                         'Accept': 'text/csv'
-                    },
-                    responseType: 'blob'
+                    }
                 });
-
-                let filename = 'catalog_export.csv';
-
-                // Download file
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
 
                 // Show success notification
                 success(t('catalog.export_success'));

@@ -22,6 +22,7 @@ import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { useBarcodeUtils } from '../../composables/useBarcodeUtils.js';
 import { events } from '../../utils/events.js';
+import { useDebouncedAction } from '../../composables/useDebouncedAction.js';
 
 export default defineComponent({
     name: 'ClassRosterPanel',
@@ -141,11 +142,32 @@ export default defineComponent({
 
         // ── Input handler: filter by name OR resolve barcode scan ─────────────
 
-        let lookupTimeout = null;
+        const performLookup = useDebouncedAction(async (currentStripped) => {
+            // 1. Exact match in current roster
+            const found = roster.value.find(b => b.borrower_id === currentStripped);
+            if (found) {
+                filterQuery.value = '';
+                emit('borrower-selected', found.borrower_id);
+                return;
+            }
+
+            // 2. Not in roster — fetch borrower (may be in a different class)
+            try {
+                const borrowerData = await apiClient.get(`/borrowers/${currentStripped}`);
+                if (borrowerData?.class_id && borrowerData.class_id !== selectedClassId.value) {
+                    await selectClass(borrowerData.class_id);
+                }
+                filterQuery.value = '';
+                emit('borrower-selected', borrowerData.borrower_id);
+            } catch {
+                // ID not found — leave filterQuery so empty-state message shows
+                console.warn('Borrower not found for ID:', currentStripped);
+            }
+        }, 300);
 
         const handleFilterInput = (value) => {
             filterQuery.value = value;
-            clearTimeout(lookupTimeout);
+            performLookup.cancel();
 
             if (!value.trim()) return;
 
@@ -160,33 +182,7 @@ export default defineComponent({
 
             // Debounce: barcode scanners complete in ~50 ms, manual typing waits 300 ms.
             // This prevents partial barcode states (%4, %42…) from firing stale lookups.
-            lookupTimeout = setTimeout(async () => {
-                // Re-read the value at execution time — may have changed while waiting
-                const currentRaw = filterQuery.value.trim();
-                const currentStripped = prefix ? stripBarcodePrefix(currentRaw, prefix) : currentRaw;
-                if (!currentStripped) return;
-
-                // 1. Exact match in current roster
-                const found = roster.value.find(b => b.borrower_id === currentStripped);
-                if (found) {
-                    filterQuery.value = '';
-                    emit('borrower-selected', found.borrower_id);
-                    return;
-                }
-
-                // 2. Not in roster — fetch borrower (may be in a different class)
-                try {
-                    const borrowerData = await apiClient.get(`/borrowers/${currentStripped}`);
-                    if (borrowerData?.class_id && borrowerData.class_id !== selectedClassId.value) {
-                        await selectClass(borrowerData.class_id);
-                    }
-                    filterQuery.value = '';
-                    emit('borrower-selected', borrowerData.borrower_id);
-                } catch {
-                    // ID not found — leave filterQuery so empty-state message shows
-                    console.warn('Borrower not found for ID:', currentStripped);
-                }
-            }, 300);
+            performLookup(stripped);
         };
 
         const selectStudent = (borrowerId) => {

@@ -4,6 +4,7 @@ import { useBarcodeRenderer } from '../composables/useBarcodeRenderer.js';
 import { useAppState } from '../composables/useAppState.js';
 import { LABEL_FORMATS, DEFAULT_FORMAT_ID } from '../config/labelFormats.js';
 import { apiClient } from '../api/client.js';
+import { useDebouncedAction } from '../composables/useDebouncedAction.js';
 
 export default defineComponent({
     name: 'PrintItemLabels',
@@ -99,10 +100,12 @@ export default defineComponent({
         });
 
         // Auto-regenerate when count or starting ID changes (debounced)
-        let _regenTimer = null;
+        const regenDelay = ref(400);
+        const debouncedRegen = useDebouncedAction(() => { generateIds(); }, regenDelay);
+
         const scheduleRegen = (delay = 400) => {
-            clearTimeout(_regenTimer);
-            _regenTimer = setTimeout(() => { generateIds(); }, delay);
+            regenDelay.value = delay;
+            debouncedRegen();
         };
         watch(labelCount, () => scheduleRegen(400));
         watch(startId, () => scheduleRegen(1200));

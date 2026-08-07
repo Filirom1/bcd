@@ -589,7 +589,7 @@ Les exceptions métier centralisées sont un bon socle, mais de nombreux `except
 
 **Terminé quand** : aucun composant ou composable métier ne parse directement une valeur `localStorage`.
 
-### [ ] P2.6 — Factoriser les actions différées et les téléchargements Web
+### [x] P2.6 — Factoriser les actions différées et les téléchargements Web
 
 **Constat**
 
