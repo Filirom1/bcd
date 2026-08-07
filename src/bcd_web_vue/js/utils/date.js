@@ -39,9 +39,10 @@ export function parseLocalCivilDate(dateStr) {
  * @param {string} [locale='fr'] - 'fr' or 'en'
  * @returns {string} Formatted date
  */
-export function formatCivilDate(dateStr, locale = 'fr') {
+export function formatCivilDate(dateStr, locale = 'fr', dateFormat = null) {
     const date = parseLocalCivilDate(dateStr);
     if (!date) return '';
+    if (dateFormat) return formatDatePattern(date, dateFormat);
     return new Intl.DateTimeFormat(locale, {
         year: 'numeric',
         month: 'short',
@@ -55,6 +56,22 @@ export function formatCivilDate(dateStr, locale = 'fr') {
  * @param {string} [locale='fr'] - 'fr' or 'en'
  * @returns {string} Formatted date and time
  */
+export function formatDatePattern(date, pattern = 'DD/MM/YYYY') {
+    const values = {
+        YYYY: String(date.getFullYear()),
+        MM: String(date.getMonth() + 1).padStart(2, '0'),
+        DD: String(date.getDate()).padStart(2, '0')
+    };
+    return pattern.replace(/YYYY|MM|DD/g, token => values[token]);
+}
+
+export function formatTime(timestamp, locale = 'fr') {
+    if (!timestamp) return '';
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    if (isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
 export function formatDateTime(timestamp, locale = 'fr') {
     if (!timestamp) return '';
     const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;

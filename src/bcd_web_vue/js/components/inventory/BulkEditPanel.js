@@ -5,6 +5,7 @@
 
 const { defineComponent, ref, computed } = Vue;
 const { useI18n } = VueI18n;
+import { parseCsv, parseJsonSetting } from '../../utils/domain.js';
 import FilterSelect from '../ui/FilterSelect.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 
@@ -45,14 +46,9 @@ export default defineComponent({
         const mediumType = ref('');
 
         // Parse CSV suggestions from settings
-        const parseCsv = (str) => {
-            if (!str) return [];
-            return str.split(',').map(s => s.trim()).filter(Boolean);
-        };
 
         const shelfLocationOptions = computed(() => {
-            try { return JSON.parse(props.settings?.catalog_shelf_locations || '[]') || []; }
-            catch { return []; }
+            return parseJsonSetting(props.settings?.catalog_shelf_locations, []);
         });
 
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));

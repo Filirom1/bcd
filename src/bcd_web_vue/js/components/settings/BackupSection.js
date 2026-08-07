@@ -7,6 +7,8 @@
 const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { formatDateTime } from '../../utils/date.js';
+import { formatCivilDate } from '../../utils/date.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 
@@ -14,7 +16,7 @@ export default defineComponent({
     name: 'BackupSection',
 
     setup() {
-        const { t } = useI18n();
+        const { t, locale } = useI18n();
         const { success } = useNotification();
         const { handleError } = useErrorHandler(t);
 
@@ -54,10 +56,7 @@ export default defineComponent({
             return t('settings.backup_last', { days: newestBackup.value.age_days });
         });
 
-        const formatDate = (isoString) => {
-            const d = new Date(isoString);
-            return d.toLocaleString();
-        };
+        const formatDate = (isoString) => formatDateTime(isoString, locale.value);
 
         const loadBackups = async () => {
             try {

@@ -24,16 +24,13 @@ export default defineComponent({
     emits: ['remove-item'],
 
     setup(props, { emit }) {
-        const { t, d } = useI18n();
+        const { t, locale } = useI18n();
 
         const removeItem = (itemId) => {
             emit('remove-item', itemId);
         };
 
-        const formatDate = (dateStr) => {
-            if (!dateStr) return '';
-            return d(new Date(dateStr), 'short');
-        };
+        const formatDate = (dateStr) => formatCivilDate(dateStr, locale.value);
 
         const getItemClass = (item) => {
             if (item.error) return 'list-group-item-danger';
@@ -129,3 +126,4 @@ export default defineComponent({
         </div>
     `
 });
+import { formatCivilDate } from '../../utils/date.js';

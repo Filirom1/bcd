@@ -28,13 +28,20 @@ async function initApp() {
 
     try {
         // Get initial locale from app state
-        const { locale, saveSettings } = useAppState();
+        const { locale, setLocale, saveSettings } = useAppState();
+        // Priority: an explicit browser preference wins; otherwise the server
+        // language is the library-wide default for this browser profile.
 
         // Fetch settings early so components (e.g. sidebar) can read library_code
         // We use apiClient with skipGlobalLoading to avoid triggering global loading indicator during bootstrap
         try {
             const settingsData = await apiClient.get('/admin/settings', {}, { skipGlobalLoading: true });
-            if (settingsData) saveSettings(settingsData);
+            if (settingsData) {
+                saveSettings(settingsData);
+                if (typeof localStorage !== 'undefined' && !localStorage.getItem('locale')) {
+                    setLocale(settingsData.language);
+                }
+            }
         } catch (e) {
             // Non-fatal: sidebar will show empty until settings load
         }

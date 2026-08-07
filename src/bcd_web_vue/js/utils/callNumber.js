@@ -3,12 +3,14 @@
  * Handles all pure logic for generating call numbers and suggesting shelf locations
  */
 
+import { normalizeAscii } from './domain.js';
+
 // AUT1: first 1 uppercase letter of author's last name (NFD-normalized, no accents, only A-Z)
 export function computeAut1(authors) {
     if (!authors || !authors.length) return '';
     const first = authors[0];
     const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
-    const cleanLastName = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+    const cleanLastName = normalizeAscii(lastName).toUpperCase().replace(/[^A-Z]/g, '');
     return cleanLastName.slice(0, 1);
 }
 
@@ -17,7 +19,7 @@ export function computeAut3(authors) {
     if (!authors || !authors.length) return '';
     const first = authors[0];
     const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
-    const cleanLastName = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+    const cleanLastName = normalizeAscii(lastName).toUpperCase().replace(/[^A-Z]/g, '');
     return cleanLastName.slice(0, 3);
 }
 
@@ -44,7 +46,7 @@ export function stripLeadingArticles(text) {
 export function computeSer1(collection, fallbackAut1) {
     if (!collection || !collection.trim()) return fallbackAut1;
     const cleaned = stripLeadingArticles(collection);
-    const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const normalized = normalizeAscii(cleaned).toUpperCase().replace(/[^A-Z0-9]/g, '');
     return normalized.slice(0, 1) || fallbackAut1;
 }
 
@@ -52,7 +54,7 @@ export function computeSer1(collection, fallbackAut1) {
 export function computeSer3(collection, fallbackAut3) {
     if (!collection || !collection.trim()) return fallbackAut3;
     const cleaned = stripLeadingArticles(collection);
-    const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const normalized = normalizeAscii(cleaned).toUpperCase().replace(/[^A-Z0-9]/g, '');
     return normalized.slice(0, 3) || fallbackAut3;
 }
 
@@ -60,7 +62,7 @@ export function computeSer3(collection, fallbackAut3) {
 export function computeTit1(title) {
     if (!title) return '';
     const cleaned = stripLeadingArticles(title);
-    const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const normalized = normalizeAscii(cleaned).toUpperCase().replace(/[^A-Z0-9]/g, '');
     return normalized.slice(0, 1);
 }
 
@@ -68,7 +70,7 @@ export function computeTit1(title) {
 export function computeTit3(title) {
     if (!title) return '';
     const cleaned = stripLeadingArticles(title);
-    const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const normalized = normalizeAscii(cleaned).toUpperCase().replace(/[^A-Z0-9]/g, '');
     return normalized.slice(0, 3);
 }
 
@@ -76,7 +78,7 @@ export function computeTit3(title) {
 export function suggestShelfLocation(mediumType, locations) {
     if (!locations || !locations.length) return '';
     
-    const norm = (s) => s ? s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/s$/, '').trim() : '';
+    const norm = (s) => s ? normalizeAscii(s).toLowerCase().replace(/s$/, '').trim() : '';
     const query = norm(mediumType);
     
     const found = locations.find(l => norm(l.label) === query);

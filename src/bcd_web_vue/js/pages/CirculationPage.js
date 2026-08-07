@@ -6,6 +6,7 @@
 const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../api/client.js';
+import { formatCivilDate, formatTime } from '../utils/date.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { useBarcodeUtils } from '../composables/useBarcodeUtils.js';
@@ -37,7 +38,7 @@ export default defineComponent({
     },
 
     setup(props) {
-        const { t, d } = useI18n();
+        const { t, locale } = useI18n();
         const { openRecord } = useGlobalModal();
         const { settings: appSettings } = useAppState();
         const { getShelfBadge, getCoteBadge } = useItemBadge(appSettings);
@@ -402,26 +403,12 @@ export default defineComponent({
         /**
          * Format return time as HH:MM for session list
          */
-        const formatReturnTime = (dateStr) => {
-            if (!dateStr) return '';
-            try {
-                return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            } catch {
-                return '';
-            }
-        };
+        const formatReturnTime = (dateStr) => formatTime(dateStr, locale.value);
 
         /**
          * Format date for hold expiration
          */
-        const formatDate = (dateStr) => {
-            if (!dateStr) return '';
-            try {
-                return new Date(dateStr).toLocaleDateString();
-            } catch {
-                return '';
-            }
-        };
+        const formatDate = (dateStr) => formatCivilDate(dateStr, locale.value);
 
         /**
          * Cancel a hold for the current borrower

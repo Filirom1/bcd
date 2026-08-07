@@ -464,7 +464,7 @@ Le Web mélange le formateur `vue-i18n`, `toLocaleDateString()`, `toLocaleTimeSt
 
 **Terminé quand** : aucun consommateur Web ne doit appeler `JSON.parse()` sur un champ de paramètres reçu de l'API.
 
-### [ ] P1.15 — Clarifier la source de vérité de la langue et du format de date
+### [x] P1.15 — Clarifier la source de vérité de la langue et du format de date
 
 **Constat**
 
@@ -479,6 +479,8 @@ Les paramètres système exposent `language` et `date_format` dans le formulaire
 5. Ajouter un test démontrant l'effet réel de chaque réglage visible.
 
 **Terminé quand** : aucun paramètre modifiable dans l'UI n'est sans effet et chaque source de configuration a une priorité documentée.
+
+**État** : terminé. La préférence de langue locale est prioritaire ; en son absence, la langue serveur initialise l'interface. Les dates et heures passent par les utilitaires communs et respectent la locale active ainsi que `date_format`. Les dates civiles sont sérialisées sans conversion UTC.
 
 ### [ ] P1.16 — Unifier le chargement et la fraîcheur des paramètres Web
 
@@ -635,7 +637,7 @@ Des composants réutilisables emploient des identifiants fixes ou des recherches
 
 **Terminé quand** : deux instances d'un composant réutilisable peuvent coexister sans partager d'identifiant ni manipuler le DOM de l'autre.
 
-### [ ] P2.9 — Extraire les parseurs et constantes Web dupliqués
+### [x] P2.9 — Extraire les parseurs et constantes Web dupliqués
 
 **Constat**
 
@@ -650,6 +652,8 @@ Le même parseur de listes séparées par des virgules est redéfini dans au moi
 5. Centraliser les métadonnées des statuts Web et les vérifier contre les enums publiés par l'API.
 
 **Terminé quand** : une règle pure partagée n'existe qu'en un endroit et peut être testée sans monter un composant.
+
+**État** : terminé. Les parseurs CSV/JSON, la normalisation Unicode, le formatage des auteurs, les couleurs Dewey et les métadonnées de statut sont centralisés dans `src/bcd_web_vue/js/utils/`. Les appels locaux ont été migrés et les utilitaires disposent de tests Vitest.
 
 ### [ ] P2.10 — Introduire un contrôle de typage statique progressif via JSDoc et tsc
 

@@ -8,6 +8,7 @@
 
 const { ref, computed } = Vue;
 const { useI18n } = VueI18n;
+import { formatAuthors } from '../../utils/domain.js';
 
 export default {
     name: 'RecordDeleteDialog',
@@ -59,6 +60,7 @@ export default {
 
         return {
             t,
+            formatAuthors,
             deleting,
             hasActiveLoans,
             itemCount,
@@ -120,7 +122,7 @@ export default {
                                             </li>
                                             <li v-if="recordData.authors && recordData.authors.length">
                                                 <strong>{{ t('bibliographic.authors') }}:</strong>
-                                                {{ Array.isArray(recordData.authors) ? recordData.authors.join(', ') : recordData.authors }}
+                                                {{ formatAuthors(recordData.authors) }}
                                             </li>
                                             <li v-if="recordData.isbn">
                                                 <strong>{{ t('bibliographic.isbn') }}:</strong>

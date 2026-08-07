@@ -6,6 +6,7 @@
 
 const { defineComponent, computed, ref, watch } = Vue;
 const { useI18n } = VueI18n;
+import { formatAuthors, parseCsv } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -66,10 +67,6 @@ export default defineComponent({
         });
 
         // Parse vocabulary lists from settings
-        const parseCsv = (str) => {
-            if (!str) return [];
-            return str.split(',').map(s => s.trim()).filter(Boolean);
-        };
 
         const levelOptions = computed(() => parseCsv(settings.value?.catalog_levels));
         const mediumTypeOptions = computed(() => parseCsv(settings.value?.catalog_medium_types));
@@ -426,6 +423,7 @@ export default defineComponent({
 
         return {
             t,
+            formatAuthors,
             d,
             settings,
             columns,
@@ -645,7 +643,7 @@ export default defineComponent({
                                     <td v-if="isColVisible('title')">
                                         <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">{{ item.title }}</a>
                                         <div v-if="item.authors && item.authors.length" class="text-muted small">
-                                            {{ Array.isArray(item.authors) ? item.authors.join(', ') : item.authors }}
+                                            {{ formatAuthors(item.authors) }}
                                         </div>
                                     </td>
                                     <td v-if="isColVisible('condition')">

@@ -6,6 +6,7 @@
 const { defineComponent, computed } = Vue;
 const { useI18n } = VueI18n;
 import { useBlockReasonTranslation } from '../../composables/useBlockReasonTranslation.js';
+import { formatCivilDate } from '../../utils/date.js';
 
 export default defineComponent({
     name: 'BorrowerCard',
@@ -36,7 +37,7 @@ export default defineComponent({
     emits: ['renew-all', 'edit', 'quick-return', 'view-item', 'cancel-hold', 'checkout-hold'],
 
     setup(props, { emit }) {
-        const { t, d } = useI18n();
+        const { t, locale } = useI18n();
         const { translateBlockReason } = useBlockReasonTranslation();
 
         const statusClass = computed(() => {
@@ -90,10 +91,7 @@ export default defineComponent({
             emit('edit');
         };
 
-        const formatDate = (dateStr) => {
-            if (!dateStr) return '';
-            return d(new Date(dateStr), 'short');
-        };
+        const formatDate = (dateStr) => formatCivilDate(dateStr, locale.value);
 
         const isOverdue = (dueDate) => {
             if (!dueDate) return false;

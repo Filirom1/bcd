@@ -13,14 +13,12 @@
  */
 
 import { autoTextColor } from '../../utils/colors.js';
+import { DEWEY_DEFAULT_COLORS } from '../../utils/domain.js';
 
 const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 
-const DEFAULT_COLORS = [
-    '#000000', '#9e6633', '#f20000', '#ff9813', '#ffee00',
-    '#409d42', '#0fafe9', '#98238b', '#d3d5d4', '#ffffff'
-];
+const DEFAULT_COLORS = DEWEY_DEFAULT_COLORS;
 
 // Subdivisions codes per class (index 0-9, 10 entries each)
 const SUBDIV_CODES = Array.from({ length: 10 }, (_, cls) =>

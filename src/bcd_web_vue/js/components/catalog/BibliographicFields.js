@@ -15,6 +15,7 @@
 
 const { defineComponent, computed } = Vue;
 const { useI18n } = VueI18n;
+import { AUDIENCE_VALUES, BINDING_TYPE_VALUES, parseCsv } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'BibliographicFields',
@@ -40,7 +41,6 @@ export default defineComponent({
         const form = computed(() => props.modelValue);
         const set = (key, value) => emit('update:modelValue', { ...props.modelValue, [key]: value });
 
-        const parseCsv = (str) => (str ? str.split(',').map(s => s.trim()).filter(Boolean) : []);
 
         // Array<->CSV bridge for authors/illustrators/keywords.
         const csvField = (key) => computed({
@@ -51,17 +51,8 @@ export default defineComponent({
         const illustratorsText = csvField('illustrators');
         const keywordsText = csvField('keywords');
 
-        const audienceOptions = [
-            { value: 'child', label: t('bibliographic.audience_child') },
-            { value: 'youth', label: t('bibliographic.audience_youth') },
-            { value: 'adult', label: t('bibliographic.audience_adult') }
-        ];
-        const bindingTypeOptions = [
-            { value: 'hardcover', label: t('bibliographic.binding_hardcover') },
-            { value: 'paperback', label: t('bibliographic.binding_paperback') },
-            { value: 'spiral', label: t('bibliographic.binding_spiral') },
-            { value: 'other', label: t('bibliographic.binding_other') }
-        ];
+        const audienceOptions = AUDIENCE_VALUES.map(value => ({ value, label: t(`bibliographic.audience_${value}`) }));
+        const bindingTypeOptions = BINDING_TYPE_VALUES.map(value => ({ value, label: t(`bibliographic.binding_${value}`) }));
         const mediumTypeSuggestions = computed(() => parseCsv(props.settings?.catalog_medium_types));
         const levelSuggestions = computed(() => parseCsv(props.settings?.catalog_levels));
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));

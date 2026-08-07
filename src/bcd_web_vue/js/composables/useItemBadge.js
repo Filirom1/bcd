@@ -21,6 +21,7 @@
 import { autoTextColor } from '../utils/colors.js';
 
 const { computed } = Vue;
+import { parseJsonSetting } from '../utils/domain.js';
 
 /**
  * @param {import('vue').Ref} settings - ref to the SystemSettings object (may be null)
@@ -28,26 +29,10 @@ const { computed } = Vue;
  */
 export function useItemBadge(settings) {
     // Parse catalog_shelf_locations once per settings change
-    const shelfLocations = computed(() => {
-        const raw = settings.value?.catalog_shelf_locations;
-        if (!raw) return [];
-        try {
-            return JSON.parse(raw);
-        } catch {
-            return [];
-        }
-    });
+    const shelfLocations = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
 
     // Parse dewey_colors (10-element array of hex strings)
-    const deweyColors = computed(() => {
-        const raw = settings.value?.dewey_colors;
-        if (!raw) return null;
-        try {
-            return JSON.parse(raw);
-        } catch {
-            return null;
-        }
-    });
+    const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, null));
 
     /**
      * Returns an inline style object for a shelf-location badge.

@@ -10,6 +10,8 @@ import Pagination from '../ui/Pagination.js';
 import BorrowerDeleteDialog from './BorrowerDeleteDialog.js';
 import BorrowerFields from './BorrowerFields.js';
 import { useBlockReasonTranslation } from '../../composables/useBlockReasonTranslation.js';
+import { formatCivilDate } from '../../utils/date.js';
+import { formatAuthors } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
 
 export default {
@@ -277,7 +279,7 @@ export default {
                                             >
                                                 <div>
                                                     <div class="fw-bold small">{{ rec.title }}</div>
-                                                    <small class="text-muted">{{ rec.authors ? (Array.isArray(rec.authors) ? rec.authors.join(', ') : rec.authors) : '' }}</small>
+                                                    <small class="text-muted">{{ formatAuthors(rec.authors) }}</small>
                                                 </div>
                                                 <button class="btn btn-success btn-sm ms-2" @click="createHold(rec.id)">
                                                     <i class="bi bi-bookmark-plus"></i>
@@ -366,8 +368,8 @@ export default {
                                                             >{{ item.title }}</a>
                                                             <br><small class="text-muted"><code>{{ item.item_id }}</code></small>
                                                         </td>
-                                                        <td>{{ new Date(item.checkout_date).toLocaleDateString() }}</td>
-                                                        <td>{{ new Date(item.return_date).toLocaleDateString() }}</td>
+                                                        <td>{{ formatDate(item.checkout_date) }}</td>
+                                                        <td>{{ formatDate(item.return_date) }}</td>
                                                         <td>
                                                             <span v-if="item.was_overdue" class="badge bg-warning text-dark">
                                                                 <i class="bi bi-exclamation-circle"></i>
@@ -507,7 +509,8 @@ export default {
     emits: ['close', 'update:show', 'saved', 'deleted', 'updated', 'view-item'],
 
     setup(props, { emit }) {
-        const { t } = VueI18n.useI18n();
+        const { t, locale } = VueI18n.useI18n();
+        const formatDate = (value) => formatCivilDate(value, locale.value);
         const { translateBlockReason } = useBlockReasonTranslation();
         const borrower = Vue.ref(null);
         const currentLoans = Vue.ref([]);
@@ -891,6 +894,8 @@ export default {
 
         return {
             t,
+            formatDate,
+            formatAuthors,
             borrower,
             currentLoans,
             loading,

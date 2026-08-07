@@ -8,6 +8,7 @@ const { useI18n } = VueI18n;
 import BibliographicFields from '../catalog/BibliographicFields.js';
 import { apiClient } from '../../api/client.js';
 import { useAppState } from '../../composables/useAppState.js';
+import { parseCsv } from '../../utils/domain.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 
@@ -38,7 +39,6 @@ export default defineComponent({
         const { success, error: showError } = useNotification();
         const { handleError } = useErrorHandler(t);
 
-        const parseCsv = (str) => str ? str.split(',').map(s => s.trim()).filter(Boolean) : [];
 
         // Form state
         const formData = reactive({

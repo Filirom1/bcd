@@ -5,6 +5,7 @@
 
 const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
+import { parseCsv } from '../../utils/domain.js';
 import FilterSelect from '../ui/FilterSelect.js';
 import ColumnSelector from './ColumnSelector.js';
 
@@ -51,11 +52,6 @@ export default defineComponent({
             { value: 'borrowed', label: t('catalog.borrowed_only') },
             { value: 'reserved', label: t('catalog.reserved_only') }
         ];
-
-        const parseCsv = (str) => {
-            if (!str) return [];
-            return str.split(',').map(s => s.trim()).filter(Boolean);
-        };
 
         const locationOptions = computed(() =>
             props.shelfLocations.map(loc => ({ value: loc, label: loc }))

@@ -13,6 +13,7 @@ import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { usePagination } from '../../composables/usePagination.js';
+import { formatAuthors } from '../../utils/domain.js';
 import ReportHeader from '../ui/ReportHeader.js';
 import { getJSON, setJSON } from '../../utils/storage.js';
 import Pagination from '../ui/Pagination.js';
@@ -650,7 +651,7 @@ export default defineComponent({
         onBeforeUnmount(destroyCharts);
 
         return {
-            t, settings,
+            t, settings, formatAuthors,
             crewMethod, crewMethods,
             crossFilters, tauxRotationFilter, hasActiveFilters, activeChips,
             toggleBreakdown, clearFilter, clearAllFilters,
@@ -990,7 +991,7 @@ export default defineComponent({
                             <td v-if="isColVisible('title')">
                                 <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">{{ item.title }}</a>
                                 <div v-if="item.authors && item.authors.length" class="text-muted small">
-                                    {{ Array.isArray(item.authors) ? item.authors.join(', ') : item.authors }}
+                                    {{ formatAuthors(item.authors) }}
                                 </div>
                             </td>
                             <td v-if="isColVisible('condition')">

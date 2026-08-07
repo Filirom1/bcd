@@ -14,6 +14,7 @@ import { apiClient } from '../../api/client.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useAppState } from '../../composables/useAppState.js';
 import InventorySearchResults from './InventorySearchResults.js';
+import { parseCsv } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'SearchTab',
@@ -226,15 +227,15 @@ export default defineComponent({
          * Computed: Parse vocabulary lists from settings
          */
         const levelOptions = computed(() => {
-            return settings.value?.catalog_levels?.split(',').map(s => s.trim()).filter(Boolean) || [];
+            return parseCsv(settings.value?.catalog_levels);
         });
 
         const mediumTypeOptions = computed(() => {
-            return settings.value?.catalog_medium_types?.split(',').map(s => s.trim()).filter(Boolean) || [];
+            return parseCsv(settings.value?.catalog_medium_types);
         });
 
         const languageOptions = computed(() => {
-            return settings.value?.catalog_languages?.split(',').map(s => s.trim()).filter(Boolean) || [];
+            return parseCsv(settings.value?.catalog_languages);
         });
 
         return {

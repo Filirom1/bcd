@@ -7,6 +7,7 @@
 const { defineComponent, ref, watch, computed } = Vue;
 const { useI18n } = VueI18n;
 import Modal from '../ui/Modal.js';
+import { formatCivilDate } from '../../utils/date.js';
 import LoadingSpinner from '../ui/LoadingSpinner.js';
 import AutocompleteInput from '../ui/AutocompleteInput.js';
 import Pagination from '../ui/Pagination.js';
@@ -58,7 +59,7 @@ export default defineComponent({
     emits: ['close', 'update:show', 'saved', 'deleted', 'quick-return', 'view-borrower'],
 
     setup(props, { emit }) {
-        const { t, d } = useI18n();
+        const { t, locale } = useI18n();
         const { settings: globalSettings } = useAppState();
         const settingsValue = computed(() => props.settings || globalSettings.value);
         const { getShelfBadge, getCoteBadge } = useItemBadge(settingsValue);
@@ -260,16 +261,7 @@ export default defineComponent({
             return statusMap[item.status] || { class: 'bg-secondary', text: item.status, icon: 'bi-dash-circle' };
         };
 
-        const formatDate = (dateStr) => {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return dateStr;
-            try {
-                return d(date, 'short');
-            } catch (e) {
-                return date.toLocaleDateString();
-            }
-        };
+        const formatDate = (dateStr) => formatCivilDate(dateStr, locale.value);
 
         const handleQuickReturn = (itemId) => {
             emit('quick-return', itemId);

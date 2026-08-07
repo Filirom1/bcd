@@ -12,6 +12,7 @@ import { useAppState } from '../../composables/useAppState.js';
 import DeweyPicker from '../ui/DeweyPicker.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import { computeCallNumber, suggestShelfLocation } from '../../utils/callNumber.js';
+import { parseJsonSetting } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'ItemBarcodeInput',
@@ -57,15 +58,9 @@ export default defineComponent({
         const { handleError } = useErrorHandler(t);
         const { settings } = useAppState();
 
-        const deweyColors = computed(() => {
-            try { return JSON.parse(settings.value?.dewey_colors || 'null') || undefined; }
-            catch { return undefined; }
-        });
+        const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, undefined));
 
-        const shelfLocationOptions = computed(() => {
-            try { return JSON.parse(settings.value?.catalog_shelf_locations || '[]') || []; }
-            catch { return []; }
-        });
+        const shelfLocationOptions = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
 
         // State
         const barcode = ref('');
@@ -87,7 +82,7 @@ export default defineComponent({
         const suggestedCallNumber = computed(() => {
             const rules = (() => {
                 try {
-                    return JSON.parse(settings.value?.catalog_call_number_rules || '[]');
+                    return parseJsonSetting(settings.value?.catalog_call_number_rules, []);
                 } catch {
                     return [];
                 }

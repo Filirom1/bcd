@@ -5,7 +5,7 @@
 
 const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
-import { logger } from '../../utils/logger.js';
+import { DEWEY_DEFAULT_COLORS, parseCsv, parseJsonSetting } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'SettingsForm',
@@ -46,20 +46,11 @@ export default defineComponent({
             emit('reset');
         };
 
-        const DEFAULT_DEWEY_COLORS = [
-            '#000000','#9e6633','#f20000','#ff9813','#ffee00',
-            '#409d42','#0fafe9','#98238b','#d3d5d4','#ffffff'
-        ];
+        const DEFAULT_DEWEY_COLORS = DEWEY_DEFAULT_COLORS;
 
         const deweyColorsList = computed(() => {
-            try {
-                const parsed = JSON.parse(localSettings.value.dewey_colors || 'null');
-                if (Array.isArray(parsed) && parsed.length === 10) return parsed;
-            } catch (error) {
-                // Invalid legacy settings are expected; use defaults.
-                logger.debug('Invalid Dewey colour settings ignored');
-            }
-            return DEFAULT_DEWEY_COLORS;
+            const parsed = parseJsonSetting(localSettings.value.dewey_colors, null);
+            return Array.isArray(parsed) && parsed.length === 10 ? parsed : DEFAULT_DEWEY_COLORS;
         });
 
         const updateDeweyColor = (n, hex) => {
@@ -79,14 +70,8 @@ export default defineComponent({
         };
 
         const shelfLocationsList = computed(() => {
-            try {
-                const parsed = JSON.parse(localSettings.value.catalog_shelf_locations || 'null');
-                if (Array.isArray(parsed)) return parsed;
-            } catch (error) {
-                // Invalid legacy settings are expected; an empty list is safe.
-                logger.debug('Invalid shelf location settings ignored');
-            }
-            return [];
+            const parsed = parseJsonSetting(localSettings.value.catalog_shelf_locations, null);
+            return Array.isArray(parsed) ? parsed : [];
         });
 
         const updateShelfLocations = (list) => {
@@ -121,7 +106,7 @@ export default defineComponent({
 
         watch(() => localSettings.value.catalog_call_number_rules, (newVal) => {
             try {
-                const parsed = JSON.parse(newVal || '[]');
+                const parsed = parseJsonSetting(newVal, []);
                 if (JSON.stringify(parsed) !== JSON.stringify(localRules.value)) {
                     localRules.value = parsed;
                 }
@@ -138,7 +123,7 @@ export default defineComponent({
 
         const mediumTypesOptions = computed(() => {
             if (!localSettings.value.catalog_medium_types) return [];
-            return localSettings.value.catalog_medium_types.split(',').map(s => s.trim()).filter(s => s);
+            return parseCsv(localSettings.value.catalog_medium_types);
         });
 
         const shelfLocationLabels = computed(() => {

@@ -14,6 +14,7 @@ const { ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 import DeweyPicker from '../ui/DeweyPicker.js';
 import { logger } from '../../utils/logger.js';
+import { ITEM_STATUS_META, parseJsonSetting } from '../../utils/domain.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import Modal from '../ui/Modal.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -37,15 +38,9 @@ export default {
     const { t } = useI18n();
     const { settings } = useAppState();
 
-    const deweyColors = computed(() => {
-      try { return JSON.parse(settings.value?.dewey_colors || 'null') || undefined; }
-      catch { return undefined; }
-    });
+    const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, undefined));
 
-    const shelfLocationOptions = computed(() => {
-      try { return JSON.parse(settings.value?.catalog_shelf_locations || '[]') || []; }
-      catch { return []; }
-    });
+    const shelfLocationOptions = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
 
     // Form data
     const formData = ref({
@@ -63,14 +58,10 @@ export default {
     const isSubmitting = ref(false);
 
     // Status options (from ItemStatus enum)
-    const statusOptions = [
-      { value: 'available', label: t('item.status_available') },
-      { value: 'on_loan', label: t('item.status_on_loan') },
-      { value: 'on_hold', label: t('item.status_on_hold') },
-      { value: 'in_repair', label: t('item.status_in_repair') },
-      { value: 'lost', label: t('item.status_lost') },
-      { value: 'withdrawn', label: t('item.status_withdrawn') }
-    ];
+    const statusOptions = Object.keys(ITEM_STATUS_META).map(value => ({
+      value,
+      label: t(`item.status_${value}`)
+    }));
 
     // Condition options - physical state only (lost/withdrawn are status, not condition)
     const conditionOptions = [

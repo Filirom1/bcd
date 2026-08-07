@@ -17,6 +17,7 @@
 
 const { ref, computed, watch, toRef } = Vue;
 const { useI18n } = VueI18n;
+import { AUDIENCE_VALUES, BINDING_TYPE_VALUES, formatAuthors, parseCsv } from '../../utils/domain.js';
 
 export default {
     name: 'BulkEditModal',
@@ -62,27 +63,12 @@ export default {
             DELETE: 'delete'
         };
 
-        const parseCsv = (str) => {
-            if (!str) return [];
-            return str.split(',').map(s => s.trim()).filter(Boolean);
-        };
-
         const levelSuggestions = computed(() => parseCsv(props.settings?.catalog_levels));
         const languageSuggestions = computed(() => parseCsv(props.settings?.catalog_languages));
         const mediumTypeSuggestions = computed(() => parseCsv(props.settings?.catalog_medium_types));
 
-        const audienceOptions = [
-            { value: 'child', label: t('bibliographic.audience_child') },
-            { value: 'youth', label: t('bibliographic.audience_youth') },
-            { value: 'adult', label: t('bibliographic.audience_adult') }
-        ];
-
-        const bindingTypeOptions = [
-            { value: 'hardcover', label: t('bibliographic.binding_hardcover') },
-            { value: 'paperback', label: t('bibliographic.binding_paperback') },
-            { value: 'spiral', label: t('bibliographic.binding_spiral') },
-            { value: 'other', label: t('bibliographic.binding_other') }
-        ];
+        const audienceOptions = AUDIENCE_VALUES.map(value => ({ value, label: t(`bibliographic.audience_${value}`) }));
+        const bindingTypeOptions = BINDING_TYPE_VALUES.map(value => ({ value, label: t(`bibliographic.binding_${value}`) }));
 
         // Selected count
         const selectedCount = computed(() => props.selectedRecords.length);
@@ -214,6 +200,7 @@ export default {
 
         return {
             t,
+            formatAuthors,
             currentStep,
             selectedOperation,
             fields,
@@ -514,7 +501,7 @@ export default {
                                     >
                                         <strong>{{ record.title }}</strong>
                                         <div class="small text-muted">
-                                            <span v-if="record.authors">{{ Array.isArray(record.authors) ? record.authors.join(', ') : record.authors }}</span>
+                                            <span v-if="record.authors">{{ formatAuthors(record.authors) }}</span>
                                             <span v-if="record.isbn" class="ms-2">(ISBN: {{ record.isbn_value }})</span>
                                         </div>
                                     </li>
