@@ -13,8 +13,9 @@ import { useNotification } from '../composables/useNotification.js';
 import { useAdminShortcuts, altHeld } from '../composables/useKeyboardShortcuts.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import { apiClient } from '../api/client.js';
+import { events } from '../utils/events.js';
 
-const { defineComponent, ref, onMounted } = Vue;
+const { defineComponent, ref, onMounted, onBeforeUnmount } = Vue;
 const { useI18n } = VueI18n;
 
 export default defineComponent({
@@ -148,6 +149,7 @@ export default defineComponent({
 
                 // Reload classes and close modal
                 await loadClasses();
+                events.emit('classes:refresh');
                 closeFormModal();
 
             } catch (error) {
@@ -176,6 +178,7 @@ export default defineComponent({
 
                 // Reload classes and close dialog
                 await loadClasses();
+                events.emit('classes:refresh');
                 closeDeleteDialog();
 
             } catch (error) {
@@ -190,6 +193,12 @@ export default defineComponent({
         };
 
         useAdminShortcuts({ N: handleCreateClass });
+
+        // Load classes on mount and subscribe to refresh events
+        const unsubscribe = events.on('classes:refresh', () => {
+            loadClasses();
+        });
+        onBeforeUnmount(unsubscribe);
 
         // Load classes on mount
         onMounted(() => {

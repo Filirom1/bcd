@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
 import RecordDetail from '../../../../src/bcd_web_vue/js/components/catalog/RecordDetail.js';
+import { events } from '../../../../src/bcd_web_vue/js/utils/events.js';
 
 const mockRecord = {
     id: 42,
@@ -95,5 +96,23 @@ describe('RecordDetail', () => {
         expect(wrapper.vm.isEditMode).toBe(true);
         expect(wrapper.vm.formData.title).toBe('Le Petit Prince');
         expect(wrapper.vm.formData.isbn).toBe('9782070612758');
+    });
+
+    it('emits catalog:refresh event when an item is deleted', async () => {
+        const emitSpy = vi.spyOn(events, 'emit');
+        vi.stubGlobal('confirm', () => true); // Mock window.confirm
+
+        const wrapper = mountDetail();
+        await flushPromises();
+
+        // Stub fetch specifically for delete
+        const fetchMock = vi.fn().mockImplementation(async (url) => {
+            return new Response(null, { status: 204 });
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await wrapper.vm.handleDeleteItem({ item_id: 'COPY001' });
+
+        expect(emitSpy).toHaveBeenCalledWith('catalog:refresh');
     });
 });

@@ -10,6 +10,7 @@ const { ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import BorrowerFields from './BorrowerFields.js';
 import { apiClient } from '../../api/client.js';
+import { events } from '../../utils/events.js';
 
 export default {
   name: 'BorrowerAddForm',
@@ -118,6 +119,7 @@ export default {
       try {
         const newBorrower = await apiClient.post('/borrowers', formData.value);
         emit('created', newBorrower);
+        events.emit('borrowers:refresh');
         closeModal();
       } catch (error) {
         console.error('Error creating borrower:', error);

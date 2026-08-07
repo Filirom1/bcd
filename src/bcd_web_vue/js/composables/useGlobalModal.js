@@ -19,9 +19,6 @@ const globalRecordId = ref(null);
 /** @type {import('vue').Ref<string|null>} */
 const globalBorrowerId = ref(null);
 
-// Incremented after a quick-return so CatalogPage can refresh its search results
-const catalogRefreshTick = ref(0);
-
 export function useGlobalModal() {
     /**
      * @param {number|string|null|undefined} id
@@ -48,7 +45,6 @@ export function useGlobalModal() {
     return {
         globalRecordId,
         globalBorrowerId,
-        catalogRefreshTick,
         openRecord,
         closeRecord,
         openBorrower,

@@ -17,6 +17,7 @@ import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { useNotification } from '../composables/useNotification.js';
 import { apiClient } from '../api/client.js';
+import { events } from '../utils/events.js';
 
 export default defineComponent({
     name: 'App',
@@ -40,7 +41,6 @@ export default defineComponent({
         const {
             globalRecordId,
             globalBorrowerId,
-            catalogRefreshTick,
             openRecord,
             closeRecord,
             openBorrower,
@@ -76,7 +76,7 @@ export default defineComponent({
                 closeRecord();
                 Vue.nextTick(() => openRecord(currentRecordId));
                 // Signal CatalogPage to refresh its search results
-                catalogRefreshTick.value++;
+                events.emit('catalog:refresh');
             } catch (err) {
                 showError(err.message || t('common.error'));
             }

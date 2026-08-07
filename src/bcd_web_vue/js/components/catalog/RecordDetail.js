@@ -20,6 +20,7 @@ import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
+import { events } from '../../utils/events.js';
 
 export default defineComponent({
     name: 'RecordDetail',
@@ -424,6 +425,7 @@ export default defineComponent({
             try {
                 await apiClient.delete(`/catalog/items/${item.item_id}`);
                 reloadAllData();
+                events.emit('catalog:refresh');
             } catch (error) {
                 console.error('Error deleting item:', error);
                 handleError(error);
@@ -470,6 +472,7 @@ export default defineComponent({
                 const updatedRecord = await apiClient.patch(`/catalog/records/${record.value.id}`, payload);
                 record.value = updatedRecord;
                 emit('saved', updatedRecord);
+                events.emit('catalog:refresh');
 
                 if (props.initialMode === 'edit') {
                     handleClose();
@@ -499,6 +502,7 @@ export default defineComponent({
                 showDeleteDialog.value = false;
                 emit('deleted', recordIdValue);
                 handleClose();
+                events.emit('catalog:refresh');
             } catch (error) {
                 console.error('Error deleting record:', error);
                 errors.value.general = t('errors.network_error');

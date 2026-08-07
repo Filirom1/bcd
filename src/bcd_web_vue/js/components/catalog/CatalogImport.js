@@ -10,6 +10,7 @@
 
 import { apiClient } from '../../api/client.js';
 import Modal from '../ui/Modal.js';
+import { events } from '../../utils/events.js';
 
 export default {
   name: 'CatalogImport',
@@ -339,6 +340,7 @@ export default {
 
     function onImportComplete() {
       if (importResult.value && (importResult.value.records_created > 0 || importResult.value.items_created > 0)) {
+        events.emit('catalog:refresh');
         emit('import-complete', importResult.value);
       }
       resetImport();

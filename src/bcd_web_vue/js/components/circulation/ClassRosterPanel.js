@@ -16,11 +16,12 @@
  *   GET /borrowers/{id}                    — when scanned ID not in current roster
  */
 
-const { defineComponent, ref, computed, onMounted, watch } = Vue;
+const { defineComponent, ref, computed, onMounted, watch, onBeforeUnmount } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { useBarcodeUtils } from '../../composables/useBarcodeUtils.js';
+import { events } from '../../utils/events.js';
 
 export default defineComponent({
     name: 'ClassRosterPanel',
@@ -33,10 +34,6 @@ export default defineComponent({
         selectedBorrowerId: {
             type: String,
             default: null
-        },
-        refreshTick: {
-            type: Number,
-            default: 0
         }
     },
 
@@ -200,11 +197,12 @@ export default defineComponent({
         // ── Init ──────────────────────────────────────────────────────────────
 
         // Reload roster when parent signals a checkout/return occurred
-        watch(() => props.refreshTick, (newVal, oldVal) => {
-            if (newVal !== oldVal && selectedClassId.value) {
+        const unsubscribe = events.on('circulation:roster-refresh', () => {
+            if (selectedClassId.value) {
                 loadRoster(selectedClassId.value);
             }
         });
+        onBeforeUnmount(unsubscribe);
 
         onMounted(async () => {
             loadClasses();

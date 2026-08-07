@@ -3,10 +3,11 @@
  * Search and browse bibliographic records
  */
 
-const { defineComponent, ref, reactive, computed, onMounted, watch } = Vue;
+const { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmount } = Vue;
 const { useI18n } = VueI18n;
 const { useRoute, useRouter } = VueRouter;
 import { apiClient } from '../api/client.js';
+import { events } from '../utils/events.js';
 import { normalizeCollection } from '../models/pagination.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
@@ -127,10 +128,11 @@ export default defineComponent({
             return query;
         };
 
-        const { openRecord, openBorrower, closeRecord, catalogRefreshTick } = useGlobalModal();
+        const { openRecord, openBorrower, closeRecord } = useGlobalModal();
 
-        // Refresh search results when a quick-return was performed from the global modal
-        Vue.watch(catalogRefreshTick, () => performSearch());
+        // Refresh search results when signaled by the event bus
+        const unsubscribe = events.on('catalog:refresh', () => performSearch());
+        onBeforeUnmount(unsubscribe);
 
         // Initialize from URL params
         onMounted(() => {

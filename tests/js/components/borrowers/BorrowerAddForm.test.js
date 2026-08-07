@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 import BorrowerAddForm from '../../../../src/bcd_web_vue/js/components/borrowers/BorrowerAddForm.js';
 import { useAppState } from '../../../../src/bcd_web_vue/js/composables/useAppState.js';
+import { events } from '../../../../src/bcd_web_vue/js/utils/events.js';
 
 function mountAddForm(props = {}) {
     return mount(BorrowerAddForm, {
@@ -68,6 +69,7 @@ describe('BorrowerAddForm', () => {
     });
 
     it('submits a POST request on successful submit and emits created', async () => {
+        const emitSpy = vi.spyOn(events, 'emit');
         const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 10, borrower_id: 'B-105' }), { status: 201 }));
         vi.stubGlobal('fetch', fetchMock);
 
@@ -98,5 +100,6 @@ describe('BorrowerAddForm', () => {
             })
         );
         expect(wrapper.emitted('created')).toEqual([[{ id: 10, borrower_id: 'B-105' }]]);
+        expect(emitSpy).toHaveBeenCalledWith('borrowers:refresh');
     });
 });

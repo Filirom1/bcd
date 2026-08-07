@@ -32,6 +32,7 @@ import HelpPanel from '../components/ui/HelpPanel.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { apiClient } from '../api/client.js';
 import { normalizeCollection } from '../models/pagination.js';
+import { events } from '../utils/events.js';
 
 const { defineComponent } = Vue;
 const { useI18n } = VueI18n;
@@ -420,6 +421,7 @@ export default defineComponent({
 
                 // Reload borrower list
                 await loadBorrowers();
+                events.emit('borrowers:refresh');
 
             } catch (error) {
                 handleError(error);
@@ -484,7 +486,12 @@ export default defineComponent({
 
         useAdminShortcuts({ N: () => { showAddModal.value = true; } });
 
-        // Load borrowers on mount
+        // Load borrowers on mount and subscribe to refresh events
+        const unsubscribe = events.on('borrowers:refresh', () => {
+            loadBorrowers();
+        });
+        Vue.onBeforeUnmount(unsubscribe);
+
         Vue.onMounted(() => {
             loadBorrowers();
         });

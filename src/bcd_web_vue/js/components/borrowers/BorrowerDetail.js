@@ -14,6 +14,7 @@ import { formatCivilDate } from '../../utils/date.js';
 import { formatAuthors } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
+import { events } from '../../utils/events.js';
 
 export default {
     name: 'BorrowerDetail',
@@ -768,6 +769,7 @@ export default {
         const handleDeleteConfirm = async (bId) => {
             try {
                 await apiClient.delete(`/borrowers/${bId}`);
+                events.emit('borrowers:refresh');
 
                 showDeleteDialog.value = false;
                 emit('deleted', bId);
@@ -819,6 +821,7 @@ export default {
                 borrower.value = updatedBorrower;
                 initForm(updatedBorrower);
                 emit('saved', updatedBorrower);
+                events.emit('borrowers:refresh');
                 emit('updated', 'edit');
 
                 if (props.initialMode === 'edit') {

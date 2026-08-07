@@ -14,6 +14,7 @@ import { useBlockReasonTranslation } from '../composables/useBlockReasonTranslat
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useItemBadge } from '../composables/useItemBadge.js';
+import { events } from '../utils/events.js';
 import BorrowerCard from '../components/circulation/BorrowerCard.js';
 import ItemScanner from '../components/circulation/ItemScanner.js';
 import ClassRosterPanel from '../components/circulation/ClassRosterPanel.js';
@@ -58,9 +59,6 @@ export default defineComponent({
 
         // Scanned items state
         const scannedItems = ref([]);
-
-        // Incremented after each checkout/return so ClassRosterPanel reloads its roster
-        const rosterRefreshTick = ref(0);
 
         // Load settings on mount (must complete before scanning)
         onMounted(async () => {
@@ -195,7 +193,7 @@ export default defineComponent({
                 await loadBorrower(borrower.value.borrower_id);
 
                 // Refresh the class roster to reflect the new loan status
-                rosterRefreshTick.value++;
+                events.emit('circulation:roster-refresh');
 
             } catch (err) {
                 // Handle error using error codes and context (no regex!)
@@ -492,7 +490,7 @@ export default defineComponent({
                 await loadBorrower(borrower.value.borrower_id);
 
                 // Refresh the class roster to reflect the updated loan status
-                rosterRefreshTick.value++;
+                events.emit('circulation:roster-refresh');
 
             } catch (err) {
                 handleError(err);
@@ -511,7 +509,6 @@ export default defineComponent({
             borrowerInitials,
             borrowerHolds,
             scannedItems,
-            rosterRefreshTick,
             scannerDisabled,
             borrowerAtLimit,
             settings,
@@ -556,7 +553,6 @@ export default defineComponent({
                         <class-roster-panel
                             :settings="settings"
                             :selected-borrower-id="borrower ? borrower.borrower_id : null"
-                            :refresh-tick="rosterRefreshTick"
                             @borrower-selected="loadBorrower"
                         />
 

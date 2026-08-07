@@ -19,6 +19,7 @@ import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import Modal from '../ui/Modal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { apiClient } from '../../api/client.js';
+import { events } from '../../utils/events.js';
 
 export default {
   name: 'ItemEditForm',
@@ -129,6 +130,7 @@ export default {
         const updatedItem = await apiClient.patch(`/catalog/items/${props.item.item_id}`, payload);
 
         emit('saved', updatedItem);
+        events.emit('catalog:refresh');
         closeModal();
       } catch (error) {
         console.error('Error updating item:', error);
