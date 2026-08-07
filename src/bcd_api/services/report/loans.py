@@ -17,6 +17,7 @@ from ...models.circulation import CirculationTransaction
 from ...models.class_model import Class
 from ...models.hold import Hold
 from ...models.item import Item
+from ...utils.serialization import deserialize_json_list
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +25,7 @@ logger = logging.getLogger(__name__)
 def _deserialize_authors(authors) -> str:
     """Helper function to deserialize authors JSON field."""
     if isinstance(authors, str):
-        try:
-            authors_list = json.loads(authors)
-            return ", ".join(authors_list) if authors_list else None
-        except (json.JSONDecodeError, TypeError):
-            return None
+        return deserialize_json_list(authors)
     return None
 
 

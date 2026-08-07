@@ -3,7 +3,6 @@
 Strictly read-only operations with no mutations, commits, or rollbacks.
 """
 
-import json
 import math
 from datetime import date, datetime
 from typing import List, Optional
@@ -16,6 +15,7 @@ from ...models.borrower import Borrower
 from ...models.circulation import CirculationTransaction
 from ...models.hold import Hold
 from ...models.item import Item
+from ...utils.serialization import deserialize_json_list
 from ...schemas.circulation import (
     BorrowerHistoryItem,
     BorrowerHistoryResponse,
@@ -97,7 +97,7 @@ def get_borrower_current_loans(db: Session, borrower_id: str) -> List[dict]:
             "call_number": t.item.call_number,
             "shelf_location": t.item.shelf_location,
             "display_title": display_title(t.bibliographic_record.title),
-            "authors": ", ".join(json.loads(t.bibliographic_record.authors)) if t.bibliographic_record.authors else None,
+            "authors": deserialize_json_list(t.bibliographic_record.authors),
             "checkout_date": t.checkout_date,
             "due_date": t.due_date,
             "days_until_due": (t.due_date - date.today()).days,

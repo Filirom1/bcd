@@ -4,7 +4,6 @@ Service for exporting catalog records to Dublin Core CSV format.
 """
 
 import csv
-import json
 import logging
 from io import StringIO
 from typing import List, Tuple
@@ -14,6 +13,7 @@ from sqlalchemy.orm import Session, joinedload
 from src.bcd_api.core.exceptions import ExportFailedException, ExportTooLargeException
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
+from src.bcd_api.utils.serialization import deserialize_json_list
 from .import_ import DublinCoreColumns
 
 logger = logging.getLogger(__name__)
@@ -211,14 +211,7 @@ class ExportService:
         Returns:
             Pipe-separated string or empty string
         """
-        if not keywords_json:
-            return ""
-
-        try:
-            keywords_list = json.loads(keywords_json)
-            return "|".join(keywords_list)
-        except (json.JSONDecodeError, TypeError):
-            return ""
+        return deserialize_json_list(keywords_json, join_char="|") or ""
 
     def _format_isbn(self, isbn: str) -> str:
         """Format identifier for Dublin Core / CSV export.

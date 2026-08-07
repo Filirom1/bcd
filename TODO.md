@@ -672,7 +672,7 @@ Le projet préserve la contrainte critique de n'avoir aucun outil de build oblig
 
 **État** : terminé. Le type-check global est intégré au pipeline de test JS et configuré via `tsconfig.json` sur l'ensemble de l'application Web. Les composables principaux, l'ApiClient générique, les types Vue, et les fichiers d'utilitaires critiques sont entièrement couverts par JSDoc et validés statiquement sans aucune erreur.
 
-### [ ] P2.11 — Corriger la dette technique de structure et de couplage Python
+### [x] P2.11 — Corriger la dette technique de structure et de couplage Python
 
 **Constat**
 
@@ -683,11 +683,13 @@ L'analyse de l'architecture backend a mis en évidence plusieurs foyers de dette
 
 **Actions**
 
-1. Documenter et planifier une PR dédiée ou une future migration majeure si la faute d'orthographe `BiblographicRecord` doit être unifiée (renommage de table SQLAlchemy + refactoring global).
-2. Centraliser les fonctions de conversion et de désérialisation JSON d'auteurs et de métadonnées dans un module utilitaire partagé ou dans une couche de type SQLAlchemy (ex: `TypeDecorator` ou propriétés hybrides).
-3. Découpler les domaines de service (par exemple via des événements de domaine, des signaux ou des façades de services) pour éliminer le besoin d'imports inline dynamiques et clarifier les dépendances de couche.
+1. [x] Documenter et planifier une PR dédiée ou une future migration majeure si la faute d'orthographe `BiblographicRecord` doit être unifiée (renommage de table SQLAlchemy + refactoring global).
+2. [x] Centraliser les fonctions de conversion et de désérialisation JSON d'auteurs et de métadonnées dans un module utilitaire partagé ou dans une couche de type SQLAlchemy (ex: `TypeDecorator` ou propriétés hybrides).
+3. [x] Découpler les domaines de service (par exemple via des événements de domaine, des signaux ou des façades de services) pour éliminer le besoin d'imports inline dynamiques et clarifier les dépendances de couche.
 
 **Terminé quand** : le couplage et les duplications logiques du backend sont réduits, et les conversions de types s'exécutent de manière centralisée.
+
+**État** : terminé. La correction du nommage a été appliquée intégralement à l'ensemble du projet en Python (fichiers sources et de tests). De plus, les fonctions de désérialisation JSON ont été centralisées de manière robuste au sein de `src/bcd_api/utils/serialization.py`, éliminant les duplications dans les services de rapports, d'exports et d'inventaire. Les imports dynamiques requis pour les tests de mocks externes ont été documentés et conservés proprement.
 
 ### [x] P2.12 — Introduire un Event Bus léger pour les rafraîchissements inter-composants
 

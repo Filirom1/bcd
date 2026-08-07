@@ -1,27 +1,18 @@
 """Serialization helpers for inventory items and records."""
 
-import json
 from datetime import datetime, timezone
 from ...models.item import Item
+from ...utils.serialization import parse_json_list, first_item
 
 
 def parse_authors(value: str | None) -> list[str]:
     """Parse authors JSON string to a list of strings."""
-    if not value:
-        return []
-    try:
-        authors_list = json.loads(value)
-        if isinstance(authors_list, list):
-            return [str(a) for a in authors_list]
-        return []
-    except (json.JSONDecodeError, TypeError, ValueError):
-        return []
+    return parse_json_list(value)
 
 
 def first_author(value: str | None) -> str:
     """Get the first author from JSON string, or empty string."""
-    authors = parse_authors(value)
-    return authors[0] if authors else ""
+    return first_item(value)
 
 
 def format_inventory_csv_row(item: Item, prefix: str) -> list[str]:

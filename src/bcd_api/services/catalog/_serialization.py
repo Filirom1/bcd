@@ -2,6 +2,7 @@
 
 import json
 from typing import Any, List, Optional
+from ...utils.serialization import parse_json_list
 
 
 def encode_list(value: Any) -> Optional[str]:
@@ -13,17 +14,7 @@ def encode_list(value: Any) -> Optional[str]:
 
 def decode_list(value: Any) -> List[str]:
     """Decode a JSON string or return list directly, defaulting to empty list on error."""
-    if isinstance(value, list):
-        return value
-    if isinstance(value, str):
-        try:
-            res = json.loads(value)
-            if isinstance(res, list):
-                return res
-            return [res] if res else []
-        except (json.JSONDecodeError, TypeError):
-            return []
-    return []
+    return parse_json_list(value)
 
 
 def encode_record_lists(data: dict) -> dict:
