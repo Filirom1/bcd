@@ -482,7 +482,7 @@ Les paramètres système exposent `language` et `date_format` dans le formulaire
 
 **État** : terminé. La préférence de langue locale est prioritaire ; en son absence, la langue serveur initialise l'interface. Les dates et heures passent par les utilitaires communs et respectent la locale active ainsi que `date_format`. Les dates civiles sont sérialisées sans conversion UTC.
 
-### [ ] P1.16 — Unifier le chargement et la fraîcheur des paramètres Web
+### [x] P1.16 — Unifier le chargement et la fraîcheur des paramètres Web
 
 **Constat**
 

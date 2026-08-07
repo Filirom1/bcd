@@ -44,19 +44,5 @@ export function useBorrowerData() {
         }
     };
 
-    /**
-     * Fetch system settings from the API.
-     *
-     * @returns {Promise<Object|null>} Settings object or null if request fails
-     */
-    const fetchSettings = async () => {
-        try {
-            return await apiClient.get('/admin/settings');
-        } catch (err) {
-            console.error('Failed to load settings:', err);
-        }
-        return null;
-    };
-
-    return { fetchBorrowers, fetchSettings };
+    return { fetchBorrowers };
 }

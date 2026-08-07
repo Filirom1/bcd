@@ -1,7 +1,7 @@
 const { defineComponent, ref, computed, watch, onMounted, nextTick } = Vue;
 const { useI18n } = VueI18n;
 import { useBarcodeRenderer } from '../composables/useBarcodeRenderer.js';
-import { useBorrowerData } from '../composables/useBorrowerData.js';
+import { useAppState } from '../composables/useAppState.js';
 import { LABEL_FORMATS, DEFAULT_FORMAT_ID } from '../config/labelFormats.js';
 import { apiClient } from '../api/client.js';
 
@@ -11,7 +11,7 @@ export default defineComponent({
     setup() {
         const { t } = useI18n();
         const { renderBarcodes } = useBarcodeRenderer();
-        const { fetchSettings } = useBorrowerData();
+        const { settings, loadSettings } = useAppState();
 
         // --- Generation params ---
         const startId = ref('');
@@ -19,7 +19,6 @@ export default defineComponent({
         const generatedIds = ref([]);
         const loading = ref(false);
         const error = ref(null);
-        const settings = ref(null);
 
         // --- Format state ---
         const selectedFormatId = ref(DEFAULT_FORMAT_ID);
@@ -125,7 +124,7 @@ export default defineComponent({
         };
 
         onMounted(async () => {
-            settings.value = await fetchSettings();
+            await loadSettings();
             generateIds();
         });
 

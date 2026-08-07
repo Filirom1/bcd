@@ -6,12 +6,16 @@
 
 const { ref, computed, watch } = Vue;
 import { getItem, setItem, removeItem, getJSON, setJSON, clearStorage as apiClearStorage } from '../utils/storage.js';
+import { apiClient } from '../api/client.js';
 
 // Global reactive state (shared across all component instances)
 const locale = ref(getItem('locale', 'fr'));
 const isLoading = ref(false);
 /** @type {import('vue').Ref<import('../api/client.js').SystemSettings | null>} */
 const settings = ref(null);
+
+/** @type {Promise<import('../api/client.js').SystemSettings | null> | null} */
+let settingsPromise = null;
 
 // Persist locale changes to localStorage (declared once at module level to avoid duplicate watchers)
 watch(locale, (newLocale) => {
@@ -50,15 +54,52 @@ export function useAppState() {
     };
 
     /**
-     * Load settings from localStorage
+     * Load settings from API (with caching/deduplication)
+     * @param {{ force?: boolean }} [options] - Options
+     * @returns {Promise<import('../api/client.js').SystemSettings | null>}
      */
-    const loadSettings = () => {
-        const stored = getJSON('settings');
-        if (stored) {
-            settings.value = stored;
-        } else {
-            settings.value = null;
+    const loadSettings = async ({ force = false } = {}) => {
+        // Return existing settings if loaded and force is false
+        if (settings.value && !force) {
+            return settings.value;
         }
+
+        // Return active promise if already loading and force is false
+        if (settingsPromise && !force) {
+            return settingsPromise;
+        }
+
+        settingsPromise = (async () => {
+            try {
+                // Pre-populate settings from localStorage if available
+                if (!settings.value) {
+                    const stored = getJSON('settings');
+                    if (stored) {
+                        settings.value = stored;
+                    }
+                }
+
+                const settingsData = await apiClient.get('/admin/settings', {}, { skipGlobalLoading: true });
+                if (settingsData) {
+                    settings.value = settingsData;
+                    setJSON('settings', settingsData);
+                    return settingsData;
+                }
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+                // Fallback to local storage if API fails
+                const stored = getJSON('settings');
+                if (stored) {
+                    settings.value = stored;
+                    return stored;
+                }
+            } finally {
+                settingsPromise = null;
+            }
+            return null;
+        })();
+
+        return settingsPromise;
     };
 
     /**

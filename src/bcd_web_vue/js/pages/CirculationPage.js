@@ -41,16 +41,19 @@ export default defineComponent({
     setup(props) {
         const { t, d, locale } = useI18n();
         const { openRecord } = useGlobalModal();
-        const { settings: appSettings } = useAppState();
+        const { settings: appSettings, loadSettings } = useAppState();
         const { getShelfBadge, getCoteBadge } = useItemBadge(appSettings);
         const { success, error: showError, warning } = useNotification();
         const { handleError } = useErrorHandler(t);
-        const { stripBarcodePrefix, fetchSettings } = useBarcodeUtils();
+        const { stripBarcodePrefix } = useBarcodeUtils();
         const { translateBlockReason } = useBlockReasonTranslation();
 
         // Settings state (for barcode prefixes)
-        const settings = ref(null);
-        const settingsLoading = ref(true);
+        const settings = computed(() => appSettings.value || {
+            borrower_barcode_prefix: '%',
+            item_barcode_prefix: '.'
+        });
+        const settingsLoading = computed(() => !appSettings.value);
 
         // Borrower state
         const borrower = ref(null);
@@ -63,16 +66,9 @@ export default defineComponent({
         // Load settings on mount (must complete before scanning)
         onMounted(async () => {
             try {
-                settings.value = await fetchSettings();
+                await loadSettings();
             } catch (error) {
                 console.error('Failed to load settings:', error);
-                // Use defaults if settings fail to load
-                settings.value = {
-                    borrower_barcode_prefix: '%',
-                    item_barcode_prefix: '.'
-                };
-            } finally {
-                settingsLoading.value = false;
             }
         });
 
