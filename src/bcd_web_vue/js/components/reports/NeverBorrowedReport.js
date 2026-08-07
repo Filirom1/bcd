@@ -258,7 +258,7 @@ export default defineComponent({
                 // Skip result limit for CREW report (we need all items to calculate scores)
                 params.no_limit = true;
 
-                console.log('Loading CREW report with params:', params);
+                // Report parameters can contain catalog filters; never log them by default.
 
                 const response = await apiClient.get(endpoint, params);
 

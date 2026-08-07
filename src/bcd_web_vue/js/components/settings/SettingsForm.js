@@ -5,6 +5,7 @@
 
 const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
+import { logger } from '../../utils/logger.js';
 
 export default defineComponent({
     name: 'SettingsForm',
@@ -54,7 +55,10 @@ export default defineComponent({
             try {
                 const parsed = JSON.parse(localSettings.value.dewey_colors || 'null');
                 if (Array.isArray(parsed) && parsed.length === 10) return parsed;
-            } catch {}
+            } catch (error) {
+                // Invalid legacy settings are expected; use defaults.
+                logger.debug('Invalid Dewey colour settings ignored');
+            }
             return DEFAULT_DEWEY_COLORS;
         });
 
@@ -78,7 +82,10 @@ export default defineComponent({
             try {
                 const parsed = JSON.parse(localSettings.value.catalog_shelf_locations || 'null');
                 if (Array.isArray(parsed)) return parsed;
-            } catch {}
+            } catch (error) {
+                // Invalid legacy settings are expected; an empty list is safe.
+                logger.debug('Invalid shelf location settings ignored');
+            }
             return [];
         });
 

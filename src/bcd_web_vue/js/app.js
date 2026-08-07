@@ -147,7 +147,7 @@ async function initApp() {
             window.__BCD_APP__.setLocale = (locale) => { i18n.global.locale.value = locale; };
         }
 
-        console.log('✅ Vue app initialized successfully');
+        // Initialization is intentionally silent in production.
 
     } catch (error) {
         console.error('❌ Failed to initialize app:', error);

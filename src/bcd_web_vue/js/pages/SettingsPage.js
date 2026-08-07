@@ -10,6 +10,7 @@ import { apiClient } from '../api/client.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
+import { logger } from '../utils/logger.js';
 import LoadingSpinner from '../components/ui/LoadingSpinner.js';
 import SettingsForm from '../components/settings/SettingsForm.js';
 import BackupSection from '../components/settings/BackupSection.js';
@@ -87,7 +88,7 @@ export default defineComponent({
                 // API expects data wrapped in "updates" field
                 const payload = { updates: updateData };
 
-                console.log('Saving settings (full):', JSON.stringify(payload, null, 2));
+                logger.debug('Saving settings');
                 await apiClient.put('/admin/settings', payload);
                 originalSettings.value = { ...settings.value };
                 saveGlobalSettings(settings.value);

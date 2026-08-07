@@ -163,7 +163,9 @@ export default defineComponent({
             // Load shelf locations for the filter dropdown
             apiClient.get('/catalog/locations').then(data => {
                 shelfLocations.value = data.locations || [];
-            }).catch(() => {});
+            }).catch(() => {
+                // Locations are an optional filter; keep the catalog usable without them.
+            });
 
             // Always perform initial search to show borrowed items by default
             performSearch();
@@ -191,7 +193,9 @@ export default defineComponent({
                 query.medium_type = filters.medium_type;
             }
 
-            router.push({ query }).catch(() => {});
+            router.push({ query }).catch(() => {
+                // Navigation may be cancelled by a newer filter update.
+            });
         };
 
         /**

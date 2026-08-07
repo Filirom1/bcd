@@ -602,7 +602,7 @@ Les composants implémentent séparément leurs timers de debounce et le téléc
 
 **Terminé quand** : aucun composant métier ne gère directement un timer de debounce ou le cycle de vie d'une URL blob.
 
-### [ ] P2.7 — Remplacer les erreurs silencieuses et logs de développement
+### [x] P2.7 — Remplacer les erreurs silencieuses et logs de développement
 
 **Constat**
 

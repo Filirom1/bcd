@@ -13,6 +13,7 @@
 const { ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 import DeweyPicker from '../ui/DeweyPicker.js';
+import { logger } from '../../utils/logger.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import Modal from '../ui/Modal.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -80,7 +81,7 @@ export default {
     // Load form data when item prop changes
     watch(() => props.item, (newItem) => {
       if (newItem) {
-        console.log('ItemEditForm: Loading item data:', newItem);
+        logger.debug('Loading item edit form');
         formData.value = {
           barcode: newItem.item_id,
           call_number: newItem.call_number || '',
