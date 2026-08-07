@@ -61,16 +61,18 @@ class TestOverdueReports:
         db_session.commit()
 
         # Test
-        overdue = report_service.get_overdue_items(db_session)
+        overdue, total = report_service.get_overdue_items(db_session)
 
         assert len(overdue) == 1
+        assert total == 1
         assert overdue[0]["item_id"] == "785"
         assert overdue[0]["days_overdue"] == 5
 
     def test_get_overdue_items_no_overdue(self, db_session):
         """Test when there are no overdue items."""
-        overdue = report_service.get_overdue_items(db_session)
+        overdue, total = report_service.get_overdue_items(db_session)
         assert len(overdue) == 0
+        assert total == 0
 
     def test_get_overdue_items_filter_by_class(self, db_session):
         """Test filtering overdue items by class."""
@@ -130,12 +132,14 @@ class TestOverdueReports:
         db_session.commit()
 
         # Test filtering by class
-        overdue_class_a = report_service.get_overdue_items(db_session, class_name="CP-A")
+        overdue_class_a, total_a = report_service.get_overdue_items(db_session, class_name="CP-A")
         assert len(overdue_class_a) == 1
+        assert total_a == 1
         assert overdue_class_a[0]["class_name"] == "CP-A"
 
-        overdue_class_b = report_service.get_overdue_items(db_session, class_name="CP-B")
+        overdue_class_b, total_b = report_service.get_overdue_items(db_session, class_name="CP-B")
         assert len(overdue_class_b) == 1
+        assert total_b == 1
         assert overdue_class_b[0]["class_name"] == "CP-B"
 
     def test_get_overdue_summary_by_class(self, db_session):
@@ -230,7 +234,7 @@ class TestNeverBorrowedReport:
         db_session.commit()
 
         # Test
-        never_borrowed = report_service.get_never_borrowed_items(db_session)
+        never_borrowed, total = report_service.get_never_borrowed_items(db_session)
 
         assert len(never_borrowed) == 1
         assert never_borrowed[0]["item_id"] == "999"
@@ -289,7 +293,7 @@ class TestMostBorrowedReport:
         db_session.commit()
 
         # Test
-        most_borrowed = report_service.get_most_borrowed_titles(
+        most_borrowed, total = report_service.get_most_borrowed_titles(
             db_session, period="all-time", limit=10
         )
 
@@ -888,7 +892,7 @@ class TestAdditionalReports:
         db_session.commit()
 
         # Query with filters
-        items = report_service.get_never_borrowed_items(
+        items, total = report_service.get_never_borrowed_items(
             db_session,
             academic_year="2025-2026",
             level="easy",
@@ -899,6 +903,7 @@ class TestAdditionalReports:
         )
 
         assert len(items) == 1
+        assert total == 1
         assert items[0]["item_id"] == "3333"
         assert items[0]["title"] == "Never Borrowed Book"
 
@@ -946,17 +951,19 @@ class TestAdditionalReports:
         db_session.commit()
 
         # Get most borrowed - week
-        titles_week = report_service.get_most_borrowed_titles(
+        titles_week, total_week = report_service.get_most_borrowed_titles(
             db_session, period="week", medium_type="Livre", target_audience="youth"
         )
         assert len(titles_week) == 1
+        assert total_week == 1
         assert titles_week[0]["title"] == "Popular Book"
 
         # Get most borrowed - month
-        titles_month = report_service.get_most_borrowed_titles(
+        titles_month, total_month = report_service.get_most_borrowed_titles(
             db_session, period="month"
         )
         assert len(titles_month) == 1
+        assert total_month == 1
 
     def test_get_circulation_statistics_periods(self, db_session):
         """Test get_circulation_statistics with monthly and all-time periods."""

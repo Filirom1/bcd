@@ -13,7 +13,11 @@ def test_collection_stats_forwards_filters(monkeypatch):
 
 def test_overdue_report_paginates_results(monkeypatch):
     items = [{"id": i} for i in range(5)]
-    monkeypatch.setattr(reports.report_service, "get_overdue_items", lambda *args, **kwargs: items)
+    def mock_get_overdue_items(db, class_name=None, academic_year=None, limit=None, offset=None):
+        off = offset or 0
+        lim = limit or 5
+        return items[off:off+lim], len(items)
+    monkeypatch.setattr(reports.report_service, "get_overdue_items", mock_get_overdue_items)
     result = reports.get_overdue_report(limit=2, offset=1, db="db")
     assert result == {"total_overdue": 5, "items": [{"id": 1}, {"id": 2}], "limit": 2, "offset": 1}
 

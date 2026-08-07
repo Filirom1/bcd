@@ -26,7 +26,7 @@ import pytest
 class TestUS4ISBNLookup:
     """Test ISBN lookup and BNF integration."""
 
-    @patch('src.bcd_api.services.bnf_service.search_by_isbn')
+    @patch('src.bcd_api.services.external.bnf.search_by_isbn')
     @pytest.mark.e2e_to_be_removed
     def test_us4_ac1_isbn_lookup_retrieves_bnf_data(
         self,
@@ -67,7 +67,7 @@ class TestUS4ISBNLookup:
             # Assert - Form should be populated
             # (Check if title field has value)
 
-    @patch('src.bcd_api.services.bnf_service.search_by_isbn')
+    @patch('src.bcd_api.services.external.bnf.search_by_isbn')
     @pytest.mark.e2e_to_be_removed
     def test_us4_ac2_scan_bcd_barcode_creates_item(
         self,

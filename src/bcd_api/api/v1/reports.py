@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 from ...core.deps import get_db
-from ...services import report_service
+from ...services import report as report_service
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -76,14 +76,9 @@ def get_overdue_report(
     Returns:
         List of overdue items with borrower and item details
     """
-    # Get all matching items for total count
-    all_overdue_items = report_service.get_overdue_items(
-        db, class_name=class_name, academic_year=academic_year
+    overdue_items, total_count = report_service.get_overdue_items(
+        db, class_name=class_name, academic_year=academic_year, limit=limit, offset=offset
     )
-    total_count = len(all_overdue_items)
-
-    # Apply pagination
-    overdue_items = all_overdue_items[offset:offset+limit]
 
     return {
         "total_overdue": total_count,
@@ -143,20 +138,16 @@ def get_never_borrowed_report(
     Returns:
         List of never-borrowed items with detailed information
     """
-    # Get all matching items for total count
-    all_items = report_service.get_never_borrowed_items(
+    items, total_count = report_service.get_never_borrowed_items(
         db,
         academic_year=academic_year,
         level=level,
         target_audience=target_audience,
         medium_type=medium_type,
         min_age_days=min_age_days,
-        limit=999999
+        limit=limit,
+        offset=offset
     )
-    total_count = len(all_items)
-
-    # Apply pagination
-    items = all_items[offset:offset+limit]
 
     return {
         "total_count": total_count,
@@ -188,14 +179,10 @@ def get_most_borrowed_report(
     Returns:
         List of most borrowed titles with circulation counts
     """
-    all_titles = report_service.get_most_borrowed_titles(
-        db, period=period, limit=limit, medium_type=medium_type,
+    titles, total_count = report_service.get_most_borrowed_titles(
+        db, period=period, limit=limit, offset=offset, medium_type=medium_type,
         target_audience=target_audience,
     )
-    total_count = len(all_titles)
-
-    # Apply pagination
-    titles = all_titles[offset:offset+limit]
 
     return {
         "period": period,

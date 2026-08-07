@@ -158,12 +158,11 @@ def test_search_bibliographic_records_endpoint(monkeypatch):
 
 def test_get_bibliographic_record_endpoint(monkeypatch):
     """Test get_bibliographic_record endpoint."""
-    monkeypatch.setattr(catalog.catalog_service, "get_bibliographic_record", lambda db, rid: SimpleNamespace(
-        id=rid, title="Test", authors='["A"]', medium_type="Livre"
+    monkeypatch.setattr(catalog.catalog_service, "get_bibliographic_record_with_counts", lambda db, rid: SimpleNamespace(
+        id=rid, title="Test", authors='["A"]', medium_type="Livre", total_items=3
     ))
     
     mock_db = MagicMock()
-    mock_db.query.return_value.filter.return_value.count.return_value = 3
 
     result = catalog.get_bibliographic_record(42, db=mock_db)
     assert result.id == 42

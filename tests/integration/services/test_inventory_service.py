@@ -401,6 +401,9 @@ def test_bulk_mark_inventoried(db_session: Session):
 
 def test_bulk_update_items(db_session: Session):
     """Test bulk update of items and their records."""
+    from src.bcd_api.models.circulation import CirculationTransaction
+    from src.bcd_api.models.borrower import Borrower
+
     # ARRANGE
     record = BiblographicRecord(
         isbn="978-2070408504",
@@ -428,6 +431,28 @@ def test_bulk_update_items(db_session: Session):
         loanable=True,
     )
     db_session.add_all([item1, item2])
+    db_session.flush()
+
+    borrower = Borrower(
+        borrower_id="B002",
+        first_name="Bob",
+        last_name="Martin",
+        full_name="Bob Martin",
+        role="student",
+        active=True
+    )
+    db_session.add(borrower)
+    db_session.flush()
+
+    loan = CirculationTransaction(
+        borrower_id=borrower.id,
+        item_id=item2.id,
+        bibliographic_record_id=record.id,
+        checkout_date=datetime.now(timezone.utc),
+        due_date=datetime.now(timezone.utc) + timedelta(days=14),
+        return_date=None
+    )
+    db_session.add(loan)
     db_session.commit()
 
     # ACT
@@ -464,6 +489,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
     """Test bulk deletion of items, skipping on_loan, cancelling holds, and orphan cleanup."""
     from src.bcd_api.models.hold import Hold
     from src.bcd_api.models.borrower import Borrower
+    from src.bcd_api.models.circulation import CirculationTransaction
 
     # ARRANGE
     record1 = BiblographicRecord(
@@ -512,6 +538,17 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
         active=True
     )
     db_session.add(borrower)
+    db_session.flush()
+
+    loan = CirculationTransaction(
+        borrower_id=borrower.id,
+        item_id=item2.id,
+        bibliographic_record_id=record1.id,
+        checkout_date=datetime.now(timezone.utc),
+        due_date=datetime.now(timezone.utc) + timedelta(days=14),
+        return_date=None
+    )
+    db_session.add(loan)
     db_session.flush()
 
     # Place a hold on record2 (which will be deleted)
@@ -586,4 +623,137 @@ def test_get_items_csv(db_session: Session):
     assert "Antoine de Saint-Exupéry" in csv_str
     assert "C-EXU" in csv_str
     assert "Shelf A" in csv_str
+
+
+# ==================== User Story B.6: New Policy-driven Integration Tests ====================
+
+def test_on_loan_status_without_active_transaction_is_accepted(db_session: Session):
+    """Un item avec status=on_loan mais sans transaction active suit la décision item_update_decision."""
+    # ARRANGE
+    record = BiblographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+    )
+    db_session.add(record)
+    db_session.flush()
+
+    item = Item(
+        item_id="0099",
+        bibliographic_record_id=record.id,
+        status="on_loan",  # status is "on_loan" but there is NO transaction in DB
+        condition="good",
+    )
+    db_session.add(item)
+    db_session.commit()
+
+    # ACT
+    result = inventory_service.bulk_update_items(
+        db_session,
+        item_ids=["0099"],
+        item_updates={"status": "available", "condition": "damaged"},
+    )
+
+    # ASSERT
+    assert result["items_updated"] == 1
+    assert result["items_skipped_on_loan"] == 0  # because no active transaction
+    db_session.refresh(item)
+    assert item.status == "available"
+    assert item.condition == "damaged"
+
+
+def test_item_with_active_transaction_ignored_in_deletion(db_session: Session):
+    """Un item avec transaction active (return_date IS NULL) est ignoré en suppression."""
+    from src.bcd_api.models.borrower import Borrower
+    from src.bcd_api.models.circulation import CirculationTransaction
+
+    # ARRANGE
+    record = BiblographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+    )
+    db_session.add(record)
+    db_session.flush()
+
+    item = Item(
+        item_id="0098",
+        bibliographic_record_id=record.id,
+        status="available",  # status says available but we have an active transaction
+    )
+    db_session.add(item)
+    db_session.flush()
+
+    borrower = Borrower(
+        borrower_id="B098",
+        first_name="Alice",
+        last_name="Dupont",
+        full_name="Alice Dupont",
+        role="student",
+        active=True
+    )
+    db_session.add(borrower)
+    db_session.flush()
+
+    loan = CirculationTransaction(
+        borrower_id=borrower.id,
+        item_id=item.id,
+        bibliographic_record_id=record.id,
+        checkout_date=datetime.now(timezone.utc),
+        due_date=datetime.now(timezone.utc) + timedelta(days=14),
+        return_date=None
+    )
+    db_session.add(loan)
+    db_session.commit()
+
+    # ACT
+    delete_result = inventory_service.delete_items_bulk(db_session, ["0098"])
+
+    # ASSERT
+    assert delete_result["items_deleted"] == 0
+    assert delete_result["items_skipped_on_loan"] == 1
+
+
+def test_technical_rollback_reverts_batch_mutations(db_session: Session):
+    """Rollback technique annule toutes les mutations du batch."""
+    # ARRANGE
+    record = BiblographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+    )
+    db_session.add(record)
+    db_session.flush()
+
+    item = Item(
+        item_id="0097",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+    )
+    db_session.add(item)
+    db_session.commit()
+
+    # Let's mock or cause an exception during bulk_update_items to trigger traceback and rollback
+    import unittest.mock as mock
+    from src.bcd_api.services.inventory.commands import normalize_field_value
+
+    with mock.patch("src.bcd_api.services.inventory.commands.normalize_field_value", side_effect=ValueError("Simulated Error")):
+        with pytest.raises(ValueError):
+            inventory_service.bulk_update_items(
+                db_session,
+                item_ids=["0097"],
+                item_updates={"condition": "damaged"}
+            )
+
+    # ASSERT - should be rolled back to good
+    db_session.rollback()  # make sure session is clean
+    db_session.refresh(item)
+    assert item.condition == "good"
 

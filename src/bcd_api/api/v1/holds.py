@@ -15,7 +15,8 @@ from ...schemas.hold import (
     HoldResponse,
     HoldWithDetails,
 )
-from ...services import hold_service
+from ...services.holds import commands as hold_commands
+from ...services.holds import queries as hold_queries
 
 router = APIRouter(prefix="/holds", tags=["holds"])
 
@@ -40,7 +41,7 @@ def create_hold(
         400: Validation error (borrower blocked, no items, etc.)
         409: Borrower already has hold for this record
     """
-    hold = hold_service.create_hold(
+    hold = hold_commands.create_hold(
         db=db,
         borrower_id=hold_data.borrower_id,
         bibliographic_record_id=hold_data.bibliographic_record_id,
@@ -48,6 +49,21 @@ def create_hold(
         notes=hold_data.notes,
     )
     return hold
+
+
+@router.get("/ready", response_model=List[HoldWithDetails])
+def get_ready_holds(db: Session = Depends(get_db)):
+    """
+    Get all holds that are ready for pickup.
+
+    Args:
+        db: Database session
+
+    Returns:
+        List of holds with status='ready'
+    """
+    holds = hold_queries.get_ready_holds(db)
+    return holds
 
 
 @router.get("/{hold_id}", response_model=HoldWithDetails)
@@ -68,7 +84,7 @@ def get_hold(
     Raises:
         404: Hold not found
     """
-    hold = hold_service.get_hold(db, hold_id)
+    hold = hold_queries.get_hold(db, hold_id)
     return hold
 
 
@@ -89,7 +105,7 @@ def get_holds_for_borrower(
     Returns:
         List of holds
     """
-    holds = hold_service.get_holds_for_borrower(
+    holds = hold_queries.get_holds_for_borrower(
         db, borrower_id, include_fulfilled=include_fulfilled
     )
     return holds
@@ -112,24 +128,9 @@ def get_holds_for_title(
     Returns:
         List of holds ordered by queue position
     """
-    holds = hold_service.get_holds_for_bibliographic_record(
+    holds = hold_queries.get_holds_for_bibliographic_record(
         db, biblio_id, active_only=active_only
     )
-    return holds
-
-
-@router.get("/ready", response_model=List[HoldWithDetails])
-def get_ready_holds(db: Session = Depends(get_db)):
-    """
-    Get all holds that are ready for pickup.
-
-    Args:
-        db: Database session
-
-    Returns:
-        List of holds with status='ready'
-    """
-    holds = hold_service.get_ready_holds(db)
     return holds
 
 
@@ -154,7 +155,7 @@ def mark_hold_ready(
         404: Hold not found
         400: Hold not in waiting status
     """
-    hold = hold_service.mark_hold_ready(db, hold_id, expiration_days)
+    hold = hold_commands.mark_hold_ready(db, hold_id, expiration_days)
     return hold
 
 
@@ -175,7 +176,7 @@ def fulfill_hold(
         404: Hold not found
         400: Hold not ready
     """
-    hold_service.fulfill_hold(db, hold_id)
+    hold_commands.fulfill_hold(db, hold_id)
     return None
 
 
@@ -195,4 +196,4 @@ def cancel_hold(
         404: Hold not found
         400: Hold already fulfilled/cancelled/expired
     """
-    hold_service.cancel_hold(db, hold_id)
+    hold_commands.cancel_hold(db, hold_id)

@@ -397,11 +397,11 @@ class TestBackupEndpointsIntegration:
 
     def test_full_backup_restore_cycle(self, client, temp_test_db):
         """Test complete backup and restore cycle"""
-        with patch('src.bcd_api.services.backup_service.settings') as mock_settings:
+        with patch('src.bcd_api.services.admin.backup.settings') as mock_settings:
             mock_settings.database_url = f"sqlite:///{temp_test_db}"
             mock_settings.backups_dir_path = "backups"
 
-            with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+            with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
                 mock_engine.dispose = MagicMock()
 
                 # Create backup

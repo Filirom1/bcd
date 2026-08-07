@@ -41,7 +41,7 @@ class TestCreateBibliographicRecord:
         authors_list = json.loads(result.authors)
         assert authors_list == ["Smith, John"]
 
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_create_record_with_bnf_lookup_success(self, mock_search, db_session):
         """Test creating record with successful BNF lookup."""
         # Mock BNF response
@@ -69,8 +69,8 @@ class TestCreateBibliographicRecord:
         assert result.language == "fre"
         assert result.page_count == 100
 
-    @patch("src.bcd_api.services.catalog_service._download_cover", return_value=None)
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.catalog.commands._download_cover", return_value=None)
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_create_record_bnf_lookup_failed(self, mock_search, mock_download_cover, db_session):
         """Test creating record when BNF lookup fails."""
         mock_search.return_value = None  # Not found

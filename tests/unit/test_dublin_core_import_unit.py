@@ -4,7 +4,7 @@ from datetime import date
 
 from src.bcd_api.models.bibliographic_record import BiblographicRecord
 from src.bcd_api.models.item import Item
-from src.bcd_api.services.dublin_core_import import (
+from src.bcd_api.services.catalog.import_dc import (
     _map_dc_type_to_medium_type,
     import_dublin_core_csv,
 )

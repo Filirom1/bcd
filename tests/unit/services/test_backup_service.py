@@ -46,7 +46,7 @@ def temp_backup_dir():
 @pytest.fixture
 def mock_settings(temp_db):
     """Mock settings with temporary database path"""
-    with patch('src.bcd_api.services.backup_service.settings') as mock:
+    with patch('src.bcd_api.services.admin.backup.settings') as mock:
         mock.database_url = f"sqlite:///{temp_db}"
         mock.backups_dir_path = ""
         yield mock
@@ -90,7 +90,7 @@ class TestGetDatabasePath:
 
     def test_get_database_path_relative(self):
         """Test handling relative database paths"""
-        with patch('src.bcd_api.services.backup_service.settings') as mock:
+        with patch('src.bcd_api.services.admin.backup.settings') as mock:
             mock.database_url = "sqlite:///./test.db"
             path = backup_service.get_database_path()
             assert path.name == "test.db"
@@ -98,7 +98,7 @@ class TestGetDatabasePath:
 
     def test_get_database_path_non_sqlite(self):
         """Test error handling for non-SQLite databases"""
-        with patch('src.bcd_api.services.backup_service.settings') as mock:
+        with patch('src.bcd_api.services.admin.backup.settings') as mock:
             mock.database_url = "postgresql://localhost/test"
 
             with pytest.raises(ValueError, match="only supports SQLite"):
@@ -111,7 +111,7 @@ class TestCreateBackup:
     def test_create_backup_default_location(self, mock_settings, temp_db):
         """Test creating backup with default location"""
         # Mock engine.dispose()
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             metadata = backup_service.create_backup()
@@ -129,7 +129,7 @@ class TestCreateBackup:
         """Test creating backup with custom output path"""
         custom_path = temp_backup_dir / "custom_backup.db"
 
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             metadata = backup_service.create_backup(output_path=str(custom_path))
@@ -142,7 +142,7 @@ class TestCreateBackup:
         """Test that backup creates parent directories if they don't exist"""
         nested_path = temp_backup_dir / "nested" / "dir" / "backup.db"
 
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             metadata = backup_service.create_backup(output_path=str(nested_path))
@@ -152,10 +152,10 @@ class TestCreateBackup:
 
     def test_create_backup_database_not_found(self):
         """Test error handling when database file doesn't exist"""
-        with patch('src.bcd_api.services.backup_service.settings') as mock:
+        with patch('src.bcd_api.services.admin.backup.settings') as mock:
             mock.database_url = "sqlite:///nonexistent.db"
 
-            with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+            with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
                 mock_engine.dispose = MagicMock()
 
                 with pytest.raises(FileNotFoundError):
@@ -163,7 +163,7 @@ class TestCreateBackup:
 
     def test_create_backup_timestamp_format(self, mock_settings, temp_db):
         """Test that backup filename includes valid timestamp"""
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             metadata = backup_service.create_backup()
@@ -383,7 +383,7 @@ class TestRestoreBackup:
         conn.close()
 
         # Restore from backup
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             result = backup_service.restore_backup(str(backup_file))
@@ -401,7 +401,7 @@ class TestRestoreBackup:
 
     def test_restore_nonexistent_backup(self, mock_settings, temp_db):
         """Test error handling when backup file doesn't exist"""
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             with pytest.raises(FileNotFoundError):
@@ -412,7 +412,7 @@ class TestRestoreBackup:
         invalid_backup = temp_backup_dir / "invalid.db"
         invalid_backup.write_text("not a database")
 
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             with pytest.raises(ValueError, match="not a valid SQLite database"):
@@ -425,7 +425,7 @@ class TestRestoreBackup:
         backup_file = temp_backup_dir / "backup.db"
         shutil.copy2(temp_db, backup_file)
 
-        with patch('src.bcd_api.services.backup_service.engine') as mock_engine:
+        with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
             mock_engine.dispose = MagicMock()
 
             backup_service.restore_backup(str(backup_file))
@@ -454,7 +454,7 @@ class TestGetDatabaseSize:
 
     def test_get_database_size_error_handling(self):
         """Test error handling when database doesn't exist"""
-        with patch('src.bcd_api.services.backup_service.settings') as mock:
+        with patch('src.bcd_api.services.admin.backup.settings') as mock:
             mock.database_url = "sqlite:///nonexistent.db"
 
             size_info = backup_service.get_database_size()

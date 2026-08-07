@@ -3,14 +3,18 @@ from src.bcd_api.api.v1 import reports
 
 def test_never_borrowed_report_paginates(monkeypatch):
     items = [{"id": i} for i in range(4)]
-    monkeypatch.setattr(reports.report_service, "get_never_borrowed_items", lambda *args, **kwargs: items)
+    def mock_get_never_borrowed_items(*args, **kwargs):
+        off = kwargs.get("offset", 0) or 0
+        lim = kwargs.get("limit", 4) or 4
+        return items[off:off+lim], len(items)
+    monkeypatch.setattr(reports.report_service, "get_never_borrowed_items", mock_get_never_borrowed_items)
     assert reports.get_never_borrowed_report(limit=2, offset=1, db="db")["items"] == [{"id": 1}, {"id": 2}]
 
 
 def test_most_borrowed_report_forwards_filters(monkeypatch):
     titles = [{"title": "Book"}]
     calls = []
-    monkeypatch.setattr(reports.report_service, "get_most_borrowed_titles", lambda *args, **kwargs: calls.append(kwargs) or titles)
+    monkeypatch.setattr(reports.report_service, "get_most_borrowed_titles", lambda *args, **kwargs: calls.append(kwargs) or (titles, 1))
     result = reports.get_most_borrowed_report(period="month", limit=5, offset=0, medium_type="Livre", target_audience=None, db="db")
     assert result["titles"] == titles
     assert calls[0]["period"] == "month"

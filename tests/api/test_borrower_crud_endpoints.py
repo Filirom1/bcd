@@ -124,35 +124,30 @@ def test_get_next_available_id_endpoint_delegation(monkeypatch):
 
 def test_get_borrower_endpoint(monkeypatch):
     """Test get_borrower route handler."""
-    mock_borrower = MockBorrower()
-    monkeypatch.setattr(borrowers.borrower_service, "get_borrower_details", lambda db, b_id: {
-        "borrower": mock_borrower,
+    mock_data = {
+        "id": 1,
+        "borrower_id": "1001",
+        "first_name": "Test",
+        "last_name": "User",
+        "full_name": "Test User",
+        "role": "student",
+        "active": True,
+        "blocked": False,
+        "barcode": "1001",
         "current_loans_count": 1,
         "total_checkouts": 5,
-        "overdue_count": 0
-    })
-
-    # Mock settings_service in sys.modules using monkeypatch.setitem so it automatically un-pollutes globals
-    mock_settings_service = MagicMock()
-    mock_settings_service.get_settings.return_value = SimpleNamespace(
-        loan_limit_teacher=5,
-        loan_limit_default=2,
-        loan_limit_warning=1,
-        loan_duration_days=14,
-        renewal_limit=2,
-    )
-    monkeypatch.setitem(sys.modules, "bcd_api.services.settings_service", mock_settings_service)
-    monkeypatch.setitem(sys.modules, "src.bcd_api.services.settings_service", mock_settings_service)
-    
-    import src.bcd_api.services
-    monkeypatch.setattr(src.bcd_api.services, "settings_service", mock_settings_service)
-
-    monkeypatch.setattr(borrowers, "_get_borrower_class_info", lambda db, b: (None, None))
+        "overdue_count": 0,
+        "loan_limit": 2,
+        "loan_limit_warning": 1,
+        "class_name": "CP",
+        "homeroom_teacher": "M. Dupont",
+    }
+    monkeypatch.setattr(borrowers.borrower_service, "get_detailed_borrower", lambda db, b_id, include_loans=False: mock_data)
 
     result = borrowers.get_borrower("1001", detail=False, db=object())
-    assert result.borrower_id == "1001"
-    assert result.current_loans_count == 1
-    assert result.total_checkouts == 5
+    assert result["borrower_id"] == "1001"
+    assert result["current_loans_count"] == 1
+    assert result["total_checkouts"] == 5
 
 
 def test_update_borrower_endpoint(monkeypatch):

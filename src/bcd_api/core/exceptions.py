@@ -224,6 +224,8 @@ class ItemHasHoldsException(BusinessRuleViolation):
         super().__init__(
             f"Item {item_id} has {holds_count} pending hold(s) and cannot be renewed"
         )
+        self.error_code = "ITEM_HAS_HOLDS"
+        self.context = {"item_id": item_id, "holds_count": holds_count}
 
 
 class BiblographicRecordNotFoundException(NotFoundException):

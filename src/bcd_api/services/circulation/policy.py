@@ -67,16 +67,16 @@ class CirculationPolicy:
             if role not in ("teacher", "staff") and current_loans_count + additional_count > self.kids_warning_limit:
                 return CheckoutDecision(
                     allowed=False,
-                    reason=f"Emprunts actuels ({current_loans_count}) + demandés ({additional_count}) dépassent la limite d'avertissement ({self.kids_warning_limit})",
-                    error_code="LOAN_LIMIT_WARNING_EXCEEDED"
+                    reason="LOAN_LIMIT_WARNING_EXCEEDED",
+                    error_code="LOAN_LIMIT_WARNING_EXCEEDED",
                 )
 
         # Check strict limit
         if current_loans_count + additional_count > limit:
             return CheckoutDecision(
                 allowed=False,
-                reason=f"Emprunts actuels ({current_loans_count}) + demandés ({additional_count}) dépassent la limite autorisée ({limit})",
-                error_code="LOAN_LIMIT_EXCEEDED"
+                reason="LOAN_LIMIT_EXCEEDED",
+                error_code="LOAN_LIMIT_EXCEEDED",
             )
 
         return CheckoutDecision(allowed=True)
@@ -94,15 +94,15 @@ class CirculationPolicy:
         if has_active_hold:
             return RenewalDecision(
                 allowed=False,
-                reason="L'exemplaire fait l'objet d'une réservation active",
-                error_code="ITEM_RESERVED"
+                reason="ITEM_HAS_HOLDS",
+                error_code="ITEM_HAS_HOLDS",
             )
 
         if renewal_count >= self.renewal_limit:
             return RenewalDecision(
                 allowed=False,
-                reason=f"Limite de renouvellements atteinte ({self.renewal_limit})",
-                error_code="RENEWAL_LIMIT_EXCEEDED"
+                reason="RENEWAL_LIMIT_EXCEEDED",
+                error_code="RENEWAL_LIMIT_EXCEEDED",
             )
 
         return RenewalDecision(allowed=True)

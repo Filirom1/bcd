@@ -23,6 +23,7 @@ from ...core.exceptions import (
     ItemReservedForOtherBorrowerException,
     LoanLimitExceededException,
     LoanLimitWarningExceededException,
+    NoRenewableItemsException,
     NotFoundException,
     ValidationError,
 )
@@ -35,7 +36,7 @@ from ...schemas.circulation import (
     RenewResponse,
     ReturnResponse,
 )
-from .. import hold_service
+from ..holds import commands as hold_commands
 from ._presentation import display_title
 from .policy import (
     CirculationPolicy,
@@ -208,9 +209,9 @@ def checkout_items(
             )
             if borrower_own_hold:
                 if borrower_own_hold.status == "ready":
-                    hold_service.fulfill_hold_in_transaction(db, borrower_own_hold.id)
+                    hold_commands.fulfill_hold_in_transaction(db, borrower_own_hold.id)
                 else:
-                    hold_service.cancel_hold_in_transaction(db, borrower_own_hold.id)
+                    hold_commands.cancel_hold_in_transaction(db, borrower_own_hold.id)
                 processed_hold_ids.add(borrower_own_hold.id)
 
             transactions.append(transaction)
@@ -324,7 +325,7 @@ def return_items(
         # Promote waiting holds before the single commit of the return.
         settings = get_settings(db)
         for returned_item in returned_items:
-            ready_hold = hold_service.auto_fill_holds_on_return_in_transaction(
+            ready_hold = hold_commands.auto_fill_holds_on_return_in_transaction(
                 db,
                 returned_item["bibliographic_record_id"],
                 expiration_days=settings.hold_expiration_days,
@@ -355,9 +356,16 @@ def return_items(
 def renew_items(
     db: Session,
     borrower_id: str,
-    item_ids: List[str]
+    item_ids: Optional[List[str]] = None
 ) -> RenewResponse:
     """Renew items for a borrower. Successful requests are commited together."""
+    if item_ids is None:
+        from .queries import get_borrower_current_loans
+        current_loans = get_borrower_current_loans(db=db, borrower_id=borrower_id)
+        item_ids = [loan["item_id"] for loan in current_loans if loan["can_renew"]]
+        if not item_ids:
+            raise NoRenewableItemsException(borrower_id)
+
     if len(item_ids) != len(set(item_ids)):
         raise ValidationError("La liste d'exemplaires contient des doublons.")
 

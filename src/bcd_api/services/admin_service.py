@@ -43,7 +43,7 @@ def get_health_stats(db: Session) -> dict:
 
 def backfill_covers_logic(db: Session, covers_dir_path: str) -> dict:
     """Associate existing cover files with bibliographic records."""
-    from .cover_service import find_cached_cover
+    from .external.cover import find_cached_cover
 
     covers_dir = Path(covers_dir_path) if covers_dir_path else Path("data/covers")
     records = db.query(BiblographicRecord).filter(

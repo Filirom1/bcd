@@ -100,23 +100,10 @@ def renew_items(
     - 404: Borrower or item not found
     - 400: Item not on loan to borrower or renewal limit exceeded
     """
-    # If no item_ids specified, get all current loans
-    item_ids = renew_request.item_ids
-    if not item_ids:
-        current_loans = circulation_service.get_borrower_current_loans(
-            db=db,
-            borrower_id=renew_request.borrower_id
-        )
-        item_ids = [loan["item_id"] for loan in current_loans if loan["can_renew"]]
-
-    if not item_ids:
-        from ...core.exceptions import NoRenewableItemsException
-        raise NoRenewableItemsException(renew_request.borrower_id)
-
     response = circulation_service.renew_items(
         db=db,
         borrower_id=renew_request.borrower_id,
-        item_ids=item_ids
+        item_ids=renew_request.item_ids
     )
     return response
 

@@ -28,33 +28,65 @@ def run_command(cmd, name, verbose=False):
     if verbose:
         print(f"🚀 Running {name}...")
         print(f"   Command: {' '.join(cmd)}")
+    else:
+        print(f"🚀 Running {name}... ", end="", flush=True)
     started_at = time.monotonic()
-    options = {"check": False}
-    if not verbose:
-        options.update({"stdout": subprocess.PIPE, "stderr": subprocess.STDOUT, "text": True})
 
     try:
-        result = subprocess.run(cmd, **options)
+        if verbose:
+            result = subprocess.run(cmd, check=False)
+            returncode = result.returncode
+            stdout_content = ""
+        else:
+            env = os.environ.copy()
+            env["PYTHONUNBUFFERED"] = "1"
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                env=env,
+            )
+            captured = []
+            while True:
+                char = process.stdout.read(1)
+                if not char and process.poll() is not None:
+                    break
+                if char:
+                    sys.stdout.write(char)
+                    sys.stdout.flush()
+                    captured.append(char)
+            returncode = process.wait()
+            stdout_content = "".join(captured)
     except OSError as exc:
-        print(f"❌ {name} could not start: {exc}")
+        print(f"\n❌ {name} could not start: {exc}")
         return False
 
     duration = time.monotonic() - started_at
-    if result.returncode == 0:
+    if returncode == 0:
+        if not verbose:
+            if stdout_content and not stdout_content.endswith("\n"):
+                print()
         print(f"✅ {name} passed in {duration:.1f}s")
         return True
 
-    print(f"❌ {name} failed with exit code {result.returncode} after {duration:.1f}s")
-    if not verbose and result.stdout:
+    if not verbose:
+        if stdout_content and not stdout_content.endswith("\n"):
+            print()
+    print(f"❌ {name} failed with exit code {returncode} after {duration:.1f}s")
+    if not verbose and stdout_content:
         print("\n--- Captured test output ---")
-        print(result.stdout.rstrip())
+        print(stdout_content.rstrip())
     print()
     return False
 
 
-def pytest_command(*paths, marker=None, coverage=False, append_coverage=False):
+def pytest_command(*paths, marker=None, coverage=False, append_coverage=False, verbose=False):
     """Build an isolated pytest command for one test-suite boundary."""
     command = ["pytest", *paths]
+    if not verbose:
+        command.append("-q")
     if marker:
         command.extend(["-m", marker])
     if coverage:
@@ -65,7 +97,7 @@ def pytest_command(*paths, marker=None, coverage=False, append_coverage=False):
     return command
 
 
-def python_test_suites(fast, coverage):
+def python_test_suites(fast, coverage, verbose=False):
     """Return Python suites split at event-loop and server ownership boundaries.
 
     Playwright's synchronous API keeps an event loop alive for the lifetime of
@@ -77,7 +109,7 @@ def python_test_suites(fast, coverage):
     suites = [
         (
             "Python Pytest (fast)",
-            pytest_command("tests", marker=FAST_TEST_MARKER, coverage=coverage),
+            pytest_command("tests", marker=FAST_TEST_MARKER, coverage=coverage, verbose=verbose),
         )
     ]
 
@@ -93,6 +125,7 @@ def python_test_suites(fast, coverage):
                     marker=SLOW_OR_EXTERNAL_TEST_MARKER,
                     coverage=coverage,
                     append_coverage=coverage,
+                    verbose=verbose,
                 ),
             ),
             (
@@ -101,6 +134,7 @@ def python_test_suites(fast, coverage):
                     "tests/cli/test_e2e_real_data.py",
                     coverage=coverage,
                     append_coverage=coverage,
+                    verbose=verbose,
                 ),
             ),
             (
@@ -110,6 +144,7 @@ def python_test_suites(fast, coverage):
                     marker=ACTIVE_E2E_TEST_MARKER,
                     coverage=coverage,
                     append_coverage=coverage,
+                    verbose=verbose,
                 ),
             ),
         ]
@@ -180,7 +215,7 @@ def main():
     if run_py_suite:
         if verbose:
             print_header("Python Pytest Suite")
-        for suite_name, py_cmd in python_test_suites(args.fast, args.coverage):
+        for suite_name, py_cmd in python_test_suites(args.fast, args.coverage, verbose):
             if not run_command(py_cmd, suite_name, verbose):
                 success = False
 

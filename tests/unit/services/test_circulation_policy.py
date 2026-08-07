@@ -107,7 +107,7 @@ def test_renewal_decision_limit_reached(policy):
 def test_renewal_decision_blocked_by_hold(policy):
     decision = policy.renewal_decision(renewal_count=0, has_active_hold=True)
     assert decision.allowed is False
-    assert decision.error_code == "ITEM_RESERVED"
+    assert decision.error_code == "ITEM_HAS_HOLDS"
 
 
 def test_is_overdue():

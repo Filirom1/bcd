@@ -367,7 +367,7 @@ class TestReturnScenarios:
         Then: Borrower remains active (no blocking during return)
         """
         # Arrange - Checkout item
-        checkout_response = circulation_service.checkout_items(
+        circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
             item_ids=[test_item_available.item_id]
@@ -945,7 +945,6 @@ class TestPhase0CharacterizationScenarios:
         THEN: The renewal is blocked because there is a waiting reservation
         """
         from src.bcd_api.services import hold_service
-        from src.bcd_api.core.exceptions import ItemHasHoldsException, ValidationError
 
         # Arrange: Checkout item to main borrower
         circulation_service.checkout_items(
@@ -1025,6 +1024,7 @@ class TestRefactoredCirculationSafety:
     ):
         from src.bcd_api.models.circulation import CirculationTransaction
         from src.bcd_api.services import hold_service
+        from src.bcd_api.services.holds import commands as hold_commands
 
         item_id = test_item_available.item_id
         circulation_service.checkout_items(
@@ -1039,7 +1039,7 @@ class TestRefactoredCirculationSafety:
             raise RuntimeError("promotion failed")
 
         monkeypatch.setattr(
-            hold_service, "auto_fill_holds_on_return_in_transaction", fail_promotion
+            hold_commands, "auto_fill_holds_on_return_in_transaction", fail_promotion
         )
         with pytest.raises(RuntimeError, match="promotion failed"):
             circulation_service.return_items(db_session, [item_id])

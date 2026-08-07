@@ -1,6 +1,6 @@
 """Integration tests for hold service."""
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -786,3 +786,87 @@ class TestAutoFillHolds:
         # Try to auto-fill (no holds exist)
         result = hold_service.auto_fill_holds_on_return(db_session, biblio.id)
         assert result is None
+
+
+class TestReadyHoldExpiration:
+    """Test startup-ready expiration behavior without retaining history."""
+
+    def test_expire_ready_hold_deletes_it_and_promotes_next_waiting_hold(self, db_session):
+        from src.bcd_api.services.holds import commands as hold_commands
+
+        first_borrower = Borrower(
+            borrower_id="EXPIRE-1",
+            first_name="First",
+            last_name="Borrower",
+            full_name="First Borrower",
+            role="student",
+            active=True,
+        )
+        second_borrower = Borrower(
+            borrower_id="EXPIRE-2",
+            first_name="Second",
+            last_name="Borrower",
+            full_name="Second Borrower",
+            role="student",
+            active=True,
+        )
+        record = BiblographicRecord(title="Expired hold title", medium_type="Livre")
+        db_session.add_all([first_borrower, second_borrower, record])
+        db_session.commit()
+        db_session.add(Item(
+            item_id="EXPIRE-ITEM",
+            bibliographic_record_id=record.id,
+            status="available",
+            loanable=True,
+        ))
+        db_session.commit()
+
+        expired_hold = hold_commands.create_hold(
+            db_session, first_borrower.id, record.id, "test"
+        )
+        next_hold = hold_commands.create_hold(
+            db_session, second_borrower.id, record.id, "test"
+        )
+        hold_commands.mark_hold_ready(db_session, expired_hold.id)
+        expired_hold.expiration_date = date.today() - timedelta(days=1)
+        db_session.commit()
+
+        expired_count = hold_commands.expire_ready_holds(db_session, today=date.today())
+
+        assert expired_count == 1
+        assert db_session.query(Hold).filter(Hold.id == expired_hold.id).first() is None
+        db_session.refresh(next_hold)
+        assert next_hold.status == "ready"
+        assert next_hold.queue_position == 1
+        assert next_hold.expiration_date is not None
+
+    def test_expire_ready_holds_keeps_hold_valid_on_expiration_date(self, db_session):
+        from src.bcd_api.services.holds import commands as hold_commands
+
+        borrower = Borrower(
+            borrower_id="EXPIRE-TODAY",
+            first_name="Today",
+            last_name="Borrower",
+            full_name="Today Borrower",
+            role="student",
+            active=True,
+        )
+        record = BiblographicRecord(title="Valid today", medium_type="Livre")
+        db_session.add_all([borrower, record])
+        db_session.commit()
+        db_session.add(Item(
+            item_id="EXPIRE-TODAY-ITEM",
+            bibliographic_record_id=record.id,
+            status="available",
+            loanable=True,
+        ))
+        db_session.commit()
+
+        hold = hold_commands.create_hold(db_session, borrower.id, record.id, "test")
+        hold_commands.mark_hold_ready(db_session, hold.id)
+        hold.expiration_date = date.today()
+        db_session.commit()
+
+        assert hold_commands.expire_ready_holds(db_session, today=date.today()) == 0
+        db_session.refresh(hold)
+        assert hold.status == "ready"

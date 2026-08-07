@@ -17,12 +17,12 @@ def test_lookup_isbn_returns_service_data(monkeypatch):
     expected = {"title": "Book", "isbn": "123"}
     monkeypatch.setattr(catalog, "lookup_isbn", lambda db, isbn: expected, raising=False)
     # The endpoint imports the function locally, so patch the service module too.
-    monkeypatch.setattr("src.bcd_api.services.catalog_service.lookup_isbn", lambda db, isbn: expected)
+    monkeypatch.setattr("src.bcd_api.services.catalog.lookup_isbn", lambda db, isbn: expected)
     assert catalog.lookup_isbn_endpoint(isbn="123", db=object()) == expected
 
 
 def test_lookup_isbn_raises_404_when_not_found(monkeypatch):
-    monkeypatch.setattr("src.bcd_api.services.catalog_service.lookup_isbn", lambda db, isbn: None)
+    monkeypatch.setattr("src.bcd_api.services.catalog.lookup_isbn", lambda db, isbn: None)
     with pytest.raises(Exception) as exc:
         catalog.lookup_isbn_endpoint(isbn="missing", db=object())
     assert getattr(exc.value, "status_code", None) == 404

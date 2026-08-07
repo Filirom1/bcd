@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from src.bcd_api.services.cover_service import migrate_covers_to_isbn13
+from src.bcd_api.services.external.cover import migrate_covers_to_isbn13
 
 
 def test_migrate_covers_renames_isbn10_and_writes_sentinel(tmp_path):

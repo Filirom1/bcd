@@ -23,8 +23,8 @@ from ...schemas.bibliographic_record import (
 )
 from ...schemas.common import PaginatedResponse
 from ...schemas.item import AvailableIDsResponse, ItemCreate, ItemResponse, ItemWithCurrentLoan, ItemUpdate
-from ...services import catalog_service
-from ...services.export_service import ExportService
+from ...services import catalog as catalog_service
+from ...services.catalog.export import ExportService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/catalog", tags=["catalog"])
@@ -56,7 +56,7 @@ def lookup_isbn_endpoint(
     - 409: ISBN already exists in local database (returns existing record)
     - 500: API error or timeout
     """
-    from ...services.catalog_service import lookup_isbn
+    from ...services.catalog import lookup_isbn
 
     # Use service layer for business logic
     # ConflictError is automatically handled by global exception handler
@@ -189,10 +189,7 @@ def get_bibliographic_record(
     - 200: Bibliographic record with all metadata
     - 404: Record not found
     """
-    from ...models.item import Item
-    record = catalog_service.get_bibliographic_record(db, record_id)
-    record.total_items = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
-    return record
+    return catalog_service.get_bibliographic_record_with_counts(db, record_id)
 
 
 @router.get("/bibliographic/{record_id}/items", response_model=list[ItemWithCurrentLoan])
@@ -411,7 +408,7 @@ async def import_catalog(
       -F "file=@bcdi_export.csv"
     ```
     """
-    from src.bcd_api.services.dublin_core_import import import_dublin_core_csv
+    from src.bcd_api.services.catalog.import_dc import import_dublin_core_csv
 
     try:
         content = await file.read()

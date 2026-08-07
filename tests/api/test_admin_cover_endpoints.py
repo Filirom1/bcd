@@ -52,7 +52,8 @@ class TestAdminCoverEndpoints:
 
     def test_start_download_success(self, client):
         """Test starting the background download task successfully."""
-        with patch("src.bcd_api.api.v1.admin._download_missing_covers_task") as mock_task:
+        with patch("src.bcd_api.api.v1.admin._download_missing_covers_task") as mock_task, \
+             patch("src.bcd_api.services.cover_download_service.cover_download_manager._run_missing_cover_download") as mock_mgr_task:
             response = client.post("/api/v1/admin/covers/download-missing")
             assert response.status_code == 200
             data = response.json()

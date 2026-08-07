@@ -21,7 +21,7 @@ def test_create_class_endpoint(monkeypatch):
             created_at="2025-01-01T00:00:00", updated_at="2025-01-01T00:00:00"
         )
 
-    monkeypatch.setattr(classes.class_service, "create_class", mock_create)
+    monkeypatch.setattr(classes.class_commands, "create_class", mock_create)
 
     req = ClassCreate(name="CM1", homeroom_teacher="M. Dupont", notes="Class Notes", average_age=9)
     result = classes.create_class(req, db=object())
@@ -34,7 +34,7 @@ def test_create_class_endpoint(monkeypatch):
 
 def test_get_class_endpoint(monkeypatch):
     """Test get_class endpoint."""
-    monkeypatch.setattr(classes.class_service, "get_class_by_id", lambda db, cid: SimpleNamespace(
+    monkeypatch.setattr(classes.class_queries, "get_class_by_id", lambda db, cid: SimpleNamespace(
         id=cid, name="CP", homeroom_teacher="Mme. Alice", notes=None, average_age=6.0,
         created_at="2025-01-01T00:00:00", updated_at="2025-01-01T00:00:00"
     ))
@@ -47,7 +47,7 @@ def test_get_class_endpoint(monkeypatch):
 def test_list_classes_endpoint(monkeypatch):
     """Test list_classes endpoint."""
     called = []
-    monkeypatch.setattr(classes.class_service, "list_classes", lambda db, limit, offset: called.append((limit, offset)) or [
+    monkeypatch.setattr(classes.class_queries, "list_classes", lambda db, limit, offset: called.append((limit, offset)) or [
         SimpleNamespace(id=1, name="CP", homeroom_teacher="Mme. Alice", notes=None, average_age=6.0,
                         created_at="2025-01-01T00:00:00", updated_at="2025-01-01T00:00:00")
     ])
@@ -61,7 +61,7 @@ def test_list_classes_endpoint(monkeypatch):
 def test_update_class_endpoint(monkeypatch):
     """Test update_class endpoint."""
     called = []
-    monkeypatch.setattr(classes.class_service, "update_class", lambda db, class_id, name, homeroom_teacher, notes, average_age: called.append((class_id, name)) or SimpleNamespace(
+    monkeypatch.setattr(classes.class_commands, "update_class", lambda db, class_id, name, homeroom_teacher, notes, average_age: called.append((class_id, name)) or SimpleNamespace(
         id=class_id, name=name, homeroom_teacher=homeroom_teacher, notes=notes, average_age=average_age,
         created_at="2025-01-01T00:00:00", updated_at="2025-01-01T00:00:00"
     ))
@@ -77,7 +77,7 @@ def test_update_class_endpoint(monkeypatch):
 def test_delete_class_endpoint(monkeypatch):
     """Test delete_class endpoint."""
     called = []
-    monkeypatch.setattr(classes.class_service, "delete_class_with_unassignment", lambda db, cid: called.append(cid))
+    monkeypatch.setattr(classes.class_commands, "delete_class_with_unassignment", lambda db, cid: called.append(cid))
 
     result = classes.delete_class(3, db=object())
     assert result is None

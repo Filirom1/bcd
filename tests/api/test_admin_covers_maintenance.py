@@ -35,7 +35,7 @@ def test_backfill_covers_updates_cached_records(monkeypatch, tmp_path):
     db = MagicMock()
     db.query.return_value.filter.return_value.all.return_value = [record]
     monkeypatch.setattr(admin.app_settings, "covers_dir_path", str(tmp_path))
-    monkeypatch.setattr("src.bcd_api.services.cover_service.find_cached_cover", lambda isbn, covers_dir: "123.jpg")
+    monkeypatch.setattr("src.bcd_api.services.external.cover.find_cached_cover", lambda isbn, covers_dir: "123.jpg")
     result = admin.backfill_covers(db)
     assert result == {"updated": 1, "scanned": 1}
     assert record.cover_image == "123.jpg"

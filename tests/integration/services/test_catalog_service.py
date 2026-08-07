@@ -65,6 +65,8 @@ import pytest
 @pytest.fixture(autouse=True)
 def disable_cover_download_for_catalog_tests(monkeypatch):
     """Keep catalog integration tests local; cover providers are tested separately."""
+    monkeypatch.setattr("src.bcd_api.services.catalog.commands._download_cover", lambda isbn: None)
+    monkeypatch.setattr("src.bcd_api.services.catalog.lookup._download_cover", lambda isbn: None)
     monkeypatch.setattr("src.bcd_api.services.catalog_service._download_cover", lambda isbn: None)
 
 from src.bcd_api.core.exceptions import (
@@ -165,7 +167,7 @@ class TestBibliographicRecordCreation:
         assert result.description == "The adventures of a mouse in New York City"
         assert "mouse" in result.keywords
 
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_create_bibliographic_record_with_bnf_lookup(self, mock_search, db_session):
         """
         Test creating a bibliographic record with BNF API lookup.
@@ -212,7 +214,7 @@ class TestBibliographicRecordCreation:
         # Verify BNF service was called with normalized ISBN
         mock_search.assert_called_once()
 
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_create_bibliographic_record_bnf_fallback_on_error(self, mock_search, db_session):
         """
         Test graceful fallback when BNF lookup fails.
@@ -238,9 +240,9 @@ class TestBibliographicRecordCreation:
         assert result.title == "Test Book"
         assert result.isbn == "isbn:9781234567890"
 
-    @patch("src.bcd_api.services.catalog_service.sudoc_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.google_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.sudoc.search_by_isbn")
+    @patch("src.bcd_api.services.external.google_books.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_lookup_isbn_falls_back_to_google_when_bnf_returns_none(
         self, mock_bnf, mock_google, mock_sudoc, db_session
     ):
@@ -274,9 +276,9 @@ class TestBibliographicRecordCreation:
         mock_bnf.assert_called_once()
         mock_google.assert_called_once()
 
-    @patch("src.bcd_api.services.catalog_service.sudoc_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.google_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.sudoc.search_by_isbn")
+    @patch("src.bcd_api.services.external.google_books.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_lookup_isbn_falls_back_to_google_when_bnf_raises_network_error(
         self, mock_bnf, mock_google, mock_sudoc, db_session
     ):
@@ -311,9 +313,9 @@ class TestBibliographicRecordCreation:
         mock_bnf.assert_called_once()
         mock_google.assert_called_once()
 
-    @patch("src.bcd_api.services.catalog_service.sudoc_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.google_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.sudoc.search_by_isbn")
+    @patch("src.bcd_api.services.external.google_books.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_lookup_isbn_returns_none_when_all_sources_unreachable(
         self, mock_bnf, mock_google, mock_sudoc, db_session
     ):
@@ -857,7 +859,7 @@ class TestCatalogIntegrationScenarios:
         3. Verify everything is linked correctly
         """
         # Step 1: Catalog the book (simulating BNF lookup)
-        with patch("src.bcd_api.services.catalog_service.search_by_isbn") as mock_search:
+        with patch("src.bcd_api.services.external.bnf.search_by_isbn") as mock_search:
             mock_search.return_value = {
                 "title": "Charlotte's Web",
                 "authors": ["White, E.B."],

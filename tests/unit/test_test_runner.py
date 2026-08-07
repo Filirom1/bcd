@@ -28,22 +28,19 @@ def test_should_show_logs_keeps_local_runs_concise_by_default(monkeypatch):
 def test_run_command_hides_successful_suite_output_by_default(monkeypatch, capsys):
     """Test concise mode captures successful test output instead of streaming it."""
     # ARRANGE
-    completed_process = subprocess.CompletedProcess(["pytest"], 0, "detailed test output")
-    mock_run = MagicMock(return_value=completed_process)
-    monkeypatch.setattr(run_tests.subprocess, "run", mock_run)
+    mock_process = MagicMock()
+    mock_process.stdout.read.side_effect = ["d", "o", "t", "s", ""]
+    mock_process.poll.return_value = 0
+    mock_process.wait.return_value = 0
+    mock_popen = MagicMock(return_value=mock_process)
+    monkeypatch.setattr(run_tests.subprocess, "Popen", mock_popen)
 
     # ACT
     succeeded = run_tests.run_command(["pytest"], "Pytest")
 
     # ASSERT
     assert succeeded is True
-    mock_run.assert_called_once_with(
-        ["pytest"],
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
+    mock_popen.assert_called_once()
     output = capsys.readouterr().out
     assert "detailed test output" not in output
     assert "Pytest passed" in output
@@ -52,8 +49,12 @@ def test_run_command_hides_successful_suite_output_by_default(monkeypatch, capsy
 def test_run_command_prints_captured_output_when_a_suite_fails(monkeypatch, capsys):
     """Test concise mode retains diagnostic output for a failing suite."""
     # ARRANGE
-    completed_process = subprocess.CompletedProcess(["pytest"], 1, "failure details")
-    monkeypatch.setattr(run_tests.subprocess, "run", MagicMock(return_value=completed_process))
+    mock_process = MagicMock()
+    mock_process.stdout.read.side_effect = ["f", "a", "i", "l", "u", "r", "e", ""]
+    mock_process.poll.return_value = 1
+    mock_process.wait.return_value = 1
+    mock_popen = MagicMock(return_value=mock_process)
+    monkeypatch.setattr(run_tests.subprocess, "Popen", mock_popen)
 
     # ACT
     succeeded = run_tests.run_command(["pytest"], "Pytest")
@@ -61,7 +62,7 @@ def test_run_command_prints_captured_output_when_a_suite_fails(monkeypatch, caps
     # ASSERT
     assert succeeded is False
     output = capsys.readouterr().out
-    assert "failure details" in output
+    assert "failure" in output
     assert "Captured test output" in output
 
 
@@ -93,6 +94,7 @@ def test_python_test_suites_splits_loop_and_server_owners_without_coverage():
     assert suites[0][1] == [
         "pytest",
         "tests",
+        "-q",
         "-m",
         "not e2e and not slow and not external",
         "--no-cov",
@@ -100,14 +102,16 @@ def test_python_test_suites_splits_loop_and_server_owners_without_coverage():
     assert suites[1][1] == [
         "pytest",
         "tests",
+        "-q",
         "-m",
         "not e2e and (slow or external)",
         "--no-cov",
     ]
-    assert suites[2][1] == ["pytest", "tests/cli/test_e2e_real_data.py", "--no-cov"]
+    assert suites[2][1] == ["pytest", "tests/cli/test_e2e_real_data.py", "-q", "--no-cov"]
     assert suites[3][1] == [
         "pytest",
         "tests/e2e",
+        "-q",
         "-m",
         "e2e and not e2e_to_be_removed",
         "--no-cov",
@@ -126,6 +130,7 @@ def test_python_test_suites_fast_runs_only_fast_non_external_tests():
             [
                 "pytest",
                 "tests",
+                "-q",
                 "-m",
                 "not e2e and not slow and not external",
                 "--no-cov",
