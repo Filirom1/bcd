@@ -21,7 +21,7 @@ class CirculationPage(BasePage):
     RETURN_BUTTON = 'button.btn-info:has-text("Retourner"), button:has-text("Return")'
     SCANNED_ITEMS_LIST = 'table tbody tr'
     RENEW_ALL_BUTTON = 'button:has-text("Renouveler tout"), button:has-text("Renew All")'
-    AUTOCOMPLETE_DROPDOWN = '#autocomplete-dropdown'
+    AUTOCOMPLETE_DROPDOWN = '.autocomplete-dropdown'
     AUTOCOMPLETE_ITEM = '.autocomplete-item'
 
     def __init__(self, page: Page, server_url: str):

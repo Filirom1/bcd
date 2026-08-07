@@ -4,16 +4,23 @@ import { flushPromises, mount } from '@vue/test-utils';
 import ItemScanner from '../../../../src/bcd_web_vue/js/components/circulation/ItemScanner.js';
 import { apiClient } from '../../../../src/bcd_web_vue/js/api/client.js';
 
-const mockSearchResponse = {
-    items: [
-        { id: 1, title: 'Le Petit Prince', authors: ['Antoine de Saint-Exupéry'], medium_type: 'Book', total_items: 2 }
-    ]
-};
-
 const mockItemsResponse = [
     { item_id: 'I-001', status: 'available' },
     { item_id: 'I-002', status: 'on_loan' }
 ];
+
+const mockSearchResponse = {
+    items: [
+        {
+            id: 1,
+            title: 'Le Petit Prince',
+            authors: ['Antoine de Saint-Exupéry'],
+            medium_type: 'Book',
+            total_items: 2,
+            physical_items: mockItemsResponse
+        }
+    ]
+};
 
 beforeEach(() => {
     globalThis.__testTranslate = (key) => {
@@ -22,9 +29,15 @@ beforeEach(() => {
         return key;
     };
 
-    vi.spyOn(apiClient, 'get').mockImplementation(async (endpoint) => {
+    vi.spyOn(apiClient, 'get').mockImplementation(async (endpoint, params = {}) => {
         if (endpoint === '/catalog/bibliographic/search') {
-            return mockSearchResponse;
+            if (params && params.include_items) {
+                return mockSearchResponse;
+            }
+            // Return copy without physical_items if include_items is false
+            return {
+                items: mockSearchResponse.items.map(({ physical_items, ...rest }) => rest)
+            };
         }
         if (endpoint.includes('/items')) {
             return mockItemsResponse;

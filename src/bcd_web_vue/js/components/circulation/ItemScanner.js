@@ -45,38 +45,21 @@ export default defineComponent({
             try {
                 const response = await apiClient.get('/catalog/bibliographic/search', {
                     q: query,
-                    limit: 10
+                    limit: 10,
+                    include_items: true
                 }, { signal });
 
                 const normalized = normalizeCollection(response);
-
-                // For each bibliographic record, fetch its items to get actual barcodes
-                const recordsWithItems = await Promise.all(
-                    normalized.items.map(async (record) => {
-                        try {
-                            const items = await apiClient.get(`/catalog/bibliographic/${record.id}/items`, {}, { signal });
-                            return {
-                                ...record,
-                                physical_items: items || []
-                            };
-                        } catch (err) {
-                            console.warn(`Could not fetch items for record ${record.id}:`, err);
-                            return {
-                                ...record,
-                                physical_items: []
-                            };
-                        }
-                    })
-                );
+                const records = normalized.items || [];
 
                 // In return mode, only show records that have at least one item on loan
                 if (props.mode === 'return') {
-                    return recordsWithItems.filter(record =>
+                    return records.filter(record =>
                         (record.physical_items || []).some(item => item.status === 'on_loan')
                     );
                 }
 
-                return recordsWithItems;
+                return records;
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     console.error('Error fetching items:', error);

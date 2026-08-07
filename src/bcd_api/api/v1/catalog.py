@@ -130,6 +130,7 @@ def search_bibliographic_records(
     shelf_location: Optional[str] = Query(None, description="Filter by shelf location"),
     limit: int = Query(50, ge=1, le=500, description="Maximum records per page"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
+    include_items: bool = Query(False, description="Include physical items for each bibliographic record"),
     db: Session = Depends(get_db),
 ):
     """
@@ -166,7 +167,10 @@ def search_bibliographic_records(
     )
 
     # Compute availability for each record
-    records_with_availability = catalog_service.enrich_bibliographic_records_with_availability(db, records)
+    include_bool = include_items if isinstance(include_items, bool) else False
+    records_with_availability = catalog_service.enrich_bibliographic_records_with_availability(
+        db, records, include_items=include_bool
+    )
 
     # Return JSON response
     return PaginatedResponse(

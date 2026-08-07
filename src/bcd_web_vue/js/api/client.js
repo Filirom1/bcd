@@ -210,6 +210,9 @@ export class ApiClient {
             if (error instanceof ApiError) {
                 throw error;
             }
+            if (error && error.name === 'AbortError') {
+                throw error;
+            }
 
             // Network error or other fetch failure
             throw ApiError.networkError(error instanceof Error ? error : new Error(String(error)));

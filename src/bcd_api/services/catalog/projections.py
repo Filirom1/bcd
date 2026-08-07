@@ -41,7 +41,9 @@ def refresh_total_items_in_transaction(db: Session, record_ids: Set[int]) -> Non
                 record.total_items = 0
 
 
-def availability_by_record(db: Session, records: List[BibliographicRecord]) -> List[dict]:
+def availability_by_record(
+    db: Session, records: List[BibliographicRecord], include_items: bool = False
+) -> List[dict]:
     """
     Enrich bibliographic records with availability, copy counts, and first item information.
     Batch queries are used to avoid N+1 queries.
@@ -91,6 +93,58 @@ def availability_by_record(db: Session, records: List[BibliographicRecord]) -> L
         if item.bibliographic_record_id not in first_item_by_record:
             first_item_by_record[item.bibliographic_record_id] = item
 
+    items_by_record = {}
+    if include_items:
+        item_ids = [item.id for item in all_items]
+        active_loans_map = {}
+        if item_ids:
+            from datetime import date
+            from src.bcd_api.models.circulation import CirculationTransaction
+            from src.bcd_api.services.circulation.query_filters import active_loan_predicate
+            from src.bcd_api.services.circulation import policy as circ_policy
+            from sqlalchemy import and_
+            from sqlalchemy.orm import joinedload
+
+            active_loans = (
+                db.query(CirculationTransaction)
+                .filter(
+                    and_(
+                        CirculationTransaction.item_id.in_(item_ids),
+                        active_loan_predicate()
+                    )
+                )
+                .options(joinedload(CirculationTransaction.borrower))
+                .all()
+            )
+            for loan in active_loans:
+                is_overdue_val = circ_policy.is_overdue(loan.due_date, date.today())
+                days_overdue_val = circ_policy.overdue_days(loan.due_date, date.today())
+                active_loans_map[loan.item_id] = {
+                    "borrower_id": loan.borrower.borrower_id,
+                    "borrower_name": loan.borrower.full_name,
+                    "due_date": loan.due_date.strftime('%d/%m/%Y'),
+                    "is_overdue": is_overdue_val,
+                    "days_overdue": days_overdue_val
+                }
+
+        # Group items by bibliographic_record_id
+        for item in all_items:
+            item_dict = {
+                "id": item.id,
+                "item_id": item.item_id,
+                "call_number": item.call_number,
+                "shelf_location": item.shelf_location,
+                "status": item.status,
+                "condition": item.condition,
+                "loanable": item.loanable,
+                "acquisition_date": item.acquisition_date,
+                "funding_source": item.funding_source,
+                "current_loan": active_loans_map.get(item.id)
+            }
+            if item.bibliographic_record_id not in items_by_record:
+                items_by_record[item.bibliographic_record_id] = []
+            items_by_record[item.bibliographic_record_id].append(item_dict)
+
     records_with_availability = []
     for r in records:
         counts = counts_by_record.get(r.id)
@@ -130,6 +184,8 @@ def availability_by_record(db: Session, records: List[BibliographicRecord]) -> L
             "shelf_location": first_item.shelf_location if first_item else None,
             "call_number": first_item.call_number if first_item else None,
         }
+        if include_items:
+            record_dict["physical_items"] = items_by_record.get(r.id, [])
         records_with_availability.append(record_dict)
 
     return records_with_availability

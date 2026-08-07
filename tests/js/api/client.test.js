@@ -104,6 +104,14 @@ describe('ApiClient', () => {
         });
     });
 
+    it('does not wrap AbortError and throws the original AbortError', async () => {
+        const abortError = new DOMException('The user aborted a request.', 'AbortError');
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(abortError));
+        const client = new ApiClient();
+
+        await expect(client.get('/catalog')).rejects.toBe(abortError);
+    });
+
     it('keeps global loading active until concurrent requests have all completed', async () => {
         const loadingStates = [];
         let resolveFirst;

@@ -156,6 +156,67 @@ def test_search_bibliographic_records_endpoint(monkeypatch):
     assert result.items[0]["first_item_id"] == "0001"
 
 
+def test_search_bibliographic_records_with_include_items_endpoint(monkeypatch):
+    """Test search_bibliographic_records endpoint with include_items=True."""
+    # Mock records returned by service
+    mock_record = SimpleNamespace(
+        id=42,
+        isbn="978-2070408504",
+        isbn_value="2070408504",
+        identifier_type="ISBN",
+        title="Le Petit Prince",
+        subtitle=None,
+        authors='["Antoine de Saint-Exupéry"]',
+        publisher="Gallimard",
+        publication_year=1943,
+        collection=None,
+        series_number=None,
+        medium_type="Livre",
+        target_audience="child",
+        level="easy",
+        language="fr",
+        binding_type="paperback",
+        page_count=96,
+        has_illustrations=True,
+        cover_image=None
+    )
+
+    monkeypatch.setattr(catalog.catalog_service, "search_bibliographic_records", lambda **kwargs: ([mock_record], 1))
+
+    # Mock DB query
+    mock_db = MagicMock()
+    
+    # Mock database results for counts, holds, and items
+    mock_db.query.return_value.filter.return_value.group_by.return_value.all.side_effect = [
+        [SimpleNamespace(bibliographic_record_id=42, total=1, available=1)],  # counts_rows
+        [SimpleNamespace(bibliographic_record_id=42, holds=0)]                 # holds_rows
+    ]
+    # For all_items query, return list of items with the required fields
+    mock_item = SimpleNamespace(
+        id=101,
+        bibliographic_record_id=42,
+        item_id="0001",
+        status="available",
+        shelf_location="Shelf A",
+        call_number="C-EXU",
+        condition="good",
+        loanable=True,
+        acquisition_date=None,
+        funding_source="own"
+    )
+    mock_db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_item]
+
+    result = catalog.search_bibliographic_records(limit=50, offset=0, include_items=True, db=mock_db)
+
+    assert result.total == 1
+    assert len(result.items) == 1
+    assert result.items[0]["title"] == "Le Petit Prince"
+    assert "physical_items" in result.items[0]
+    assert len(result.items[0]["physical_items"]) == 1
+    assert result.items[0]["physical_items"][0]["item_id"] == "0001"
+    assert result.items[0]["physical_items"][0]["status"] == "available"
+
+
 def test_get_bibliographic_record_endpoint(monkeypatch):
     """Test get_bibliographic_record endpoint."""
     monkeypatch.setattr(catalog.catalog_service, "get_bibliographic_record_with_counts", lambda db, rid: SimpleNamespace(
