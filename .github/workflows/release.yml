@@ -75,6 +75,7 @@ jobs:
         with:
           name: web-ui-build
           path: build/web/
+          include-hidden-files: true
           retention-days: 1
 
   # ═══════════════════════════════════════════════════════════════════════════
