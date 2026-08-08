@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,13 @@ from src.shared import version
 
 
 def test_version_matches_project_metadata():
-    assert version.get_version() == "1.1.0"
+    pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
+    content = pyproject_path.read_text(encoding="utf-8")
+    match = re.search(r'^version\s*=\s*["\']([^"\']+)["\']', content, re.MULTILINE)
+    assert match is not None
+    expected_version = match.group(1)
+
+    assert version.get_version() == expected_version
     assert version.__version__ == version.get_version()
 
 

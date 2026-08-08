@@ -103,7 +103,7 @@ def test_production_build_page_loads_and_is_functional(context, server_url: str)
 
     # Clicking help button should open offcanvashelp
     help_button.click()
-    panel = page.locator("#bcd-help-offcanvas")
+    panel = page.locator(".offcanvas")
     expect(panel).to_be_visible()
 
     # Wait for the Markdown content to render inside offcanvas
