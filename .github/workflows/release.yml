@@ -111,6 +111,33 @@ jobs:
       - name: Build with PyInstaller
         run: pyinstaller --clean --upx-dir=upx bcd.spec
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium
+
+      - name: Run E2E tests against PyInstaller Windows binary
+        env:
+          WEB_ASSETS_MODE: build
+          BCD_TEST_EXECUTABLE: dist/bcd/bcd.exe
+        run: npm run test:web-production
+
+      - name: Antivirus Scan (Windows Defender)
+        shell: powershell
+        run: |
+          $mpcmd = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+          if (Test-Path $mpcmd) {
+            & $mpcmd -Scan -ScanType 3 -File "$PWD\dist\bcd"
+          } else {
+            Write-Host "Windows Defender CLI not found, skipping local scan."
+          }
+
       - name: Upload BCD Windows files
         uses: actions/upload-artifact@v4
         with:
@@ -152,6 +179,29 @@ jobs:
 
       - name: Build with PyInstaller
         run: pyinstaller --clean bcd.spec
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium
+
+      - name: Run E2E tests against PyInstaller Linux binary
+        env:
+          WEB_ASSETS_MODE: build
+          BCD_TEST_EXECUTABLE: dist/bcd/bcd
+        run: npm run test:web-production
+
+      - name: Antivirus Scan (ClamAV)
+        run: |
+          sudo apt-get install -y clamav
+          sudo freshclam || true
+          clamscan -r --bell -i dist/bcd/
 
       - name: Upload BCD Linux files
         uses: actions/upload-artifact@v4

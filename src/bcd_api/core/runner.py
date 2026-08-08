@@ -257,9 +257,9 @@ def _parse_args(args_list=None) -> argparse.Namespace:
     parser.add_argument(
         "--ui-mode",
         default=settings.ui_mode,
-        choices=["webview", "browser", "kids"],
+        choices=["webview", "browser", "kids", "server", "none"],
         metavar="MODE",
-        help="UI mode: webview (native window), browser (system browser), or kids (Kids client); default: %(default)s",
+        help="UI mode: webview (native window), browser (system browser), kids (Kids client), or server (headless server); default: %(default)s",
     )
     parser.add_argument(
         "--client-only",
@@ -291,7 +291,21 @@ def main() -> None:
     # If running in portable mode OR client-only mode, launch the client UI directly
     if is_portable() or settings.client_only:
         ui_mode = args.ui_mode.lower()
-        if ui_mode == "kids":
+        if ui_mode in ("server", "none"):
+            if not settings.client_only:
+                init_database_if_needed()
+                from src.bcd_api.main import app, _log_config
+
+                config = uvicorn.Config(
+                    app,
+                    host=args.host,
+                    port=args.port,
+                    log_config=_log_config,
+                )
+                server = uvicorn.Server(config)
+                server.run()
+            return
+        elif ui_mode == "kids":
             _run_portable_kids(args.host, args.port)
         elif ui_mode == "webview":
             if not settings.client_only:
@@ -303,7 +317,7 @@ def main() -> None:
             _run_portable_browser(args.host, args.port)
         else:
             logger.error(f"Invalid UI mode: {ui_mode}")
-            print(f"ERROR: Invalid UI mode '{ui_mode}'. Must be: webview, browser, or kids")
+            print(f"ERROR: Invalid UI mode '{ui_mode}'. Must be: webview, browser, kids, or server")
         return
 
     # Development mode: console output + optional hot reload

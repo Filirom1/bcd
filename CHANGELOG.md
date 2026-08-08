@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Release Workflow**: Added Playwright E2E testing against PyInstaller compiled binaries (`--ui-mode server`) before release publishing in `.github/workflows/release.yml`.
+- **Antivirus Analysis**: Integrated automated antivirus scanning (Windows Defender CLI on Windows, ClamAV on Linux) into the release workflow for PyInstaller binaries.
+- **Nix Environment**: Added `python313Packages.pyinstaller` to `shell.nix`.
+
 ## [1.2.0]
 
 ### Added

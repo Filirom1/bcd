@@ -51,6 +51,7 @@ pkgs.mkShell {
     python313Packages.black
     python313Packages.mypy
     python313Packages.ipython
+    python313Packages.pyinstaller
 
     # Additional tools
     sqlite
