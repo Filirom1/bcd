@@ -76,11 +76,11 @@ jobs:
           echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          coverage report --include="src/*" --skip-empty >> $GITHUB_STEP_SUMMARY
+          coverage report --skip-empty >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-#      - name: Check coverage threshold
-#        run: coverage report --include="src/*" --fail-under=80
+      - name: Check coverage threshold
+        run: coverage report --fail-under=80
 
 #      - name: Upload coverage to Codecov (optional)
 #        uses: codecov/codecov-action@v4
