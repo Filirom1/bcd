@@ -99,6 +99,9 @@ jobs:
       - name: Build with PyInstaller
         run: pyinstaller --clean --upx-dir=upx bcd.spec
 
+      - name: Verify PyInstaller Windows binary
+        run: dist/bcd/bcd.exe --help
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -167,6 +170,9 @@ jobs:
 
       - name: Build with PyInstaller
         run: pyinstaller --clean bcd.spec
+
+      - name: Verify PyInstaller Linux binary
+        run: dist/bcd/bcd --help
 
       - uses: actions/setup-node@v4
         with:

@@ -146,3 +146,6 @@ app.add_api_route("/{full_path:path}", catch_all_spa, methods=["GET"], include_i
 
 
 from src.bcd_api.core.runner import main  # noqa: F401
+
+if __name__ == "__main__":
+    main()

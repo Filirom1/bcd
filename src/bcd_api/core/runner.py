@@ -274,6 +274,14 @@ def _parse_args(args_list=None) -> argparse.Namespace:
 
 def main() -> None:
     """Run the application."""
+    import os
+    import sys
+
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
+
     args = _parse_args()
 
     if args.client_only:
