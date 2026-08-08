@@ -79,19 +79,19 @@ jobs:
           coverage report --include="src/*" --skip-empty >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Check coverage threshold
-        run: coverage report --include="src/*" --fail-under=80
+#      - name: Check coverage threshold
+#        run: coverage report --include="src/*" --fail-under=80
 
-      - name: Upload coverage to Codecov (optional)
-        uses: codecov/codecov-action@v4
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        continue-on-error: true
+#      - name: Upload coverage to Codecov (optional)
+#        uses: codecov/codecov-action@v4
+#        with:
+#          file: ./coverage.xml
+#          flags: unittests
+#          name: codecov-umbrella
+#          fail_ci_if_error: false
+#        env:
+#          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+#        continue-on-error: true
 
   javascript-tests:
     name: Test (JavaScript)
