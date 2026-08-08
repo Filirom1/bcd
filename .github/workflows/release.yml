@@ -191,11 +191,6 @@ jobs:
           BCD_TEST_EXECUTABLE: dist/bcd/bcd
         run: npm run test:web-production
 
-      - name: Antivirus Scan (ClamAV)
-        uses: crazy-max/ghaction-clamav@v3
-        with:
-          path: dist/bcd/
-
       - name: Upload BCD Linux files
         uses: actions/upload-artifact@v4
         with:

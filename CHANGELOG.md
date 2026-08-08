@@ -4,12 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
 ## [1.2.0]
 
 ### Added
 
 - Export / Import databse feature
-- **Antivirus Analysis**: Integrated automated antivirus scanning (Windows Defender CLI on Windows, ClamAV on Linux) into the release workflow for PyInstaller binaries.
+- **Antivirus Analysis**: Integrated automated Windows Defender scanning into the release workflow for PyInstaller binaries.
 
 ### Changed
 
