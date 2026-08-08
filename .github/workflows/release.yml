@@ -100,7 +100,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: pip install -e "." pyinstaller
+        run: pip install -e ".[dev]" pyinstaller
 
       - name: Download UPX
         run: |
@@ -120,7 +120,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright Chromium
-        run: playwright install chromium
+        run: python -m playwright install chromium
 
       - name: Run E2E tests against PyInstaller Windows binary
         env:
@@ -175,7 +175,7 @@ jobs:
             libwebkit2gtk-4.1-dev
 
       - name: Install Python dependencies
-        run: pip install -e "." pyinstaller
+        run: pip install -e ".[dev]" pyinstaller
 
       - name: Build with PyInstaller
         run: pyinstaller --clean bcd.spec
@@ -189,7 +189,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright Chromium
-        run: playwright install chromium
+        run: python -m playwright install chromium
 
       - name: Run E2E tests against PyInstaller Linux binary
         env:
