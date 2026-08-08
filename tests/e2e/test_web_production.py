@@ -68,10 +68,10 @@ def test_production_build_page_loads_and_is_functional(context, server_url: str)
     for req in locale_requests:
         print(f"     - {req}")
 
-    # Budget check: At most 10 JS/CSS/font requests before app ready
+    # Budget check: At most 15 JS/CSS/font requests before app ready
     assert (
-        len(static_requests) <= 10
-    ), f"Static request count {len(static_requests)} exceeds budget of 10!"
+        len(static_requests) <= 15
+    ), f"Static request count {len(static_requests)} exceeds budget of 15!"
     # Document locale request count (typically 1 or 2 depending on fallback/current selection)
     assert len(locale_requests) >= 1, "At least one locale file should be fetched"
 

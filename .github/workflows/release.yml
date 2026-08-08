@@ -45,7 +45,7 @@ jobs:
       - name: Build Web UI
         run: npm run build:web
       - name: Run complete Python test suite
-        run: pytest tests -v
+        run: python run_tests.py python -v
       - name: Run Web UI Production E2E tests
         env:
           WEB_ASSETS_MODE: build

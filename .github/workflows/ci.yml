@@ -49,20 +49,10 @@ jobs:
         run: |
           alembic upgrade head
 
-      - name: Run fast Python suite with coverage
+      - name: Run Python test suites with coverage
         run: |
           set -o pipefail
-          pytest tests \
-            -m "not external and not e2e and not slow" \
-            --cov=src \
-            --cov-report=term-missing \
-            --cov-report=html \
-            --cov-report=xml \
-            --durations=30 \
-            -v | tee pytest.log
-
-      - name: Run remaining slow, external and E2E tests
-        run: pytest tests -m "slow or external or e2e" -v
+          python run_tests.py python --cov -v | tee pytest.log
 
       - name: Run Web UI Production E2E tests
         env:
