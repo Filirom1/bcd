@@ -9,6 +9,7 @@ Examples:
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -19,7 +20,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 def run(command: list[str], env: dict[str, str]) -> None:
     """Run one command from the project root and stop on failure."""
     print(f"\n$ {' '.join(command)}")
-    subprocess.run(command, cwd=PROJECT_ROOT, env=env, check=True)
+    resolved_cmd = command.copy()
+    binary_path = shutil.which(resolved_cmd[0])
+    if binary_path:
+        resolved_cmd[0] = binary_path
+    subprocess.run(resolved_cmd, cwd=PROJECT_ROOT, env=env, check=True)
 
 
 def portable_executable() -> Path:
