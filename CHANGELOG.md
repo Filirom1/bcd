@@ -4,8 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-- Updated test runner execution in CI workflow and adjusted web production static request budget threshold.
 
 ## [1.2.0]
 
