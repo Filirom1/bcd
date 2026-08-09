@@ -8,6 +8,7 @@ const { useI18n } = VueI18n;
 
 import { useNotification } from '../../composables/useNotification.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
+import { apiClient } from '../../api/client.js';
 
 export default defineComponent({
     name: 'FileTab',
@@ -79,21 +80,9 @@ export default defineComponent({
                 }
 
                 // Call backend to validate which IDs exist
-                const response = await fetch('/api/v1/inventory/items/bulk-mark', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        item_ids: itemIds
-                    })
+                const data = await apiClient.post('/inventory/items/bulk-mark', {
+                    item_ids: itemIds
                 });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                const data = await response.json();
 
                 // Store parse result
                 parseResult.value = {
@@ -137,13 +126,8 @@ export default defineComponent({
                     await Promise.all(
                         batch.map(async (itemId) => {
                             try {
-                                const response = await fetch(`/api/v1/inventory/items/${itemId}`, {
-                                    method: 'PATCH'
-                                });
-                                if (response.ok) {
-                                    const item = await response.json();
-                                    props.inventoryTable.addItem(item);
-                                }
+                                const item = await apiClient.patch(`/inventory/items/${itemId}`, {});
+                                props.inventoryTable.addItem(item);
                             } catch (err) {
                                 console.error(`Failed to fetch item ${itemId}:`, err);
                             }

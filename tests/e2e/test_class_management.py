@@ -48,6 +48,7 @@ class TestClassManagementBasics:
         create_button = classes_page.page.locator(classes_page.CREATE_CLASS_BUTTON)
         expect(create_button).to_be_visible(timeout=5000)
 
+    @pytest.mark.e2e_to_be_removed
     def test_create_class_minimal_fields(
         self,
         classes_page,
@@ -69,6 +70,7 @@ class TestClassManagementBasics:
         # Assert - Class should appear in table
         assert classes_page.class_exists("CP-A"), "Created class should appear in table"
 
+    @pytest.mark.e2e_to_be_removed
     def test_create_class_all_fields(
         self,
         classes_page,
@@ -94,6 +96,7 @@ class TestClassManagementBasics:
         # Assert
         assert classes_page.class_exists("CE1-B"), "Created class should appear in table"
 
+    @pytest.mark.e2e_to_be_removed
     def test_list_classes_in_table(
         self,
         classes_page,
@@ -138,6 +141,7 @@ class TestClassManagementBasics:
 class TestClassEditing:
     """Test editing existing classes."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_edit_class_name(
         self,
         classes_page,
@@ -166,6 +170,7 @@ class TestClassEditing:
         assert classes_page.class_exists("CP-A"), "Updated class name should appear"
         assert not classes_page.class_exists("CP-TEMP"), "Old class name should not appear"
 
+    @pytest.mark.e2e_to_be_removed
     def test_edit_class_teacher(
         self,
         classes_page,
@@ -224,6 +229,7 @@ class TestClassDeletion:
         # Assert
         assert not classes_page.class_exists("EMPTY-CLASS"), "Deleted class should not appear in table"
 
+    @pytest.mark.e2e_to_be_removed
     def test_delete_class_with_students_shows_warning(
         self,
         classes_page,
@@ -329,6 +335,7 @@ class TestClassDeletion:
 class TestClassStudentCount:
     """Test student_count display in class table."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_student_count_displays_in_table(
         self,
         classes_page,
@@ -408,6 +415,7 @@ class TestClassValidation:
 class TestClassI18n:
     """Test internationalization of class management page."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_class_page_labels_in_english(
         self,
         classes_page,

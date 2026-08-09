@@ -4,7 +4,9 @@ import csv
 import json
 from io import StringIO
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+import pytest
+
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.services.dublin_core_import import import_dublin_core_csv
 
@@ -29,11 +31,11 @@ Les Misérables,isbn:9782070360024,"Hugo, Victor",Livre"""
         assert len(result.errors) == 0
 
         # Verify records in database
-        records = db_session.query(BiblographicRecord).all()
+        records = db_session.query(BibliographicRecord).all()
         assert len(records) == 2
 
         # Verify specific record
-        stuart = db_session.query(BiblographicRecord).filter_by(isbn="isbn:2211056466").first()
+        stuart = db_session.query(BibliographicRecord).filter_by(isbn="isbn:2211056466").first()
         assert stuart is not None
         assert stuart.title == "Stuart Little"
         assert json.loads(stuart.authors) == ["White, E.B."]
@@ -54,13 +56,13 @@ Noël en décembre,isbn:9782070678901,"Beauté, François",Hachette,Célébratio
         assert len(result.errors) == 0
 
         # Verify French characters preserved
-        record1 = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070612345").first()
+        record1 = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070612345").first()
         assert record1.title == "L'Été à Paris"
         assert record1.publisher == "Éditions Gallimard"
         assert "été" in record1.description
         assert "événements" in record1.description
 
-        record2 = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070678901").first()
+        record2 = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070678901").first()
         assert record2.title == "Noël en décembre"
         assert "Beauté" in json.loads(record2.authors)[0]
         assert "Célébration" in record2.description
@@ -97,7 +99,7 @@ Stuart Little,isbn:2211056466,ITEM002,800.000"""
         assert result.items_created == 2  # Two physical items
 
         # Verify database
-        records = db_session.query(BiblographicRecord).all()
+        records = db_session.query(BibliographicRecord).all()
         assert len(records) == 1
 
         record = records[0]
@@ -132,7 +134,7 @@ Astérix,isbn:123456,"Goscinny, René|Uderzo, Albert",Humour|Histoire|Bande dess
         # Assert
         assert result.records_created == 1
 
-        record = db_session.query(BiblographicRecord).first()
+        record = db_session.query(BibliographicRecord).first()
         authors = json.loads(record.authors)
         assert len(authors) == 2
         assert "Goscinny, René" in authors
@@ -156,7 +158,7 @@ Complete Book,isbn:9782070123456,"Author Name",Science|Tech,A complete descripti
         # Assert
         assert result.records_created == 1
 
-        record = db_session.query(BiblographicRecord).first()
+        record = db_session.query(BibliographicRecord).first()
         assert record.title == "Complete Book"
         assert record.isbn == "isbn:9782070123456"
         assert json.loads(record.authors) == ["Author Name"]
@@ -193,7 +195,7 @@ Book Title,isbn:123456,INV001,800.000,2024-01-15,Budget 2024"""
     def test_import_duplicate_isbn_skipped(self, db_session):
         """Importing duplicate ISBN should skip the bibliographic record."""
         # Arrange - Create existing record
-        existing = BiblographicRecord(
+        existing = BibliographicRecord(
             title="Existing Book",
             isbn="isbn:9782070123456",
             medium_type="Livre"
@@ -220,7 +222,7 @@ New Book Title,isbn:9782070123456,NEW001"""
         assert result.items_created == 1  # But item still created
 
         # Verify database
-        records = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070123456").all()
+        records = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070123456").all()
         assert len(records) == 1  # Only one record
         assert records[0].title == "Existing Book"  # Original title preserved
 
@@ -246,16 +248,16 @@ Book D,isbn:9782070444444,999"""
         # Assert
         assert result.records_created == 4
 
-        book_a = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070111111").first()
+        book_a = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070111111").first()
         assert book_a.publication_year == 2024
 
-        book_b = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070222222").first()
+        book_b = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070222222").first()
         assert book_b.publication_year == 2024  # Extracts year from date
 
-        book_c = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070333333").first()
+        book_c = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070333333").first()
         assert book_c.publication_year is None  # Invalid year
 
-        book_d = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070444444").first()
+        book_d = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070444444").first()
         assert book_d.publication_year is None  # Out of range (< 1000)
 
     def test_import_page_count_extraction(self, db_session):
@@ -270,13 +272,13 @@ Book C,isbn:9782070333333,Not a page count"""
         result = import_dublin_core_csv(db_session, csv_content)
 
         # Assert
-        book_a = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070111111").first()
+        book_a = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070111111").first()
         assert book_a.page_count == 300
 
-        book_b = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070222222").first()
+        book_b = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070222222").first()
         assert book_b.page_count == 173
 
-        book_c = db_session.query(BiblographicRecord).filter_by(isbn="isbn:9782070333333").first()
+        book_c = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070333333").first()
         assert book_c.page_count is None
 
     def test_import_empty_csv(self, db_session):
@@ -292,6 +294,7 @@ Book C,isbn:9782070333333,Not a page count"""
         assert result.items_created == 0
         assert len(result.errors) == 0
 
+    @pytest.mark.slow
     def test_import_large_dataset_performance(self, db_session):
         """Test bulk import performance with 100 records."""
         # Arrange - Generate 100 records
@@ -329,13 +332,13 @@ Book C,isbn:2070612772"""
         # Assert
         assert result.records_created == 3
 
-        book_a = db_session.query(BiblographicRecord).filter_by(title="Book A").first()
+        book_a = db_session.query(BibliographicRecord).filter_by(title="Book A").first()
         assert book_a.isbn == "isbn:9782070612758"  # Hyphens removed, prefix added
 
-        book_b = db_session.query(BiblographicRecord).filter_by(title="Book B").first()
+        book_b = db_session.query(BibliographicRecord).filter_by(title="Book B").first()
         assert book_b.isbn == "isbn:2070612765"  # Spaces removed, prefix added
 
-        book_c = db_session.query(BiblographicRecord).filter_by(title="Book C").first()
+        book_c = db_session.query(BibliographicRecord).filter_by(title="Book C").first()
         assert book_c.isbn == "isbn:2070612772"  # Prefix added
 
     def test_import_without_isbn_uses_title_as_key(self, db_session):
@@ -352,7 +355,7 @@ Book Without ISBN,,ITEM002"""
         assert result.records_created == 1  # One record (deduplicated by title)
         assert result.items_created == 2  # Two items
 
-        records = db_session.query(BiblographicRecord).filter_by(title="Book Without ISBN").all()
+        records = db_session.query(BibliographicRecord).filter_by(title="Book Without ISBN").all()
         assert len(records) == 1
         assert len(records[0].items) == 2
 
@@ -373,7 +376,7 @@ Valid Book 2,isbn:333333
         assert len(result.errors) == 2  # Two errors for missing titles
 
         # Verify valid records were imported
-        records = db_session.query(BiblographicRecord).all()
+        records = db_session.query(BibliographicRecord).all()
         assert len(records) == 2
         titles = [r.title for r in records]
         assert "Valid Book 1" in titles

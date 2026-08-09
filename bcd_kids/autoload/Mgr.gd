@@ -141,6 +141,7 @@ func _make(name: String) -> Control:
 		"search":           scr = preload("res://src/screens/SSearch.tscn").instantiate()
 		"hold_confirm":     scr = preload("res://src/screens/SHoldConfirm.tscn").instantiate()
 		"hold_ready":       scr = preload("res://src/screens/SHoldReady.tscn").instantiate()
+		"return_shelve":    scr = preload("res://src/screens/SReturnShelve.tscn").instantiate()
 		"book_detail":  	scr = preload("res://src/screens/SBookDetail.tscn").instantiate()
 		"my_holds":         scr = preload("res://src/screens/SMyHolds.tscn").instantiate()
 		"settings":         scr = preload("res://src/screens/SSettings.tscn").instantiate()

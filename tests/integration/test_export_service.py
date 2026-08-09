@@ -7,7 +7,7 @@ from io import StringIO
 import pytest
 
 from src.bcd_api.core.exceptions import ExportTooLargeException
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.services.export_service import MAX_EXPORT_ROWS, ExportService
 
@@ -39,7 +39,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create record with French characters
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="L'Été à Paris",
             isbn="9782070612758",
             authors=json.dumps(["Saint-Exupéry, Antoine de"]),
@@ -86,7 +86,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create minimal record (only required fields)
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="Minimal Record",
             isbn=None,  # No ISBN
             authors=None,  # No authors
@@ -139,7 +139,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create record with all fields populated
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="Stuart Little",
             isbn="2211056466",
             authors=json.dumps(["White, E.B.", "Williams, Garth"]),
@@ -205,7 +205,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create record with French characters
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="Noël à Paris",
             isbn="123456",
             medium_type="Livre"
@@ -233,7 +233,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create one record with two items
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="Stuart Little",
             isbn="2211056466",
             medium_type="Livre"
@@ -285,7 +285,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create record without items
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="Les Misérables",
             isbn="123456",
             medium_type="Livre"
@@ -326,7 +326,7 @@ class TestExportService:
         # Note: This is a slow test if MAX_EXPORT_ROWS is large
         # For testing, we'll mock by creating a record with many items
 
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="Test Record",
             isbn="123456",
             medium_type="Livre"
@@ -352,7 +352,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create record with multiple authors, keywords
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title="Astérix le Gaulois",
             isbn="9782012100367",
             authors=json.dumps(["Goscinny, René", "Uderzo, Albert"]),

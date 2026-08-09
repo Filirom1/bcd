@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * useInventoryTable Composable
  *
@@ -21,11 +22,32 @@
 
 const { ref, watch } = Vue;
 import { apiClient } from '../api/client.js';
+import { getJSON, setJSON } from '../utils/storage.js';
 
-const STORAGE_KEY = 'bcd_inventory_table_ids';
+const STORAGE_KEY = 'inventory_table_ids';
+
+/**
+ * Working table row — subset of Item fields plus denormalised record fields.
+ * @typedef {Object} InventoryTableItem
+ * @property {string} item_id
+ * @property {number} bibliographic_record_id
+ * @property {string} status
+ * @property {string} condition
+ * @property {boolean} loanable
+ * @property {string|null} shelf_location
+ * @property {string|null} call_number
+ * @property {string|null} last_inventoried_at
+ * @property {string} title
+ * @property {string|null} level
+ * @property {string|null} target_audience
+ * @property {string|null} language
+ * @property {string|null} medium_type
+ */
 
 export function useInventoryTable() {
+    /** @type {import('vue').Ref<InventoryTableItem[]>} */
     const items = ref([]);
+    /** @type {import('vue').Ref<string[]>} */
     const itemIds = ref([]);
     const loading = ref(false);
 
@@ -33,11 +55,7 @@ export function useInventoryTable() {
      * Persist only item IDs to localStorage
      */
     const persist = () => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(itemIds.value));
-        } catch (error) {
-            console.error('Failed to persist inventory table IDs to localStorage:', error);
-        }
+        setJSON(STORAGE_KEY, itemIds.value);
     };
 
     /**
@@ -47,14 +65,12 @@ export function useInventoryTable() {
      */
     const restore = async () => {
         try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (!stored) {
+            const parsedIds = getJSON(STORAGE_KEY);
+            if (!parsedIds) {
                 items.value = [];
                 itemIds.value = [];
                 return;
             }
-
-            const parsedIds = JSON.parse(stored);
             if (!Array.isArray(parsedIds) || parsedIds.length === 0) {
                 items.value = [];
                 itemIds.value = [];
@@ -68,7 +84,7 @@ export function useInventoryTable() {
             try {
                 // Fetch each item individually to get full details
                 const fetchPromises = parsedIds.map(item_id =>
-                    apiClient.patch(`/inventory/items/${item_id}`)
+                    apiClient.patch(`/inventory/items/${item_id}`, {})
                         .catch(err => {
                             console.warn(`Failed to fetch item ${item_id}:`, err);
                             return null;
@@ -121,7 +137,7 @@ export function useInventoryTable() {
      * - Otherwise, prepend to array
      * - Updates both items and itemIds
      *
-     * @param {Object} item - Item object with all fields
+     * @param {InventoryTableItem} item - Item object with all fields
      */
     const addItem = (item) => {
         const existingIndex = items.value.findIndex(i => i.item_id === item.item_id);
@@ -143,7 +159,7 @@ export function useInventoryTable() {
      * - New items are appended (not selected by default)
      * - Updates both items and itemIds
      *
-     * @param {Array} newItems - Array of item objects
+     * @param {InventoryTableItem[]} newItems - Array of item objects
      */
     const addItems = (newItems) => {
         const existingIds = new Set(itemIds.value);
@@ -161,7 +177,7 @@ export function useInventoryTable() {
      * Remove items by item_id
      * - Updates both items and itemIds
      *
-     * @param {Array<string>} item_ids_to_remove - Array of item_ids to remove
+     * @param {string[]} item_ids_to_remove - Array of item_ids to remove
      */
     const removeItems = (item_ids_to_remove) => {
         const idSet = new Set(item_ids_to_remove);
@@ -181,7 +197,7 @@ export function useInventoryTable() {
     /**
      * Get all item IDs in table
      *
-     * @returns {Array<string>} Array of item_ids
+     * @returns {string[]} Array of item_ids
      */
     const getAllItemIds = () => {
         return itemIds.value;

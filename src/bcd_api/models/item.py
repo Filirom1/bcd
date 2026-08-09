@@ -61,7 +61,7 @@ class Item(Base):
     )
 
     # Relationships
-    bibliographic_record = relationship("BiblographicRecord", back_populates="items")
+    bibliographic_record = relationship("BibliographicRecord", back_populates="items")
     circulation_transactions = relationship(
         "CirculationTransaction",
         back_populates="item",

@@ -6,8 +6,8 @@ import pytest
 from pydantic import ValidationError
 
 from src.bcd_api.schemas.bibliographic_record import (
-    BiblographicRecordCreate,
-    BiblographicRecordUpdate,
+    BibliographicRecordCreate,
+    BibliographicRecordUpdate,
 )
 from src.bcd_api.schemas.borrower import BorrowerCreate, BorrowerResponse, BorrowerUpdate
 from src.bcd_api.schemas.circulation import CheckoutRequest, RenewRequest, ReturnRequest
@@ -72,12 +72,12 @@ class TestBorrowerSchemas:
 
 
 class TestBiblioSchemas:
-    """Tests for BiblographicRecord schemas."""
+    """Tests for BibliographicRecord schemas."""
 
     def test_biblio_create_minimal(self):
         """Test creating a bibliographic record with minimal data."""
         data = {"title": "Test Book", "medium_type": "Livre"}
-        biblio = BiblographicRecordCreate(**data)
+        biblio = BibliographicRecordCreate(**data)
         assert biblio.title == "Test Book"
         assert biblio.medium_type == "Livre"
 
@@ -95,7 +95,7 @@ class TestBiblioSchemas:
             "page_count": 32,
             "has_illustrations": True,
         }
-        biblio = BiblographicRecordCreate(**data)
+        biblio = BibliographicRecordCreate(**data)
         assert biblio.isbn == "isbn:978-2-8006-8734-6"
         assert biblio.authors == ["Carmi, Danielle"]
         assert biblio.page_count == 32
@@ -103,24 +103,24 @@ class TestBiblioSchemas:
     def test_biblio_create_missing_title(self):
         """Test biblio creation without title."""
         with pytest.raises(ValidationError):
-            BiblographicRecordCreate(medium_type="Livre")
+            BibliographicRecordCreate(medium_type="Livre")
 
     def test_biblio_update(self):
         """Test bibliographic record update schema."""
         data = {"title": "Updated Title", "publisher": "New Publisher"}
-        update = BiblographicRecordUpdate(**data)
+        update = BibliographicRecordUpdate(**data)
         assert update.title == "Updated Title"
         assert update.publisher == "New Publisher"
 
     def test_biblio_dewey_number_cleaning(self):
         """Test that dewey_number is cleaned of special characters and normalized."""
         data = {"title": "Test Book", "medium_type": "Livre", "dewey_number": "843 (3)°"}
-        biblio = BiblographicRecordCreate(**data)
+        biblio = BibliographicRecordCreate(**data)
         assert biblio.dewey_number == "843 3"
 
         # Update test
         update_data = {"dewey_number": "R(A)°"}
-        update = BiblographicRecordUpdate(**update_data)
+        update = BibliographicRecordUpdate(**update_data)
         assert update.dewey_number == "RA"
 
 
@@ -243,20 +243,20 @@ class TestSchemaValidation:
         """Test string length constraints."""
         # Title too long
         with pytest.raises(ValidationError):
-            BiblographicRecordCreate(title="x" * 501, medium_type="Livre")
+            BibliographicRecordCreate(title="x" * 501, medium_type="Livre")
 
     def test_year_validation(self):
         """Test publication year validation."""
         # Valid year
-        biblio = BiblographicRecordCreate(
+        biblio = BibliographicRecordCreate(
             title="Test Book", medium_type="Livre", publication_year=2024
         )
         assert biblio.publication_year == 2024
 
         # Year too old
         with pytest.raises(ValidationError):
-            BiblographicRecordCreate(title="Test Book", medium_type="Livre", publication_year=999)
+            BibliographicRecordCreate(title="Test Book", medium_type="Livre", publication_year=999)
 
         # Future year (2101 is above max of 2100)
         with pytest.raises(ValidationError):
-            BiblographicRecordCreate(title="Test Book", medium_type="Livre", publication_year=2101)
+            BibliographicRecordCreate(title="Test Book", medium_type="Livre", publication_year=2101)

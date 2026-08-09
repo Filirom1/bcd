@@ -179,6 +179,22 @@ class LoanLimitExceededException(BusinessRuleViolation):
         self.context = context
 
 
+class LoanLimitWarningExceededException(BusinessRuleViolation):
+    """Borrower has exceeded the soft loan limit (warning threshold) in the kids client."""
+
+    def __init__(self, borrower_id: str, current_count: int, limit: int, additional: int = 1):
+        detail = f"Soft loan limit reached: {current_count}/{limit} items checked out. Please use the Web UI to bypass this limit."
+        context = {
+            "borrower_id": borrower_id,
+            "current": current_count,
+            "limit": limit,
+            "additional": additional
+        }
+        super().__init__(detail)
+        self.error_code = "LOAN_LIMIT_WARNING_EXCEEDED"
+        self.context = context
+
+
 class RenewalLimitExceededException(BusinessRuleViolation):
     """Item has exceeded renewal limit."""
 
@@ -208,9 +224,11 @@ class ItemHasHoldsException(BusinessRuleViolation):
         super().__init__(
             f"Item {item_id} has {holds_count} pending hold(s) and cannot be renewed"
         )
+        self.error_code = "ITEM_HAS_HOLDS"
+        self.context = {"item_id": item_id, "holds_count": holds_count}
 
 
-class BiblographicRecordNotFoundException(NotFoundException):
+class BibliographicRecordNotFoundException(NotFoundException):
     """Bibliographic record not found."""
 
     def __init__(self, biblio_id: int):

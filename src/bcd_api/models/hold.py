@@ -74,7 +74,7 @@ class Hold(Base):
 
     # Relationships
     borrower = relationship("Borrower", back_populates="holds")
-    bibliographic_record = relationship("BiblographicRecord", back_populates="holds")
+    bibliographic_record = relationship("BibliographicRecord", back_populates="holds")
 
     @property
     def title(self):

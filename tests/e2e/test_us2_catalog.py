@@ -26,6 +26,7 @@ import pytest
 class TestUS2CatalogSearch:
     """Test catalog search functionality."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us2_ac1_search_displays_matching_records(
         self,
         catalog_page,
@@ -58,6 +59,7 @@ class TestUS2CatalogSearch:
         results_count = catalog_page.get_results_count()
         assert results_count >= 1, "Search should return at least 1 result"
 
+    @pytest.mark.e2e_to_be_removed
     def test_us2_ac7_isbn_search_exact_match(
         self,
         catalog_page,
@@ -85,6 +87,7 @@ class TestUS2CatalogSearch:
         results_count = catalog_page.get_results_count()
         assert results_count == 1, "ISBN search should return exact match"
 
+    @pytest.mark.e2e_to_be_removed
     def test_us2_ac8_filter_available_only(
         self,
         catalog_page,
@@ -126,6 +129,7 @@ class TestUS2CatalogSearch:
 class TestUS2CatalogDetail:
     """Test catalog detail view and cross-navigation."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us2_ac2_detail_shows_all_copies(
         self,
         catalog_page,
@@ -165,6 +169,7 @@ class TestUS2CatalogDetail:
         catalog_page.wait_for_detail_modal()
         assert catalog_page.is_visible(catalog_page.DETAIL_MODAL), "Detail modal should open"
 
+    @pytest.mark.e2e_to_be_removed
     def test_us2_ac6_display_due_dates_for_on_loan_items(
         self,
         catalog_page,

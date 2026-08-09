@@ -19,7 +19,7 @@ import BorrowerFilters from '../components/borrowers/BorrowerFilters.js';
 import BorrowerList from '../components/borrowers/BorrowerList.js';
 import BorrowerImport from '../components/borrowers/BorrowerImport.js';
 import BulkEditModal from '../components/borrowers/BulkEditModal.js';
-import BorrowerEditForm from '../components/borrowers/BorrowerEditForm.js';
+import BorrowerDetail from '../components/borrowers/BorrowerDetail.js';
 import BorrowerAddForm from '../components/borrowers/BorrowerAddForm.js';
 import AdminDropdown from '../components/admin/AdminDropdown.js';
 import Pagination from '../components/ui/Pagination.js';
@@ -30,6 +30,9 @@ import { useAdminShortcuts, altHeld } from '../composables/useKeyboardShortcuts.
 import { ApiError } from '../models/error.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
+import { apiClient } from '../api/client.js';
+import { normalizeCollection } from '../models/pagination.js';
+import { events } from '../utils/events.js';
 
 const { defineComponent } = Vue;
 const { useI18n } = VueI18n;
@@ -42,7 +45,7 @@ export default defineComponent({
         BorrowerList,
         BorrowerImport,
         BulkEditModal,
-        BorrowerEditForm,
+        BorrowerDetail,
         BorrowerAddForm,
         AdminDropdown,
         Pagination,
@@ -140,14 +143,18 @@ export default defineComponent({
                 @execute="handleBulkOperation"
             ></bulk-edit-modal>
 
-            <!-- Edit Single Borrower Modal -->
-            <borrower-edit-form
-                :show="showEditModal"
+            <!-- Edit Single Borrower / Detail Modal -->
+            <borrower-detail
+                v-if="selectedBorrower && showEditModal"
+                :borrower-id="selectedBorrower.borrower_id"
                 :borrower="selectedBorrower"
+                :show="showEditModal"
+                initial-mode="edit"
                 @update:show="showEditModal = $event"
                 @saved="handleBorrowerSaved"
                 @deleted="handleBorrowerDeleted"
-            ></borrower-edit-form>
+                @close="showEditModal = false"
+            />
 
             <!-- Add Borrower Modal -->
             <borrower-add-form
@@ -210,29 +217,17 @@ export default defineComponent({
 
             try {
                 // Build query parameters
-                const params = new URLSearchParams({
+                const params = {
                     page: currentPage.value,
                     page_size: pageSize.value,
                     ...filters.value
-                });
+                };
 
-                const response = await fetch(`/api/v1/borrowers?${params}`);
+                const data = await apiClient.get('/borrowers', params);
 
-                if (!response.ok) {
-                    throw new Error(t('borrowers.error_load_failed'));
-                }
-
-                const data = await response.json();
-
-                // Handle paginated response
-                if (data.items) {
-                    borrowers.value = data.items;
-                    setTotalItems(data.total);
-                } else {
-                    // Handle non-paginated response (fallback)
-                    borrowers.value = data;
-                    setTotalItems(data.length);
-                }
+                const normalized = normalizeCollection(data);
+                borrowers.value = normalized.items;
+                setTotalItems(normalized.pagination.total_items);
 
             } catch (error) {
                 handleError(error);
@@ -426,6 +421,7 @@ export default defineComponent({
 
                 // Reload borrower list
                 await loadBorrowers();
+                events.emit('borrowers:refresh');
 
             } catch (error) {
                 handleError(error);
@@ -441,36 +437,8 @@ export default defineComponent({
             exportLoading.value = true;
 
             try {
-                // Call export endpoint
-                const response = await fetch('/api/v1/borrowers/export', {
-                    method: 'GET',
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || t('borrowers.export_failed'));
-                }
-
-                // Get filename from Content-Disposition header
-                const disposition = response.headers.get('Content-Disposition');
-                let filename = 'borrowers_export.csv';
-                if (disposition) {
-                    const matches = disposition.match(/filename="?([^"]+)"?/);
-                    if (matches && matches[1]) {
-                        filename = matches[1];
-                    }
-                }
-
-                // Trigger download
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
+                // Call export endpoint and trigger download
+                await apiClient.download('/borrowers/export', 'borrowers_export.csv');
 
                 // Show success message
                 const { success } = useNotification();
@@ -506,7 +474,12 @@ export default defineComponent({
 
         useAdminShortcuts({ N: () => { showAddModal.value = true; } });
 
-        // Load borrowers on mount
+        // Load borrowers on mount and subscribe to refresh events
+        const unsubscribe = events.on('borrowers:refresh', () => {
+            loadBorrowers();
+        });
+        Vue.onBeforeUnmount(unsubscribe);
+
         Vue.onMounted(() => {
             loadBorrowers();
         });

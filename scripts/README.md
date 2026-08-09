@@ -45,9 +45,10 @@ python scripts/bump_version.py patch --push
 
 ### Backend Python
 
-1. Vérifier tests:
+1. Vérifier les tests (les commandes sont explicites : aucun filtre global ne masque les tests non marqués):
    ```bash
-   pytest tests/unit tests/integration
+   pytest tests -m "not external and not e2e and not slow"  # fast phase with coverage gate
+   pytest tests -m "slow or external or e2e"                # remaining phase, exactly once
    ```
 
 2. Bumper version et push:
@@ -114,12 +115,34 @@ Utile pour:
 - Démo
 - Développement avec données réalistes
 
-### download-vendor.py
+### build_web.mjs
 
-Télécharge les dépendances vendored pour le web UI:
+Compile le Web UI de production pour Vite :
 ```bash
-python scripts/download-vendor.py
+node scripts/build_web.mjs
 ```
+
+### verify_web_build.mjs
+
+Compile puis vérifie l'intégrité structurelle du Web UI :
+```bash
+npm run verify:web-build
+```
+
+### web_ui.py
+
+Commande unique pour compiler, vérifier, tester et empaqueter le Web UI :
+```bash
+npm run web                         # compile et vérifie build/web/
+npm run web -- --manual             # sert build/web/ avec FastAPI pour un test manuel
+npm run web -- --e2e                # lance le smoke test Playwright
+npm run web -- --portable            # crée le package PyInstaller
+npm run web -- --portable --manual   # crée puis lance le vrai exécutable portable
+npm run web -- --e2e --portable      # smoke test, puis package portable
+```
+
+`--manual` bloque jusqu'à l'arrêt du serveur ou la fermeture de l'exécutable. Utiliser
+`--host` et `--port` pour choisir son adresse (par défaut `127.0.0.1:8000`).
 
 ### take_screenshots.py
 

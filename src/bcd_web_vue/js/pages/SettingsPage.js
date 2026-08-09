@@ -10,10 +10,12 @@ import { apiClient } from '../api/client.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
+import { logger } from '../utils/logger.js';
 import LoadingSpinner from '../components/ui/LoadingSpinner.js';
 import SettingsForm from '../components/settings/SettingsForm.js';
 import BackupSection from '../components/settings/BackupSection.js';
 import CoverSection from '../components/settings/CoverSection.js';
+import EnvSection from '../components/settings/EnvSection.js';
 import DataMaintenanceSection from '../components/settings/DataMaintenanceSection.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 
@@ -25,6 +27,7 @@ export default defineComponent({
         SettingsForm,
         BackupSection,
         CoverSection,
+        EnvSection,
         DataMaintenanceSection,
         HelpPanel
     },
@@ -45,6 +48,7 @@ export default defineComponent({
             library_code: '',
             loan_duration_days: 14,
             loan_limit_default: 3,
+            loan_limit_warning: 1,
             loan_limit_teacher: 10,
             renewal_limit: 2,
             hold_expiration_days: 3,
@@ -84,7 +88,7 @@ export default defineComponent({
                 // API expects data wrapped in "updates" field
                 const payload = { updates: updateData };
 
-                console.log('Saving settings (full):', JSON.stringify(payload, null, 2));
+                logger.debug('Saving settings');
                 await apiClient.put('/admin/settings', payload);
                 originalSettings.value = { ...settings.value };
                 saveGlobalSettings(settings.value);
@@ -140,6 +144,7 @@ export default defineComponent({
                 <backup-section class="mt-2" />
                 <cover-section class="mt-2" />
                 <data-maintenance-section class="mt-2" />
+                <env-section class="mt-2" />
                 <div v-if="appVersion" class="mt-3 text-muted small text-end">
                     {{ t('settings.app_version') }} v{{ appVersion }} &mdash; <a href="https://github.com/Filirom1/bcd" target="_blank" rel="noopener">{{ t('settings.open_source') }}</a>
                 </div>

@@ -28,33 +28,40 @@ async function initApp() {
 
     try {
         // Get initial locale from app state
-        const { locale, saveSettings } = useAppState();
+        const { locale, setLocale, loadSettings } = useAppState();
+        // Priority: an explicit browser preference wins; otherwise the server
+        // language is the library-wide default for this browser profile.
 
         // Fetch settings early so components (e.g. sidebar) can read library_code
+        // We use apiClient with skipGlobalLoading to avoid triggering global loading indicator during bootstrap
         try {
-            const settingsData = await fetch('/api/v1/admin/settings').then(r => r.ok ? r.json() : null);
-            if (settingsData) saveSettings(settingsData);
+            const settingsData = await loadSettings();
+            if (settingsData) {
+                if (typeof localStorage !== 'undefined' && !localStorage.getItem('locale')) {
+                    setLocale(settingsData.language);
+                }
+            }
         } catch (e) {
             // Non-fatal: sidebar will show empty until settings load
         }
 
-        // Load translation messages
+        // Load translation messages (direct fetch is justified as these are local static JSON resources)
         const [frMessages, enMessages] = await Promise.all([
             fetch('/locales/fr.json').then(async r => {
+                const text = await r.text();
                 if (!r.ok) throw new Error(`Failed to load fr.json: ${r.status}`);
                 try {
-                    return await r.json();
+                    return JSON.parse(text);
                 } catch (e) {
-                    const text = await r.text();
                     throw new Error(`Invalid JSON in fr.json: ${text.substring(0, 100)}`);
                 }
             }),
             fetch('/locales/en.json').then(async r => {
+                const text = await r.text();
                 if (!r.ok) throw new Error(`Failed to load en.json: ${r.status}`);
                 try {
-                    return await r.json();
+                    return JSON.parse(text);
                 } catch (e) {
-                    const text = await r.text();
                     throw new Error(`Invalid JSON in en.json: ${text.substring(0, 100)}`);
                 }
             })
@@ -100,7 +107,7 @@ async function initApp() {
         });
 
         // Create router
-        const router = createAppRouter();
+        const router = createAppRouter(i18n);
 
         // Create Vue app
         const app = createApp(App);
@@ -146,7 +153,7 @@ async function initApp() {
             window.__BCD_APP__.setLocale = (locale) => { i18n.global.locale.value = locale; };
         }
 
-        console.log('✅ Vue app initialized successfully');
+        // Initialization is intentionally silent in production.
 
     } catch (error) {
         console.error('❌ Failed to initialize app:', error);

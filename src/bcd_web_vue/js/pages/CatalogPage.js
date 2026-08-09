@@ -3,10 +3,12 @@
  * Search and browse bibliographic records
  */
 
-const { defineComponent, ref, reactive, computed, onMounted, watch } = Vue;
+const { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmount } = Vue;
 const { useI18n } = VueI18n;
 const { useRoute, useRouter } = VueRouter;
 import { apiClient } from '../api/client.js';
+import { events } from '../utils/events.js';
+import { normalizeCollection } from '../models/pagination.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useAdminShortcuts, altHeld } from '../composables/useKeyboardShortcuts.js';
@@ -23,7 +25,7 @@ import { useGlobalModal } from '../composables/useGlobalModal.js';
 import AdminDropdown from '../components/admin/AdminDropdown.js';
 import Pagination from '../components/ui/Pagination.js';
 import BulkEditModal from '../components/catalog/BulkEditModal.js';
-import RecordEditForm from '../components/catalog/RecordEditForm.js';
+import RecordDetail from '../components/catalog/RecordDetail.js';
 import ProgressIndicator from '../components/admin/ProgressIndicator.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 
@@ -38,7 +40,7 @@ export default defineComponent({
         AdminDropdown,
         Pagination,
         BulkEditModal,
-        RecordEditForm,
+        RecordDetail,
         ProgressIndicator,
         HelpPanel
     },
@@ -126,10 +128,11 @@ export default defineComponent({
             return query;
         };
 
-        const { openRecord, openBorrower, closeRecord, catalogRefreshTick } = useGlobalModal();
+        const { openRecord, openBorrower, closeRecord } = useGlobalModal();
 
-        // Refresh search results when a quick-return was performed from the global modal
-        Vue.watch(catalogRefreshTick, () => performSearch());
+        // Refresh search results when signaled by the event bus
+        const unsubscribe = events.on('catalog:refresh', () => performSearch());
+        onBeforeUnmount(unsubscribe);
 
         // Initialize from URL params
         onMounted(() => {
@@ -163,7 +166,9 @@ export default defineComponent({
             // Load shelf locations for the filter dropdown
             apiClient.get('/catalog/locations').then(data => {
                 shelfLocations.value = data.locations || [];
-            }).catch(() => {});
+            }).catch(() => {
+                // Locations are an optional filter; keep the catalog usable without them.
+            });
 
             // Always perform initial search to show borrowed items by default
             performSearch();
@@ -191,7 +196,9 @@ export default defineComponent({
                 query.medium_type = filters.medium_type;
             }
 
-            router.push({ query }).catch(() => {});
+            router.push({ query }).catch(() => {
+                // Navigation may be cancelled by a newer filter update.
+            });
         };
 
         /**
@@ -240,8 +247,9 @@ export default defineComponent({
 
                 const data = await apiClient.get('/catalog/bibliographic/search', params);
 
-                results.value = data.items || [];
-                totalItems.value = data.total || 0;
+                const normalized = normalizeCollection(data);
+                results.value = normalized.items;
+                totalItems.value = normalized.pagination.total_items;
 
                 // Update URL
                 updateURL();
@@ -453,44 +461,15 @@ export default defineComponent({
             try {
                 exportLoading.value = true;
 
-                // Call export endpoint
-                const response = await fetch('/api/v1/catalog/export', {
-                    method: 'GET',
+                // Call export endpoint and download file
+                await apiClient.download('/catalog/export', 'catalog_export.csv', {}, {
                     headers: {
                         'Accept': 'text/csv'
                     }
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.detail || 'Export failed');
-                }
-
-                // Get filename from Content-Disposition header or generate default
-                const contentDisposition = response.headers.get('Content-Disposition');
-                let filename = 'catalog_export.csv';
-                if (contentDisposition) {
-                    const match = contentDisposition.match(/filename=([^;]+)/);
-                    if (match) {
-                        filename = match[1].replace(/"/g, '');
-                    }
-                }
-
-                // Download file
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-
                 // Show success notification
-                const recordCount = response.headers.get('X-Record-Count') || '?';
-                const itemCount = response.headers.get('X-Item-Count') || '?';
-                success(t('catalog.export_success') + ` (${recordCount} records, ${itemCount} items)`);
+                success(t('catalog.export_success'));
 
             } catch (err) {
                 console.error('Export failed:', err);
@@ -650,15 +629,18 @@ export default defineComponent({
                 @execute="handleExecuteBulkOperation"
             />
 
-            <!-- Record Edit Modal -->
-            <record-edit-form
+            <!-- Record Detail / Edit Modal -->
+            <record-detail
                 v-if="editingRecord"
-                :show="showRecordEditModal"
+                :record-id="editingRecord.id"
                 :record="editingRecord"
+                :show="showRecordEditModal"
                 :settings="settings"
+                initial-mode="edit"
                 @update:show="showRecordEditModal = $event"
                 @saved="handleRecordSaved"
                 @deleted="handleRecordDeleted"
+                @view-borrower="openBorrower"
             />
 
             <!-- Progress Indicator (for bulk operations with 100+ records) -->

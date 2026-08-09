@@ -11,11 +11,11 @@ Complete installation instructions for BCD Library Management System.
 
 **Optional**:
 - USB barcode scanner (HID keyboard mode)
-- PostgreSQL database (for production deployments)
+
+> ⚠️ **IMPORTANT (NAS & SQLite)**: Do **not** place the SQLite database (`bcd.db`) on a network shared drive (NAS, SMB, NFS). SQLite requires local file locking. Placing it on a NAS will cause database corruptions (`database disk image is malformed`) or frequent lockouts if multiple instances access it. For multi-computer setups, run the BCD server on a single computer and access it via the network.
 
 **Operating Systems**:
-- Linux (tested on Ubuntu 20.04+, Debian 11+)
-- macOS (tested on 11+)
+- Linux (tested on PrimTux)
 - Windows 10/11
 
 ---
@@ -185,8 +185,6 @@ Open your browser and go to: **http://127.0.0.1:8888**
 
 For production use in a school environment.
 
-### Option 1: SQLite (Default - Recommended for Small Schools)
-
 SQLite is included and requires no additional setup. Perfect for:
 - Single school library
 - Up to 10,000 books
@@ -194,49 +192,6 @@ SQLite is included and requires no additional setup. Perfect for:
 - Simple backup (copy `bcd.db` file)
 
 **No additional configuration needed.**
-
-### Option 2: PostgreSQL (For Large Schools)
-
-PostgreSQL provides better performance and concurrent access. Recommended for:
-- Multiple libraries/branches
-- More than 10,000 books
-- More than 500 students
-- High concurrent usage
-
-**Installation**:
-
-1. **Install PostgreSQL**:
-   ```bash
-   # Linux
-   sudo apt install postgresql postgresql-contrib
-
-   # macOS
-   brew install postgresql
-   ```
-
-2. **Create database and user**:
-   ```bash
-   sudo -u postgres psql
-   ```
-
-   Then in PostgreSQL prompt:
-   ```sql
-   CREATE DATABASE bcd;
-   CREATE USER bcd_user WITH PASSWORD 'your_secure_password';
-   GRANT ALL PRIVILEGES ON DATABASE bcd TO bcd_user;
-   \q
-   ```
-
-3. **Configure BCD**:
-   Create a `.env` file in the BCD directory:
-   ```bash
-   DATABASE_URL=postgresql://bcd_user:your_secure_password@localhost/bcd
-   ```
-
-4. **Run migrations**:
-   ```bash
-   alembic upgrade head
-   ```
 
 ### Running as a Service
 
@@ -400,8 +355,7 @@ alembic upgrade head
 ```
 
 **"Database is locked" (SQLite only)**:
-- Close all other connections to the database
-- Or switch to PostgreSQL for better concurrency
+- Close all other connections to the database. BCD does not support multiple instances writing to the same SQLite file.
 
 ### Can't access from other computers
 
@@ -413,17 +367,12 @@ alembic upgrade head
 ### Performance issues
 
 **For SQLite**:
-- Maximum ~50 concurrent users
+- Maximum ~10 concurrent users
 - Database should be on SSD
 - Regular VACUUM maintenance:
   ```bash
   sqlite3 bcd.db "VACUUM;"
   ```
-
-**For PostgreSQL**:
-- Increase `max_connections` in postgresql.conf
-- Add database indexes (already included in migrations)
-- Use connection pooling
 
 ---
 
@@ -486,18 +435,6 @@ cp data/bcd.db data/bcd_backup_$(date +%Y%m%d).db
 **Restore**:
 ```bash
 cp data/bcd_backup_20260205.db data/bcd.db
-```
-
-### PostgreSQL Backup
-
-**Backup**:
-```bash
-pg_dump -U bcd_user bcd > bcd_backup_$(date +%Y%m%d).sql
-```
-
-**Restore**:
-```bash
-psql -U bcd_user bcd < bcd_backup_20260205.sql
 ```
 
 ---
@@ -569,9 +506,10 @@ Use this if the automatic update fails or if the machine has no internet access.
    pip install -e "." --upgrade
    ```
 
-6. **Update frontend vendor files** (only if `vendor.json` changed):
+6. **Build and verify Web UI assets** (production deployment only):
    ```bash
-   python scripts/download-vendor.py
+   npm ci
+   npm run verify:web-build
    ```
 
 7. **Run migrations**:
@@ -595,13 +533,6 @@ Use this if the automatic update fails or if the machine has no internet access.
 3. **Remove BCD directory**:
    ```bash
    rm -rf /path/to/bcd
-   ```
-
-4. **(Optional) Remove PostgreSQL database**:
-   ```bash
-   sudo -u postgres psql
-   DROP DATABASE bcd;
-   DROP USER bcd_user;
    ```
 
 ---

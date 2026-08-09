@@ -15,7 +15,8 @@ from ...schemas.class_schema import (
     ClassResponse,
     ClassUpdate,
 )
-from ...services import class_service
+from ...services.classes import commands as class_commands
+from ...services.classes import queries as class_queries
 
 router = APIRouter(prefix="/classes", tags=["classes"])
 
@@ -31,7 +32,7 @@ def create_class(
     **Errors**:
     - 409: Class name already exists
     """
-    class_obj = class_service.create_class(
+    class_obj = class_commands.create_class(
         db=db,
         name=request.name,
         homeroom_teacher=request.homeroom_teacher,
@@ -52,7 +53,7 @@ def get_class(
     **Errors**:
     - 404: Class not found
     """
-    class_obj = class_service.get_class_by_id(db, class_id)
+    class_obj = class_queries.get_class_by_id(db, class_id)
     return class_obj
 
 
@@ -71,7 +72,7 @@ def list_classes(
     - limit: Maximum number of results (1-500, default 100)
     - offset: Pagination offset (default 0)
     """
-    classes = class_service.list_classes(
+    classes = class_queries.list_classes(
         db=db,
         limit=limit,
         offset=offset,
@@ -92,7 +93,7 @@ def update_class(
     - 404: Class not found
     - 409: New name already exists
     """
-    class_obj = class_service.update_class(
+    class_obj = class_commands.update_class(
         db=db,
         class_id=class_id,
         name=request.name,
@@ -118,5 +119,5 @@ def delete_class(
     **Errors**:
     - 404: Class not found
     """
-    class_service.delete_class_with_unassignment(db, class_id)
+    class_commands.delete_class_with_unassignment(db, class_id)
     return None

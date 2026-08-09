@@ -6,7 +6,7 @@ Provides flexible test data creation for bibliographic records and items.
 
 from datetime import date, datetime, timedelta
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.item import Item
 
@@ -33,12 +33,12 @@ class ItemFactory:
             medium_type: Medium type (default: "Livre")
 
         Returns:
-            BiblographicRecord: Created record instance
+            BibliographicRecord: Created record instance
         """
         title = kwargs.get('title', f"Test Book {self._record_counter}")
         self._record_counter += 1
 
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title=title,
             authors=kwargs.get('authors', '["Test Author"]'),
             publisher=kwargs.get('publisher', 'Test Publisher'),

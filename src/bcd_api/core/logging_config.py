@@ -21,6 +21,8 @@ class CleanLoggerNameFormatter(logging.Formatter):
 
 def _get_log_dir() -> Path:
     """Return the log directory, portable-aware."""
+    if settings.log_dir_path:
+        return Path(settings.log_dir_path)
     try:
         from .portable import get_app_dir, is_portable
         if is_portable():

@@ -177,12 +177,19 @@ func _update_name() -> void:
 func _update_counter() -> void:
 	var current := int(GS.current_borrower.get("current_loans_count", 0))
 	var limit := int(GS.current_borrower.get("loan_limit", 3))
+	var warning_limit := int(GS.current_borrower.get("loan_limit_warning", 0))
+	
 	_count_lbl.text = I18n.t("main_menu.books_count", {"current": current, "limit": limit})
+	
+	if current >= limit:
+		_count_lbl.add_theme_color_override("font_color", ThemeManager.ERROR)
+	elif warning_limit > 0 and current >= warning_limit:
+		_count_lbl.add_theme_color_override("font_color", ThemeManager.WARNING)
+	else:
+		_count_lbl.remove_theme_color_override("font_color")
 
 func _apply_focus_style(btn: Button) -> void:
-	btn.add_theme_stylebox_override("normal", btn.get_theme_stylebox("hover"))
-	btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+	ThemeManager.apply_focus_style(btn)
 
 func _remove_focus_style(btn: Button) -> void:
-	btn.remove_theme_stylebox_override("normal")
-	btn.remove_theme_color_override("font_color")
+	ThemeManager.remove_focus_style(btn)

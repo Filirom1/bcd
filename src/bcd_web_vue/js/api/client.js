@@ -4,6 +4,68 @@
  */
 
 import { ApiError, ERROR_CODES } from '../models/error.js';
+import { downloadBlob } from '../utils/download.js';
+
+/**
+ * @typedef {Object} HealthStatus
+ * @property {string} status - App status
+ * @property {string} version - App version
+ * @property {boolean} database_connected - Database status
+ */
+
+/**
+ * @typedef {Object} ShelfLocation
+ * @property {string} label - Shelf location label
+ * @property {string|null} [color] - Shelf location badge color (hex)
+ */
+
+/**
+ * @typedef {Object} CallNumberRule
+ * @property {string|null} [medium_type] - Target medium type for this rule
+ * @property {string|null} [shelf_location] - Target shelf location for this rule
+ * @property {string} pattern - Call number pattern template
+ */
+
+/**
+ * @typedef {Object} SystemSettings
+ * @property {number} id - Database auto-increment ID
+ * @property {string} id_format - ID Format: numeric or alphanumeric
+ * @property {string} id_validation_regex - Regex for validation
+ * @property {number} id_length_min - Minimum ID length
+ * @property {number} id_length_max - Maximum ID length
+ * @property {string} barcode_type - Barcode type (e.g. code39)
+ * @property {string} borrower_barcode_prefix - Borrower barcode prefix (e.g. %)
+ * @property {string} item_barcode_prefix - Item barcode prefix (e.g. .)
+ * @property {number} loan_limit_default - Default loan limit
+ * @property {number} loan_limit_warning - Warning threshold
+ * @property {number} loan_limit_teacher - Teacher loan limit
+ * @property {number} loan_duration_days - Loan duration in days
+ * @property {number} renewal_limit - Renewal limit
+ * @property {number} hold_expiration_days - Hold expiration in days
+ * @property {boolean} hold_queue_enabled - Hold queue status
+ * @property {number} max_holds_per_borrower - Maximum holds per borrower
+ * @property {string} language - Interface language: fr or en
+ * @property {string} date_format - Date format: DD/MM/YYYY
+ * @property {number} academic_year_start_month - Academic year start month
+ * @property {string} academic_year_current - Current academic year
+ * @property {string} library_name - Library name
+ * @property {string|null} library_code - Library code
+ * @property {string|null} [catalog_medium_types] - Comma separated medium types
+ * @property {string|null} [catalog_genres] - Comma separated genres
+ * @property {string|null} [catalog_languages] - Comma separated languages
+ * @property {string|null} [catalog_levels] - Comma separated levels
+ * @property {number} [inventory_search_result_limit] - Inventory search limit
+ * @property {string[]|null} [dewey_colors] - List of 10 hex colors for Dewey classes
+ * @property {ShelfLocation[]|null} [catalog_shelf_locations] - List of configured shelf locations
+ * @property {CallNumberRule[]|null} [catalog_call_number_rules] - List of configured call number pattern rules
+ */
+
+/**
+ * @typedef {Object} RequestOptions
+ * @property {'json'|'blob'|'text'|'arraybuffer'} [responseType]
+ * @property {boolean} [skipGlobalLoading]
+ * @property {HeadersInit} [headers]
+ */
 
 /**
  * API Client class
@@ -25,6 +87,7 @@ export class ApiClient {
     /**
      * Update loading state
      * @private
+     * @param {boolean} isLoading
      */
     _setLoading(isLoading) {
         if (isLoading) {
@@ -86,19 +149,40 @@ export class ApiClient {
     /**
      * Make HTTP request
      * @private
+     * @template T
      * @param {string} url - Full URL
-     * @param {Object} options - Fetch options
+     * @param {RequestOptions & RequestInit} options - Fetch options
      * @param {boolean} isFormData - Whether the request body is FormData
-     * @returns {Promise<any>} Response data
+     * @returns {Promise<T>} Response data
      * @throws {ApiError}
      */
     async _request(url, options = {}, isFormData = false) {
-        this._setLoading(true);
+        const skipGlobalLoading = options.skipGlobalLoading === true;
+        if (!skipGlobalLoading) {
+            this._setLoading(true);
+        }
 
         try {
+            // Extract custom fetch options, excluding client-specific options
+            const { responseType = 'json', skipGlobalLoading: _, ...fetchOptions } = options;
+
+            // Merge default headers with any custom headers
+            const requestHeaders = this._getHeaders(isFormData);
+            if (options.headers) {
+                if (options.headers instanceof Headers) {
+                    for (const [key, value] of options.headers.entries()) {
+                        requestHeaders.set(key, value);
+                    }
+                } else {
+                    Object.entries(options.headers).forEach(([key, value]) => {
+                        requestHeaders.set(key, value);
+                    });
+                }
+            }
+
             const response = await fetch(url, {
-                ...options,
-                headers: this._getHeaders(isFormData)
+                ...fetchOptions,
+                headers: requestHeaders
             });
 
             if (!response.ok) {
@@ -110,90 +194,152 @@ export class ApiClient {
                 return null;
             }
 
+            // Parse response based on requested responseType
+            if (responseType === 'blob') {
+                return await response.blob();
+            }
+            if (responseType === 'text') {
+                return await response.text();
+            }
+            if (responseType === 'arraybuffer') {
+                return await response.arrayBuffer();
+            }
+
             return await response.json();
         } catch (error) {
             if (error instanceof ApiError) {
                 throw error;
             }
+            if (error && error.name === 'AbortError') {
+                throw error;
+            }
 
             // Network error or other fetch failure
-            throw ApiError.networkError(error);
+            throw ApiError.networkError(error instanceof Error ? error : new Error(String(error)));
         } finally {
-            this._setLoading(false);
+            if (!skipGlobalLoading) {
+                this._setLoading(false);
+            }
         }
     }
 
     /**
      * GET request
+     * @template T
      * @param {string} endpoint - API endpoint (e.g., '/borrowers/101')
      * @param {Object} [params] - Query parameters
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
-    async get(endpoint, params = {}) {
+    async get(endpoint, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
-        return this._request(url, { method: 'GET' });
+        return this._request(url, { method: 'GET', ...options });
     }
 
     /**
      * POST request
+     * @template T
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
-    async post(endpoint, data, params = {}) {
+    async post(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
         const isFormData = data instanceof FormData;
 
         return this._request(url, {
             method: 'POST',
-            body: isFormData ? data : JSON.stringify(data)
+            body: isFormData ? data : JSON.stringify(data),
+            ...options
         }, isFormData);
     }
 
     /**
      * PUT request
+     * @template T
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
-    async put(endpoint, data, params = {}) {
+    async put(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
         const isFormData = data instanceof FormData;
 
         return this._request(url, {
             method: 'PUT',
-            body: isFormData ? data : JSON.stringify(data)
+            body: isFormData ? data : JSON.stringify(data),
+            ...options
         }, isFormData);
     }
 
     /**
      * PATCH request
+     * @template T
      * @param {string} endpoint - API endpoint
      * @param {Object|FormData} data - Request body (Object for JSON, FormData for file uploads)
      * @param {Object} [params] - Query parameters
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
-    async patch(endpoint, data, params = {}) {
+    async patch(endpoint, data, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
         const isFormData = data instanceof FormData;
 
         return this._request(url, {
             method: 'PATCH',
-            body: isFormData ? data : JSON.stringify(data)
+            body: isFormData ? data : JSON.stringify(data),
+            ...options
         }, isFormData);
     }
 
     /**
      * DELETE request
+     * @template T
      * @param {string} endpoint - API endpoint
+     * @param {any} [data] - Optional request body
      * @param {Object} [params] - Query parameters
-     * @returns {Promise<any>}
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<T>}
      */
-    async delete(endpoint, params = {}) {
+    async delete(endpoint, data = null, params = {}, options = {}) {
         const url = this._buildURL(endpoint, params);
-        return this._request(url, { method: 'DELETE' });
+        /** @type {any} */
+        const requestOptions = { method: 'DELETE', ...options };
+        if (data !== null) {
+            requestOptions.body = JSON.stringify(data);
+        }
+        return this._request(url, requestOptions);
+    }
+
+    /**
+     * Download a file from a GET endpoint
+     * @param {string} endpoint - API endpoint
+     * @param {string} filename - Filename for download
+     * @param {Object} [params] - Query parameters
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<void>}
+     */
+    async download(endpoint, filename, params = {}, options = {}) {
+        const blob = await this.get(endpoint, params, { ...options, responseType: 'blob' });
+        downloadBlob(blob, filename);
+    }
+
+    /**
+     * Download a file from a POST endpoint
+     * @param {string} endpoint - API endpoint
+     * @param {any} data - Request body
+     * @param {string} filename - Filename for download
+     * @param {Object} [params] - Query parameters
+     * @param {RequestOptions & RequestInit} [options] - Optional fetch options
+     * @returns {Promise<void>}
+     */
+    async downloadPost(endpoint, data, filename, params = {}, options = {}) {
+        const blob = await this.post(endpoint, data, params, { ...options, responseType: 'blob' });
+        downloadBlob(blob, filename);
     }
 }
 

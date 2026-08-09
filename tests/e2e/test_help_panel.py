@@ -10,6 +10,7 @@ Tests cover:
 - All 8 pages have the help button
 - Panel closes when navigating to another page
 """
+import pytest
 from playwright.sync_api import Page, expect
 
 # ─────────────────────────────────────────────────────────────────
@@ -52,13 +53,14 @@ def test_help_panel_opens_on_checkout_page(page: Page, server_url: str, db_sessi
     expect(page.locator('.offcanvas.show')).to_be_visible(timeout=5_000)
 
 
+@pytest.mark.e2e_to_be_removed
 def test_help_panel_content_is_checkout_specific(page: Page, server_url: str, db_session):
     """US1 — Panel content on checkout page is specific to the checkout workflow."""
     page.goto(f"{server_url}/#/checkout")
     wait_for_app(page)
     open_help_panel(page)
 
-    panel = page.locator('#bcd-help-offcanvas')
+    panel = page.locator('.offcanvas')
 
     # Wait for content to load (not loading spinner, not error)
     panel.locator('.help-markdown').wait_for(timeout=5_000)
@@ -89,13 +91,14 @@ def test_help_panel_closes_on_dismiss(page: Page, server_url: str, db_session):
     expect(offcanvas).not_to_have_class('show', timeout=2_000)
 
 
+@pytest.mark.e2e_to_be_removed
 def test_help_panel_updates_on_language_switch(page: Page, server_url: str, db_session):
     """US3 — Switching locale while the panel is open updates the content."""
     page.goto(f"{server_url}/#/checkout")
     wait_for_app(page)
     open_help_panel(page)
 
-    panel = page.locator('#bcd-help-offcanvas')
+    panel = page.locator('.offcanvas')
     panel.locator('.help-markdown').wait_for(timeout=5_000)
 
     # Title should be in French by default
@@ -117,6 +120,7 @@ def test_help_panel_updates_on_language_switch(page: Page, server_url: str, db_s
     expect(panel.locator('.offcanvas-title')).to_contain_text('Emprunter')
 
 
+@pytest.mark.e2e_to_be_removed
 def test_help_panel_shows_error_when_content_missing(page: Page, server_url: str, db_session):
     """US3 — When help content cannot be loaded, an error alert is shown (no crash)."""
     # Intercept help file requests and return 404 for both FR and EN.
@@ -131,19 +135,20 @@ def test_help_panel_shows_error_when_content_missing(page: Page, server_url: str
     wait_for_app(page)
     open_help_panel(page)
 
-    panel = page.locator('#bcd-help-offcanvas')
+    panel = page.locator('.offcanvas')
 
     # Error alert must appear instead of content
     error_alert = panel.locator('.alert-warning')
     expect(error_alert).to_be_visible(timeout=5_000)
 
     # No crash — panel is still open with the error message
-    expect(page.locator('#bcd-help-offcanvas')).to_be_visible()
+    expect(page.locator('.offcanvas')).to_be_visible()
 
     # Unblock requests for subsequent tests
     page.unroute("**/help/**")
 
 
+@pytest.mark.e2e_to_be_removed
 def test_all_8_pages_have_help_button(page: Page, server_url: str, db_session):  # noqa: ARG001
     """US2 — All 8 main pages show an 'Aide' help button in the page header."""
     pages = [

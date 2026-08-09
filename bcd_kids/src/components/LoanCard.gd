@@ -18,12 +18,10 @@ var _loan_data: Dictionary
 
 func _ready() -> void:
 	_renew_btn.focus_entered.connect(func():
-		_renew_btn.add_theme_stylebox_override("normal", _renew_btn.get_theme_stylebox("hover"))
-		_renew_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+		ThemeManager.apply_focus_style(_renew_btn)
 	)
 	_renew_btn.focus_exited.connect(func():
-		_renew_btn.remove_theme_stylebox_override("normal")
-		_renew_btn.remove_theme_color_override("font_color")
+		ThemeManager.remove_focus_style(_renew_btn)
 	)
 
 func setup(loan: Dictionary) -> void:

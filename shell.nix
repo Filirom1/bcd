@@ -51,9 +51,14 @@ pkgs.mkShell {
     python313Packages.black
     python313Packages.mypy
     python313Packages.ipython
+    python313Packages.pyinstaller
 
     # Additional tools
     sqlite
+    # Runs Web UI tests and the Vite production build. FastAPI remains the
+    # only development server; run `npm ci` once after entering the shell.
+    nodejs_22
+    typescript
 
     chromium
   ];

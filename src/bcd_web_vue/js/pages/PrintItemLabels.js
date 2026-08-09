@@ -1,8 +1,10 @@
 const { defineComponent, ref, computed, watch, onMounted, nextTick } = Vue;
 const { useI18n } = VueI18n;
 import { useBarcodeRenderer } from '../composables/useBarcodeRenderer.js';
-import { useBorrowerData } from '../composables/useBorrowerData.js';
+import { useAppState } from '../composables/useAppState.js';
 import { LABEL_FORMATS, DEFAULT_FORMAT_ID } from '../config/labelFormats.js';
+import { apiClient } from '../api/client.js';
+import { useDebouncedAction } from '../composables/useDebouncedAction.js';
 
 export default defineComponent({
     name: 'PrintItemLabels',
@@ -10,7 +12,7 @@ export default defineComponent({
     setup() {
         const { t } = useI18n();
         const { renderBarcodes } = useBarcodeRenderer();
-        const { fetchSettings } = useBorrowerData();
+        const { settings, loadSettings } = useAppState();
 
         // --- Generation params ---
         const startId = ref('');
@@ -18,7 +20,6 @@ export default defineComponent({
         const generatedIds = ref([]);
         const loading = ref(false);
         const error = ref(null);
-        const settings = ref(null);
 
         // --- Format state ---
         const selectedFormatId = ref(DEFAULT_FORMAT_ID);
@@ -99,14 +100,16 @@ export default defineComponent({
         });
 
         // Auto-regenerate when count or starting ID changes (debounced)
-        let _regenTimer = null;
-        const scheduleRegen = () => {
-            clearTimeout(_regenTimer);
-            _regenTimer = setTimeout(() => { generateIds(); }, 400);
+        const regenDelay = ref(400);
+        const debouncedRegen = useDebouncedAction(() => { generateIds(); }, regenDelay);
+
+        const scheduleRegen = (delay = 400) => {
+            regenDelay.value = delay;
+            debouncedRegen();
         };
-        watch(labelCount, scheduleRegen);
-        watch(startId, scheduleRegen);
-        watch(contiguous, scheduleRegen);
+        watch(labelCount, () => scheduleRegen(400));
+        watch(startId, () => scheduleRegen(1200));
+        watch(contiguous, () => scheduleRegen(400));
 
         // Re-render barcodes when computed height changes (label height edited)
         watch(barcodeHeight, async () => {
@@ -124,7 +127,7 @@ export default defineComponent({
         };
 
         onMounted(async () => {
-            settings.value = await fetchSettings();
+            await loadSettings();
             generateIds();
         });
 
@@ -132,19 +135,14 @@ export default defineComponent({
             loading.value = true;
             error.value = null;
             try {
-                const params = new URLSearchParams({ count: labelCount.value });
+                const params = { count: labelCount.value };
                 if (startId.value && startId.value.trim() !== '') {
-                    params.set('start_from', startId.value.trim());
+                    params.start_from = startId.value.trim();
                 }
                 if (!contiguous.value) {
-                    params.set('contiguous', 'false');
+                    params.contiguous = 'false';
                 }
-                const response = await fetch('/api/v1/catalog/items/available-ids?' + params);
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.detail || 'Failed to generate IDs');
-                }
-                const data = await response.json();
+                const data = await apiClient.get('/catalog/items/available-ids', params);
                 generatedIds.value = data.ids;
                 loading.value = false;
                 await nextTick();

@@ -15,18 +15,56 @@ env:
 jobs:
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # JOB 1 : Tests
+  # JOB 1 : Tests (fast suite only before build; complete E2E tests run against compiled binaries)
   # ═══════════════════════════════════════════════════════════════════════════
   test:
-    name: Run Tests
+    name: Run Fast Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -e ".[dev]"
-      - run: pytest tests/unit tests/integration -v
+          cache: 'pip'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run fast test suite (JS + Python)
+        run: python run_tests.py all --fast
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 1b : Build Web UI Artifact
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-web:
+    name: Build Web UI
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - name: Build Web UI and Verify
+        run: |
+          npm run build:web
+          npm run verify:web-build
+      - name: Upload Web UI build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-ui-build
+          path: build/web/
+          include-hidden-files: true
+          retention-days: 1
 
   # ═══════════════════════════════════════════════════════════════════════════
   # JOB 2 : Build BCD serveur — Windows (PyInstaller, cross-compile impossible,
@@ -34,17 +72,23 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   build-bcd-windows:
     name: Build BCD (Windows)
-    needs: test
+    needs: [test, build-web]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download Web UI build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-ui-build
+          path: build/web/
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install Python dependencies
-        run: pip install -e "." pyinstaller
+        run: pip install -e ".[dev]" pyinstaller
 
       - name: Download UPX
         run: |
@@ -54,6 +98,36 @@ jobs:
 
       - name: Build with PyInstaller
         run: pyinstaller --clean --upx-dir=upx bcd.spec
+
+      - name: Verify PyInstaller Windows binary
+        run: dist/bcd/bcd.exe --help
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: python -m playwright install chromium
+
+      - name: Run E2E tests against PyInstaller Windows binary
+        env:
+          WEB_ASSETS_MODE: build
+          BCD_TEST_EXECUTABLE: dist/bcd/bcd.exe
+        run: npm run test:web-production
+
+      - name: Antivirus Scan (Windows Defender)
+        shell: powershell
+        run: |
+          $mpcmd = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+          if (Test-Path $mpcmd) {
+            & $mpcmd -Scan -ScanType 3 -File "$PWD\dist\bcd"
+          } else {
+            Write-Host "Windows Defender CLI not found, skipping local scan."
+          }
 
       - name: Upload BCD Windows files
         uses: actions/upload-artifact@v4
@@ -67,10 +141,16 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   build-bcd-linux:
     name: Build BCD (Linux)
-    needs: test
+    needs: [test, build-web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download Web UI build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-ui-build
+          path: build/web/
 
       - uses: actions/setup-python@v5
         with:
@@ -86,10 +166,30 @@ jobs:
             libwebkit2gtk-4.1-dev
 
       - name: Install Python dependencies
-        run: pip install -e "." pyinstaller
+        run: pip install -e ".[dev]" pyinstaller
 
       - name: Build with PyInstaller
         run: pyinstaller --clean bcd.spec
+
+      - name: Verify PyInstaller Linux binary
+        run: dist/bcd/bcd --help
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: python -m playwright install chromium
+
+      - name: Run E2E tests against PyInstaller Linux binary
+        env:
+          WEB_ASSETS_MODE: build
+          BCD_TEST_EXECUTABLE: dist/bcd/bcd
+        run: npm run test:web-production
 
       - name: Upload BCD Linux files
         uses: actions/upload-artifact@v4
@@ -297,47 +397,24 @@ jobs:
           tar -czf "${PKG}.tar.gz" "$PKG"
           sha256sum "${PKG}.tar.gz" > "${PKG}.tar.gz.sha256"
 
+      # ── Extract Release Notes from CHANGELOG.md ─────────────────────────────
+      - name: Extract Release Notes
+        id: release_notes
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          # Find version header block in CHANGELOG.md and extract everything up to next ## header
+          sed -n "/## \[$VERSION\]/,/## /p" CHANGELOG.md | sed '$d' > release_notes.md
+          # If empty or not found, fallback to header
+          if [ ! -s release_notes.md ]; then
+            echo "## [$VERSION]" > release_notes.md
+          fi
+
       # ── GitHub Release ─────────────────────────────────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           name: BCD v${{ steps.get_version.outputs.VERSION }}
-          body: |
-            # BCD v${{ steps.get_version.outputs.VERSION }}
-
-            Chaque archive contient le **serveur BCD** (API + interface web) et le **client BCD Kids** (interface élèves).
-
-            ## Téléchargements
-
-            | Plateforme | Fichier |
-            |------------|---------|
-            | Windows 10/11 | `BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip` |
-            | Linux x86_64  | `BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz` |
-
-            ## Installation Windows
-
-            1. Extraire le ZIP
-            2. Lancer `bcd.exe` pour démarrer le serveur
-            3. Lancer `BCD-Kids.exe` pour l'interface élèves
-
-            ## Installation Linux
-
-            1. `tar -xzf BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz`
-            2. `./bcd` pour démarrer le serveur
-            3. `./BCD-Kids.x86_64` pour l'interface élèves
-
-            ## Vérification des archives
-
-            ```
-            # Windows (PowerShell)
-            Get-FileHash BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip -Algorithm SHA256
-
-            # Linux
-            sha256sum -c BCD-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz.sha256
-            ```
-
-            ---
-            **Commit** : ${{ github.sha }}
+          body_path: release_notes.md
           files: |
             BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip
             BCD-v${{ steps.get_version.outputs.VERSION }}-Windows.zip.sha256

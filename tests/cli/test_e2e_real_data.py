@@ -65,6 +65,8 @@ from pathlib import Path
 
 import pytest
 import requests
+
+pytestmark = [pytest.mark.e2e, pytest.mark.external, pytest.mark.slow]
 from click.testing import CliRunner
 
 # Import CLI app
@@ -136,13 +138,14 @@ def api_server(test_database):
 
     # Start server
     log_file = open("test_e2e_real_data_server.log", "w")
+    project_root = Path(__file__).resolve().parents[2]
     process = subprocess.Popen(
         ["python", "-m", "uvicorn", "src.bcd_api.main:app",
          "--host", "127.0.0.1", "--port", "8001", "--log-level", "error"],
         env=env,
         stdout=log_file,
         stderr=log_file,
-        cwd="/home/nixos/src/local/bcd4"
+        cwd=project_root
     )
 
     # Wait for server to start (max 15 seconds)

@@ -3,6 +3,7 @@ const { useI18n } = VueI18n;
 const { useRoute } = VueRouter;
 import { useBarcodeRenderer } from '../composables/useBarcodeRenderer.js';
 import { useBorrowerData } from '../composables/useBorrowerData.js';
+import { useAppState } from '../composables/useAppState.js';
 
 export default defineComponent({
     name: 'PrintBorrowerReference',
@@ -11,10 +12,10 @@ export default defineComponent({
         const { t } = useI18n();
         const route = useRoute();
         const { renderBarcodes } = useBarcodeRenderer();
-        const { fetchBorrowers, fetchSettings } = useBorrowerData();
+        const { fetchBorrowers } = useBorrowerData();
+        const { settings, loadSettings } = useAppState();
 
         const borrowers = ref([]);
-        const settings = ref(null);
         const loading = ref(true);
         const error = ref(null);
 
@@ -63,11 +64,10 @@ export default defineComponent({
                 const classIds = route.query.class_ids;
                 const [borrowerData, settingsData] = await Promise.all([
                     fetchBorrowers(classIds),
-                    fetchSettings()
+                    loadSettings()
                 ]);
 
                 borrowers.value = borrowerData;
-                settings.value = settingsData;
                 loading.value = false;
 
                 // Render barcodes after DOM updates

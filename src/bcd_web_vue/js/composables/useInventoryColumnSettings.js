@@ -1,14 +1,26 @@
+// @ts-check
 /**
  * Inventory Column Settings Composable
  * Manages visible columns for inventory working table with localStorage persistence
  */
 
 const { ref, watch } = Vue;
+import { getJSON, setJSON } from '../utils/storage.js';
 
-const STORAGE_KEY = 'bcd_inventory_columns';
+const STORAGE_KEY = 'inventory_columns';
+
+/**
+ * @typedef {Object} InventoryColumnDefinition
+ * @property {string} id
+ * @property {string} label_en
+ * @property {string} label_fr
+ * @property {boolean} default
+ * @property {string} group
+ */
 
 // Available columns for inventory working table
 // Includes all fields that can be modified via bulk edit
+/** @type {InventoryColumnDefinition[]} */
 export const INVENTORY_AVAILABLE_COLUMNS = [
     // Item identification
     { id: 'item_id', label_en: 'Barcode', label_fr: 'Code-barre', default: true, group: 'item' },
@@ -34,13 +46,9 @@ export const INVENTORY_AVAILABLE_COLUMNS = [
 export function useInventoryColumnSettings() {
     // Load from localStorage or use defaults
     const loadSettings = () => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                return JSON.parse(stored);
-            }
-        } catch (e) {
-            console.warn('Failed to load inventory column settings from localStorage', e);
+        const stored = getJSON(STORAGE_KEY);
+        if (stored) {
+            return stored;
         }
         // Return default columns
         return INVENTORY_AVAILABLE_COLUMNS.filter(col => col.default).map(col => col.id);
@@ -50,17 +58,19 @@ export function useInventoryColumnSettings() {
 
     // Save to localStorage when changed
     watch(visibleColumns, (newValue) => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newValue));
-        } catch (e) {
-            console.warn('Failed to save inventory column settings to localStorage', e);
-        }
+        setJSON(STORAGE_KEY, newValue);
     }, { deep: true });
 
+    /**
+     * @param {string} columnId
+     */
     const isColumnVisible = (columnId) => {
         return visibleColumns.value.includes(columnId);
     };
 
+    /**
+     * @param {string} columnId
+     */
     const toggleColumn = (columnId) => {
         const index = visibleColumns.value.indexOf(columnId);
         if (index > -1) {

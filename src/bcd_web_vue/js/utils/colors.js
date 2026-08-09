@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Color utilities
  */
@@ -5,6 +6,8 @@
 /**
  * Returns '#000000' or '#ffffff' depending on the luminance of the given hex color,
  * so that text remains readable on colored backgrounds.
+ * @param {string} hex - Hex color code (e.g. '#4D99F2')
+ * @returns {'#000000'|'#ffffff'}
  */
 export function autoTextColor(hex) {
     const r = parseInt(hex.slice(1, 3), 16);

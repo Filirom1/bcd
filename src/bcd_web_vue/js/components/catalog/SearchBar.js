@@ -3,8 +3,9 @@
  * Search input with debouncing for catalog
  */
 
-const { defineComponent, ref, watch, onMounted, nextTick } = Vue;
+const { defineComponent, ref, watch, onMounted, nextTick, toRef } = Vue;
 const { useI18n } = VueI18n;
+import { useDebouncedAction } from '../../composables/useDebouncedAction.js';
 
 export default defineComponent({
     name: 'SearchBar',
@@ -26,7 +27,10 @@ export default defineComponent({
         const { t } = useI18n();
         const searchQuery = ref(props.modelValue);
         const inputRef = ref(null);
-        let debounceTimeout = null;
+
+        const debouncedEmitSearch = useDebouncedAction((newValue) => {
+            emit('search', newValue);
+        }, toRef(props, 'debounce'));
 
         onMounted(async () => {
             await nextTick();
@@ -41,23 +45,12 @@ export default defineComponent({
         // Watch for local changes and debounce
         watch(searchQuery, (newValue) => {
             emit('update:modelValue', newValue);
-
-            // Clear previous timeout
-            if (debounceTimeout) {
-                clearTimeout(debounceTimeout);
-            }
-
-            // Set new debounce timeout
-            debounceTimeout = setTimeout(() => {
-                emit('search', newValue);
-            }, props.debounce);
+            debouncedEmitSearch(newValue);
         });
 
         const handleSubmit = () => {
             // Immediate search on Enter key
-            if (debounceTimeout) {
-                clearTimeout(debounceTimeout);
-            }
+            debouncedEmitSearch.cancel();
             emit('search', searchQuery.value);
         };
 

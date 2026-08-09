@@ -3,10 +3,11 @@
  * Contains logo, navigation menu, and language switcher
  */
 
-const { defineComponent, computed } = Vue;
+const { defineComponent, computed, ref, onMounted } = Vue;
 import NavigationMenu from './NavigationMenu.js';
 import LanguageSwitcher from './LanguageSwitcher.js';
 import { useAppState } from '../../composables/useAppState.js';
+import { apiClient } from '../../api/client.js';
 
 export default defineComponent({
     name: 'SidebarNav',
@@ -19,7 +20,17 @@ export default defineComponent({
     setup() {
         const { settings } = useAppState();
         const brandName = computed(() => settings.value?.library_code || '');
-        return { brandName };
+        const appVersion = ref('');
+
+        onMounted(async () => {
+            try {
+                appVersion.value = (await apiClient.get('/health')).version || '';
+            } catch (e) {
+                // Non-fatal: hide version if API is unavailable
+            }
+        });
+
+        return { brandName, appVersion };
     },
 
     template: `
@@ -40,9 +51,11 @@ export default defineComponent({
             <!-- Footer: Language Switcher + Version -->
             <div class="p-3 border-top">
                 <language-switcher />
-                <div class="text-muted small mt-2">v1.0.0</div>
+                <div v-if="appVersion" class="text-muted small mt-2">v{{ appVersion }}</div>
                 <div class="text-muted small mt-1" title="Libre d'usage et de modification">
-                    <i class="bi bi-unlock me-1"></i>Logiciel libre
+                    <a class="text-muted text-decoration-none" href="https://github.com/Filirom1/bcd" target="_blank" rel="noopener">
+                        <i class="bi bi-unlock me-1"></i>Logiciel libre
+                    </a>
                 </div>
             </div>
         </aside>

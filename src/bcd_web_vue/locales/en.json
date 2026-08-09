@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "BCD - Library System",
-    "subtitle": "School library management"
+    "subtitle": "School library management",
+    "loading_app": "Loading application..."
   },
   "navigation": {
     "circulation": "Circulation",
@@ -15,7 +16,13 @@
     "collections": "Collections",
     "inventory": "Inventory",
     "settings": "Settings",
-    "help": "Help"
+    "help": "Help",
+    "catalog_detail": "Catalog Detail",
+    "borrower_detail": "Borrower Detail",
+    "overdue_notices": "Overdue Notices",
+    "print_borrowers_reference": "Print - Borrower Reference Sheets",
+    "print_student_cards": "Print - Library Cards",
+    "print_item_labels": "Print - Item Labels"
   },
   "circulation": {
     "title": "Circulation",
@@ -77,6 +84,7 @@
     "due_back_on": "Due back on",
     "item_unavailable_for_checkout": "This item cannot be checked out at this time",
     "currently_borrowed": "Currently borrowed",
+    "loans": "loans",
     "no_current_loans": "No current loans",
     "no_history": "No circulation history",
     "confirm_quick_return": "Return item {item_id}?",
@@ -111,6 +119,7 @@
     "borrower_blocked_warning": "This borrower is blocked and cannot checkout items",
     "block_reason": "Block reason",
     "at_loan_limit": "This borrower has reached their loan limit",
+    "near_loan_limit": "This borrower has reached their loan warning threshold ({count}/{limit})",
     "has_overdue_items": "This borrower has {count} overdue items",
     "renew_all_success": "{count} items renewed successfully",
     "inventory_number": "Inventory #",
@@ -144,6 +153,11 @@
   },
   "catalog": {
     "title": "Catalog",
+    "unknown_author": "Unknown author",
+    "unknown_title": "Unknown title",
+    "medium_book": "Book",
+    "copies_label": "copies",
+    "status_en_cours": "On loan",
     "add_item": "Add",
     "search": "Search",
     "search_placeholder": "Title, author, ISBN...",
@@ -254,6 +268,8 @@
   },
   "borrowers": {
     "title": "Borrowers",
+    "block_reason": "Block Reason",
+    "import_errors": "Import Errors",
     "search": "Search borrower",
     "search_placeholder": "Name, ID...",
     "filter_by_class": "Filter by class",
@@ -385,6 +401,7 @@
     "collection": "Collection/Series",
     "series_number": "Volume Number",
     "language": "Language",
+    "placeholder_language": "e.g., fr, en",
     "binding_type": "Binding Type",
     "level": "Reading Level",
     "medium_type": "Medium Type",
@@ -444,6 +461,7 @@
     "manual_entry": "Manual entry",
     "manual_entry_link": "Enter data manually (without ISBN/ISSN)",
     "error_no_isbn": "Please enter an ISBN or ISSN",
+    "error_title_required": "The title is required",
     "isbn_not_found": "ISBN/ISSN {isbn} not found in any catalog",
     "isbn_already_exists": "ISBN/ISSN already exists in catalog: {title}. Proceeding to add physical copies.",
     "lookup_error": "Error looking up ISBN/ISSN",
@@ -703,6 +721,7 @@
     "max_loans_student": "Loan limit (students)",
     "max_loans_teacher": "Loan limit (teachers)",
     "loan_limit_default": "Loan limit (students)",
+    "loan_limit_warning": "Loan warning limit",
     "loan_limit_teacher": "Loan limit (teachers)",
     "renewal_limit": "Number of renewals",
     "hold_expiration_days": "Hold expiration (days)",
@@ -733,7 +752,16 @@
     "reset": "Reset",
     "confirm_reset": "Do you really want to reset to default settings?",
     "reload_message": "The new settings are now active.",
+    "env_title": "Configuration File (.env)",
+    "env_save_success": "Configuration file (.env) saved successfully. Restart the application to apply all changes.",
+    "env_warning": "Warning: Editing the .env file directly affects essential application paths and parameters. Incorrect settings can prevent the application from starting.",
     "backup_section": "Backup & Restore",
+    "backup_download": "Download",
+    "backup_download_db": "Export current DB (.db)",
+    "backup_import": "Import a backup (.db)",
+    "backup_import_btn": "Import / Restore",
+    "backup_import_confirm": "Do you really want to import and restore this database file? The current database will be permanently replaced.",
+    "backup_import_success": "Database successfully imported and restored.",
     "backup_create": "Create Backup",
     "backup_creating": "Creating...",
     "backup_last": "Last backup: {days} day(s) ago",
@@ -792,6 +820,13 @@
     "covers_backfill_button": "Associate existing covers",
     "covers_backfill_done": "{count} cover(s) associated",
     "covers_backfill_result": "{updated} cover(s) associated out of {scanned} records scanned",
+    "covers_download_help": "Automatically download missing covers from the internet (Amazon, Open Library, Google Books, GeoBib) for all catalog records with an ISBN and no cover.",
+    "covers_download_button": "Download missing covers",
+    "covers_download_running": "Downloading: {processed} / {total} records ({found} found)...",
+    "covers_download_eta": "Estimated time remaining: {eta}",
+    "covers_download_cancel": "Stop",
+    "covers_download_cancelled": "Downloading stopped.",
+    "covers_download_done": "Download completed: {found} cover(s) found out of {total} records.",
     "data_maintenance_section": "Data Maintenance",
     "data_maintenance_acquisition_dates_title": "Missing Acquisition Dates",
     "data_maintenance_acquisition_dates_description": "Sets the acquisition date to January 1st of the publication year for items without an acquisition date.",
@@ -851,6 +886,9 @@
     "required": "Issue number is required for a periodical"
   },
   "common": {
+    "error": "Error",
+    "no_data": "No data available",
+    "overdue": "Overdue",
     "save": "Save",
     "saving": "Saving...",
     "cancel": "Cancel",
@@ -909,6 +947,8 @@
     "per_page": "per page"
   },
   "errors": {
+    "invalid_year_range": "Invalid year range",
+    "must_be_positive": "Must be positive",
     "borrower_not_found": "Borrower {borrower_id} not found",
     "item_not_found": "Item {item_id} not found",
     "item_unavailable": "Item {item_id} unavailable",
@@ -1000,6 +1040,7 @@
     "condition_lost": "Lost",
     "condition_withdrawn": "Withdrawn",
     "loanable": "Loanable",
+    "status_not_loanable": "Not loanable",
     "shelf_location": "Location"
   },
   "validation": {
@@ -1224,6 +1265,7 @@
       "error": "Error scanning item: {error}"
     },
     "search": {
+      "period_loans": "loans",
       "filters": "Search Filters",
       "text_search": "Text Search",
       "text_search_placeholder": "Title, author, ISBN, call number...",

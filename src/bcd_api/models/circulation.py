@@ -70,29 +70,29 @@ class CirculationTransaction(Base):
     # Relationships
     borrower = relationship("Borrower", back_populates="circulation_transactions")
     item = relationship("Item", back_populates="circulation_transactions")
-    bibliographic_record = relationship("BiblographicRecord", back_populates="circulation_transactions")
+    bibliographic_record = relationship("BibliographicRecord", back_populates="circulation_transactions")
 
     @property
     def is_overdue(self) -> bool:
-        """Check if transaction is overdue."""
+        """Check if active transaction is overdue.
+
+        Note: A returned item is never overdue. For completed/historic transactions,
+        use the policy helpers in `services.circulation.policy` directly.
+        """
         if self.return_date is not None:
             return False
         return self.due_date < date.today()
 
     @property
     def days_overdue(self) -> int:
-        """Calculate days overdue."""
+        """Calculate days overdue for active loans.
+
+        Note: Always returns 0 for returned items to preserve public contract.
+        For completed/historic transactions, use `services.circulation.policy.overdue_days` instead.
+        """
         if not self.is_overdue:
             return 0
-        if self.return_date is not None:
-            # Was returned late
-            return_date_obj = self.return_date.date() if isinstance(self.return_date, datetime) else self.return_date
-            if return_date_obj > self.due_date:
-                return (return_date_obj - self.due_date).days
-        else:
-            # Still out and overdue
-            return (date.today() - self.due_date).days
-        return 0
+        return (date.today() - self.due_date).days
 
     def __repr__(self):
         return f"<CirculationTransaction(id={self.id}, borrower_id={self.borrower_id}, item_id={self.item_id}, status={self.status})>"

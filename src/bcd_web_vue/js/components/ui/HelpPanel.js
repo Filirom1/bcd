@@ -9,6 +9,8 @@ const { useI18n } = VueI18n;
 import { useAppState } from '../../composables/useAppState.js';
 import LoadingSpinner from './LoadingSpinner.js';
 
+let helpPanelInstanceCounter = 0;
+
 const SECTION_FILES = {
     checkout:     { fr: 'emprunter.md',   en: 'checkout.md' },
     return:       { fr: 'retourner.md',   en: 'return.md' },
@@ -39,6 +41,9 @@ export default defineComponent({
         const { t } = useI18n();
         const { locale } = useAppState();
 
+        const instanceId = ++helpPanelInstanceCounter;
+        const offcanvasId = `bcd-help-offcanvas-${instanceId}`;
+
         const rawMd = ref(null);
         const loading = ref(false);
         const error = ref(false);
@@ -57,6 +62,7 @@ export default defineComponent({
 
             const filename = files[locale.value] || files.en;
 
+            // Direct fetch is used here because these are local static Markdown resource files, not API endpoints
             try {
                 const res = await fetch(`/help/${locale.value}/${filename}`);
                 if (!res.ok) throw new Error(res.status);
@@ -80,21 +86,27 @@ export default defineComponent({
             }
         };
 
-        watch([() => props.section, locale], fetchHelp, { immediate: true });
+        const renderedMarkdown = ref('');
 
-        const renderedMarkdown = computed(() => {
-            if (!rawMd.value) return '';
-            // Rewrite relative image paths to absolute paths for correct resolution
-            // ../images/file.png → /help/images/file.png
-            const mdWithAbsolutePaths = rawMd.value.replace(/\.\.\/(images\/[^)]+)/g, '/help/$1');
-            return marked.parse(mdWithAbsolutePaths);
-        });
+        watch(rawMd, async (value) => {
+            if (!value) {
+                renderedMarkdown.value = '';
+                return;
+            }
+            // Load Markdown only after help content has actually been fetched.
+            const { marked } = await import('marked');
+            const mdWithAbsolutePaths = value.replace(/\.\.\/(images\/[^)]+)/g, '/help/$1');
+            renderedMarkdown.value = marked.parse(mdWithAbsolutePaths);
+        }, { immediate: true });
+
+        watch([() => props.section, locale], fetchHelp, { immediate: true });
 
         return {
             t,
             loading,
             error,
-            renderedMarkdown
+            renderedMarkdown,
+            offcanvasId
         };
     },
 
@@ -105,8 +117,8 @@ export default defineComponent({
                 class="btn btn-outline-secondary btn-sm"
                 type="button"
                 data-bs-toggle="offcanvas"
-                data-bs-target="#bcd-help-offcanvas"
-                aria-controls="bcd-help-offcanvas"
+                :data-bs-target="'#' + offcanvasId"
+                :aria-controls="offcanvasId"
                 :title="t('help.button')"
             >
                 <i class="bi bi-question-circle me-1"></i>{{ t('help.button') }}
@@ -115,7 +127,7 @@ export default defineComponent({
             <!-- Offcanvas panel — rendered once, shown/hidden by Bootstrap -->
             <div
                 class="offcanvas offcanvas-end"
-                id="bcd-help-offcanvas"
+                :id="offcanvasId"
                 tabindex="-1"
                 :aria-label="t('help.button')"
                 style="width: min(480px, 100vw)"

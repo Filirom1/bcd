@@ -30,6 +30,7 @@ from playwright.sync_api import expect
 class TestBorrowerSelection:
     """Test borrower selection with checkboxes."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_select_single_borrower_with_checkbox(
         self,
         borrowers_page,
@@ -54,6 +55,7 @@ class TestBorrowerSelection:
         selected_count = borrowers_page.get_selected_count()
         assert selected_count == 1, "Should have 1 borrower selected"
 
+    @pytest.mark.e2e_to_be_removed
     def test_select_multiple_borrowers(
         self,
         borrowers_page,
@@ -80,6 +82,7 @@ class TestBorrowerSelection:
         selected_count = borrowers_page.get_selected_count()
         assert selected_count == 3, "Should have 3 borrowers selected"
 
+    @pytest.mark.e2e_to_be_removed
     def test_select_all_functionality(
         self,
         borrowers_page,
@@ -108,6 +111,7 @@ class TestBorrowerSelection:
 class TestBulkEditModal:
     """Test Bulk Edit modal opening and navigation."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_edit_disabled_when_no_selection(
         self,
         borrowers_page,
@@ -130,6 +134,7 @@ class TestBulkEditModal:
         is_enabled = borrowers_page.is_bulk_edit_enabled()
         assert not is_enabled, "Bulk Edit should be disabled with no selection"
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_edit_modal_opens_with_2_or_more_selected(
         self,
         borrowers_page,
@@ -166,6 +171,7 @@ class TestBulkEditModal:
 class TestBulkChangeClass:
     """Test bulk change class operation with 3-step wizard."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_change_class_wizard_step1_select_operation(
         self,
         borrowers_page,
@@ -194,6 +200,7 @@ class TestBulkChangeClass:
         # Assert - Button should be highlighted (active class)
         expect(change_class_button).to_have_class(re.compile(r'active'), timeout=2000)
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_change_class_wizard_step2_select_target_class(
         self,
         borrowers_page,
@@ -321,6 +328,7 @@ class TestBulkChangeClass:
 class TestBulkDelete:
     """Test bulk delete operation."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_delete_shows_confirmation_with_count(
         self,
         borrowers_page,
@@ -421,6 +429,7 @@ class TestBulkDelete:
 class TestBulkOperationNotifications:
     """Test success notifications after bulk operations."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_bulk_operation_shows_success_notification(
         self,
         borrowers_page,

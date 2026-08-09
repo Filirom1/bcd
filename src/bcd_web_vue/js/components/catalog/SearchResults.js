@@ -5,6 +5,7 @@
 
 const { defineComponent, computed } = Vue;
 const { useI18n } = VueI18n;
+import { formatAuthors, parseJsonSetting } from '../../utils/domain.js';
 import DataTable from '../ui/DataTable.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
@@ -123,20 +124,9 @@ export default defineComponent({
 
         const getAuthors = (record) => {
             if (!record.authors) return record.publisher || '';
-            // If it's already an array, join it
-            if (Array.isArray(record.authors)) {
-                return record.authors.join(', ') || record.publisher || '';
-            }
-            // If it's a string, try to parse it
-            if (typeof record.authors === 'string') {
-                try {
-                    const authors = JSON.parse(record.authors);
-                    const joined = Array.isArray(authors) ? authors.join(', ') : record.authors;
-                    return joined || record.publisher || '';
-                } catch {
-                    return record.authors || record.publisher || '';
-                }
-            }
+            const authors = parseJsonSetting(record.authors, record.authors);
+            const joined = formatAuthors(authors);
+            if (joined) return joined;
             return record.publisher || '';
         };
 

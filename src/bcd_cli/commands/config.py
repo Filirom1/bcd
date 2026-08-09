@@ -6,6 +6,7 @@ Commands for managing CLI configuration.
 
 import json
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -86,17 +87,18 @@ def set_config(key: str, value: str):
         cfg = load_config()
 
         # Convert value to appropriate type
+        typed_value: Any = value
         if value.lower() in ("true", "false"):
-            value = value.lower() == "true"
+            typed_value = value.lower() == "true"
         elif value.isdigit():
-            value = int(value)
+            typed_value = int(value)
         elif value.replace(".", "", 1).isdigit():
-            value = float(value)
+            typed_value = float(value)
 
-        cfg[key] = value
+        cfg[key] = typed_value
         save_config(cfg)
 
-        console.print(f"[green]✅ Configuration updated:[/green] {key} = [cyan]{value}[/cyan]")
+        console.print(f"[green]✅ Configuration updated:[/green] {key} = [cyan]{typed_value}[/cyan]")
 
     except Exception as e:
         print_error(f"Error setting config: {str(e)}")

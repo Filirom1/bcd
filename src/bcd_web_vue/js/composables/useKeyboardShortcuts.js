@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Keyboard Shortcuts Composable
  *
@@ -37,6 +38,9 @@ const NAV_SHORTCUTS = [
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
 
+/**
+ * @param {KeyboardEvent} event
+ */
 function onKeydown(event) {
     // Track whether Alt is physically held (for hint display in sidebar)
     if (event.key === 'Alt') {
@@ -64,6 +68,9 @@ function onKeydown(event) {
     }
 }
 
+/**
+ * @param {KeyboardEvent} event
+ */
 function onKeyup(event) {
     if (event.key === 'Alt') {
         altHeld.value = false;

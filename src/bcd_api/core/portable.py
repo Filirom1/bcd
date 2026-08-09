@@ -40,7 +40,12 @@ def get_data_dir() -> Path:
     Returns:
         Path to data directory.
     """
-    data_dir = get_app_dir() / "data"
+    import os
+
+    if os.environ.get("DATA_DIR_PATH"):
+        data_dir = Path(os.environ["DATA_DIR_PATH"])
+    else:
+        data_dir = get_app_dir() / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
 
@@ -53,7 +58,12 @@ def get_config_dir() -> Path:
     Returns:
         Path to config directory.
     """
-    config_dir = get_app_dir() / "config"
+    import os
+
+    if os.environ.get("CONFIG_DIR_PATH"):
+        config_dir = Path(os.environ["CONFIG_DIR_PATH"])
+    else:
+        config_dir = get_app_dir() / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir
 
@@ -161,6 +171,14 @@ def create_default_env_file(env_path: Path) -> None:
 # Leave commented out — BCD auto-detects the correct absolute path.
 # Uncomment only to override with a custom database location.
 # DATABASE_URL=sqlite:///./data/bcd.db
+
+# Configurable Paths (Linux Packaging & Custom Deployments)
+# Uncomment and set these to absolute or custom relative paths to override default folders.
+# DATA_DIR_PATH=./data
+# CONFIG_DIR_PATH=.
+# LOG_DIR_PATH=./logs
+# COVERS_DIR_PATH=./data/covers
+# BACKUPS_DIR_PATH=./backups
 
 # API Server
 API_HOST=127.0.0.1

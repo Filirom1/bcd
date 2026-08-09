@@ -4,6 +4,16 @@
 import sys
 from pathlib import Path
 
+# Verify that the Web UI production build is present before proceeding.
+# This prevents packaging stale development sources or an incomplete build.
+build_web_dir = Path('build/web')
+if not (build_web_dir / 'index.html').is_file() or not (build_web_dir / '.vite' / 'manifest.json').is_file():
+    print("\n" + "="*80)
+    print("  ERROR: Web UI production build is missing or incomplete!")
+    print("  Please run 'npm run build:web' before compiling the PyInstaller executable.")
+    print("="*80 + "\n")
+    sys.exit(1)
+
 block_cipher = None
 is_windows = sys.platform == 'win32'
 
@@ -81,8 +91,8 @@ hiddenimports = [
 
 # Data files to include in the bundle
 datas = [
-    # Web UI (Vue 3) - all static files
-    ('src/bcd_web_vue', 'bcd_web_vue'),
+    # Web UI (Vue 3 Production Build) - compiled assets
+    ('build/web', 'bcd_web_vue'),
     # Help documentation (served via symlink at src/bcd_web_vue/help)
     ('docs/help', 'docs/help'),
     # Alembic migrations - needed for database initialization

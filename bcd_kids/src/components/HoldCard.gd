@@ -12,11 +12,10 @@ signal cancel_clicked(hold_id: int)
 
 func _ready() -> void:
 	_cancel_btn.focus_entered.connect(func():
-		_cancel_btn.add_theme_stylebox_override("normal", _cancel_btn.get_theme_stylebox("hover"))
-		_cancel_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+		ThemeManager.apply_focus_style(_cancel_btn)
 	)
 	_cancel_btn.focus_exited.connect(func():
-		_cancel_btn.remove_theme_stylebox_override("normal")
+		ThemeManager.remove_focus_style(_cancel_btn)
 		_cancel_btn.add_theme_color_override("font_color", ThemeManager.ERROR)
 	)
 

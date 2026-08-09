@@ -29,7 +29,8 @@ def get_db() -> Generator[Session, None, None]:
 
 def get_settings(db: Session) -> SystemSettings:
     """
-    Get system settings (singleton).
+    Get system settings (singleton). Strictly read-only to preserve
+    transaction boundaries during circulation commands.
 
     Args:
         db: Database session
@@ -38,15 +39,12 @@ def get_settings(db: Session) -> SystemSettings:
         SystemSettings: System settings instance
 
     Raises:
-        NotFoundException: If settings not found (should never happen)
+        NotFoundError: If settings not found (should never happen)
     """
+    from src.bcd_api.core.exceptions import NotFoundError
     settings = db.query(SystemSettings).filter(SystemSettings.id == 1).first()
 
     if not settings:
-        # Create default settings if they don't exist
-        settings = SystemSettings(id=1)
-        db.add(settings)
-        db.commit()
-        db.refresh(settings)
+        raise NotFoundError("SystemSettings", 1)
 
     return settings

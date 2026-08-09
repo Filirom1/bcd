@@ -11,6 +11,8 @@ import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
 import DeweyPicker from '../ui/DeweyPicker.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
+import { computeCallNumber, suggestShelfLocation } from '../../utils/callNumber.js';
+import { parseJsonSetting } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'ItemBarcodeInput',
@@ -56,15 +58,9 @@ export default defineComponent({
         const { handleError } = useErrorHandler(t);
         const { settings } = useAppState();
 
-        const deweyColors = computed(() => {
-            try { return JSON.parse(settings.value?.dewey_colors || 'null') || undefined; }
-            catch { return undefined; }
-        });
+        const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, undefined));
 
-        const shelfLocationOptions = computed(() => {
-            try { return JSON.parse(settings.value?.catalog_shelf_locations || '[]') || []; }
-            catch { return []; }
-        });
+        const shelfLocationOptions = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
 
         // State
         const barcode = ref('');
@@ -82,140 +78,26 @@ export default defineComponent({
 
         const isPeriodical = computed(() => props.recordMediumType === 'P\u00e9riodique');
 
-        // AUT1: first 1 uppercase letter of author's last name (NFD-normalized, no accents, only A-Z)
-        function computeAut1(authors) {
-            if (!authors || !authors.length) return '';
-            const first = authors[0];
-            const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
-            const cleanLastName = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
-            return cleanLastName.slice(0, 1);
-        }
-
-        // AUT3: first 3 uppercase letters of author's last name (NFD-normalized, no accents, only A-Z)
-        function computeAut3(authors) {
-            if (!authors || !authors.length) return '';
-            const first = authors[0];
-            const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
-            const cleanLastName = lastName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
-            return cleanLastName.slice(0, 3);
-        }
-
-        // Clean string by stripping leading articles and trimming
-        function stripLeadingArticles(text) {
-            if (!text) return '';
-            let s = text.trim();
-            const articles = [
-                /^(les?|la|l'|une?|des?|d')\s+/i,
-                /^(the|an?)\s+/i,
-                /^l'/i,
-                /^d'/i
-            ];
-            for (const re of articles) {
-                if (re.test(s)) {
-                    s = s.replace(re, '');
-                    break;
-                }
-            }
-            return s;
-        }
-
-        // SER1: first 1 uppercase letter/digit of series/collection name (fallback to AUT1 if empty)
-        function computeSer1(collection, fallbackAut1) {
-            if (!collection || !collection.trim()) return fallbackAut1;
-            const cleaned = stripLeadingArticles(collection);
-            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-            return normalized.slice(0, 1) || fallbackAut1;
-        }
-
-        // SER3: first 3 uppercase letters/digits of series/collection name (fallback to AUT3 if empty)
-        function computeSer3(collection, fallbackAut3) {
-            if (!collection || !collection.trim()) return fallbackAut3;
-            const cleaned = stripLeadingArticles(collection);
-            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-            return normalized.slice(0, 3) || fallbackAut3;
-        }
-
-        // TIT1: first 1 uppercase letter/digit of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
-        function computeTit1(title) {
-            if (!title) return '';
-            const cleaned = stripLeadingArticles(title);
-            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-            return normalized.slice(0, 1);
-        }
-
-        // TIT3: first 3 uppercase letters/digits of title (NFD-normalized, no accents, only A-Z0-9, ignoring leading articles)
-        function computeTit3(title) {
-            if (!title) return '';
-            const cleaned = stripLeadingArticles(title);
-            const normalized = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-            return normalized.slice(0, 3);
-        }
-
-        // Suggest a shelf location based on medium type matching the available options
-        function suggestShelfLocation(mediumType, locations) {
-            if (!locations || !locations.length) return '';
-            
-            const norm = (s) => s ? s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/s$/, '').trim() : '';
-            const query = norm(mediumType);
-            
-            const found = locations.find(l => norm(l.label) === query);
-            return found ? found.label : '';
-        }
-
         // Suggested call number based on dynamic settings rules:
         const suggestedCallNumber = computed(() => {
             const rules = (() => {
                 try {
-                    return JSON.parse(settings.value?.catalog_call_number_rules || '[]');
+                    return parseJsonSetting(settings.value?.catalog_call_number_rules, []);
                 } catch {
                     return [];
                 }
             })();
 
-            const aut1 = computeAut1(props.recordAuthors);
-            const aut3 = computeAut3(props.recordAuthors);
-            const ser1 = computeSer1(props.recordCollection, aut1);
-            const ser3 = computeSer3(props.recordCollection, aut3);
-            const ill1 = computeAut1(props.recordIllustrators) || aut1;
-            const ill3 = computeAut3(props.recordIllustrators) || aut3;
-            const tit1 = computeTit1(props.recordTitle);
-            const tit3 = computeTit3(props.recordTitle);
-            const dewey = props.recordDeweyNumber ? props.recordDeweyNumber.trim() : '';
-            const mediumType = props.recordMediumType ? props.recordMediumType.trim() : '';
-            const currentShelf = shelfLocation.value ? shelfLocation.value.trim() : '';
+            const record = {
+                title: props.recordTitle,
+                authors: props.recordAuthors,
+                collection: props.recordCollection,
+                deweyNumber: props.recordDeweyNumber,
+                mediumType: props.recordMediumType,
+                illustrators: props.recordIllustrators
+            };
 
-            // Find first matching rule
-            const matchedRule = rules.find(rule => {
-                if (rule.medium_type && rule.medium_type.trim().toLowerCase() !== mediumType.toLowerCase()) {
-                    return false;
-                }
-                if (rule.shelf_location && rule.shelf_location.trim().toLowerCase() !== currentShelf.toLowerCase()) {
-                    return false;
-                }
-                return true;
-            });
-
-            if (!matchedRule) {
-                return aut3;
-            }
-
-            const pattern = matchedRule.pattern || '';
-            if (!pattern.trim()) {
-                return '';
-            }
-
-            return pattern
-                .replace(/{AUT1}/g, aut1)
-                .replace(/{AUT3}/g, aut3)
-                .replace(/{SER1}/g, ser1)
-                .replace(/{SER3}/g, ser3)
-                .replace(/{ILL1}/g, ill1)
-                .replace(/{ILL3}/g, ill3)
-                .replace(/{TIT1}/g, tit1)
-                .replace(/{TIT3}/g, tit3)
-                .replace(/{DEWEY}/g, dewey)
-                .trim()
-                .replace(/\s+/g, ' ');
+            return computeCallNumber(record, shelfLocation.value, rules);
         });
 
         const suggestedShelfLocation = computed(() => {
@@ -303,7 +185,7 @@ export default defineComponent({
                 }, 100);
 
             } catch (err) {
-                if (err.error_code === 'DUPLICATE_ITEM_ID') {
+                if (err.code === 'duplicate_item_id') {
                     showError(t('cataloging.error_barcode_exists', {
                         barcode: barcodeValue
                     }));

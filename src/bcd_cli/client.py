@@ -90,7 +90,7 @@ class BCDAPIClient:
             # Extract error details from response
             try:
                 error_detail = e.response.json().get("detail", str(e))
-            except:
+            except Exception:
                 error_detail = str(e)
             raise Exception(f"API Error ({e.response.status_code}): {error_detail}")
 

@@ -1,6 +1,6 @@
 """Unit tests for CSV transformation service (BCD -> Dublin Core)"""
 
-from src.bcd_api.services.csv_transform import _map_support_to_dc_type, transform_bcd_to_dublin_core
+from src.bcd_api.services.catalog.transform import _map_support_to_dc_type, transform_bcd_to_dublin_core
 
 
 class TestTransformBcdToDublinCore:

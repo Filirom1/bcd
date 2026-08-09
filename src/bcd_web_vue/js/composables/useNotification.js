@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Notification composable
  * Toast notification system with auto-dismiss
@@ -6,19 +7,42 @@
 const { ref, computed } = Vue;
 
 // Global notifications state (shared across all component instances)
+/** @type {import('vue').Ref<any[]>} */
 const notifications = ref([]);
 let nextId = 1;
 
 /**
+ * @typedef {Object} NotificationItem
+ * @property {number} id
+ * @property {string} type
+ * @property {string} message
+ * @property {string} title
+ * @property {number} duration
+ * @property {Date} timestamp
+ */
+
+/**
+ * @typedef {Object} NotificationComposed
+ * @property {import('vue').ComputedRef<NotificationItem[]>} notifications
+ * @property {(type: string, message: string, title?: string|null, duration?: number) => number} add
+ * @property {(id: number) => void} dismiss
+ * @property {() => void} clear
+ * @property {(message: string, duration?: number) => number} success
+ * @property {(message: string, duration?: number) => number} error
+ * @property {(message: string, duration?: number) => number} warning
+ * @property {(message: string, duration?: number) => number} info
+ */
+
+/**
  * Notification composable
- * @returns {Object} Notification methods
+ * @returns {NotificationComposed} Notification methods
  */
 export function useNotification() {
     /**
      * Add a notification
      * @param {string} type - success, error, warning, info
      * @param {string} message - Notification message
-     * @param {string} [title] - Optional title
+     * @param {string|null} [title] - Optional title
      * @param {number} [duration=5000] - Auto-dismiss duration (0 = no auto-dismiss)
      */
     const add = (type, message, title = null, duration = 5000) => {
@@ -92,6 +116,7 @@ export function useNotification() {
 
     /**
      * Helper: Capitalize first letter
+     * @param {string} str
      */
     const capitalize = (str) => {
         return str.charAt(0).toUpperCase() + str.slice(1);

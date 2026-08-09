@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 BCD is a school library management system for French elementary schools:
 - **REST API** (FastAPI) — business logic layer
 - **CLI Client** (Click) — thin client over the API
-- **Web UI** (Vue 3) — SPA with vendored dependencies (no build tools, works offline)
+- **Web UI** (Vue 3) — SPA served as native ESM by FastAPI in dev; Vite builds offline production assets
 - **Godot Client** (Godot 4.6) — kid-friendly client for students (ages 6-11)
 - SQLite for development, PostgreSQL-ready for production
 - Bilingual (English/French), single-server (API + Web UI on same origin)
@@ -19,10 +19,12 @@ BCD is a school library management system for French elementary schools:
 ```bash
 # NixOS (recommended): auto-creates venv, sets PYTHONPATH, configures Playwright
 nix-shell
+npm ci
 
 # Manual:
 python3.11 -m venv venv && source venv/bin/activate
 pip install -e ".[dev]"
+npm ci
 alembic upgrade head
 ```
 
@@ -33,6 +35,11 @@ alembic upgrade head
 python -m uvicorn src.bcd_api.main:app --host 127.0.0.1 --port 8000
 # Web UI: http://127.0.0.1:8888
 # API docs: http://127.0.0.1:8888/api/v1/docs
+
+# Build/test Web UI production (no Vite dev server or proxy)
+npm run web -- --manual             # serve build/web/ manually via FastAPI
+npm run web -- --e2e                # production Playwright smoke test
+npm run web -- --portable --manual  # package and launch the portable executable
 
 # CLI
 python -m src.bcd_cli.main checkout
@@ -46,12 +53,28 @@ python -m src.bcd_cli.main catalog import data/sample_bibliographic.csv
 
 ### Testing
 
+The recommended way to run tests is using the unified central test runner:
+
 ```bash
-pytest                                              # all tests
-pytest --cov=src --cov-report=html                  # with coverage
-pytest tests/integration/services/ -v               # service-layer tests only
-pytest tests/integration/test_catalog_service.py -v # single file
-pytest -m unit | integration | contract | slow       # by marker
+python run_tests.py all         # Run all active Python + JS tests (complete suite)
+python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
+python run_tests.py js          # Run JavaScript Vitest tests only
+python run_tests.py python      # Run Python Pytest tests only
+python run_tests.py all --cov   # Run selected suites with coverage enabled
+```
+
+Alternatively, you can run individual suites directly:
+
+```bash
+# Pure JavaScript (Vitest)
+npm run test:js                                                # Run JS tests
+npm run test:js:coverage                                       # Run JS tests with coverage
+
+# Pure Python (Pytest)
+pytest tests -m "not e2e and not slow"                         # Fast Python suite
+pytest tests                                                   # Complete Python suite (excluding deactivated E2E)
+pytest tests/integration/services/ -v                           # Service-layer integration tests
+pytest tests/integration/test_catalog_service.py -v            # Run a single file
 ```
 
 Pre-commit hook: `./scripts/install-hooks.sh` (runs `pytest tests/integration tests/unit` before each commit; skips CLI tests due to known setup issues).
@@ -118,10 +141,10 @@ src/
 │   └── core/         # database.py, config.py, deps.py, portable.py, mdns.py
 ├── bcd_cli/          # Click CLI (thin HTTP client over API)
 │   └── commands/     # One module per command group
-├── bcd_web_vue/      # Vue 3 SPA (vendored deps — no npm, no build step)
+├── bcd_web_vue/      # Vue 3 SPA source (native ESM in development)
 │   ├── js/           # ~80 Vue 3 components organized by feature
 │   ├── locales/      # i18n: en.json, fr.json
-│   └── vendor/       # Vue 3.4, vue-router, vue-i18n, Bootstrap 5.3
+│   └── templates/    # shared SPA shell for source and Vite builds
 ├── bcd_converters/   # One-off data migration scripts (Bibliopuce, ONDE, XLS)
 └── shared/           # constants.py, validators.py, version.py
 
@@ -158,10 +181,11 @@ Key settings (via `.env`):
 - `BNF_API_URL`, `BNF_RATE_LIMIT` — French National Library (1 req/s)
 - `UI_MODE` — `webview`/`browser`/`godot`: choose which interface to launch on startup; used for portable builds
 - `KIDS_CLIENT_PATH` — path to Kids client executable (required when `UI_MODE=godot`)
+- `WEB_ASSETS_MODE` — `source` (default native ESM development) or `build` (local production-build test)
 
 ### Portable Builds
 
-PyInstaller spec at `bcd.spec`. `src/bcd_api/core/portable.py` handles bundled resource detection. The `--ui-mode` flag (or `UI_MODE` in .env) chooses which interface to launch: `webview` (native window), `browser` (system browser), or `godot` (Kids client).
+PyInstaller spec at `bcd.spec`. Run `npm run verify:web-build` before PyInstaller; it packages `build/web/`, not the web sources or `node_modules`. `src/bcd_api/core/portable.py` handles bundled resource detection. The `--ui-mode` flag (or `UI_MODE` in .env) chooses which interface to launch: `webview` (native window), `browser` (system browser), or `godot` (Kids client).
 
 ### mDNS Discovery
 

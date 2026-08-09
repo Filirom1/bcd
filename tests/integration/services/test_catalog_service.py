@@ -61,17 +61,25 @@ from unittest.mock import patch
 
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def disable_cover_download_for_catalog_tests(monkeypatch):
+    """Keep catalog integration tests local; cover providers are tested separately."""
+    monkeypatch.setattr("src.bcd_api.services.catalog.commands._download_cover", lambda isbn: None)
+    monkeypatch.setattr("src.bcd_api.services.catalog.lookup._download_cover", lambda isbn: None)
+    monkeypatch.setattr("src.bcd_api.services.catalog_service._download_cover", lambda isbn: None)
+
 from src.bcd_api.core.exceptions import (
-    BiblographicRecordNotFoundException,
+    BibliographicRecordNotFoundException,
     ConflictError,
     ItemHasActiveLoanException,
     NotFoundError,
 )
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.item import Item
-from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
+from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
 from src.bcd_api.services import catalog_service
 
@@ -87,7 +95,7 @@ class TestBibliographicRecordCreation:
         Verifies default values are applied correctly.
         """
         # Arrange
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="The Great Gatsby",
             isbn="9780743273565"
         )
@@ -105,7 +113,7 @@ class TestBibliographicRecordCreation:
         assert result.authors is None or result.authors == "[]"
 
         # Verify it's actually in the database
-        db_record = db_session.query(BiblographicRecord).filter_by(
+        db_record = db_session.query(BibliographicRecord).filter_by(
             id=result.id
         ).first()
         assert db_record is not None
@@ -119,7 +127,7 @@ class TestBibliographicRecordCreation:
         provides all possible metadata fields.
         """
         # Arrange
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Stuart Little",
             subtitle="A Classic Tale",
             isbn="9780060263959",
@@ -159,7 +167,7 @@ class TestBibliographicRecordCreation:
         assert result.description == "The adventures of a mouse in New York City"
         assert "mouse" in result.keywords
 
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_create_bibliographic_record_with_bnf_lookup(self, mock_search, db_session):
         """
         Test creating a bibliographic record with BNF API lookup.
@@ -183,7 +191,7 @@ class TestBibliographicRecordCreation:
             "target_audience": "child"
         }
 
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Placeholder",  # This should be overridden by BNF
             isbn="2-8006-8734-7",
         )
@@ -206,7 +214,7 @@ class TestBibliographicRecordCreation:
         # Verify BNF service was called with normalized ISBN
         mock_search.assert_called_once()
 
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_create_bibliographic_record_bnf_fallback_on_error(self, mock_search, db_session):
         """
         Test graceful fallback when BNF lookup fails.
@@ -217,7 +225,7 @@ class TestBibliographicRecordCreation:
         # Arrange - Mock BNF API failure
         mock_search.side_effect = Exception("BNF API unavailable")
 
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             isbn="9781234567890"
         )
@@ -232,9 +240,9 @@ class TestBibliographicRecordCreation:
         assert result.title == "Test Book"
         assert result.isbn == "isbn:9781234567890"
 
-    @patch("src.bcd_api.services.catalog_service.sudoc_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.google_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.sudoc.search_by_isbn")
+    @patch("src.bcd_api.services.external.google_books.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_lookup_isbn_falls_back_to_google_when_bnf_returns_none(
         self, mock_bnf, mock_google, mock_sudoc, db_session
     ):
@@ -268,9 +276,9 @@ class TestBibliographicRecordCreation:
         mock_bnf.assert_called_once()
         mock_google.assert_called_once()
 
-    @patch("src.bcd_api.services.catalog_service.sudoc_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.google_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.sudoc.search_by_isbn")
+    @patch("src.bcd_api.services.external.google_books.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_lookup_isbn_falls_back_to_google_when_bnf_raises_network_error(
         self, mock_bnf, mock_google, mock_sudoc, db_session
     ):
@@ -305,9 +313,9 @@ class TestBibliographicRecordCreation:
         mock_bnf.assert_called_once()
         mock_google.assert_called_once()
 
-    @patch("src.bcd_api.services.catalog_service.sudoc_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.google_search_by_isbn")
-    @patch("src.bcd_api.services.catalog_service.search_by_isbn")
+    @patch("src.bcd_api.services.external.sudoc.search_by_isbn")
+    @patch("src.bcd_api.services.external.google_books.search_by_isbn")
+    @patch("src.bcd_api.services.external.bnf.search_by_isbn")
     def test_lookup_isbn_returns_none_when_all_sources_unreachable(
         self, mock_bnf, mock_google, mock_sudoc, db_session
     ):
@@ -338,7 +346,7 @@ class TestBibliographicRecordCreation:
         This prevents accidental duplicate cataloging of the same book.
         """
         # Arrange - Create first record
-        first_record = BiblographicRecordCreate(
+        first_record = BibliographicRecordCreate(
             title="First Book",
             isbn="9780451524935"
         )
@@ -347,7 +355,7 @@ class TestBibliographicRecordCreation:
         )
 
         # Act & Assert - Try to create duplicate
-        duplicate_record = BiblographicRecordCreate(
+        duplicate_record = BibliographicRecordCreate(
             title="Second Book",
             isbn="9780451524935"  # Same ISBN
         )
@@ -369,7 +377,7 @@ class TestBibliographicRecordCreation:
         The system should allow cataloging these items.
         """
         # Arrange
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Ancient Manuscript",
             publisher="Medieval Publishers",
             publication_year=1450
@@ -397,7 +405,7 @@ class TestBibliographicRecordRetrieval:
         Standard retrieval operation - should return complete record data.
         """
         # Arrange - Create a record
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="1984",
             isbn="9780451524935",
             authors=["Orwell, George"]
@@ -441,17 +449,17 @@ class TestBibliographicRecordSearch:
         # Arrange - Create multiple records
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Python Programming", isbn="9781111111111"),
+            BibliographicRecordCreate(title="Python Programming", isbn="9781111111111"),
             isbn_lookup=False
         )
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Java Programming", isbn="9782222222222"),
+            BibliographicRecordCreate(title="Java Programming", isbn="9782222222222"),
             isbn_lookup=False
         )
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Python for Data Science", isbn="9783333333333"),
+            BibliographicRecordCreate(title="Python for Data Science", isbn="9783333333333"),
             isbn_lookup=False
         )
 
@@ -474,7 +482,7 @@ class TestBibliographicRecordSearch:
         # Arrange
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Harry Potter",
                 isbn="9784444444444",
                 authors=["Rowling, J.K."]
@@ -483,7 +491,7 @@ class TestBibliographicRecordSearch:
         )
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="The Casual Vacancy",
                 isbn="9785555555555",
                 authors=["Rowling, J.K."]
@@ -509,7 +517,7 @@ class TestBibliographicRecordSearch:
         # Arrange
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="The Hobbit",
                 isbn="9786666666666",
                 authors=["Tolkien, J.R.R."]
@@ -536,7 +544,7 @@ class TestBibliographicRecordSearch:
         for i in range(5):
             catalog_service.create_bibliographic_record(
                 db_session,
-                BiblographicRecordCreate(
+                BibliographicRecordCreate(
                     title=f"Book {i}",
                     isbn=f"978999999999{i}"
                 ),
@@ -586,7 +594,7 @@ class TestBibliographicRecordSearch:
         # Arrange
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Le Petit Prince",
                 isbn="9788888888888",
                 language="fr",
@@ -596,7 +604,7 @@ class TestBibliographicRecordSearch:
         )
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Les Misérables",
                 isbn="9788888888889",
                 language="fr",
@@ -630,7 +638,7 @@ class TestItemManagement:
         # Arrange - Create bibliographic record first
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Test Book", isbn="9787777777777"),
+            BibliographicRecordCreate(title="Test Book", isbn="9787777777777"),
             isbn_lookup=False
         )
 
@@ -672,7 +680,7 @@ class TestItemManagement:
         # Arrange
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Minimal Item Test", isbn="9781010101010"),
+            BibliographicRecordCreate(title="Minimal Item Test", isbn="9781010101010"),
             isbn_lookup=False
         )
 
@@ -692,7 +700,7 @@ class TestItemManagement:
         """
         Test creating an item for a non-existent bibliographic record.
 
-        Should raise BiblographicRecordNotFoundException to prevent orphaned items.
+        Should raise BibliographicRecordNotFoundException to prevent orphaned items.
         """
         # Act & Assert
         item_data = ItemCreate(
@@ -700,7 +708,7 @@ class TestItemManagement:
             bibliographic_record_id=99999  # Doesn't exist
         )
 
-        with pytest.raises(BiblographicRecordNotFoundException) as exc_info:
+        with pytest.raises(BibliographicRecordNotFoundException) as exc_info:
             catalog_service.create_item(db_session, item_data)
 
         assert "not found" in str(exc_info.value).lower()
@@ -714,7 +722,7 @@ class TestItemManagement:
         # Arrange
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Duplicate Test", isbn="9781212121212"),
+            BibliographicRecordCreate(title="Duplicate Test", isbn="9781212121212"),
             isbn_lookup=False
         )
 
@@ -741,7 +749,7 @@ class TestItemManagement:
 
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Prefix Strip Test", isbn="9789999999999"),
+            BibliographicRecordCreate(title="Prefix Strip Test", isbn="9789999999999"),
             isbn_lookup=False
         )
 
@@ -764,7 +772,7 @@ class TestItemManagement:
         # Arrange
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Get Item Test", isbn="9781313131313"),
+            BibliographicRecordCreate(title="Get Item Test", isbn="9781313131313"),
             isbn_lookup=False
         )
         item_data = ItemCreate(item_id="GET001", bibliographic_record_id=bib_record.id)
@@ -793,7 +801,7 @@ class TestItemManagement:
         # Arrange - Create record with 3 items
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Multi-Copy Book", isbn="9781414141414"),
+            BibliographicRecordCreate(title="Multi-Copy Book", isbn="9781414141414"),
             isbn_lookup=False
         )
 
@@ -825,7 +833,7 @@ class TestItemManagement:
         # Arrange - Create record without items
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="No Copies", isbn="9781515151515"),
+            BibliographicRecordCreate(title="No Copies", isbn="9781515151515"),
             isbn_lookup=False
         )
 
@@ -851,7 +859,7 @@ class TestCatalogIntegrationScenarios:
         3. Verify everything is linked correctly
         """
         # Step 1: Catalog the book (simulating BNF lookup)
-        with patch("src.bcd_api.services.catalog_service.search_by_isbn") as mock_search:
+        with patch("src.bcd_api.services.external.bnf.search_by_isbn") as mock_search:
             mock_search.return_value = {
                 "title": "Charlotte's Web",
                 "authors": ["White, E.B."],
@@ -865,7 +873,7 @@ class TestCatalogIntegrationScenarios:
 
             bib_record = catalog_service.create_bibliographic_record(
                 db_session,
-                BiblographicRecordCreate(title="Temp", isbn="9780064400558"),
+                BibliographicRecordCreate(title="Temp", isbn="9780064400558"),
                 isbn_lookup=True
             )
 
@@ -930,7 +938,7 @@ class TestCatalogIntegrationScenarios:
         # Setup: Add several books
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Animal Farm",
                 isbn="9780451526342",
                 authors=["Orwell, George"],
@@ -941,7 +949,7 @@ class TestCatalogIntegrationScenarios:
 
         catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Brave New World",
                 isbn="9780060850524",
                 authors=["Huxley, Aldous"],
@@ -990,7 +998,7 @@ class TestGetAvailableItemIDs:
         # Arrange: Create bibliographic record and items with high IDs
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Test Book",
                 isbn="9780123456789",
                 authors=["Test Author"]
@@ -1022,7 +1030,7 @@ class TestGetAvailableItemIDs:
         # Arrange: Create some existing items
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Test Book",
                 isbn="9780123456789",
                 authors=["Test Author"]
@@ -1100,7 +1108,7 @@ class TestGetAvailableItemIDs:
         # Arrange: Items 1, 2, 4, 5 exist — item 3 was deleted (e.g., withdrawn book)
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Test Book",
                 isbn="9780123456789",
                 authors=["Test Author"]
@@ -1141,7 +1149,7 @@ class TestGetAvailableItemIDs:
         # Arrange: Library has items 1, 2, 4, 5, 6, 9, 10 (gaps at 3, 7, 8)
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Test Book",
                 isbn="9780123456789",
                 authors=["Test Author"]
@@ -1168,7 +1176,7 @@ class TestGetAvailableItemIDs:
         # Arrange: Items 1, 2, 4, 5 exist (gap at 3)
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Test Book",
                 isbn="9780123456789",
                 authors=["Test Author"]
@@ -1198,7 +1206,7 @@ class TestGetAvailableItemIDs:
         # Arrange: items 1, 2, 4, 5 exist (gap at 3)
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Test Book", isbn="9780123456789"),
+            BibliographicRecordCreate(title="Test Book", isbn="9780123456789"),
             isbn_lookup=False
         )
         for item_id in ["1", "2", "4", "5"]:
@@ -1226,7 +1234,7 @@ class TestGetAvailableItemIDs:
         # Arrange
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Test Book 2", isbn="9780123456780"),
+            BibliographicRecordCreate(title="Test Book 2", isbn="9780123456780"),
             isbn_lookup=False
         )
         for item_id in ["1", "2", "4", "6", "8"]:
@@ -1253,7 +1261,7 @@ class TestGetAvailableItemIDs:
         # Arrange
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(title="Test Book 3", isbn="9780123456781"),
+            BibliographicRecordCreate(title="Test Book 3", isbn="9780123456781"),
             isbn_lookup=False
         )
         for item_id in ["101", "103"]:
@@ -1298,7 +1306,7 @@ class TestDeleteItemValidation:
         # Arrange: Create item with active loan
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="On Loan Book",
                 isbn="9780123456789",
                 authors=["Test Author"]
@@ -1359,7 +1367,7 @@ class TestDeleteItemValidation:
         # Arrange: Create item with returned loan
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
-            BiblographicRecordCreate(
+            BibliographicRecordCreate(
                 title="Returned Book",
                 isbn="9780123456788",
                 authors=["Test Author"]
@@ -1498,8 +1506,8 @@ class TestSearchBibliographicRecordsFilterByShelfLocation:
 
     def test_filter_by_shelf_location_returns_matching_records(self, db_session):
         # Arrange
-        record1 = BiblographicRecord(title="Romans du rayon", authors='["Auteur A"]', medium_type="Livre")
-        record2 = BiblographicRecord(title="Documentaires", authors='["Auteur B"]', medium_type="Livre")
+        record1 = BibliographicRecord(title="Romans du rayon", authors='["Auteur A"]', medium_type="Livre")
+        record2 = BibliographicRecord(title="Documentaires", authors='["Auteur B"]', medium_type="Livre")
         db_session.add_all([record1, record2])
         db_session.flush()
         item1 = Item(item_id="SHL001", bibliographic_record_id=record1.id, shelf_location="Romans ado")
@@ -1518,7 +1526,7 @@ class TestSearchBibliographicRecordsFilterByShelfLocation:
 
     def test_filter_by_shelf_location_excludes_non_matching(self, db_session):
         # Arrange
-        record = BiblographicRecord(title="Livre sans rayon", authors='["X"]', medium_type="Livre")
+        record = BibliographicRecord(title="Livre sans rayon", authors='["X"]', medium_type="Livre")
         db_session.add(record)
         db_session.flush()
         item = Item(item_id="SHL003", bibliographic_record_id=record.id, shelf_location="BDs")
@@ -1535,7 +1543,7 @@ class TestSearchBibliographicRecordsFilterByShelfLocation:
 
     def test_no_shelf_location_filter_returns_all(self, db_session):
         # Arrange
-        record = BiblographicRecord(title="Livre quelconque", authors='["Y"]', medium_type="Livre")
+        record = BibliographicRecord(title="Livre quelconque", authors='["Y"]', medium_type="Livre")
         db_session.add(record)
         db_session.flush()
 

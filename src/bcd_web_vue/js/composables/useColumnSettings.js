@@ -1,13 +1,24 @@
+// @ts-check
 /**
  * Column Settings Composable
  * Manages visible columns with localStorage persistence
  */
 
 const { ref, watch } = Vue;
+import { getJSON, setJSON } from '../utils/storage.js';
 
-const STORAGE_KEY = 'bcd_catalog_columns';
+const STORAGE_KEY = 'catalog_columns';
+
+/**
+ * @typedef {Object} ColumnDefinition
+ * @property {string} id
+ * @property {string} label_en
+ * @property {string} label_fr
+ * @property {boolean} default
+ */
 
 // Available columns (18 total - matches SearchResults.js table columns)
+/** @type {ColumnDefinition[]} */
 export const AVAILABLE_COLUMNS = [
     // Basic information (default visible)
     { id: 'title', label_en: 'Title', label_fr: 'Titre', default: true },
@@ -39,13 +50,9 @@ export const AVAILABLE_COLUMNS = [
 export function useColumnSettings() {
     // Load from localStorage or use defaults
     const loadSettings = () => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                return JSON.parse(stored);
-            }
-        } catch (e) {
-            console.warn('Failed to load column settings from localStorage', e);
+        const stored = getJSON(STORAGE_KEY);
+        if (stored) {
+            return stored;
         }
         // Return default columns (matching mockup)
         return AVAILABLE_COLUMNS.filter(col => col.default).map(col => col.id);
@@ -55,17 +62,19 @@ export function useColumnSettings() {
 
     // Save to localStorage when changed
     watch(visibleColumns, (newValue) => {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newValue));
-        } catch (e) {
-            console.warn('Failed to save column settings to localStorage', e);
-        }
+        setJSON(STORAGE_KEY, newValue);
     }, { deep: true });
 
+    /**
+     * @param {string} columnId
+     */
     const isColumnVisible = (columnId) => {
         return visibleColumns.value.includes(columnId);
     };
 
+    /**
+     * @param {string} columnId
+     */
     const toggleColumn = (columnId) => {
         const index = visibleColumns.value.indexOf(columnId);
         if (index > -1) {

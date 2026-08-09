@@ -12,6 +12,7 @@ Key Features:
 import os
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -23,6 +24,8 @@ from sqlalchemy.orm import sessionmaker
 # =============================================================================
 # Database Fixtures - Function Scoped for Isolation
 # =============================================================================
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.fixture(scope="session")
 def base_database():
@@ -44,7 +47,7 @@ def base_database():
         env=env,
         capture_output=True,
         text=True,
-        cwd="/home/nixos/src/local/bcd4"
+        cwd=PROJECT_ROOT
     )
 
     if result.returncode != 0:
@@ -136,14 +139,36 @@ def api_server(test_database, api_server_port):
     env["VUE_MODE"] = "true"
     env["TESTING"] = "true"
 
+    bcd_exe = os.environ.get("BCD_TEST_EXECUTABLE") or os.environ.get("BCD_EXECUTABLE_PATH")
+    if bcd_exe and os.path.exists(bcd_exe):
+        cmd = [
+            bcd_exe,
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(api_server_port),
+            "--ui-mode",
+            "server",
+        ]
+    else:
+        cmd = [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "src.bcd_api.main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(api_server_port),
+        ]
+
     log_file = open("test_e2e_server.log", "w")
     process = subprocess.Popen(
-        ["python", "-m", "uvicorn", "src.bcd_api.main:app",
-         "--host", "127.0.0.1", "--port", str(api_server_port)],
+        cmd,
         env=env,
         stdout=log_file,
         stderr=log_file,
-        cwd="/home/nixos/src/local/bcd4"
+        cwd=PROJECT_ROOT
     )
 
     # Wait for server to be ready

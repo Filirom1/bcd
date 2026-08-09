@@ -7,8 +7,10 @@
 const { defineComponent, computed, ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import DataTable from '../ui/DataTable.js';
+import { formatCivilDate } from '../../utils/date.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
+import { itemStatusClass } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'InventoryResults',
@@ -149,11 +151,7 @@ export default defineComponent({
         /**
          * Format date for display
          */
-        const formatDate = (dateStr) => {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            return date.toLocaleDateString();
-        };
+        const formatDate = (dateStr) => formatCivilDate(dateStr, locale.value);
 
         /**
          * Handle edit item click
@@ -184,7 +182,8 @@ export default defineComponent({
             formatDate,
             headerCheckboxRef,
             getShelfBadge,
-            getCoteBadge
+            getCoteBadge,
+            itemStatusClass
         };
     },
 
@@ -262,14 +261,7 @@ export default defineComponent({
                 <td v-if="isColumnVisible('status')" :class="getRowClass(item)">
                     <span
                         class="badge"
-                        :class="{
-                            'bg-success': item.status === 'available',
-                            'bg-primary': item.status === 'on_loan',
-                            'bg-warning text-dark': item.status === 'on_hold',
-                            'bg-secondary': item.status === 'in_repair',
-                            'bg-danger': item.status === 'lost',
-                            'bg-dark': item.status === 'withdrawn'
-                        }"
+                        :class="itemStatusClass(item.status)"
                     >
                         {{ t(\`item.status_\${item.status}\`) }}
                     </span>

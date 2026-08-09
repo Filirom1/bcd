@@ -1,3 +1,12 @@
+// @ts-check
+import { apiClient } from '../api/client.js';
+
+/** @typedef {import('../models/item.js').BibliographicRecord} BibliographicRecord */
+/** @typedef {import('../models/item.js').Item} Item */
+/** @typedef {import('../models/borrower.js').Borrower} Borrower */
+
+const { ref } = Vue;
+
 /**
  * useBulkOperations - Bulk edit/delete API calls composable (DRY component)
  *
@@ -7,12 +16,9 @@
  * @param {string} resourceType - Type of resource ('borrowers' or 'catalog')
  * @returns {Object} Bulk operation methods and state
  */
-
-const { ref } = Vue;
-import { ApiError } from '../models/error.js';
-
 export function useBulkOperations(resourceType) {
     const loading = ref(false);
+    /** @type {import('vue').Ref<string|null>} */
     const error = ref(null);
     const progress = ref(0);
     const showProgress = ref(false);
@@ -28,7 +34,7 @@ export function useBulkOperations(resourceType) {
      * Bulk change class for borrowers
      * @param {Array<number>} borrowerIds - IDs of borrowers
      * @param {number} targetClassId - Target class ID
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkChangeClass = async (borrowerIds, targetClassId) => {
         loading.value = true;
@@ -37,27 +43,16 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/borrowers/bulk-edit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    operation: 'change_class',
-                    borrower_ids: borrowerIds,
-                    target_class_id: targetClassId
-                })
+            const result = await apiClient.post('/admin/borrowers/bulk-edit', {
+                operation: 'change_class',
+                borrower_ids: borrowerIds,
+                target_class_id: targetClassId
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -72,7 +67,7 @@ export function useBulkOperations(resourceType) {
      * Bulk change role for borrowers
      * @param {Array<number>} borrowerIds - IDs of borrowers
      * @param {string} targetRole - Target role (student/teacher/staff)
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkChangeRole = async (borrowerIds, targetRole) => {
         loading.value = true;
@@ -81,27 +76,16 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/borrowers/bulk-edit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    operation: 'change_role',
-                    borrower_ids: borrowerIds,
-                    target_role: targetRole
-                })
+            const result = await apiClient.post('/admin/borrowers/bulk-edit', {
+                operation: 'change_role',
+                borrower_ids: borrowerIds,
+                target_role: targetRole
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -115,7 +99,7 @@ export function useBulkOperations(resourceType) {
     /**
      * Bulk delete borrowers
      * @param {Array<number>} borrowerIds - IDs of borrowers to delete
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkDeleteBorrowers = async (borrowerIds) => {
         loading.value = true;
@@ -124,25 +108,14 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/borrowers/bulk-delete', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    borrower_ids: borrowerIds
-                })
+            const result = await apiClient.post('/admin/borrowers/bulk-delete', {
+                borrower_ids: borrowerIds
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -157,7 +130,7 @@ export function useBulkOperations(resourceType) {
      * Bulk edit catalog records
      * @param {Array<number>} recordIds - IDs of records to edit
      * @param {Object} fields - Fields to update (target_audience, language, medium_type)
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkEditRecords = async (recordIds, fields) => {
         loading.value = true;
@@ -166,26 +139,15 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/catalog/bulk-edit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    record_ids: recordIds,
-                    ...fields
-                })
+            const result = await apiClient.post('/admin/catalog/bulk-edit', {
+                record_ids: recordIds,
+                ...fields
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -199,7 +161,7 @@ export function useBulkOperations(resourceType) {
     /**
      * Bulk delete catalog records
      * @param {Array<number>} recordIds - IDs of records to delete
-     * @returns {Promise<Object>} Operation result
+     * @returns {Promise<any>} Operation result
      */
     const bulkDeleteRecords = async (recordIds) => {
         loading.value = true;
@@ -208,25 +170,14 @@ export function useBulkOperations(resourceType) {
         progress.value = 0;
 
         try {
-            const response = await fetch('/api/v1/admin/catalog/bulk-delete', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    record_ids: recordIds
-                })
+            const result = await apiClient.post('/admin/catalog/bulk-delete', {
+                record_ids: recordIds
             });
 
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
             progress.value = 100;
-            return await response.json();
+            return result;
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -240,30 +191,17 @@ export function useBulkOperations(resourceType) {
     /**
      * Update single record
      * @param {number} recordId - Record ID
-     * @param {Object} data - Update data
-     * @returns {Promise<Object>} Updated record
+     * @param {Partial<BibliographicRecord>} data - Update data
+     * @returns {Promise<BibliographicRecord>} Updated record
      */
     const updateRecord = async (recordId, data) => {
         loading.value = true;
         error.value = null;
 
         try {
-            const response = await fetch(`/api/v1/catalog/records/${recordId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
-            return await response.json();
+            return await apiClient.patch(`/catalog/records/${recordId}`, data);
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;
@@ -273,30 +211,17 @@ export function useBulkOperations(resourceType) {
     /**
      * Update single item
      * @param {number} itemId - Item ID
-     * @param {Object} data - Update data
-     * @returns {Promise<Object>} Updated item
+     * @param {Partial<Item>} data - Update data
+     * @returns {Promise<Item>} Updated item
      */
     const updateItem = async (itemId, data) => {
         loading.value = true;
         error.value = null;
 
         try {
-            const response = await fetch(`/api/v1/catalog/items/${itemId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const apiError = await ApiError.fromResponse(response);
-                throw apiError;
-            }
-
-            return await response.json();
+            return await apiClient.patch(`/catalog/items/${itemId}`, data);
         } catch (err) {
-            error.value = err.message;
+            error.value = /** @type {any} */ (err).message;
             throw err;
         } finally {
             loading.value = false;

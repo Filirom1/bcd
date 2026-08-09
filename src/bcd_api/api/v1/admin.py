@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -35,13 +35,16 @@ from ...schemas.admin import (
 from ...schemas.inventory import OrphanDeleteResponse, OrphanRecordsResponse
 from ...schemas.system_settings import SystemSettingsResponse
 from ...services import (
-    archive_service,
-    backup_service,
+    admin_service,
     borrower_service,
-    catalog_service,
+    catalog as catalog_service,
     inventory_service,
-    settings_service,
 )
+from ...services.admin import settings as settings_service
+from ...services.admin import archive as archive_service
+from ...services.admin import backup as backup_service
+
+from ...models.bibliographic_record import BibliographicRecord
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -51,7 +54,27 @@ class SettingsUpdate(BaseModel):
     updates: Dict[str, Any]
 
 
-@router.get("/settings")
+@router.get("/env")
+def get_env_file_content():
+    """Read the contents of the current .env file."""
+    from ...core.config import _get_env_file_path
+    p = Path(_get_env_file_path())
+    if not p.exists():
+        return {"content": ""}
+    return {"content": p.read_text(encoding="utf-8")}
+
+
+@router.put("/env")
+def update_env_file_content(payload: dict):
+    """Overwrite the contents of the current .env file."""
+    from ...core.config import _get_env_file_path
+    p = Path(_get_env_file_path())
+    content = payload.get("content", "")
+    p.write_text(content, encoding="utf-8")
+    return {"content": content}
+
+
+@router.get("/settings", response_model=SystemSettingsResponse)
 def get_settings(
     db: Session = Depends(get_db)
 ):
@@ -71,7 +94,7 @@ def get_settings(
     return settings
 
 
-@router.put("/settings")
+@router.put("/settings", response_model=SystemSettingsResponse)
 async def update_settings(
     settings_update: SettingsUpdate,
     db: Session = Depends(get_db),
@@ -248,6 +271,92 @@ def restore_backup_endpoint(
         )
 
 
+@router.get("/backups/{filename}/download")
+def download_backup_endpoint(filename: str):
+    """
+    Download a specific backup file.
+    """
+    from fastapi.responses import FileResponse
+    try:
+        backup_dir = backup_service._get_backups_dir()
+        # Prevent directory traversal attacks
+        safe_filename = Path(filename).name
+        backup_path = (backup_dir / safe_filename).resolve()
+
+        if not backup_path.exists() or not str(backup_path).startswith(str(backup_dir.resolve())):
+            raise HTTPException(
+                status_code=404,
+                detail=f"Backup file not found: {filename}"
+            )
+
+        return FileResponse(
+            path=backup_path,
+            media_type="application/x-sqlite3",
+            filename=safe_filename
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Download failed: {str(e)}"
+        )
+
+
+@router.post("/backups/import")
+async def import_backup_endpoint(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload and import/restore a database backup file.
+    """
+    import shutil
+    from datetime import datetime
+    try:
+        # Create backups directory if it doesn't exist
+        backup_dir = backup_service._get_backups_dir()
+        backup_dir.mkdir(exist_ok=True)
+
+        # Generate a safe filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        temp_filepath = backup_dir / f"imported_backup_{timestamp}.db"
+
+        # Save uploaded file
+        with open(temp_filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Verify backup integrity
+        if not backup_service.verify_backup(str(temp_filepath)):
+            # Delete invalid file
+            if temp_filepath.exists():
+                temp_filepath.unlink()
+            raise HTTPException(
+                status_code=400,
+                detail="The uploaded file is not a valid SQLite database or integrity check failed."
+            )
+
+        # Close session before restore
+        db.close()
+
+        # Perform restore from the uploaded file
+        success = backup_service.restore_backup(str(temp_filepath))
+
+        return {
+            "success": success,
+            "message": "Database successfully imported and restored.",
+            "backup_file": str(temp_filepath),
+            "warning": "A safety backup of the previous database was created in ./backups/pre_restore/"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database import failed: {str(e)}"
+        )
+
+
 @router.delete("/backups/cleanup")
 def cleanup_old_backups_endpoint(keep_days: int = 30):
     """
@@ -288,7 +397,8 @@ def verify_backup_endpoint(filename: str):
         Verification status
     """
     try:
-        backup_path = Path("./backups") / filename
+        backup_dir = backup_service._get_backups_dir()
+        backup_path = backup_dir / filename
 
         if not backup_path.exists():
             raise HTTPException(
@@ -430,25 +540,12 @@ def health_check(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
 
         # Get database statistics
-        from ...models.bibliographic_record import BiblographicRecord
-        from ...models.borrower import Borrower
-        from ...models.circulation import CirculationTransaction
-        from ...models.item import Item
-
-        borrower_count = db.query(Borrower).count()
-        biblio_count = db.query(BiblographicRecord).count()
-        item_count = db.query(Item).count()
-        circulation_count = db.query(CirculationTransaction).count()
+        counts = admin_service.get_health_stats(db)
 
         return {
             "status": "healthy",
             "database": "connected",
-            "counts": {
-                "borrowers": borrower_count,
-                "bibliographic_records": biblio_count,
-                "items": item_count,
-                "circulations": circulation_count,
-            },
+            "counts": counts,
         }
 
     except Exception as e:
@@ -738,28 +835,35 @@ def backfill_covers(db: Session = Depends(get_db)):
     Returns:
         {"updated": N, "scanned": M}
     """
-    from ...models.bibliographic_record import BiblographicRecord
-    from ...services.cover_service import find_cached_cover
+    res = admin_service.backfill_covers_logic(db, app_settings.covers_dir_path)
+    logger.info(f"Cover backfill: {res['updated']}/{res['scanned']} records updated")
+    return res
 
-    covers_dir = Path("data/covers")
-    records = db.query(BiblographicRecord).filter(
-        BiblographicRecord.cover_image == None,
-        BiblographicRecord.isbn != None,
-        BiblographicRecord.isbn != "",
-    ).all()
 
-    updated = 0
-    for record in records:
-        fname = find_cached_cover(record.isbn, covers_dir=covers_dir)
-        if fname:
-            record.cover_image = fname
-            updated += 1
+from ...services.cover_download_service import cover_download_manager
 
-    if updated:
-        db.commit()
+_download_lock = cover_download_manager._lock
+_download_status = cover_download_manager._status
+_download_missing_covers_task = cover_download_manager._run_missing_cover_download
 
-    logger.info(f"Cover backfill: {updated}/{len(records)} records updated")
-    return {"updated": updated, "scanned": len(records)}
+
+@router.post("/covers/download-missing")
+def start_download_missing_covers(background_tasks: BackgroundTasks):
+    """Start a background task to download covers for records with an ISBN but no cover."""
+    return cover_download_manager.start_missing_cover_download(background_tasks)
+
+
+@router.get("/covers/download-missing/status")
+def get_download_missing_covers_status():
+    """Get the status of the background cover download task."""
+    return cover_download_manager.get_status()
+
+
+@router.post("/covers/download-missing/cancel")
+def cancel_download_missing_covers():
+    """Cancel the background cover download task."""
+    return cover_download_manager.cancel()
+
 
 
 @router.post("/data-maintenance/set-acquisition-dates")
@@ -775,31 +879,6 @@ def set_acquisition_dates_from_publication_year(db: Session = Depends(get_db)):
     Returns:
         {"updated_count": N}
     """
-    from datetime import date
-
-    from ...models.bibliographic_record import BiblographicRecord
-    from ...models.item import Item
-
-    # Find items without acquisition_date that have a publication_year
-    items = (
-        db.query(Item)
-        .join(BiblographicRecord)
-        .filter(
-            Item.acquisition_date == None,
-            BiblographicRecord.publication_year != None,
-        )
-        .all()
-    )
-
-    updated_count = 0
-    for item in items:
-        year = item.bibliographic_record.publication_year
-        if year and 1000 <= year <= 2100:
-            item.acquisition_date = date(year, 1, 1)
-            updated_count += 1
-
-    if updated_count:
-        db.commit()
-
-    logger.info(f"Acquisition date maintenance: {updated_count} items updated")
-    return {"updated_count": updated_count}
+    res = admin_service.set_acquisition_dates_from_publication_year(db)
+    logger.info(f"Acquisition date maintenance: {res['updated_count']} items updated")
+    return res

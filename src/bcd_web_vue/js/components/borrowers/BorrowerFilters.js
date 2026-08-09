@@ -13,6 +13,9 @@
  * - NEW: Emit events to parent, parent handles API calls
  */
 
+import { apiClient } from '../../api/client.js';
+import { useDebouncedAction } from '../../composables/useDebouncedAction.js';
+
 export default {
     name: 'BorrowerFilters',
 
@@ -138,7 +141,11 @@ export default {
         const statusFilter = Vue.ref('');
         const classes = Vue.ref([]);
         const searchInput = Vue.ref(null);
-        let debounceTimer = null;
+
+        // Debounced search (300ms delay)
+        const debouncedSearch = useDebouncedAction(() => {
+            applyFilters();
+        }, 300);
 
         // Computed: Check if any filters are active
         const hasActiveFilters = Vue.computed(() => {
@@ -151,19 +158,10 @@ export default {
             return cls ? cls.name : classId;
         };
 
-        // Debounced search (300ms delay)
-        const debouncedSearch = () => {
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
-            }
-            debounceTimer = setTimeout(() => {
-                applyFilters();
-            }, 300);
-        };
-
         // Clear search
         const clearSearch = () => {
             searchQuery.value = '';
+            debouncedSearch.cancel();
             applyFilters();
         };
 
@@ -208,10 +206,7 @@ export default {
         // Load classes from API
         const loadClasses = async () => {
             try {
-                const response = await fetch('/api/v1/classes');
-                if (response.ok) {
-                    classes.value = await response.json();
-                }
+                classes.value = await apiClient.get('/classes');
             } catch (error) {
                 console.error('Error loading classes:', error);
             }
@@ -234,9 +229,6 @@ export default {
 
         Vue.onUnmounted(() => {
             document.removeEventListener('keydown', handleKeyboardShortcut);
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
-            }
         });
 
         return {

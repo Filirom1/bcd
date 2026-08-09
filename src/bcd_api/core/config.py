@@ -1,6 +1,6 @@
 """Application configuration using Pydantic Settings."""
 
-from typing import List
+from typing import List, Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -34,10 +34,15 @@ def _get_env_file_path() -> str:
 # Determine database URL based on mode
 def _get_database_url() -> str:
     """Get default database URL based on portable mode."""
+    import os
+    env_db_url = os.environ.get("DATABASE_URL")
+    if env_db_url:
+        return env_db_url
     if is_portable():
         db_path = get_data_dir() / "bcd.db"
         return f"sqlite:///{db_path}"
     return "sqlite:///./data/bcd.db"
+
 
 
 class Settings(BaseSettings):
@@ -49,6 +54,16 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    # Paths Configurable (overridable in .env)
+    # Default behavior fallback to get_data_dir(), get_config_dir() or standard paths
+    # Set these in your .env to override default ./data, ./config, ./logs, ./data/covers, and ./backups directories.
+    # Useful for packaging under Linux (e.g., /var/lib/bcd, /var/log/bcd, /etc/bcd)
+    data_dir_path: str = ""       # Defaults to ./data (or app_dir/data in portable mode)
+    config_dir_path: str = ""     # Defaults to . (or app_dir/config in portable mode)
+    log_dir_path: str = ""        # Defaults to ./logs (or app_dir/logs in portable mode)
+    covers_dir_path: str = ""     # Defaults to ./data/covers
+    backups_dir_path: str = ""    # Defaults to ./backups
 
     # Database
     database_url: str = _get_database_url()
@@ -96,6 +111,10 @@ class Settings(BaseSettings):
     # UI Mode (portable mode only)
     # UI_MODE: "webview" (native window), "browser" (system browser), or "kids" (launch Kids client)
     ui_mode: str = "webview"
+
+    # Web Assets Mode
+    # WEB_ASSETS_MODE: "source" (development ESM) or "build" (Vite production build)
+    web_assets_mode: Literal["source", "build"] = "source"
 
     # Client Only Mode
     # If True, does not start the local API server, only launches the specified UI client

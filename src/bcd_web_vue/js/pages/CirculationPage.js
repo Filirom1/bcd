@@ -6,6 +6,7 @@
 const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../api/client.js';
+import { formatCivilDate, formatTime } from '../utils/date.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { useBarcodeUtils } from '../composables/useBarcodeUtils.js';
@@ -13,6 +14,7 @@ import { useBlockReasonTranslation } from '../composables/useBlockReasonTranslat
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useItemBadge } from '../composables/useItemBadge.js';
+import { events } from '../utils/events.js';
 import BorrowerCard from '../components/circulation/BorrowerCard.js';
 import ItemScanner from '../components/circulation/ItemScanner.js';
 import ClassRosterPanel from '../components/circulation/ClassRosterPanel.js';
@@ -37,18 +39,21 @@ export default defineComponent({
     },
 
     setup(props) {
-        const { t, d } = useI18n();
+        const { t, d, locale } = useI18n();
         const { openRecord } = useGlobalModal();
-        const { settings: appSettings } = useAppState();
+        const { settings: appSettings, loadSettings } = useAppState();
         const { getShelfBadge, getCoteBadge } = useItemBadge(appSettings);
         const { success, error: showError, warning } = useNotification();
         const { handleError } = useErrorHandler(t);
-        const { stripBarcodePrefix, fetchSettings } = useBarcodeUtils();
+        const { stripBarcodePrefix } = useBarcodeUtils();
         const { translateBlockReason } = useBlockReasonTranslation();
 
         // Settings state (for barcode prefixes)
-        const settings = ref(null);
-        const settingsLoading = ref(true);
+        const settings = computed(() => appSettings.value || {
+            borrower_barcode_prefix: '%',
+            item_barcode_prefix: '.'
+        });
+        const settingsLoading = computed(() => !appSettings.value);
 
         // Borrower state
         const borrower = ref(null);
@@ -58,22 +63,12 @@ export default defineComponent({
         // Scanned items state
         const scannedItems = ref([]);
 
-        // Incremented after each checkout/return so ClassRosterPanel reloads its roster
-        const rosterRefreshTick = ref(0);
-
         // Load settings on mount (must complete before scanning)
         onMounted(async () => {
             try {
-                settings.value = await fetchSettings();
+                await loadSettings();
             } catch (error) {
                 console.error('Failed to load settings:', error);
-                // Use defaults if settings fail to load
-                settings.value = {
-                    borrower_barcode_prefix: '%',
-                    item_barcode_prefix: '.'
-                };
-            } finally {
-                settingsLoading.value = false;
             }
         });
 
@@ -132,7 +127,7 @@ export default defineComponent({
                 }
 
             } catch (err) {
-                if (err.status === 404) {
+                if (err.statusCode === 404) {
                     showError(t('circulation.error_borrower_not_found', {
                         borrower_id: borrowerId
                     }));
@@ -194,7 +189,7 @@ export default defineComponent({
                 await loadBorrower(borrower.value.borrower_id);
 
                 // Refresh the class roster to reflect the new loan status
-                rosterRefreshTick.value++;
+                events.emit('circulation:roster-refresh');
 
             } catch (err) {
                 // Handle error using error codes and context (no regex!)
@@ -242,9 +237,12 @@ export default defineComponent({
                         break;
 
                     case 'item_not_available':
+                        const rawStatus = context.status || '';
+                        const statusKey = `item.status_${rawStatus}`;
+                        const translatedStatus = t(statusKey) === statusKey ? rawStatus : t(statusKey);
                         friendlyMessage = t('errors.item_not_available', {
                             item_id: context.item_id || barcode,
-                            status: context.status
+                            status: translatedStatus
                         });
                         break;
 
@@ -402,26 +400,12 @@ export default defineComponent({
         /**
          * Format return time as HH:MM for session list
          */
-        const formatReturnTime = (dateStr) => {
-            if (!dateStr) return '';
-            try {
-                return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            } catch {
-                return '';
-            }
-        };
+        const formatReturnTime = (dateStr) => formatTime(dateStr, locale.value);
 
         /**
          * Format date for hold expiration
          */
-        const formatDate = (dateStr) => {
-            if (!dateStr) return '';
-            try {
-                return new Date(dateStr).toLocaleDateString();
-            } catch {
-                return '';
-            }
-        };
+        const formatDate = (dateStr) => formatCivilDate(dateStr, locale.value);
 
         /**
          * Cancel a hold for the current borrower
@@ -483,7 +467,13 @@ export default defineComponent({
 
                 const returned = result.items?.[0];
                 const titleDisplay = returned?.display_title || returned?.title || itemId;
-                const shelfInfo = returned?.shelf_location ? ` — ${t('circulation.ranger')} : ${returned.shelf_location}` : '';
+                
+                let locationParts = [];
+                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
+                if (returned?.call_number) locationParts.push(returned.call_number);
+                
+                const locationText = locationParts.length > 0 ? locationParts.join(' / ') : '-';
+                const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
                 success(`✓ ${titleDisplay}${shelfInfo}`);
 
                 // Show hold_ready notification so librarian knows to set the book aside
@@ -499,7 +489,7 @@ export default defineComponent({
                 await loadBorrower(borrower.value.borrower_id);
 
                 // Refresh the class roster to reflect the updated loan status
-                rosterRefreshTick.value++;
+                events.emit('circulation:roster-refresh');
 
             } catch (err) {
                 handleError(err);
@@ -518,7 +508,6 @@ export default defineComponent({
             borrowerInitials,
             borrowerHolds,
             scannedItems,
-            rosterRefreshTick,
             scannerDisabled,
             borrowerAtLimit,
             settings,
@@ -563,7 +552,6 @@ export default defineComponent({
                         <class-roster-panel
                             :settings="settings"
                             :selected-borrower-id="borrower ? borrower.borrower_id : null"
-                            :refresh-tick="rosterRefreshTick"
                             @borrower-selected="loadBorrower"
                         />
 
@@ -584,7 +572,7 @@ export default defineComponent({
                                 <div class="b-badges">
                                     <span
                                         class="badge"
-                                        :class="borrower.current_loans_count >= borrower.loan_limit ? 'bg-danger' : 'bg-info text-dark'"
+                                        :class="borrower.current_loans_count >= borrower.loan_limit ? 'bg-danger' : (borrower.loan_limit_warning && borrower.current_loans_count >= borrower.loan_limit_warning ? 'bg-warning text-dark' : 'bg-info text-dark')"
                                     >
                                         {{ borrower.current_loans_count }}/{{ borrower.loan_limit }}
                                     </span>
@@ -693,6 +681,7 @@ export default defineComponent({
                                             <th class="text-muted fw-normal" style="width: 2rem;">#</th>
                                             <th class="text-muted fw-normal">{{ t('catalog.inventory_number') }}</th>
                                             <th class="text-muted fw-normal">{{ t('catalog.title') }}</th>
+                                            <th class="text-muted fw-normal">{{ t('catalog.shelf_location_call_number') }}</th>
                                             <th class="text-muted fw-normal">{{ t('circulation.returned_at') }}</th>
                                         </tr>
                                     </thead>
@@ -709,10 +698,6 @@ export default defineComponent({
                                                 <span v-if="item.was_overdue" class="badge bg-danger ms-1">
                                                     {{ t('circulation.overdue_label') }}
                                                 </span>
-                                                <div v-if="item.shelf_location || item.call_number" class="d-flex flex-wrap align-items-center gap-1 mt-1">
-                                                    <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
-                                                    <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
-                                                </div>
                                                 <div v-if="item.hold_ready" class="alert alert-warning mt-2 mb-0 py-2 px-3">
                                                     <div class="d-flex align-items-center">
                                                         <i class="bi bi-bookmark-star-fill fs-5 me-2"></i>
@@ -730,6 +715,13 @@ export default defineComponent({
                                                         </div>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td class="align-middle">
+                                                <div v-if="item.shelf_location || item.call_number" class="d-flex flex-wrap align-items-center gap-1">
+                                                    <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
+                                                    <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
+                                                </div>
+                                                <span v-else class="text-muted small">-</span>
                                             </td>
                                             <td class="small text-muted align-middle">{{ formatReturnTime(item.returned_date) }}</td>
                                         </tr>

@@ -17,6 +17,7 @@ import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { useNotification } from '../composables/useNotification.js';
 import { apiClient } from '../api/client.js';
+import { events } from '../utils/events.js';
 
 export default defineComponent({
     name: 'App',
@@ -40,7 +41,6 @@ export default defineComponent({
         const {
             globalRecordId,
             globalBorrowerId,
-            catalogRefreshTick,
             openRecord,
             closeRecord,
             openBorrower,
@@ -57,9 +57,13 @@ export default defineComponent({
                 });
                 const returned = result.items?.[0];
                 const titleDisplay = returned?.display_title || returned?.title || itemId;
-                const shelfInfo = returned?.shelf_location
-                    ? ` — ${t('circulation.ranger')} : ${returned.shelf_location}`
-                    : '';
+                
+                let locationParts = [];
+                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
+                if (returned?.call_number) locationParts.push(returned.call_number);
+                
+                const locationText = locationParts.length > 0 ? locationParts.join(' / ') : '-';
+                const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
                 success(`✓ ${titleDisplay}${shelfInfo}`);
                 if (returned?.hold_ready) {
                     const hr = returned.hold_ready;
@@ -72,7 +76,7 @@ export default defineComponent({
                 closeRecord();
                 Vue.nextTick(() => openRecord(currentRecordId));
                 // Signal CatalogPage to refresh its search results
-                catalogRefreshTick.value++;
+                events.emit('catalog:refresh');
             } catch (err) {
                 showError(err.message || t('common.error'));
             }
@@ -106,6 +110,7 @@ export default defineComponent({
             handleGlobalQuickReturn,
             handleGlobalViewBorrower,
             handleGlobalViewItem,
+            t,
         };
     },
 
@@ -117,7 +122,7 @@ export default defineComponent({
                 class="loading-overlay"
             >
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Chargement...</span>
+                    <span class="visually-hidden">{{ t('common.loading') }}</span>
                 </div>
             </div>
 
@@ -132,9 +137,9 @@ export default defineComponent({
                 <router-view v-if="appReady" :key="route.path" />
                 <div v-else class="text-center p-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Chargement...</span>
+                        <span class="visually-hidden">{{ t('common.loading') }}</span>
                     </div>
-                    <p class="mt-3 text-muted">Chargement de l'application...</p>
+                    <p class="mt-3 text-muted">{{ t('app.loading_app') }}</p>
                 </div>
             </main>
 

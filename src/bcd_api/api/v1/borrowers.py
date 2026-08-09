@@ -25,30 +25,15 @@ from ...schemas.borrower import (
     BorrowerUpdate,
 )
 from ...services import borrower_service
-from ...services.export_service import ExportService
 
 router = APIRouter(prefix="/borrowers", tags=["borrowers"])
 
 
 def _get_borrower_class_info(db: Session, borrower) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Get class name and homeroom teacher for a borrower.
-
-    Args:
-        db: Database session
-        borrower: Borrower model instance
-
-    Returns:
-        Tuple of (class_name, homeroom_teacher), both can be None
-    """
-    if not borrower.class_id:
+    """Deprecated: class info is now populated via borrower_service.enrich_borrower."""
+    if not borrower:
         return None, None
-
-    from ...models import Class
-    class_obj = db.query(Class).filter(Class.id == borrower.class_id).first()
-    if class_obj:
-        return class_obj.name, class_obj.homeroom_teacher
-    return None, None
+    return getattr(borrower, "class_name", None), getattr(borrower, "homeroom_teacher", None)
 
 
 @router.post("", response_model=BorrowerResponse, status_code=status.HTTP_201_CREATED)
@@ -124,9 +109,6 @@ async def import_borrowers_csv(
     - borrowers_updated: Number of existing borrowers updated
     - errors: List of error details with row numbers
     """
-    import csv
-    import io
-
     try:
         # Read CSV file and handle different encodings
         contents = await file.read()
@@ -140,174 +122,7 @@ async def import_borrowers_csv(
             except UnicodeDecodeError:
                 csv_text = contents.decode('windows-1252')
 
-        csv_reader = csv.DictReader(io.StringIO(csv_text))
-
-        created = 0
-        updated = 0
-        failed = 0
-        error_details = []
-        total_rows = 0
-
-        # Column name mappings to support different CSV formats
-        column_mappings = {
-            'StudentID': 'borrower_id',
-            'FirstName': 'first_name',
-            'LastName': 'last_name',
-            'Class': 'class_name',
-            'BlockReason': 'notes',
-            'Role': 'role',
-            'Active': 'active',
-            'Email': 'email',
-            'Phone': 'phone'
-        }
-
-        for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 (header is row 1)
-            total_rows += 1
-
-            # Normalize column names (handle both formats)
-            normalized_row = {}
-            for key, value in row.items():
-                # Map old column names to new ones, or keep as-is
-                normalized_key = column_mappings.get(key, key)
-                normalized_row[normalized_key] = value
-            row = normalized_row
-
-            try:
-                # Validate required fields
-                if not row.get('borrower_id'):
-                    failed += 1
-                    error_details.append({
-                        "row_number": row_num,
-                        "error": "Missing required field: borrower_id"
-                    })
-                    continue
-
-                if not row.get('first_name'):
-                    failed += 1
-                    error_details.append({
-                        "row_number": row_num,
-                        "error": "Missing required field: first_name"
-                    })
-                    continue
-
-                if not row.get('last_name'):
-                    failed += 1
-                    error_details.append({
-                        "row_number": row_num,
-                        "error": "Missing required field: last_name"
-                    })
-                    continue
-
-                # Validate and normalize role
-                role = row.get('role', 'student').strip().lower() if row.get('role') else 'student'
-                if role not in ['student', 'teacher', 'staff']:
-                    failed += 1
-                    error_details.append({
-                        "row_number": row_num,
-                        "error": f"Invalid role: '{role}' (must be student, teacher, or staff)"
-                    })
-                    continue
-
-                # Get class ID from class name if provided (auto-create if not exists)
-                class_id = None
-                class_name = row.get('class') or row.get('class_name')
-                if class_name and class_name.strip():
-                    from ...services import class_service
-                    try:
-                        # Normalize class name for consistency
-                        normalized_class = class_name.strip()
-                        class_obj = class_service.get_class_by_name(db, normalized_class)
-                        if class_obj:
-                            class_id = class_obj.id
-                        else:
-                            # Auto-discover: Create class if it doesn't exist
-                            new_class = class_service.create_class(
-                                db=db,
-                                name=normalized_class,
-                                homeroom_teacher=None,
-                                notes="Auto-created during borrower import"
-                            )
-                            class_id = new_class.id
-                            logger.info(f"Auto-created class '{normalized_class}' (ID: {class_id})")
-                    except Exception as e:
-                        # If class creation fails, log but continue without class assignment
-                        logger.warning(f"Could not create class '{class_name}': {e}")
-                        pass
-
-                # Parse active status (default to True)
-                active = True
-                if 'active' in row and row['active']:
-                    active_val = str(row['active']).strip().lower()
-                    active = active_val in ('true', '1', 'yes', 'oui', 'active', 'actif')
-
-                # Parse blocked status
-                blocked_reason = None
-                if 'blocked_reason' in row and row['blocked_reason'].strip():
-                    blocked_reason = row['blocked_reason'].strip()
-
-                borrower_id_str = row['borrower_id'].strip()
-
-                # UPSERT LOGIC: Try to get existing borrower
-                try:
-                    existing = borrower_service.get_borrower_by_id(db, borrower_id_str)
-
-                    # Borrower exists - UPDATE
-                    borrower_service.update_borrower(
-                        db=db,
-                        borrower_id=borrower_id_str,
-                        first_name=row['first_name'].strip(),
-                        last_name=row['last_name'].strip(),
-                        class_id=class_id,
-                        email=row.get('email', '').strip() if row.get('email') else None,
-                        phone=row.get('phone', '').strip() if row.get('phone') else None,
-                        notes=row.get('notes', '').strip() if row.get('notes') else None,
-                        active=active,
-                        blocked_reason=blocked_reason
-                    )
-                    updated += 1
-
-                except NotFoundError:
-                    # Borrower doesn't exist - CREATE
-                    borrower_service.create_borrower(
-                        db=db,
-                        borrower_id=borrower_id_str,
-                        first_name=row['first_name'].strip(),
-                        last_name=row['last_name'].strip(),
-                        role=role,
-                        class_id=class_id,
-                        email=row.get('email', '').strip() if row.get('email') else None,
-                        phone=row.get('phone', '').strip() if row.get('phone') else None,
-                        notes=row.get('notes', '').strip() if row.get('notes') else None
-                    )
-                    created += 1
-
-            except ValidationError as e:
-                failed += 1
-                error_details.append({
-                    "row_number": row_num,
-                    "error": str(e.detail)
-                })
-            except KeyError as e:
-                failed += 1
-                error_details.append({
-                    "row_number": row_num,
-                    "error": f"Missing required column: {str(e)}"
-                })
-            except Exception as e:
-                failed += 1
-                error_details.append({
-                    "row_number": row_num,
-                    "error": str(e)
-                })
-
-        return {
-            "total_rows": total_rows,
-            "successful_rows": created + updated,
-            "failed_rows": failed,
-            "borrowers_created": created,
-            "borrowers_updated": updated,
-            "errors": error_details
-        }
+        return borrower_service.import_borrowers_from_csv(db, csv_text)
 
     except Exception as e:
         logger.exception("Borrower import failed")
@@ -341,11 +156,8 @@ def export_borrowers(db: Session = Depends(get_db)):
     - 500: Export generation failed
     """
     try:
-        # Create export service
-        export_service = ExportService(db)
-
         # Generate CSV
-        csv_content, borrower_count = export_service.export_borrowers_to_csv()
+        csv_content, borrower_count = borrower_service.export_borrowers_to_csv(db)
 
         # Add UTF-8 BOM for Excel compatibility
         csv_with_bom = '\ufeff' + csv_content
@@ -410,45 +222,7 @@ def get_borrower(
     **Errors**:
     - 404: Borrower not found
     """
-    from ...services import settings_service
-
-    details = borrower_service.get_borrower_details(db, borrower_id)
-    borrower = details["borrower"]
-
-    # Get loan limit based on role from system settings
-    settings = settings_service.get_settings(db)
-    loan_limit = (
-        settings.loan_limit_teacher
-        if borrower.role == "teacher"
-        else settings.loan_limit_default
-    )
-
-    # Get class name and homeroom teacher if borrower has a class
-    class_name, homeroom_teacher = _get_borrower_class_info(db, borrower)
-
-    borrower_detailed = BorrowerDetailed(
-        **borrower.__dict__,
-        barcode=borrower.barcode,  # Computed property not in __dict__
-        current_loans_count=details["current_loans_count"],
-        total_checkouts=details["total_checkouts"],
-        overdue_count=details["overdue_count"],
-        loan_limit=loan_limit,
-        class_name=class_name,
-        homeroom_teacher=homeroom_teacher,
-    )
-
-    # If detail requested, include current loans only.
-    # Full paginated history is available via GET /circulation/borrower/{id}/history
-    if detail:
-        from ...services import circulation_service
-        current_loans = circulation_service.get_borrower_current_loans(db, borrower_id)
-
-        return {
-            **borrower_detailed.model_dump(mode='json'),
-            "current_loans": current_loans,
-        }
-
-    return borrower_detailed
+    return borrower_service.get_detailed_borrower(db, borrower_id, include_loans=detail)
 
 
 @router.get("")
@@ -489,7 +263,7 @@ def list_borrowers(
     from sqlalchemy import and_
 
     from ...models.circulation import CirculationTransaction
-    from ...services import settings_service
+    from ...services.admin import settings as settings_service
 
     # Convert page/page_size to limit/offset if provided
     if page is not None and page_size is not None:
@@ -518,44 +292,7 @@ def list_borrowers(
 
     # Enrich borrowers with circulation data and loan limits
     settings = settings_service.get_settings(db)
-    enriched_borrowers = []
-
-    for borrower in borrowers:
-        # Get current loans count
-        current_loans_count = db.query(CirculationTransaction).filter(
-            and_(
-                CirculationTransaction.borrower_id == borrower.id,
-                CirculationTransaction.return_date.is_(None)
-            )
-        ).count()
-
-        # Get overdue count
-        overdue_count = db.query(CirculationTransaction).filter(
-            and_(
-                CirculationTransaction.borrower_id == borrower.id,
-                CirculationTransaction.return_date.is_(None),
-                CirculationTransaction.due_date < date.today()
-            )
-        ).count()
-
-        # Determine loan limit based on role
-        loan_limit = (
-            settings.loan_limit_teacher
-            if borrower.role in ("teacher", "staff")
-            else settings.loan_limit_default
-        )
-
-        # Get class name and homeroom teacher if borrower has a class
-        class_name, homeroom_teacher = _get_borrower_class_info(db, borrower)
-
-        # Add attributes to borrower object
-        borrower.current_loans_count = current_loans_count
-        borrower.loan_limit = loan_limit
-        borrower.overdue_count = overdue_count
-        borrower.class_name = class_name
-        borrower.homeroom_teacher = homeroom_teacher
-
-        enriched_borrowers.append(borrower)
+    enriched_borrowers = borrower_service.enrich_borrowers(db, borrowers, settings)
 
     # Calculate page and page_size from limit/offset for response
     calculated_page = (actual_offset // actual_limit) + 1 if actual_limit > 0 else 1

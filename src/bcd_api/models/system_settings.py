@@ -11,6 +11,7 @@ from src.shared.constants import (
     DEFAULT_HOLD_EXPIRATION_DAYS,
     DEFAULT_LOAN_DURATION_DAYS,
     DEFAULT_LOAN_LIMIT,
+    DEFAULT_LOAN_LIMIT_WARNING,
     DEFAULT_LOAN_LIMIT_TEACHER,
     DEFAULT_RENEWAL_LIMIT,
     BarcodeType,
@@ -39,6 +40,7 @@ class SystemSettings(Base):
 
     # Circulation policies
     loan_limit_default = Column(Integer, nullable=False, default=DEFAULT_LOAN_LIMIT)
+    loan_limit_warning = Column(Integer, nullable=False, default=DEFAULT_LOAN_LIMIT_WARNING)
     loan_limit_teacher = Column(Integer, nullable=False, default=DEFAULT_LOAN_LIMIT_TEACHER)
     loan_duration_days = Column(Integer, nullable=False, default=DEFAULT_LOAN_DURATION_DAYS)
     renewal_limit = Column(Integer, nullable=False, default=DEFAULT_RENEWAL_LIMIT)
@@ -75,7 +77,7 @@ class SystemSettings(Base):
     catalog_shelf_locations = Column(Text, nullable=True, default='[{"label":"Romans","color":"#c0392b"},{"label":"Albums","color":"#e67e22"},{"label":"Bandes dessinées","color":"#2980b9"},{"label":"Documentaires","color":"#27ae60"},{"label":"Périodiques","color":"#16a085"},{"label":"Contes","color":"#f39c12"},{"label":"Poésie","color":"#8e44ad"}]')
 
     # Call number rules (JSON array of {medium_type|null, shelf_location|null, pattern})
-    catalog_call_number_rules = Column(Text, nullable=True, default='[{"medium_type":"Périodique","shelf_location":null,"pattern":""},{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]')
+    catalog_call_number_rules = Column(Text, nullable=True, default='[{"medium_type":"Périodique","shelf_location":null,"pattern":""},{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires*","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]')
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
@@ -99,6 +101,10 @@ class SystemSettings(Base):
         CheckConstraint(
             "loan_limit_default > 0 AND loan_limit_default <= 10",
             name="check_loan_limit_default_range"
+        ),
+        CheckConstraint(
+            "loan_limit_warning >= 0 AND loan_limit_warning <= 10",
+            name="check_loan_limit_warning_range"
         ),
         CheckConstraint(
             "loan_duration_days > 0 AND loan_duration_days <= 365",

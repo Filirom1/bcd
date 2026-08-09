@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
@@ -82,11 +82,11 @@ class TestBorrowerModel:
 
 
 class TestBibliographicRecordModel:
-    """Tests for BiblographicRecord model."""
+    """Tests for BibliographicRecord model."""
 
     def test_create_bibliographic_record(self, db_session):
         """Test creating a bibliographic record."""
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             isbn="9782800687346",
             title="Ils ont arrêté mon père",
             authors='["Carmi, Danielle"]',
@@ -104,7 +104,7 @@ class TestBibliographicRecordModel:
 
     def test_bibliographic_record_optional_fields(self, db_session):
         """Test bibliographic record with minimal data."""
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )
@@ -122,7 +122,7 @@ class TestItemModel:
     def test_create_item(self, db_session):
         """Test creating an item."""
         # Create bibliographic record first
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )
@@ -146,7 +146,7 @@ class TestItemModel:
 
     def test_item_unique_id(self, db_session):
         """Test item ID uniqueness constraint."""
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )
@@ -189,7 +189,7 @@ class TestCirculationTransactionModel:
             full_name="Test User",
             role=BorrowerRole.STUDENT.value,
         )
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )
@@ -230,7 +230,7 @@ class TestCirculationTransactionModel:
             full_name="Test User",
             role=BorrowerRole.STUDENT.value,
         )
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )
@@ -271,7 +271,7 @@ class TestCirculationTransactionModel:
             full_name="Test User",
             role=BorrowerRole.STUDENT.value,
         )
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )
@@ -316,7 +316,7 @@ class TestHoldModel:
             full_name="Test User",
             role=BorrowerRole.STUDENT.value,
         )
-        biblio = BiblographicRecord(
+        biblio = BibliographicRecord(
             title="Test Book",
             medium_type="Livre",
         )

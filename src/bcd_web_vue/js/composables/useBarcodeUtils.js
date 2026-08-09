@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Barcode Utilities Composable
  * Helper functions for working with barcodes and IDs
@@ -6,7 +7,6 @@
 import { useBorrowerData } from './useBorrowerData.js';
 
 export function useBarcodeUtils() {
-    const { fetchSettings } = useBorrowerData();
 
     /**
      * Strip barcode prefix from a barcode to get the ID
@@ -81,7 +81,6 @@ export function useBarcodeUtils() {
     return {
         stripBarcodePrefix,
         addBarcodePrefix,
-        normalizeToId,
-        fetchSettings
+        normalizeToId
     };
 }

@@ -220,7 +220,7 @@ Si une release pose problème:
 
 ### Backend
 - [ ] Tests passent (unit + integration)
-- [ ] Coverage ≥80%
+- [ ] Coverage ≥80% (CI gate)
 - [ ] Code quality OK (black + ruff)
 - [ ] CHANGELOG mis à jour (si présent)
 - [ ] Documentation à jour

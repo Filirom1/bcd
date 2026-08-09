@@ -7,18 +7,22 @@
 
 const { defineComponent, ref, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
 const { useI18n } = VueI18n;
+import { Chart, BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip } from 'chart.js';
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { usePagination } from '../../composables/usePagination.js';
+import { formatAuthors } from '../../utils/domain.js';
 import ReportHeader from '../ui/ReportHeader.js';
+import { getJSON, setJSON } from '../../utils/storage.js';
 import Pagination from '../ui/Pagination.js';
 import FilterChips from './FilterChips.js';
 import TauxRotationPanel from './TauxRotationPanel.js';
 
 const PANEL_IDS = ['crew_score', 'medium_type', 'condition', 'pub_year', 'acq_year', 'taux_rotation'];
-const HIDDEN_PANELS_KEY = 'bcd_collection_hidden_panels';
+const HIDDEN_PANELS_KEY = 'collection_hidden_panels';
 
 export default defineComponent({
     name: 'CollectionReport',
@@ -30,6 +34,9 @@ export default defineComponent({
         const { settings } = useAppState();
         const { error: showError } = useNotification();
         const { openRecord } = useGlobalModal();
+
+        const pubChartRef = ref(null);
+        const acqChartRef = ref(null);
 
         // ── Panel filters (structural — drive the API query) ──────────────────
         const crewMethod = ref('never_borrowed');
@@ -54,8 +61,8 @@ export default defineComponent({
         );
 
         // ── Panel visibility (localStorage) ───────────────────────────────────
-        const saveHidden = hidden => { try { localStorage.setItem(HIDDEN_PANELS_KEY, JSON.stringify(hidden)); } catch (e) {} };
-        const loadHidden = () => { try { const s = localStorage.getItem(HIDDEN_PANELS_KEY); if (s) return JSON.parse(s); } catch (e) {} return []; };
+        const saveHidden = hidden => setJSON(HIDDEN_PANELS_KEY, hidden);
+        const loadHidden = () => getJSON(HIDDEN_PANELS_KEY, []);
         const hiddenPanels = ref(loadHidden());
         const visiblePanels = computed(() => PANEL_IDS.filter(id => !hiddenPanels.value.includes(id)));
         const showPanelDropdown = ref(false);
@@ -347,6 +354,8 @@ export default defineComponent({
             return p;
         };
 
+        const printReport = () => window.print();
+
         const loadStats = async () => {
             statsLoading.value = true;
             try {
@@ -365,7 +374,8 @@ export default defineComponent({
             tableLoading.value = true;
             try {
                 const response = await apiClient.get('/inventory/items/search', buildTableParams());
-                let items = response.items || [];
+                const normalized = normalizeCollection(response);
+                let items = normalized.items;
 
                 if (crewMethod.value === 'high_score') {
                     items.forEach(i => { const c = calculateCrewScore(i); i.crew_score = c.score; i.crew_reasons = c.reasons; i.taux_rotation = i.circulation_count || 0; });
@@ -507,10 +517,11 @@ export default defineComponent({
         };
 
         const rebuildCharts = () => {
-            if (typeof Chart === 'undefined' || !stats.value) return;
+            if (!stats.value) return;
+            Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
             destroyCharts();
 
-            const pubEl = document.getElementById('chart-pub-year');
+            const pubEl = pubChartRef.value;
             if (pubEl && stats.value.pub_year_histogram.length > 0) {
                 const data = stats.value.pub_year_histogram;
                 pubChart = new Chart(pubEl.getContext('2d'), {
@@ -541,7 +552,7 @@ export default defineComponent({
                 });
             }
 
-            const acqEl = document.getElementById('chart-acq-year');
+            const acqEl = acqChartRef.value;
             if (acqEl && stats.value.acq_year_histogram.length > 0) {
                 const data = stats.value.acq_year_histogram;
                 const hasRange = crossFilters.value.acq_year_min !== null || crossFilters.value.acq_year_max !== null;
@@ -598,12 +609,10 @@ export default defineComponent({
 
         // ── Column visibility ──────────────────────────────────────────────────
         const COL_IDS_CREW = ['crew_score', 'item_id', 'title', 'condition', 'shelf_location', 'age_days', 'publication_year', 'total_copies', 'taux_rotation'];
-        const COL_STORAGE_KEY_CREW = 'bcd_crew_cols';
+        const COL_STORAGE_KEY_CREW = 'crew_cols';
         const loadVisibleColsCrew = () => {
-            try {
-                const s = localStorage.getItem(COL_STORAGE_KEY_CREW);
-                if (s) return JSON.parse(s).filter(id => COL_IDS_CREW.includes(id));
-            } catch (e) {}
+            const s = getJSON(COL_STORAGE_KEY_CREW);
+            if (s) return s.filter(id => COL_IDS_CREW.includes(id));
             return [...COL_IDS_CREW];
         };
         const visibleCols = ref(loadVisibleColsCrew());
@@ -613,12 +622,12 @@ export default defineComponent({
             visibleCols.value = visibleCols.value.includes(id)
                 ? visibleCols.value.filter(c => c !== id)
                 : [...visibleCols.value, id];
-            try { localStorage.setItem(COL_STORAGE_KEY_CREW, JSON.stringify(visibleCols.value)); } catch (e) {}
+            setJSON(COL_STORAGE_KEY_CREW, visibleCols.value);
         };
         const resetCols = () => {
             visibleCols.value = [...COL_IDS_CREW];
             showColDropdown.value = false;
-            try { localStorage.setItem(COL_STORAGE_KEY_CREW, JSON.stringify(visibleCols.value)); } catch (e) {}
+            setJSON(COL_STORAGE_KEY_CREW, visibleCols.value);
         };
 
         const allColsCrew = computed(() => [
@@ -647,7 +656,8 @@ export default defineComponent({
         onBeforeUnmount(destroyCharts);
 
         return {
-            t, settings,
+            pubChartRef, acqChartRef,
+            t, settings, formatAuthors,
             crewMethod, crewMethods,
             crossFilters, tauxRotationFilter, hasActiveFilters, activeChips,
             toggleBreakdown, clearFilter, clearAllFilters,
@@ -667,12 +677,13 @@ export default defineComponent({
             scoreHistogram, scoreHistMax, scoreRange, scoreBarColor, isScoreInRange,
             sliderScoreMin, sliderScoreMax, scoreFillStyle, clampScoreMin, clampScoreMax, applyScoreRange,
             crewScoreFilter,
+            printReport,
         };
     },
 
     template: `
 <div>
-    <report-header :title="t('reports.crew.title')" @print="() => window.print()" />
+    <report-header :title="t('reports.crew.title')" @print="printReport" />
 
     <!-- CREW method selector -->
     <div class="card mb-3">
@@ -848,7 +859,7 @@ export default defineComponent({
                         {{ t('reports.collectionReport.histoPubYear') }}
                     </div>
                     <div style="position:relative;height:160px;">
-                        <canvas id="chart-pub-year"></canvas>
+                        <canvas ref="pubChartRef"></canvas>
                     </div>
                     <!-- Dual range slider -->
                     <div class="mt-2 px-1" v-if="stats.pub_year_histogram.length">
@@ -898,7 +909,7 @@ export default defineComponent({
                         {{ t('reports.collectionReport.histoAcqYear') }}
                     </div>
                     <div style="position:relative;height:160px;">
-                        <canvas id="chart-acq-year"></canvas>
+                        <canvas ref="acqChartRef"></canvas>
                     </div>
                     <!-- Dual range slider -->
                     <div class="mt-2 px-1" v-if="stats.acq_year_histogram.length">
@@ -986,7 +997,7 @@ export default defineComponent({
                             <td v-if="isColVisible('title')">
                                 <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">{{ item.title }}</a>
                                 <div v-if="item.authors && item.authors.length" class="text-muted small">
-                                    {{ Array.isArray(item.authors) ? item.authors.join(', ') : item.authors }}
+                                    {{ formatAuthors(item.authors) }}
                                 </div>
                             </td>
                             <td v-if="isColVisible('condition')">

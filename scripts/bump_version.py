@@ -198,6 +198,23 @@ def create_git_tags(version: str, push: bool = False) -> None:
         print(f"✅ Pushed {tag} to remote")
 
 
+def verify_changelog_has_version(version: str) -> None:
+    """Check if CHANGELOG.md describes the version being bumped."""
+    changelog_path = get_project_root() / "CHANGELOG.md"
+    if not changelog_path.exists():
+        print("⚠️  Warning: CHANGELOG.md not found")
+        return
+
+    content = changelog_path.read_text(encoding="utf-8")
+    # Matches markdown headers like: ## [1.1.0] or ## 1.1.0
+    pattern = rf"##\s*\[?{re.escape(version)}\]?"
+    if not re.search(pattern, content):
+        print(f"❌ Error: {version} is not documented in CHANGELOG.md")
+        print("   Please add release notes to CHANGELOG.md before bumping the version.")
+        sys.exit(1)
+    print(f"✅ Verified {version} is documented in CHANGELOG.md")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Bump version for BCD API and Kids client (unified)",
@@ -262,6 +279,9 @@ And creates TWO tags:
 
     # Calculate new version
     new_version = bump_version(current_version, args.bump_type)
+
+    # Verify changelog describes the new version
+    verify_changelog_has_version(new_version)
 
     print(f"\n📦 Unified Version Bump: {current_version} → {new_version}")
     print(f"   Type: {args.bump_type}")

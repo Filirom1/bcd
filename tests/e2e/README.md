@@ -31,12 +31,16 @@ tests/e2e/
 │   └── item_factory.py            # Create test items/records
 ├── helpers/                       # Utilities
 │   └── performance.py             # Performance measurement
-├── test_us1_circulation.py        # US1 tests (exemplary)
-├── test_us2_catalog.py            # TODO
-├── test_us3_borrowers.py          # TODO
-├── test_us6_settings.py           # TODO
-├── test_cross_cutting.py          # TODO
-└── test_performance.py            # TODO
+├── test_us1_circulation.py        # US1 tests (Circulation basics)
+├── test_us2_catalog.py            # US2 tests (Catalog search)
+├── test_us3_borrowers.py          # US3 tests (Borrower management)
+├── test_us4_cataloging.py         # US4 tests (Cataloging with ISBN lookup)
+├── test_us5_reports.py            # US5 tests (Reports and statistics)
+├── test_us6_settings.py           # US6 tests (System settings)
+├── test_class_management.py       # Class CRUD and teachers listing
+├── test_single_borrower_edit.py   # Borrower editing and blocking
+├── test_bulk_operations.py        # Bulk record operations
+└── test_autocomplete_circulation.py # Autocomplete and scanner helpers
 ```
 
 ---
@@ -65,6 +69,21 @@ HEADED=1 pytest tests/e2e/test_us1_circulation.py -v
 
 # Run single test
 pytest tests/e2e/test_us1_circulation.py::TestUS1CirculationBasics::test_us1_ac1_borrower_info_displays -v
+```
+
+### `e2e-to-be-removed` lifecycle
+
+`e2e_to_be_removed` is a pytest marker for a legacy E2E scenario whose behavioral contract is now covered by a fast JavaScript test. The hyphenated review label is **`e2e-to-be-removed`**; Python marker names use underscores.
+
+Marked tests are deliberately retained and continue to run with the E2E suite. Do not exclude or delete one solely because it has this marker. Remove it only in a dedicated review after confirming that:
+
+- the matching JS test covers the success and error contract;
+- a separate E2E smoke test still protects the critical browser-to-server journey where needed;
+- the candidate itself has no unique accessibility, browser, or database assertion.
+
+```bash
+# Inspect the candidates without removing them from normal E2E CI
+pytest tests/e2e -m e2e_to_be_removed -v
 ```
 
 ### Advanced Options
@@ -324,10 +343,10 @@ From spec.md:
 
 From the plan:
 
-- [ ] **Reliability**: 99.9% pass rate on CI
-- [ ] **Coverage**: 100% of critical paths + 90% of acceptance scenarios
-- [ ] **Speed**: Full suite <5 min, critical path <2 min
-- [ ] **Maintainability**: Page Object Model, <10% code duplication
+- [ ] **Reliability**: tests pass consistently in CI
+- [ ] **Coverage**: critical paths and acceptance scenarios are covered
+- [ ] **Speed**: the full suite and critical paths meet their agreed performance budgets
+- [ ] **Maintainability**: use the Page Object Model and keep duplication low
 - [ ] **Isolation**: Tests pass in any order, parallel execution works
 
 ---

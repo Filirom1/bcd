@@ -14,6 +14,7 @@ from src.bcd_api.models.class_model import Class
 class TestBorrowerRosterSelection:
     """Test unified ClassRosterPanel borrower selection and search on checkout page."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_borrower_filtering_displays_results(
         self, circulation_page, borrower_factory, db_session
     ):
@@ -58,6 +59,7 @@ class TestBorrowerRosterSelection:
         student_text = circulation_page.get_roster_student_text(0)
         assert "Amira" in student_text or "BENALI" in student_text
 
+    @pytest.mark.e2e_to_be_removed
     def test_borrower_selection_by_id_lookup(
         self, circulation_page, borrower_factory, db_session
     ):
@@ -120,6 +122,7 @@ class TestBorrowerRosterSelection:
         borrower_name = circulation_page.get_borrower_name()
         assert "Lucas" in borrower_name or "BERNARD" in borrower_name
 
+    @pytest.mark.e2e_to_be_removed
     def test_borrower_no_results(
         self, circulation_page, borrower_factory, db_session
     ):
@@ -156,6 +159,7 @@ class TestBorrowerRosterSelection:
 class TestItemAutocomplete:
     """Test autocomplete for item search on checkout/return pages."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_item_autocomplete_displays_results(
         self, circulation_page, item_factory, borrower_factory, db_session
     ):
@@ -189,6 +193,7 @@ class TestItemAutocomplete:
         result_text = circulation_page.get_autocomplete_result_text(0)
         assert "Petit" in result_text or "Prince" in result_text
 
+    @pytest.mark.e2e_to_be_removed
     def test_item_autocomplete_by_barcode(
         self, circulation_page, item_factory, borrower_factory, db_session
     ):
@@ -213,6 +218,7 @@ class TestItemAutocomplete:
         result_text = circulation_page.get_autocomplete_result_text(0)
         assert "12345678" in result_text or "Test Book" in result_text
 
+    @pytest.mark.e2e_to_be_removed
     def test_item_autocomplete_click_selection_checkout(
         self, circulation_page, item_factory, borrower_factory, db_session
     ):
@@ -238,6 +244,7 @@ class TestItemAutocomplete:
         scanned_count = circulation_page.get_scanned_items_count()
         assert scanned_count >= 1
 
+    @pytest.mark.e2e_to_be_removed
     def test_item_autocomplete_on_return_page(
         self, circulation_page, item_factory, borrower_factory, db_session
     ):
@@ -298,6 +305,7 @@ class TestAutocompletePerformance:
 class TestBarcodeScannerCompatibility:
     """Test that barcode scanners still work with autocomplete."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_rapid_typing_bypasses_autocomplete(
         self, circulation_page, borrower_factory, db_session
     ):

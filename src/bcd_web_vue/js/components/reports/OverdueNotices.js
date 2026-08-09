@@ -7,6 +7,7 @@
 const { defineComponent, ref, onMounted, nextTick } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 
 export default defineComponent({
     name: 'OverdueNotices',
@@ -20,7 +21,8 @@ export default defineComponent({
         onMounted(async () => {
             try {
                 const response = await apiClient.get('/reports/overdue', { limit: 500 });
-                const items = response.data || response.items || response || [];
+                const normalized = normalizeCollection(response);
+                const items = normalized.items;
                 // Group by class → then by borrower, so each slip covers one student's books
                 const byClass = {};
                 items.forEach(item => {

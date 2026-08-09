@@ -29,12 +29,10 @@ func _ready() -> void:
 	)
 
 	_back_btn.focus_entered.connect(func():
-		_back_btn.add_theme_stylebox_override("normal", _back_btn.get_theme_stylebox("hover"))
-		_back_btn.add_theme_color_override("font_color", ThemeManager.TEXT)
+		ThemeManager.apply_focus_style(_back_btn)
 	)
 	_back_btn.focus_exited.connect(func():
-		_back_btn.remove_theme_stylebox_override("normal")
-		_back_btn.remove_theme_color_override("font_color")
+		ThemeManager.remove_focus_style(_back_btn)
 	)
 
 	_update_breadcrumb()

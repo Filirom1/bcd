@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import NotFoundError
-from src.bcd_api.schemas.bibliographic_record import BiblographicRecordCreate
+from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
 from src.bcd_api.services import catalog_service
 
@@ -19,7 +19,7 @@ class TestUpdateRecord:
     def test_update_record_success(self, db_session: Session):
         """Test successful record metadata update."""
         # ARRANGE - Create test record
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Original Title",
             authors=["Original Author"],
             level="CM1",
@@ -50,7 +50,7 @@ class TestUpdateRecord:
     def test_update_record_clear_optional_fields(self, db_session: Session):
         """Test clearing optional fields by setting them to None."""
         # ARRANGE - Create test record with populated optional fields
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Book to Clear",
             publisher="Original Publisher",
             level="CM1",
@@ -83,7 +83,7 @@ class TestUpdateRecord:
     def test_update_record_list_fields(self, db_session: Session):
         """Test updating list fields (authors, illustrators, keywords)."""
         # ARRANGE
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author 1"]
         )
@@ -124,7 +124,7 @@ class TestUpdateRecord:
     def test_update_record_partial_update(self, db_session: Session):
         """Test partial update (only some fields changed)."""
         # ARRANGE
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Original Title",
             authors=["Author"],
             publisher="Publisher A",
@@ -156,7 +156,7 @@ class TestUpdateItem:
     def test_update_item_success(self, db_session: Session):
         """Test successful item update."""
         # ARRANGE - Create record and item
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"]
         )
@@ -195,7 +195,7 @@ class TestUpdateItem:
     def test_update_item_clear_optional_fields(self, db_session: Session):
         """Test clearing optional item fields by setting them to None."""
         # ARRANGE - Create record and item with optional fields
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"]
         )
@@ -232,7 +232,7 @@ class TestUpdateItem:
     def test_update_item_barcode_change(self, db_session: Session):
         """Test changing item barcode (item_id field)."""
         # ARRANGE
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"]
         )
@@ -262,7 +262,7 @@ class TestUpdateItem:
     def test_update_item_duplicate_barcode_error(self, db_session: Session):
         """Test validation error for duplicate barcode (US6 requirement)."""
         # ARRANGE - Create record and two items
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"]
         )
@@ -312,7 +312,7 @@ class TestUpdateItem:
     def test_update_item_partial_update(self, db_session: Session):
         """Test partial update (only some fields changed)."""
         # ARRANGE
-        record_data = BiblographicRecordCreate(
+        record_data = BibliographicRecordCreate(
             title="Test Book",
             authors=["Author"]
         )

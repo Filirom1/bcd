@@ -12,8 +12,10 @@ import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useAdminShortcuts, altHeld } from '../composables/useKeyboardShortcuts.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
+import { apiClient } from '../api/client.js';
+import { events } from '../utils/events.js';
 
-const { defineComponent, ref, onMounted } = Vue;
+const { defineComponent, ref, onMounted, onBeforeUnmount } = Vue;
 const { useI18n } = VueI18n;
 
 export default defineComponent({
@@ -104,15 +106,7 @@ export default defineComponent({
             loading.value = true;
 
             try {
-                const response = await fetch('/api/v1/classes?limit=500');
-
-                if (!response.ok) {
-                    throw new Error(t('admin.error_load_classes', 'Failed to load classes'));
-                }
-
-                const data = await response.json();
-                classes.value = data;
-
+                classes.value = await apiClient.get('/classes', { limit: 500 });
             } catch (error) {
                 handleError(error);
                 classes.value = [];
@@ -136,54 +130,26 @@ export default defineComponent({
         // Handle save class (create or update)
         const handleSaveClass = async (formData) => {
             try {
-                let response;
+                const payload = {
+                    name: formData.name,
+                    homeroom_teacher: formData.homeroom_teacher || null,
+                    notes: formData.notes || null,
+                    average_age: formData.average_age || null
+                };
 
                 if (formData.id) {
                     // Update existing class
-                    response = await fetch(`/api/v1/classes/${formData.id}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            name: formData.name,
-                            homeroom_teacher: formData.homeroom_teacher || null,
-                            notes: formData.notes || null,
-                            average_age: formData.average_age || null
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.detail || t('admin.error_update_class'));
-                    }
-
+                    await apiClient.patch(`/classes/${formData.id}`, payload);
                     success(t('admin.class_updated'));
                 } else {
                     // Create new class
-                    response = await fetch('/api/v1/classes', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            name: formData.name,
-                            homeroom_teacher: formData.homeroom_teacher || null,
-                            notes: formData.notes || null,
-                            average_age: formData.average_age || null
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.detail || t('admin.error_create_class'));
-                    }
-
+                    await apiClient.post('/classes', payload);
                     success(t('admin.class_created'));
                 }
 
                 // Reload classes and close modal
                 await loadClasses();
+                events.emit('classes:refresh');
                 closeFormModal();
 
             } catch (error) {
@@ -206,19 +172,13 @@ export default defineComponent({
         // Handle confirm delete
         const handleConfirmDelete = async (classId) => {
             try {
-                const response = await fetch(`/api/v1/classes/${classId}`, {
-                    method: 'DELETE'
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || t('admin.error_delete_class'));
-                }
+                await apiClient.delete(`/classes/${classId}`);
 
                 success(t('admin.class_deleted'));
 
                 // Reload classes and close dialog
                 await loadClasses();
+                events.emit('classes:refresh');
                 closeDeleteDialog();
 
             } catch (error) {
@@ -233,6 +193,12 @@ export default defineComponent({
         };
 
         useAdminShortcuts({ N: handleCreateClass });
+
+        // Load classes on mount and subscribe to refresh events
+        const unsubscribe = events.on('classes:refresh', () => {
+            loadClasses();
+        });
+        onBeforeUnmount(unsubscribe);
 
         // Load classes on mount
         onMounted(() => {

@@ -73,18 +73,30 @@ func _do_checkout() -> void:
 		if transactions.size() > 0:
 			title = transactions[0].get("display_title", transactions[0].get("title", ""))
 
-		if title.is_empty():
-			Mgr.notify(I18n.t("checkout.success"), "success")
-		else:
-			Mgr.notify(I18n.t("checkout.success_with_title", {"title": title}), "success")
-
-		ThemeManager.animate_success_flash(_barcode_input)
+		# Refresh loans count first
 		var loans_result = await API.get_current_loans(GS.current_borrower.get("borrower_id", ""))
 		if not loans_result.has("error"):
 			GS.current_loans = loans_result.get("loans", [])
 			GS.current_borrower.current_loans_count = GS.current_loans.size()
-			_refresh_list()
-			_update_counter()
+
+		var warning_limit := int(GS.current_borrower.get("loan_limit_warning", 0))
+		var current_count := int(GS.current_borrower.get("current_loans_count", 0))
+		var is_warning := warning_limit > 0 and current_count >= warning_limit
+
+		if is_warning:
+			if title.is_empty():
+				Mgr.notify(I18n.t("checkout.success_warning"), "warning")
+			else:
+				Mgr.notify(I18n.t("checkout.success_warning_with_title", {"title": title}), "warning")
+		else:
+			if title.is_empty():
+				Mgr.notify(I18n.t("checkout.success"), "success")
+			else:
+				Mgr.notify(I18n.t("checkout.success_with_title", {"title": title}), "success")
+
+		ThemeManager.animate_success_flash(_barcode_input)
+		_refresh_list()
+		_update_counter()
 		_barcode_input.grab_focus()
 
 func _handle_error(result: Dictionary) -> void:
@@ -94,8 +106,13 @@ func _handle_error(result: Dictionary) -> void:
 		match code:
 			"loan_limit_exceeded":
 				_error_lbl.text = I18n.t("checkout.error_limit", {
-					"current": details.get("current", 0),
-					"limit": details.get("limit", 3)
+					"current": int(details.get("current", 0)),
+					"limit": int(details.get("limit", 3))
+				})
+			"loan_limit_warning_exceeded":
+				_error_lbl.text = I18n.t("checkout.error_warning_limit", {
+					"current": int(details.get("current", 0)),
+					"limit": int(details.get("limit", 3))
 				})
 			"item_already_on_loan": _error_lbl.text = I18n.t("checkout.error_already_loaned")
 			"borrower_blocked": _error_lbl.text = I18n.t("checkout.error_blocked")
@@ -119,7 +136,16 @@ func _update_breadcrumb() -> void:
 func _update_counter() -> void:
 	var current := int(GS.current_borrower.get("current_loans_count", 0))
 	var limit := int(GS.current_borrower.get("loan_limit", 3))
+	var warning_limit := int(GS.current_borrower.get("loan_limit_warning", 0))
+	
 	_count_lbl.text = I18n.t("main_menu.books_count", {"current": current, "limit": limit})
+	
+	if current >= limit:
+		_count_lbl.add_theme_color_override("font_color", ThemeManager.ERROR)
+	elif warning_limit > 0 and current >= warning_limit:
+		_count_lbl.add_theme_color_override("font_color", ThemeManager.WARNING)
+	else:
+		_count_lbl.remove_theme_color_override("font_color")
 
 func _refresh_list() -> void:
 	for c in _loans_list.get_children():

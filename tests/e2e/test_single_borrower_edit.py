@@ -5,6 +5,8 @@ E2E Tests for User Story 4: Single Borrower Editing (Updated with Testability Im
 """
 
 import re
+
+import pytest
 from playwright.sync_api import Page, expect
 
 from tests.e2e.helpers.wait_for_app import wait_for_vue_app
@@ -13,6 +15,7 @@ from tests.e2e.helpers.wait_for_app import wait_for_vue_app
 class TestEditBorrowerModalOpening:
     """Test opening the edit borrower modal with improved selectors."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_edit_selected_button_disabled_when_no_selection(
         self, page: Page, server_url: str, db_session
     ):
@@ -40,6 +43,7 @@ class TestEditBorrowerModalOpening:
         expect(edit_selected).to_be_visible()
         expect(edit_selected).to_have_class(re.compile(r'disabled'))
 
+    @pytest.mark.e2e_to_be_removed
     def test_edit_selected_button_enabled_when_exactly_one_selected(
         self, page: Page, server_url: str, borrower_factory, db_session
     ):
@@ -71,6 +75,7 @@ class TestEditBorrowerModalOpening:
         expect(edit_selected).to_be_visible()
         expect(edit_selected).not_to_have_class('disabled')
 
+    @pytest.mark.e2e_to_be_removed
     def test_clicking_edit_selected_opens_modal(
         self, page: Page, server_url: str, borrower_factory, db_session
     ):
@@ -116,6 +121,7 @@ class TestEditBorrowerModalOpening:
 class TestEditBorrowerFormFields:
     """Test form field pre-population and editing."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_edit_form_displays_current_borrower_data(
         self, page: Page, server_url: str, borrower_factory, db_session
     ):
@@ -267,6 +273,7 @@ class TestEditBorrowerValidation:
 class TestEditBorrowerCancelBehavior:
     """Test cancel and close behavior."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_clicking_cancel_closes_modal_without_saving(
         self, page: Page, server_url: str, borrower_factory, db_session
     ):
@@ -313,6 +320,7 @@ class TestEditBorrowerCancelBehavior:
         # Assert - Modal closes
         expect(modal).not_to_be_visible(timeout=2000)
 
+    @pytest.mark.e2e_to_be_removed
     def test_clicking_close_button_closes_modal(
         self, page: Page, server_url: str, borrower_factory, db_session
     ):

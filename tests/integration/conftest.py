@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 
 from src.bcd_api.core.database import Base, get_db
 from src.bcd_api.main import app
-from src.bcd_api.models.bibliographic_record import BiblographicRecord
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.item import Item
@@ -43,11 +43,10 @@ def db_session(db_engine):
 
     Uses transaction rollback strategy to ensure database is clean between tests.
     """
-    # Create a connection and begin a transaction
+    # Bind a session to a dedicated connection. The service layer owns
+    # commit/rollback boundaries, and db_engine is function-scoped, so the
+    # engine itself provides test isolation.
     connection = db_engine.connect()
-    transaction = connection.begin()
-
-    # Create session bound to this connection
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=connection)
     session = SessionLocal()
 
@@ -72,9 +71,7 @@ def db_session(db_engine):
 
     yield session
 
-    # Rollback transaction to clean database state
     session.close()
-    transaction.rollback()
     connection.close()
 
 
@@ -166,7 +163,7 @@ def test_borrower_blocked(db_session, test_class):
 @pytest.fixture
 def test_bibliographic_record(db_session):
     """Create a test bibliographic record."""
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         title="Ils ont arrêté mon père",
         authors=json.dumps(["Carmi, Danielle"]),
         publisher="Flammarion",
@@ -185,7 +182,7 @@ def test_bibliographic_record(db_session):
 @pytest.fixture
 def test_bibliographic_record_2(db_session):
     """Create a second test bibliographic record."""
-    record = BiblographicRecord(
+    record = BibliographicRecord(
         title="Stuart Little",
         authors=json.dumps(["White, E.B."]),
         publisher="Harper",
@@ -449,7 +446,7 @@ class ItemFactory:
         if authors is None:
             authors = ["Test Author"]
 
-        record = BiblographicRecord(
+        record = BibliographicRecord(
             title=title,
             authors=json.dumps(authors),
             publisher="Test Publisher",

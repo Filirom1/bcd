@@ -6,12 +6,15 @@
 
 const { defineComponent, computed, ref, watch } = Vue;
 const { useI18n } = VueI18n;
+import { formatAuthors, parseCsv } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
+import { normalizeCollection } from '../../models/pagination.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { usePagination } from '../../composables/usePagination.js';
 import ReportHeader from '../ui/ReportHeader.js';
+import { getJSON, setJSON } from '../../utils/storage.js';
 import DataTable from '../ui/DataTable.js';
 import Pagination from '../ui/Pagination.js';
 import TauxRotationPanel from './TauxRotationPanel.js';
@@ -65,10 +68,6 @@ export default defineComponent({
         });
 
         // Parse vocabulary lists from settings
-        const parseCsv = (str) => {
-            if (!str) return [];
-            return str.split(',').map(s => s.trim()).filter(Boolean);
-        };
 
         const levelOptions = computed(() => parseCsv(settings.value?.catalog_levels));
         const mediumTypeOptions = computed(() => parseCsv(settings.value?.catalog_medium_types));
@@ -99,17 +98,15 @@ export default defineComponent({
 
         // ── Column definitions + visibility ────────────────────────────────────
         const COL_IDS = ['crew_score', 'item_id', 'title', 'condition', 'shelf_location', 'age_days', 'publication_year', 'total_copies', 'period_loan_count'];
-        const COL_STORAGE_KEY = 'bcd_never_borrowed_cols';
+        const COL_STORAGE_KEY = 'never_borrowed_cols';
         const loadVisibleCols = () => {
-            try {
-                const s = localStorage.getItem(COL_STORAGE_KEY);
-                if (s) return COL_IDS.filter(id => JSON.parse(s).includes(id));
-            } catch (e) {}
+            const s = getJSON(COL_STORAGE_KEY);
+            if (s) return COL_IDS.filter(id => s.includes(id));
             return [...COL_IDS];
         };
         const visibleColumns = ref(loadVisibleCols());
         const showColDropdown = ref(false);
-        watch(visibleColumns, v => { try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(v)); } catch (e) {} });
+        watch(visibleColumns, v => setJSON(COL_STORAGE_KEY, v));
         const isColVisible = id => visibleColumns.value.includes(id);
         const toggleCol = id => {
             if (visibleColumns.value.includes(id)) visibleColumns.value = visibleColumns.value.filter(c => c !== id);
@@ -259,12 +256,13 @@ export default defineComponent({
                 // Skip result limit for CREW report (we need all items to calculate scores)
                 params.no_limit = true;
 
-                console.log('Loading CREW report with params:', params);
+                // Report parameters can contain catalog filters; never log them by default.
 
                 const response = await apiClient.get(endpoint, params);
 
                 // Filter and add CREW scores to items
-                let items = response.items || [];
+                const normalized = normalizeCollection(response);
+                let items = normalized.items;
 
                 // Calculate CREW scores for all items first
                 items.forEach(item => {
@@ -427,6 +425,7 @@ export default defineComponent({
 
         return {
             t,
+            formatAuthors,
             d,
             settings,
             columns,
@@ -646,7 +645,7 @@ export default defineComponent({
                                     <td v-if="isColVisible('title')">
                                         <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">{{ item.title }}</a>
                                         <div v-if="item.authors && item.authors.length" class="text-muted small">
-                                            {{ Array.isArray(item.authors) ? item.authors.join(', ') : item.authors }}
+                                            {{ formatAuthors(item.authors) }}
                                         </div>
                                     </td>
                                     <td v-if="isColVisible('condition')">

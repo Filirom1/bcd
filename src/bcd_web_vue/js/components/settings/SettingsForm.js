@@ -5,6 +5,7 @@
 
 const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
+import { DEWEY_DEFAULT_COLORS, parseCsv, parseJsonSetting } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'SettingsForm',
@@ -22,7 +23,22 @@ export default defineComponent({
     setup(props, { emit }) {
         const { t } = useI18n();
 
+        // Create a reactive local clone of the settings prop
+        const localSettings = ref({});
+        watch(() => props.settings, (newVal) => {
+            if (newVal) {
+                localSettings.value = { ...newVal };
+            }
+        }, { immediate: true, deep: true });
+
+        // Keep props.settings synchronized for test compatibility and parent observers
+        watch(localSettings, (newVal) => {
+            Object.assign(props.settings, newVal);
+        }, { deep: true });
+
         const handleSubmit = () => {
+            // Re-apply to props.settings for backward compatibility
+            Object.assign(props.settings, localSettings.value);
             emit('save');
         };
 
@@ -30,41 +46,35 @@ export default defineComponent({
             emit('reset');
         };
 
-        const DEFAULT_DEWEY_COLORS = [
-            '#000000','#9e6633','#f20000','#ff9813','#ffee00',
-            '#409d42','#0fafe9','#98238b','#d3d5d4','#ffffff'
-        ];
+        const DEFAULT_DEWEY_COLORS = DEWEY_DEFAULT_COLORS;
 
         const deweyColorsList = computed(() => {
-            try {
-                const parsed = JSON.parse(props.settings.dewey_colors || 'null');
-                if (Array.isArray(parsed) && parsed.length === 10) return parsed;
-            } catch {}
-            return DEFAULT_DEWEY_COLORS;
+            const parsed = localSettings.value.dewey_colors;
+            return Array.isArray(parsed) && parsed.length === 10 ? parsed : DEFAULT_DEWEY_COLORS;
         });
 
         const updateDeweyColor = (n, hex) => {
             const colors = [...deweyColorsList.value];
             colors[n] = hex;
-            props.settings.dewey_colors = JSON.stringify(colors);
+            localSettings.value.dewey_colors = colors;
+            props.settings.dewey_colors = colors;
         };
 
         const toggleDeweyColor = (n) => {
             const colors = [...deweyColorsList.value];
             colors[n] = colors[n] ? null : DEFAULT_DEWEY_COLORS[n];
-            props.settings.dewey_colors = JSON.stringify(colors);
+            localSettings.value.dewey_colors = colors;
+            props.settings.dewey_colors = colors;
         };
 
         const shelfLocationsList = computed(() => {
-            try {
-                const parsed = JSON.parse(props.settings.catalog_shelf_locations || 'null');
-                if (Array.isArray(parsed)) return parsed;
-            } catch {}
-            return [];
+            const parsed = localSettings.value.catalog_shelf_locations;
+            return Array.isArray(parsed) ? parsed : [];
         });
 
         const updateShelfLocations = (list) => {
-            props.settings.catalog_shelf_locations = JSON.stringify(list);
+            localSettings.value.catalog_shelf_locations = list;
+            props.settings.catalog_shelf_locations = list;
         };
 
         const addShelfLocation = () => {
@@ -91,9 +101,9 @@ export default defineComponent({
 
         const localRules = ref([]);
 
-        watch(() => props.settings.catalog_call_number_rules, (newVal) => {
+        watch(() => localSettings.value.catalog_call_number_rules, (newVal) => {
             try {
-                const parsed = JSON.parse(newVal || '[]');
+                const parsed = Array.isArray(newVal) ? newVal : [];
                 if (JSON.stringify(parsed) !== JSON.stringify(localRules.value)) {
                     localRules.value = parsed;
                 }
@@ -103,12 +113,13 @@ export default defineComponent({
         }, { immediate: true });
 
         watch(localRules, (newVal) => {
-            props.settings.catalog_call_number_rules = JSON.stringify(newVal);
+            localSettings.value.catalog_call_number_rules = newVal;
+            props.settings.catalog_call_number_rules = newVal;
         }, { deep: true });
 
         const mediumTypesOptions = computed(() => {
-            if (!props.settings.catalog_medium_types) return [];
-            return props.settings.catalog_medium_types.split(',').map(s => s.trim()).filter(s => s);
+            if (!localSettings.value.catalog_medium_types) return [];
+            return parseCsv(localSettings.value.catalog_medium_types);
         });
 
         const shelfLocationLabels = computed(() => {
@@ -156,7 +167,8 @@ export default defineComponent({
             addCallNumberRule,
             removeCallNumberRule,
             moveCallNumberRuleUp,
-            moveCallNumberRuleDown
+            moveCallNumberRuleDown,
+            settings: localSettings
         };
     },
 
@@ -232,6 +244,21 @@ export default defineComponent({
                         id="loan_limit_default"
                         v-model.number="settings.loan_limit_default"
                         min="1"
+                        max="10"
+                        required
+                    />
+                </div>
+
+                <div class="col-md-4">
+                    <label for="loan_limit_warning" class="form-label">
+                        {{ t('settings.loan_limit_warning') }}
+                    </label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="loan_limit_warning"
+                        v-model.number="settings.loan_limit_warning"
+                        min="0"
                         max="10"
                         required
                     />
@@ -615,22 +642,22 @@ export default defineComponent({
                                         </div>
                                     </td>
                                     <td>
-                                        <select
-                                            class="form-select form-select-sm"
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-sm"
                                             v-model="rule.medium_type"
-                                        >
-                                            <option :value="null">{{ t('settings.all_any') }}</option>
-                                            <option v-for="m in mediumTypesOptions" :key="m" :value="m">{{ m }}</option>
-                                        </select>
+                                            list="settings-medium-suggestions"
+                                            :placeholder="t('settings.all_any')"
+                                        />
                                     </td>
                                     <td>
-                                        <select
-                                            class="form-select form-select-sm"
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-sm"
                                             v-model="rule.shelf_location"
-                                        >
-                                            <option :value="null">{{ t('settings.all_any') }}</option>
-                                            <option v-for="s in shelfLocationLabels" :key="s" :value="s">{{ s }}</option>
-                                        </select>
+                                            list="settings-shelf-suggestions"
+                                            :placeholder="t('settings.all_any')"
+                                        />
                                     </td>
                                     <td>
                                         <input
@@ -652,6 +679,12 @@ export default defineComponent({
                                 </tr>
                             </tbody>
                         </table>
+                        <datalist id="settings-shelf-suggestions">
+                            <option v-for="s in shelfLocationLabels" :key="s" :value="s">{{ s }}</option>
+                        </datalist>
+                        <datalist id="settings-medium-suggestions">
+                            <option v-for="m in mediumTypesOptions" :key="m" :value="m">{{ m }}</option>
+                        </datalist>
                     </div>
                     <button
                         type="button"

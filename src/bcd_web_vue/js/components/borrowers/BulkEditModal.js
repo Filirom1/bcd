@@ -17,6 +17,7 @@
 
 const { ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
+import { apiClient } from '../../api/client.js';
 
 export default {
     name: 'BulkEditModal',
@@ -92,12 +93,7 @@ export default {
         const loadClasses = async () => {
             loadingClasses.value = true;
             try {
-                const response = await fetch('/api/v1/classes?limit=500');
-                if (!response.ok) {
-                    throw new Error('Failed to load classes');
-                }
-                const data = await response.json();
-                classes.value = data;
+                classes.value = await apiClient.get('/classes', { limit: 500 });
             } catch (error) {
                 console.error('Error loading classes:', error);
                 classes.value = [];

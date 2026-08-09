@@ -87,6 +87,7 @@ class TestUS1CirculationBasics:
         # 2000ms is reasonable for full E2E flow (API target is <200ms)
         performance_monitor.assert_faster_than("checkout", 2000)
 
+    @pytest.mark.e2e_to_be_removed
     def test_us1_ac3_multiple_item_checkout(
         self,
         circulation_page,
@@ -95,6 +96,9 @@ class TestUS1CirculationBasics:
     ):
         """
         US1-AC3: Multiple items can be checked out in sequence.
+
+        Superseded by the fast CirculationPage repeated-checkout contract test.
+        Retained as an E2E candidate until explicit removal review.
 
         Arrange: Create borrower and 2 available items
         Act: Scan first item, then scan second item
@@ -141,6 +145,7 @@ class TestUS1CirculationBasics:
         scanned_count = circulation_page.get_scanned_items_count()
         assert scanned_count >= 1
 
+    @pytest.mark.e2e_to_be_removed
     def test_us1_ac5_immediate_item_return(
         self,
         circulation_page,
@@ -150,6 +155,9 @@ class TestUS1CirculationBasics:
     ):
         """
         US1-AC5: Item returned immediately on barcode scan.
+
+        Superseded by the fast `CirculationPage` return-command contract test.
+        Retained as an E2E candidate until explicit removal review.
 
         Arrange: Create borrower with checked-out item
         Act: Go to return page, scan item barcode
@@ -176,6 +184,7 @@ class TestUS1CirculationBasics:
 class TestUS1CirculationErrors:
     """Error handling scenarios."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us1_ac6_already_on_loan_error(
         self,
         circulation_page,
@@ -184,6 +193,9 @@ class TestUS1CirculationErrors:
     ):
         """
         US1-AC6: Error shown when item already on loan.
+
+        Superseded by the fast `CirculationPage` error-state contract test.
+        Retained as an E2E candidate until explicit removal review.
 
         Arrange: Create 2 borrowers, item on loan to borrower 1
         Act: Try to checkout item to borrower 2
@@ -206,6 +218,7 @@ class TestUS1CirculationErrors:
         circulation_page.page.wait_for_timeout(2000)
         # Note: Specific error message checking depends on UI implementation
 
+    @pytest.mark.e2e_to_be_removed
     def test_us1_ac8_loan_limit_prevention(
         self,
         circulation_page,
@@ -215,6 +228,9 @@ class TestUS1CirculationErrors:
     ):
         """
         US1-AC8: Checkout blocked when borrower at loan limit.
+
+        Superseded by the fast CirculationPage loan-limit error contract test.
+        Retained as an E2E candidate until explicit removal review.
 
         Arrange: Create borrower with 2/2 items (at limit)
         Act: Try to checkout another item
@@ -245,6 +261,7 @@ class TestUS1CirculationErrors:
 class TestUS1CirculationRenewAll:
     """Renew All functionality tests."""
 
+    @pytest.mark.e2e_to_be_removed
     def test_us1_ac9_renew_all_success(
         self,
         circulation_page,
@@ -253,6 +270,9 @@ class TestUS1CirculationRenewAll:
     ):
         """
         US1-AC9: Renew All extends due dates for all items.
+
+        Superseded by the fast CirculationPage renewal-result contract test.
+        Retained as an E2E candidate until explicit removal review.
 
         Arrange: Create borrower with 3 renewable items
         Act: Click Renew All button
