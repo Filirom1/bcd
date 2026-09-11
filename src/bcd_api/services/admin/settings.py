@@ -139,6 +139,7 @@ def update_settings(
         "catalog_languages",
         "catalog_levels",
         "inventory_search_result_limit",
+        "dewey_colors_enabled",
         "dewey_colors",
         "catalog_shelf_locations",
         "catalog_call_number_rules",
@@ -188,6 +189,7 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.id_length_min = 1
     settings.id_length_max = 10
     settings.catalog_medium_types = "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
+    settings.dewey_colors_enabled = True
     settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
 
     db.commit()

@@ -51,6 +51,7 @@ class SystemSettingsResponse(BaseModel):
     catalog_languages: Optional[str] = None
     catalog_levels: Optional[str] = None
     inventory_search_result_limit: int = 200
+    dewey_colors_enabled: bool = True
     dewey_colors: Optional[List[str]] = None
     catalog_shelf_locations: Optional[List[ShelfLocationSchema]] = None
     catalog_call_number_rules: Optional[List[CallNumberRuleSchema]] = None
@@ -144,6 +145,7 @@ class SystemSettingsUpdate(BaseModel):
     catalog_languages: Optional[str] = None
     catalog_levels: Optional[str] = None
     inventory_search_result_limit: Optional[int] = Field(None, ge=1, le=1000)
+    dewey_colors_enabled: Optional[bool] = None
     dewey_colors: Optional[List[str]] = None
     catalog_shelf_locations: Optional[List[ShelfLocationSchema]] = None
     catalog_call_number_rules: Optional[List[CallNumberRuleSchema]] = None

@@ -515,7 +515,21 @@ export default defineComponent({
                     <p class="text-muted small">{{ t('settings.dewey_colors_help') }}</p>
                 </div>
 
-                <div class="col-12">
+                <div class="col-12 mb-3">
+                    <div class="form-check form-switch">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="dewey_colors_enabled"
+                            v-model="settings.dewey_colors_enabled"
+                        />
+                        <label class="form-check-label" for="dewey_colors_enabled">
+                            {{ t('settings.dewey_colors_enable') }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12" v-if="settings.dewey_colors_enabled !== false">
                     <div class="d-flex flex-column gap-2">
                         <div
                             v-for="(color, n) in deweyColorsList"

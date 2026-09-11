@@ -792,6 +792,7 @@
     "catalog_levels": "Niveaux de lecture",
     "catalog_levels_placeholder": "CP, CE1, CE2, CM1, CM2, 6e, Adulte",
     "dewey_colors": "Couleurs Dewey",
+    "dewey_colors_enable": "Activer le classement et le codage couleur Dewey",
     "dewey_colors_help": "Couleur associée à chaque grande classe Dewey (0–9). Utilisée sur les étiquettes et dans l'assistant de catalogage.",
     "shelf_locations": "Emplacements suggérés",
     "shelf_locations_help": "Liste des emplacements physiques du fonds (rayons, bacs, etc.). La couleur est facultative — un emplacement sans couleur affiche un badge neutre.",

@@ -40,6 +40,7 @@ export default {
     const { settings } = useAppState();
 
     const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, undefined));
+    const deweyEnabled = computed(() => settings.value?.dewey_colors_enabled !== false);
 
     const shelfLocationOptions = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
 
@@ -173,6 +174,7 @@ export default {
       statusOptions,
       conditionOptions,
       deweyColors,
+      deweyEnabled,
       shelfLocationOptions,
       handleSubmit,
       handleCancel,
@@ -224,6 +226,7 @@ export default {
                 <dewey-picker
                   v-model="formData.call_number"
                   :colors="deweyColors"
+                  :enabled="deweyEnabled"
                   data-testid="input-call-number"
                 />
                 <div v-if="errors.call_number" class="text-danger small mt-1" data-testid="error-call-number">

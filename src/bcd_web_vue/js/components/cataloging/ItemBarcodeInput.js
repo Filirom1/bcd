@@ -59,6 +59,7 @@ export default defineComponent({
         const { settings } = useAppState();
 
         const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, undefined));
+        const deweyEnabled = computed(() => settings.value?.dewey_colors_enabled !== false);
 
         const shelfLocationOptions = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
 
@@ -228,6 +229,7 @@ export default defineComponent({
             itemCount,
             isPeriodical,
             deweyColors,
+            deweyEnabled,
             shelfLocationOptions,
             showOptional,
             acquisitionDate,
@@ -301,6 +303,7 @@ export default defineComponent({
                         <dewey-picker
                             v-model="callNumber"
                             :colors="deweyColors"
+                            :enabled="deweyEnabled"
                             :disabled="loading"
                         />
                     </div>

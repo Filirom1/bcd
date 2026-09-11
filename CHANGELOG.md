@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Option to enable or disable Dewey classification and color coding in system settings.
+
 ## [1.2.0]
 
 ### Added

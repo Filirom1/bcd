@@ -791,6 +791,7 @@
     "catalog_levels": "Reading levels",
     "catalog_levels_placeholder": "CP, CE1, CE2, CM1, CM2, 6th grade, Adult",
     "dewey_colors": "Dewey Colors",
+    "dewey_colors_enable": "Enable Dewey classification and color coding",
     "dewey_colors_help": "Color associated with each Dewey main class (0–9). Used on labels and in the cataloging assistant.",
     "shelf_locations": "Suggested shelf locations",
     "shelf_locations_help": "List of physical shelf locations (shelves, bins, etc.). Color is optional — a location without color displays a neutral badge.",

@@ -35,6 +35,7 @@ export function useItemBadge(settings) {
 
     // Parse dewey_colors (10-element array of hex strings)
     const deweyColors = computed(() => /** @type {string[]|null} */ (parseJsonSetting(settings.value?.dewey_colors, null)));
+    const deweyEnabled = computed(() => settings.value?.dewey_colors_enabled !== false);
 
     /**
      * Returns an inline style object for a shelf-location badge.
@@ -74,7 +75,7 @@ export function useItemBadge(settings) {
         const firstChar = callNumber.trim()[0];
         const colors = deweyColors.value;
 
-        if (firstChar >= '0' && firstChar <= '9' && colors && colors.length === 10) {
+        if (deweyEnabled.value && firstChar >= '0' && firstChar <= '9' && colors && colors.length === 10) {
             const idx = parseInt(firstChar);
             const hex = colors[idx] || null;
             if (!hex) return { ...base, background: 'transparent', color: 'inherit', border: '1px solid currentColor' };

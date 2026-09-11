@@ -5,6 +5,7 @@ import SettingsForm from '../../../../src/bcd_web_vue/js/components/settings/Set
 
 const settings = () => ({
     library_name: 'BCD',
+    dewey_colors_enabled: true,
     dewey_colors: ['#000000'],
     catalog_shelf_locations: [{ label: 'Fiction', color: '#ffffff' }],
     catalog_call_number_rules: [{ medium_type: 'Book', shelf_location: 'Fiction', pattern: '' }],

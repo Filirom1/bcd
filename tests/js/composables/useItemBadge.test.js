@@ -48,6 +48,7 @@ describe('useItemBadge', () => {
 
     it('maps a Dewey first digit to its configured call-number colour', () => {
         const badges = useItemBadge(ref({
+            dewey_colors_enabled: true,
             dewey_colors: JSON.stringify([
                 '#ffffff', '#111111', '#222222', '#333333', '#444444',
                 '#555555', '#666666', '#777777', '#888888', '#999999'
@@ -64,6 +65,21 @@ describe('useItemBadge', () => {
             background: '#888888',
             color: '#ffffff',
             outline: 'none'
+        });
+    });
+
+    it('returns transparent badge when dewey colors are disabled', () => {
+        const badges = useItemBadge(ref({
+            dewey_colors_enabled: false,
+            dewey_colors: JSON.stringify([
+                '#ffffff', '#111111', '#222222', '#333333', '#444444',
+                '#555555', '#666666', '#777777', '#888888', '#999999'
+            ])
+        }));
+
+        expect(badges.getCoteBadge('812.4 HUG')).toMatchObject({
+            background: 'transparent',
+            border: '1px solid currentColor'
         });
     });
 

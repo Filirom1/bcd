@@ -70,7 +70,8 @@ class SystemSettings(Base):
     catalog_languages = Column(Text, nullable=True, default="fr, en, es, de, ar")
     catalog_levels = Column(Text, nullable=True, default="CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, Lycée, Adulte")
 
-    # Dewey classification colors (JSON array of 10 hex strings, index = class 0–9)
+    # Dewey classification colors (JSON array of 10 hex strings or null, index = class 0–9)
+    dewey_colors_enabled = Column(Boolean, nullable=False, default=True)
     dewey_colors = Column(Text, nullable=True, default='["#000000","#9e6633","#f20000","#ff9813","#ffee00","#409d42","#0fafe9","#98238b","#d3d5d4","#ffffff"]')
 
     # Shelf locations (JSON array of {label, color|null})
