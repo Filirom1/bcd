@@ -711,6 +711,10 @@
   },
   "settings": {
     "title": "Paramètres",
+    "tabs": {
+      "general": "Configuration générale",
+      "catalog": "Configuration du catalogue"
+    },
     "library_info": "Informations de la bibliothèque",
     "library_information": "Informations de la bibliothèque",
     "library_name": "Nom de la bibliothèque",
@@ -744,6 +748,8 @@
     "system_params": "Paramètres système",
     "system_settings": "Paramètres système",
     "language": "Langue",
+    "language_french": "Français",
+    "language_english": "Anglais",
     "date_format": "Format de date",
     "save": "Enregistrer",
     "save_success": "Paramètres enregistrés avec succès",
@@ -801,6 +807,7 @@
     "shelf_location_color_toggle": "Couleur",
     "call_number_rules": "Règles de génération automatique des cotes",
     "call_number_rules_help": "Définissez le format des cotes générées pour les exemplaires. Le système applique la PREMIÈRE règle correspondante (de haut en bas).",
+    "rule_order": "Ordre",
     "rule_if_medium": "Si Support...",
     "rule_then_pattern": "Alors générer...",
     "all_any": "-- Tous --",
@@ -1051,6 +1058,10 @@
   },
   "admin": {
     "menu_title": "Admin",
+    "settings_action_backup": "Sauvegardes et restauration",
+    "settings_action_covers": "Images de couverture",
+    "settings_action_maintenance": "Maintenance des données",
+    "settings_action_env": "Fichier de configuration (.env)",
     "add_borrower": "Ajouter un emprunteur",
     "import_borrowers": "Importer emprunteurs",
     "export_borrowers": "Exporter emprunteurs",

@@ -81,6 +81,18 @@ describe('AdminDropdown', () => {
         expect(wrapper.get('[data-testid="admin-menu-export"]').text()).toContain(exportKey);
     });
 
+    it('renders settings actions and emits the selected section', async () => {
+        const wrapper = mountDropdown(0, 'settings', key => key);
+        const actions = wrapper.findAll('a.dropdown-item');
+
+        expect(actions).toHaveLength(4);
+        expect(wrapper.find('[data-testid="admin-menu-import"]').exists()).toBe(false);
+
+        await actions[0].trigger('click');
+
+        expect(wrapper.emitted('settings-section')).toEqual([['backup']]);
+    });
+
     it('renders the expected borrower menu labels in English', () => {
         const translations = {
             'admin.import_borrowers': 'Import borrowers',
