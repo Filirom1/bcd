@@ -106,7 +106,7 @@ export default defineComponent({
                 <button type="button" class="btn btn-sm btn-outline-primary mt-2" @click="$emit('add-call-number-rule')"><i class="bi bi-plus-circle me-1"></i>{{ t('settings.rule_add') }}</button>
                 <div class="card bg-light mt-3"><div class="card-body py-2">
                     <span class="small fw-bold text-muted d-block mb-1">{{ t('settings.rule_guide') }}</span>
-                    <span v-for="key in ['aut1','aut3','ser1','ser3','ill1','ill3','tit1','tit3','dewey']" :key="key" class="small text-muted d-block">{{ t('settings.rule_guide_' + key, { [key.toUpperCase()]: '{' + key.toUpperCase() + '}' }) }}</span>
+                    <span v-for="key in ['aut','aut1','aut3','ser','ser1','ser3','ill','ill1','ill3','tit1','tit3','dewey']" :key="key" class="small text-muted d-block">{{ t('settings.rule_guide_' + key, { [key.toUpperCase()]: '{' + key.toUpperCase() + '}' }) }}</span>
                 </div></div>
             </div>
         </div>

@@ -30,6 +30,14 @@ export function computeAut3(authors) {
     return cleanLastName.slice(0, 3);
 }
 
+/** Full normalized last name of the first author (fallback to empty). */
+export function computeAut(authors) {
+    if (!authors || !authors.length) return '';
+    const first = authors[0];
+    const lastName = (first.includes(',') ? first.split(',')[0] : first.split(' ').slice(-1)[0]).trim();
+    return normalizeAscii(lastName).toUpperCase().replace(/[^A-Z]/g, '');
+}
+
 /**
  * Clean string by stripping leading articles and trimming
  * @param {string|null|undefined} text
@@ -77,6 +85,23 @@ export function computeSer3(collection, fallbackAut3) {
     const cleaned = stripLeadingArticles(collection);
     const normalized = normalizeAscii(cleaned).toUpperCase().replace(/[^A-Z0-9]/g, '');
     return normalized.slice(0, 3) || fallbackAut3;
+}
+
+/**
+ * SER: complete series/collection name, without leading stopwords and separators
+ * (fallback to AUT3 if the series is empty)
+ * @param {string|null|undefined} collection
+ * @param {string} fallbackAut3
+ * @returns {string}
+ */
+export function computeSer(collection, fallbackAut3) {
+    if (!collection || !collection.trim()) return fallbackAut3;
+    const cleaned = stripLeadingArticles(collection);
+    const normalized = normalizeAscii(cleaned).toUpperCase()
+        .replace(/[^A-Z0-9]+/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+    return normalized || fallbackAut3;
 }
 
 /**
@@ -148,10 +173,13 @@ export function matchWildcard(str, rule) {
 export function computeCallNumber(record, currentShelf = '', rules = []) {
     const aut1 = computeAut1(record.authors);
     const aut3 = computeAut3(record.authors);
+    const aut = computeAut(record.authors);
     const ser1 = computeSer1(record.collection, aut1);
     const ser3 = computeSer3(record.collection, aut3);
+    const ser = computeSer(record.collection, aut3);
     const ill1 = computeAut1(record.illustrators) || aut1;
     const ill3 = computeAut3(record.illustrators) || aut3;
+    const ill = computeAut(record.illustrators) || aut;
     const tit1 = computeTit1(record.title);
     const tit3 = computeTit3(record.title);
     const dewey = record.deweyNumber ? record.deweyNumber.trim() : '';
@@ -189,10 +217,13 @@ export function computeCallNumber(record, currentShelf = '', rules = []) {
     return pattern
         .replace(/{AUT1}/g, aut1)
         .replace(/{AUT3}/g, aut3)
+        .replace(/{AUT}/g, aut)
         .replace(/{SER1}/g, ser1)
         .replace(/{SER3}/g, ser3)
+        .replace(/{SER}/g, ser)
         .replace(/{ILL1}/g, ill1)
         .replace(/{ILL3}/g, ill3)
+        .replace(/{ILL}/g, ill)
         .replace(/{TIT1}/g, tit1)
         .replace(/{TIT3}/g, tit3)
         .replace(/{DEWEY}/g, dewey)

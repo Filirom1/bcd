@@ -6,6 +6,7 @@ import {
     stripLeadingArticles,
     computeSer1,
     computeSer3,
+    computeSer,
     computeTit1,
     computeTit3,
     suggestShelfLocation,
@@ -62,6 +63,8 @@ describe('Call Number Generation Utilities', () => {
         it('returns clean series characters', () => {
             expect(computeSer1('La Bibliothèque Rose', 'A')).toBe('B');
             expect(computeSer3('La Bibliothèque Rose', 'AUT')).toBe('BIB');
+            expect(computeSer('Les Sisters', 'AUT')).toBe('SISTERS');
+            expect(computeSer('La Bibliothèque Rose', 'AUT')).toBe('BIBLIOTHEQUE ROSE');
         });
     });
 
@@ -114,6 +117,9 @@ describe('Call Number Generation Utilities', () => {
                 { medium_type: 'Book', pattern: '{DEWEY} {SER3} {TIT1}' }
             ];
             expect(computeCallNumber(record, '', rules)).toBe('840 BIB G');
+
+            const fullSeriesRules = [{ medium_type: 'Book', pattern: '{SER}' }];
+            expect(computeCallNumber(record, '', fullSeriesRules)).toBe('BIBLIOTHEQUE ROSE');
         });
     });
 });

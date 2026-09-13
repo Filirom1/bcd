@@ -152,14 +152,16 @@
     "status": "withdrawn",
     "condition": "damaged",
     "loanable": false,
-    "shelf_location": "Archive"
+    "shelf_location": "Archive",
+    "call_number": "800 DUP"
   },
   "record_updates": {
     "category": "Documentaires",
     "genre": "Album",
     "level": "CP",
     "target_audience": "child"
-  }
+  },
+  "auto_call_number": false
 }
 ```
 
@@ -174,15 +176,19 @@
   "items_updated": 39,
   "items_skipped_on_loan": 3,
   "records_updated": 7,
-  "other_copies_affected": 15
+  "other_copies_affected": 15,
+  "call_numbers_updated": 0,
+  "call_numbers": {}
 }
 ```
 
 **Field Notes**:
 - `items_skipped_on_loan` — items with `status='on_loan'` excluded from status changes only
 - `other_copies_affected` — copies of same titles NOT in `item_ids` but affected by `record_updates`
+- `auto_call_number=true` — regenerates each selected copy using the configured call-number rules and its own bibliographic record
+- `call_numbers` — resulting call numbers keyed by item barcode
 
-**Service Call**: `inventory_service.bulk_update_items(db, item_ids, item_updates, record_updates)`
+**Service Call**: `inventory_service.bulk_update_items(db, item_ids, item_updates, record_updates, auto_call_number)`
 
 ---
 
@@ -315,7 +321,7 @@ barcode,title,author,call_number,location,status,condition,last_loan_date,last_i
 
 ```python
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 # Response for single item inventory update
@@ -364,6 +370,7 @@ class ItemUpdates(BaseModel):
     condition: Optional[str] = None
     loanable: Optional[bool] = None
     shelf_location: Optional[str] = None
+    call_number: Optional[str] = None
 
 class RecordUpdates(BaseModel):
     category: Optional[str] = None
@@ -375,12 +382,15 @@ class BulkUpdateRequest(BaseModel):
     item_ids: List[str] = Field(..., min_length=1)
     item_updates: Optional[ItemUpdates] = None
     record_updates: Optional[RecordUpdates] = None
+    auto_call_number: bool = False
 
 class BulkUpdateResponse(BaseModel):
     items_updated: int
     items_skipped_on_loan: int
     records_updated: int
     other_copies_affected: int
+    call_numbers_updated: int = 0
+    call_numbers: Dict[str, Optional[str]] = {}
 
 # Bulk delete
 class BulkDeleteRequest(BaseModel):

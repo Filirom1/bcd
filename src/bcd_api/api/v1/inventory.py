@@ -195,8 +195,9 @@ def bulk_update_items_endpoint(
 
     **Request Body:**
     - item_ids: List of item barcodes to update
-    - item_updates: Optional item field updates (status, condition, loanable, shelf_location)
+    - item_updates: Optional item field updates (status, condition, loanable, shelf_location, call_number)
     - record_updates: Optional record field updates (level, target_audience)
+    - auto_call_number: Generate each selected copy's call number from the configured rules
 
     **Returns:**
     - 200: Items and records updated successfully with counts
@@ -209,12 +210,20 @@ def bulk_update_items_endpoint(
         item_updates_dict = request.item_updates.model_dump(exclude_none=True) if request.item_updates else None
         record_updates_dict = request.record_updates.model_dump(exclude_none=True) if request.record_updates else None
 
-        result = inventory_service.bulk_update_items(
-            db=db,
-            item_ids=request.item_ids,
-            item_updates=item_updates_dict,
-            record_updates=record_updates_dict
-        )
+        # Keep the legacy service call shape when automatic call-number generation
+        # is not requested.  Besides avoiding an unnecessary argument, this keeps
+        # integrations that provide a compatible bulk-update implementation from
+        # breaking as the optional feature is introduced.
+        update_kwargs = {
+            "db": db,
+            "item_ids": request.item_ids,
+            "item_updates": item_updates_dict,
+            "record_updates": record_updates_dict,
+        }
+        if request.auto_call_number:
+            update_kwargs["auto_call_number"] = True
+
+        result = inventory_service.bulk_update_items(**update_kwargs)
         return BulkUpdateResponse(**result)
 
     except Exception as e:

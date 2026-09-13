@@ -249,7 +249,8 @@ export default defineComponent({
                 const data = await apiClient.post('/inventory/items/bulk-update', {
                     item_ids: itemIds,
                     item_updates: pendingBulkEdit.value.item_updates || {},
-                    record_updates: pendingBulkEdit.value.record_updates || {}
+                    record_updates: pendingBulkEdit.value.record_updates || {},
+                    auto_call_number: pendingBulkEdit.value.auto_call_number === true
                 });
 
                 // Update the items in the working table with the changes we just applied
@@ -257,8 +258,9 @@ export default defineComponent({
                 const recordUpdates = pendingBulkEdit.value.record_updates || {};
                 const hasItemUpdates = Object.keys(itemUpdates).length > 0;
                 const hasRecordUpdates = Object.keys(recordUpdates).length > 0;
+                const hasAutoCallNumbers = pendingBulkEdit.value.auto_call_number === true;
 
-                if (hasItemUpdates || hasRecordUpdates) {
+                if (hasItemUpdates || hasRecordUpdates || hasAutoCallNumbers) {
                     // Collect bibliographic_record_ids from updated items (for record updates)
                     const affectedRecordIds = new Set();
                     if (hasRecordUpdates) {
@@ -286,6 +288,13 @@ export default defineComponent({
                                     needsUpdate = true;
                                 }
                             });
+                        }
+
+                        // Auto-generated values are returned by the API because
+                        // each selected copy can have a different record/rule match.
+                        if (hasAutoCallNumbers && data.call_numbers && data.call_numbers[item.item_id] !== undefined) {
+                            updatedItem.call_number = data.call_numbers[item.item_id];
+                            needsUpdate = true;
                         }
 
                         // Apply record updates to ALL items with affected record_ids

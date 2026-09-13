@@ -6,16 +6,17 @@ from typing import Optional
 
 from sqlalchemy.orm import Session, joinedload
 
-from src.shared.constants import ItemStatus
 from ...core.exceptions import ItemNotFoundException
 from ...models.bibliographic_record import BibliographicRecord
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
-from ._validation import normalize_field_value
-from ._policy import item_update_decision, can_deaccession
+from ...models.system_settings import SystemSettings
+from ..catalog.call_numbers import generate_call_number, parse_call_number_rules
+from ..catalog_service import bulk_delete_records
 from ..circulation.queries import get_active_loans_for_items
 from ..hold_service import cancel_holds_for_records_in_transaction
-from ..catalog_service import bulk_delete_records
+from ._policy import can_deaccession, item_update_decision
+from ._validation import normalize_field_value
 
 logger = logging.getLogger(__name__)
 
@@ -89,39 +90,78 @@ def bulk_update_items(
     db: Session,
     item_ids: list[str],
     item_updates: Optional[dict] = None,
-    record_updates: Optional[dict] = None
+    record_updates: Optional[dict] = None,
+    auto_call_number: bool = False,
 ) -> dict:
     """
     Apply same changes to multiple items + their parent records (bulk edit).
     """
     try:
         # Fetch all items by item_id
-        items = db.query(Item).filter(Item.item_id.in_(item_ids)).all()
+        items = (
+            db.query(Item)
+            .options(joinedload(Item.bibliographic_record))
+            .filter(Item.item_id.in_(item_ids))
+            .all()
+        )
 
         items_updated = 0
+        call_numbers_updated = 0
+        updated_call_numbers = {}
         items_skipped_on_loan = 0
 
         # Get all active loans for the retrieved items to determine has_active_loan
         active_loans = get_active_loans_for_items(db, [item.id for item in items])
         active_loan_item_ids = {loan.item_id for loan in active_loans}
 
-        # Apply item-level updates
-        if item_updates:
+        # Apply item-level updates. Auto generation is deliberately done in the
+        # service so every selected copy is generated from the same server-side
+        # settings, including copies added by barcode scan or file import.
+        if item_updates or auto_call_number:
+            settings = db.query(SystemSettings).first() if auto_call_number else None
+            rules = parse_call_number_rules(settings.catalog_call_number_rules) if settings else []
+            requested_updates = dict(item_updates or {})
+            if auto_call_number:
+                requested_updates.pop("call_number", None)
+
             for item in items:
                 has_active_loan = item.id in active_loan_item_ids
                 decision = item_update_decision(
                     has_active_loan=has_active_loan,
-                    requested_updates=item_updates,
+                    requested_updates=requested_updates,
                 )
-                
-                # Apply accepted updates
+
+                # Apply accepted manual updates.
                 for key, value in decision.accepted_updates.items():
                     if value is not None:
                         setattr(item, key, normalize_field_value(value))
-                
+
+                # A call number is metadata and can be changed even for a copy
+                # currently on loan. Empty generated values intentionally clear
+                # the old value (for example, a rule with an empty pattern).
+                if auto_call_number:
+                    generated = generate_call_number(
+                        {
+                            "title": item.bibliographic_record.title,
+                            "authors": item.bibliographic_record.authors,
+                            "illustrators": item.bibliographic_record.illustrators,
+                            "collection": item.bibliographic_record.collection,
+                            "dewey_number": item.bibliographic_record.dewey_number,
+                            "medium_type": item.bibliographic_record.medium_type,
+                            "shelf_location": item.shelf_location,
+                        },
+                        rules,
+                    )
+                    item.call_number = normalize_field_value(generated[:50])
+                    updated_call_numbers[item.item_id] = item.call_number
+                    call_numbers_updated += 1
+                elif "call_number" in item_updates and "call_number" in decision.accepted_updates:
+                    updated_call_numbers[item.item_id] = item.call_number
+                    call_numbers_updated += 1
+
                 if "status" in decision.ignored_fields:
                     items_skipped_on_loan += 1
-                
+
                 items_updated += 1
 
         # Deduplicate records from the selected items
@@ -151,7 +191,9 @@ def bulk_update_items(
             "items_updated": items_updated,
             "items_skipped_on_loan": items_skipped_on_loan,
             "records_updated": records_updated,
-            "other_copies_affected": other_copies_affected
+            "other_copies_affected": other_copies_affected,
+            "call_numbers_updated": call_numbers_updated,
+            "call_numbers": updated_call_numbers
         }
     except Exception:
         db.rollback()
