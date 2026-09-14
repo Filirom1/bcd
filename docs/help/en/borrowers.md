@@ -32,8 +32,8 @@ To lift the block, click "Unblock".
 
 ## Step 4 — Import students (start of year)
 
-To import a new student list from a CSV file, click the "Admin" menu then "Import".
-The file must contain at minimum: last name, first name, class.
+To import a new student list from a CSV file, click the "Admin" menu then "Import borrowers".
+The file must contain at minimum a first name and a last name. Class, role, and active status are optional.
 
 ![CSV import interface for borrowers](../images/borrowers-04-import.png)
 
@@ -70,17 +70,22 @@ The import file is a simple spreadsheet you can prepare in **Excel** or **LibreO
 
 | Column header | What it contains | Required |
 |---------------|-----------------|----------|
-| `borrower_id` | Student number (e.g., 12345) | Yes |
+| `borrower_id` | BCD identifier. It may be left blank; the smallest available identifier will be assigned. | No |
+| `external_id` | Optional identifier from another system. | No |
 | `first_name` | First name | Yes |
 | `last_name` | Last name | Yes |
 | `class_name` | Class name, exactly as it appears in BCD (e.g., CM1-A) | No |
-| `role` | Leave blank for students. Write `teacher` for teachers. | No |
-| `active` | Leave blank (account active by default) | No |
+| `role` | `student`, `teacher`, or `staff`. Defaults to `student`. | No |
+| `active` | `true` or `false`. Defaults to `true` when creating a borrower. | No |
 
 3. Fill in the following rows with one student per row.
 4. Click **File → Save As**, then choose **CSV UTF-8 (comma delimited)**.
 
 > **Tip:** The class name in the file must match exactly the name shown in BCD (including capitalisation). Check in the Classes page before importing.
+
+> **Tip:** If `borrower_id` is blank, BCD reuses the smallest available numeric identifier instead of continually increasing the numbers.
+
+> **Tip:** Optional fields are only changed when a value is provided during an update. An import file containing only names will not clear an existing class, role, or active status.
 
 > **Tip:** To print cards or use bulk edit, check the boxes on the left of the relevant students first.
 
@@ -90,7 +95,7 @@ The import file is a simple spreadsheet you can prepare in **Excel** or **LibreO
 
 ### What BCD stores
 
-BCD records the following for each borrower: **last name**, **first name**, **class**, and **borrower number**.
+BCD records the following for each borrower: **last name**, **first name**, **class**, **borrower number**, and the optional **external ID** when provided.
 The loan history (title borrowed, loan and return dates) is linked to each record.
 
 ### Legal obligations (French CNIL deliberation n° 99-27)

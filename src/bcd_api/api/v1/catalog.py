@@ -304,7 +304,7 @@ def list_importers():
 
     **Returns**: List of importers with name, description and filename.
     """
-    from bcd_converters import list_converters
+    from bcd_converters import list_catalog_converters
 
     # Built-in native format always comes first
     importers = [
@@ -315,7 +315,7 @@ def list_importers():
         }
     ]
 
-    for conv in list_converters():
+    for conv in list_catalog_converters():
         importers.append({
             "name": conv["name"],
             "description": conv["description"],
@@ -420,10 +420,10 @@ async def import_catalog(
         if format == "dublin_core":
             csv_content = content.decode("utf-8")
         else:
-            from bcd_converters import get_converter
+            from bcd_converters import get_catalog_converter
 
             try:
-                module = get_converter(format)
+                module = get_catalog_converter(format)
             except ModuleNotFoundError:
                 raise HTTPException(
                     status_code=400,

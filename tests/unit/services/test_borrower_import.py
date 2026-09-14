@@ -33,6 +33,51 @@ def test_import_borrowers_creates_and_updates(monkeypatch):
     assert updated[0]["active"] is False
 
 
+def test_import_keeps_optional_fields_unchanged_on_update(monkeypatch):
+    from src.bcd_api.services.borrower import import_ as import_module
+
+    updated = []
+    monkeypatch.setattr(import_module, "get_borrower_by_id", lambda db, value: SimpleNamespace(borrower_id=value))
+    monkeypatch.setattr(import_module, "update_borrower", lambda **kwargs: updated.append(kwargs))
+
+    csv_text = "borrower_id,first_name,last_name\n7,Marie,Dupont\n"
+    result = import_borrowers_from_csv(db=object(), csv_text=csv_text)
+
+    assert result["borrowers_updated"] == 1
+    assert "class_id" not in updated[0]
+    assert "active" not in updated[0]
+
+
+def test_import_assigns_smallest_available_id_when_id_is_blank(monkeypatch):
+    from src.bcd_api.services.borrower import import_ as import_module
+
+    created = []
+    monkeypatch.setattr(import_module, "get_next_available_id", lambda db: "2")
+    monkeypatch.setattr(import_module, "create_borrower", lambda **kwargs: created.append(kwargs))
+
+    csv_text = "borrower_id,external_id,first_name,last_name,role\n,,Marie,Dupont,student\n"
+    result = import_borrowers_from_csv(db=object(), csv_text=csv_text)
+
+    assert result["borrowers_created"] == 1
+    assert result["failed_rows"] == 0
+    assert created[0]["borrower_id"] == "2"
+    assert created[0]["external_id"] is None
+
+
+def test_import_preserves_active_value_on_create(monkeypatch):
+    from src.bcd_api.services.borrower import import_ as import_module
+
+    created = []
+    monkeypatch.setattr(import_module, "get_next_available_id", lambda db: "3")
+    monkeypatch.setattr(import_module, "create_borrower", lambda **kwargs: created.append(kwargs))
+
+    csv_text = "first_name,last_name,active\nLucas,Martin,false\n"
+    result = import_borrowers_from_csv(db=object(), csv_text=csv_text)
+
+    assert result["borrowers_created"] == 1
+    assert created[0]["active"] is False
+
+
 def test_import_borrowers_accepts_latin1_and_class_creation_failure(monkeypatch):
     from src.bcd_api.services.borrower import import_ as import_module
     monkeypatch.setattr(import_module, "get_borrower_by_id", lambda *args: (_ for _ in ()).throw(NotFoundError("Borrower", "B1")))

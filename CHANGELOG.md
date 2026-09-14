@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Option to enable or disable Dewey classification and color coding in system settings.
+- Generic borrower `external_id`, reusable borrower IDs, and improved CSV import support.
+- Organized converter packages with ONDE fixtures, tests, and borrower documentation updates.
 
 ## [1.2.0]
 

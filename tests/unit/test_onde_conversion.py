@@ -108,6 +108,32 @@ class TestColumnMapping:
         assert mapping['borrower_id'] is None
         assert mapping['class'] is None
 
+    def test_official_onde_student_export_headers(self):
+        """Should recognize the headers listed by listes-onde-csv."""
+        headers = [
+            'Nom élève', "Nom d'usage élève", 'Prénom élève',
+            'Date naissance', 'Sexe', 'INE', 'Adresse1', 'Cp1',
+            'Commune1', 'Pays1', ' Cycle', 'Niveau', 'Libellé classe',
+            'Identifiant classe', 'Décision de passage',
+        ]
+        mapping = find_column_mapping(headers)
+
+        assert mapping['last_name'] == "Nom d'usage élève"
+        assert mapping['last_name_legal'] == 'Nom élève'
+        assert mapping['first_name'] == 'Prénom élève'
+        assert mapping['borrower_id'] == 'INE'
+        assert mapping['class'] == 'Libellé classe'
+
+    def test_headers_are_matched_after_case_and_whitespace_normalization(self):
+        """ONDE header matching should tolerate case and extra whitespace."""
+        mapping = find_column_mapping(['  NOM ÉLÈVE  ', ' prénom élève ', ' ine ', ' LIBELLÉ CLASSE '])
+
+        assert mapping['last_name'] == '  NOM ÉLÈVE  '
+        assert mapping['last_name_legal'] == '  NOM ÉLÈVE  '
+        assert mapping['first_name'] == ' prénom élève '
+        assert mapping['borrower_id'] == ' ine '
+        assert mapping['class'] == ' LIBELLÉ CLASSE '
+
 
 class TestColumnNameNormalization:
     """Test column name normalization."""
@@ -124,6 +150,26 @@ class TestColumnNameNormalization:
 
 class TestConversionEndToEnd:
     """End-to-end conversion tests."""
+
+    def test_official_sample_fixture_conversion(self):
+        """The complete ONDE fixture from listes-onde-csv should import cleanly."""
+        input_path = Path('data/sample_imports/onde_official_sample.csv')
+        output_path = Path(tempfile.mktemp(suffix='.csv'))
+
+        try:
+            convert_onde_to_bcd(input_path, output_path, delimiter=';')
+            with open(output_path, 'r', encoding='utf-8-sig', newline='') as f_out:
+                rows = list(csv.DictReader(f_out))
+
+            assert len(rows) == 5
+            assert rows[0]['last_name'] == 'DUPONT'
+            assert rows[1]['last_name'] == 'MARTIN-BERNARD'
+            assert rows[2]['last_name'] == 'GARCIA'
+            assert rows[0]['class'] == 'CP A'
+            assert rows[2]['external_id'] == ''
+            assert all(row['role'] == 'student' for row in rows)
+        finally:
+            output_path.unlink(missing_ok=True)
 
     def test_basic_onde_conversion(self):
         """Should convert basic ONDE CSV to BCD format."""
@@ -151,18 +197,20 @@ class TestConversionEndToEnd:
             assert len(rows) == 2
 
             # Check first row
-            assert rows[0]['borrower_id'] == '12345678901'
+            assert rows[0]['borrower_id'] == ''
+            assert rows[0]['external_id'] == '12345678901'
             assert rows[0]['first_name'] == 'Marie'
             assert rows[0]['last_name'] == 'Dupont'
             assert rows[0]['role'] == 'student'
-            assert rows[0]['class'] == 'CP'
+            assert rows[0]['class'] == 'CP-A'
             assert rows[0]['active'] == 'true'
 
             # Check second row
-            assert rows[1]['borrower_id'] == '98765432109'
+            assert rows[1]['borrower_id'] == ''
+            assert rows[1]['external_id'] == '98765432109'
             assert rows[1]['first_name'] == 'Lucas'
             assert rows[1]['last_name'] == 'Martin'
-            assert rows[1]['class'] == 'CE1'
+            assert rows[1]['class'] == 'CE1-B'
 
         finally:
             # Cleanup
@@ -189,12 +237,13 @@ class TestConversionEndToEnd:
                 rows = list(reader)
 
             # First row should have generated ID
-            assert rows[0]['borrower_id'] == 'STUDENT-0001'
+            assert rows[0]['borrower_id'] == ''
             assert rows[0]['first_name'] == 'Marie'
+            assert rows[0]['external_id'] == ''
             assert rows[0]['notes'] == 'Imported from ONDE'
 
             # Second row should have INE
-            assert rows[1]['borrower_id'] == '98765432109'
+            assert rows[1]['borrower_id'] == ''
             assert rows[1]['notes'] == ''
 
         finally:
@@ -223,17 +272,17 @@ class TestConversionEndToEnd:
 
             # Should only have 2 rows (duplicate skipped)
             assert len(rows) == 2
-            assert rows[0]['borrower_id'] == '12345678901'
+            assert rows[0]['borrower_id'] == ''
             assert rows[0]['first_name'] == 'Marie'
-            assert rows[1]['borrower_id'] == '98765432109'
+            assert rows[1]['borrower_id'] == ''
             assert rows[1]['first_name'] == 'Sophie'
 
         finally:
             input_path.unlink(missing_ok=True)
             output_path.unlink(missing_ok=True)
 
-    def test_conversion_extracts_grade_levels(self):
-        """Should extract grade levels from class names."""
+    def test_conversion_preserves_complete_class_labels(self):
+        """Should preserve the complete ONDE class label."""
         # Create temporary input file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f_in:
             input_path = Path(f_in.name)
@@ -252,9 +301,9 @@ class TestConversionEndToEnd:
                 reader = csv.DictReader(f_out)
                 rows = list(reader)
 
-            assert rows[0]['class'] == 'CP'
-            assert rows[1]['class'] == 'CE1'
-            assert rows[2]['class'] == 'CM2'
+            assert rows[0]['class'] == 'CP-A'
+            assert rows[1]['class'] == 'CE1-B'
+            assert rows[2]['class'] == 'CM2 C'
 
         finally:
             input_path.unlink(missing_ok=True)
@@ -280,7 +329,7 @@ class TestConversionEndToEnd:
                 rows = list(reader)
 
             assert len(rows) == 1
-            assert rows[0]['borrower_id'] == '12345678901'
+            assert rows[0]['borrower_id'] == ''
 
         finally:
             input_path.unlink(missing_ok=True)

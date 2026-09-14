@@ -32,10 +32,90 @@ Pour lever le blocage, clique sur « Débloquer ».
 
 ## Étape 4 — Importer des élèves (début d'année)
 
-Pour importer une nouvelle liste d'élèves depuis un fichier CSV, clique sur le menu « Admin » puis « Importer ».
-Le fichier doit contenir au minimum : nom, prénom, classe.
+Pour importer une nouvelle liste d'élèves depuis un fichier CSV, clique sur le menu « Admin » puis « Importer des emprunteurs ».
+Le fichier doit contenir au minimum le prénom et le nom. La classe, le rôle et le statut actif sont facultatifs.
 
 ![Interface d'import CSV des emprunteurs](../images/borrowers-04-import.png)
+
+## Importer une liste d'élèves depuis ONDE
+
+Cette procédure permet de récupérer les élèves enregistrés dans ONDE pour les utiliser dans BCD.
+
+### 1. Exporter les élèves depuis ONDE
+
+1. Connecte-toi à **ONDE** avec ton compte de direction.
+2. Ouvre le menu **« Listes & extractions »**.
+3. Choisis **« La liste des élèves de l'école »** pour exporter toute l'école, ou **« La liste des élèves par classe ou regroupement »** pour limiter l'export.
+4. Sélectionne l'année scolaire en cours.
+5. Choisis les classes ou les regroupements souhaités si ONDE le propose.
+6. Sélectionne le format **CSV** et lance le téléchargement.
+7. Enregistre le fichier sur l'ordinateur de l'école, par exemple dans un dossier temporaire protégé.
+
+Pour choisir précisément les colonnes, tu peux utiliser **« Extraction personnalisée »** dans **« Listes & extractions »**. Sélectionne au minimum les champs suivants lorsqu'ils sont proposés :
+
+- `Nom élève` ;
+- `Nom d'usage élève` ;
+- `Prénom élève` ;
+- `INE` ;
+- `Libellé classe` ou `Identifiant classe`.
+
+Les intitulés peuvent varier légèrement selon la version d'ONDE. BCD reconnaît également les variantes `Nom`, `Prénom`, `Classe`, `Libellé classe` et `Identifiant Classe`.
+
+> **Important :** ne modifie pas le fichier original exporté par ONDE. Si tu dois le convertir ou le vérifier, travaille sur une copie.
+
+### 2. Vérifier le fichier ONDE
+
+Un fichier ONDE est généralement un fichier CSV séparé par des points-virgules (`;`). La première ligne contient les noms des colonnes. Il peut contenir beaucoup plus de colonnes que nécessaire : les colonnes supplémentaires ne sont pas importées dans BCD.
+
+Le fichier peut contenir par exemple :
+
+```text
+Nom élève;Nom d'usage élève;Prénom élève;Date naissance;Sexe;INE;Niveau;Libellé classe;Identifiant classe
+```
+
+Les règles appliquées par BCD sont les suivantes :
+
+| Donnée ONDE | Donnée BCD | Règle |
+|---|---|---|
+| `INE` | `external_id` | Conservé comme identifiant externe facultatif |
+| `Nom d'usage élève` | Nom | Utilisé s'il est renseigné |
+| `Nom élève` | Nom | Utilisé si le nom d'usage est vide |
+| `Prénom élève` | Prénom | Obligatoire |
+| `Libellé classe` | Classe | Le libellé complet est conservé, par exemple `CP A` |
+| absence d'INE | `external_id` vide | L'élève peut quand même être importé |
+
+### 3. Importer dans BCD
+
+Dans BCD :
+
+1. Ouvre le menu **« Admin »**.
+2. Clique sur **« Importer des emprunteurs »**.
+3. Dans **« Format source »**, sélectionne **« ONDE (élèves) »**.
+4. Sélectionne le fichier CSV téléchargé depuis ONDE.
+5. Vérifie le résumé avant de fermer la fenêtre.
+
+BCD convertit automatiquement le fichier ONDE séparé par des points-virgules. Les colonnes supplémentaires sont ignorées.
+
+Pour chaque élève sans identifiant BCD, BCD attribue le **plus petit numéro d'emprunteur disponible**. Les anciens numéros libérés sont donc réutilisés.
+
+Il n'est donc pas nécessaire de modifier le fichier ONDE dans Excel ou LibreOffice avant l'import.
+
+### 4. Contrôler le résultat
+
+Après l'import, vérifie notamment :
+
+- le nombre d'élèves créés et mis à jour ;
+- les lignes en erreur ;
+- les élèves sans `external_id` ;
+- les classes créées automatiquement ;
+- les éventuels doublons d'identifiant externe.
+
+Lorsqu'un INE est absent de l'export, tu peux compléter plus tard le champ **« Identifiant externe »** depuis la fiche de l'élève.
+
+### Sources officielles
+
+- [ONDE — Fiche 18 : édition des listes](https://eduscol.education.gouv.fr/sites/default/files/document/onde-fiche-18-edition-des-listes-dec-127418.pdf)
+- [ONDE — Fiche 16 : extractions personnalisées](https://eduscol.education.gouv.fr/sites/default/files/document/20260227-fiche-16-extractions-personnaliseespdf-126278.pdf)
 
 ---
 
@@ -70,12 +150,13 @@ Le fichier d'import est un simple tableau que tu peux préparer avec **Excel** o
 
 | Colonne à saisir | Ce que ça contient | Obligatoire |
 |------------------|--------------------|-------------|
-| `borrower_id` | Numéro de l'élève (ex : 12345) | Oui |
+| `borrower_id` | Identifiant BCD. Peut être vide : le plus petit identifiant disponible sera attribué. | Non |
+| `external_id` | Identifiant externe, par exemple l'INE. | Non |
 | `first_name` | Prénom | Oui |
 | `last_name` | Nom de famille | Oui |
 | `class_name` | Nom de la classe, tel qu'il existe dans BCD (ex : CM1-A) | Non |
-| `role` | Laisser vide pour les élèves. Écrire `teacher` pour les enseignants. | Non |
-| `active` | Laisser vide (compte actif par défaut) | Non |
+| `role` | `student`, `teacher` ou `staff`. `student` par défaut. | Non |
+| `active` | `true` ou `false`. `true` par défaut à la création. | Non |
 
 3. Remplis les lignes suivantes avec les données des élèves.
 4. Clique sur **Fichier → Enregistrer sous**, puis choisis le format **CSV UTF-8 (délimité par des virgules)**.

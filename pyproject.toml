@@ -69,7 +69,14 @@ bcd = "bcd_api.main:main"
 bcd-cli = "bcd_cli.main:cli"
 
 [tool.setuptools]
-packages = ["bcd_api", "bcd_cli", "bcd_converters", "shared"]
+packages = [
+    "bcd_api",
+    "bcd_cli",
+    "bcd_converters",
+    "bcd_converters.catalog",
+    "bcd_converters.borrower",
+    "shared",
+]
 package-dir = {"" = "src"}
 
 [tool.pytest.ini_options]

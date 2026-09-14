@@ -1,0 +1,6 @@
+Nom élève;Nom d'usage élève;Prénom élève;Date naissance;Sexe;INE;Adresse1;Cp1;Commune1;Pays1;Adresse2;Cp2;Commune2;Pays2; Cycle;Niveau;Libellé classe;Identifiant classe;Attestation fournie;Autorisation photo;Décision de passage;Dispositif(s);Regroupement(s)
+DUPONT;;Alice;14/02/2018;F;10000000001AA;1 rue des Écoles;11000;Carcassonne;France;;;;;Cycle 2;CP;CP A;CLASSE-CP-A;Oui;Oui;Admise;;
+MARTIN;MARTIN-BERNARD;Hugo;29/07/2018;M;10000000002BB;2 avenue Victor Hugo;11000;Carcassonne;France;;;;;Cycle 2;CP;CP B;CLASSE-CP-B;Oui;Non;Admis;;
+GARCIA;;Lina;03/11/2017;F;;3 rue des Lilas;11000;Carcassonne;France;;;;;Cycle 2;CE1;CE1 A;CLASSE-CE1-A;Oui;Oui;Admise;;
+PETIT;;Noé;22/05/2016;M;10000000004DD;4 chemin du Stade;11000;Carcassonne;France;;;;;Cycle 2;CE2;CE2 A;CLASSE-CE2-A;Non;Oui;Admis;Aucun;
+ROUX;ROUX-LEMAIRE;Emma;18/09/2014;F;;5 boulevard Jaurès;11000;Carcassonne;France;;;;;Cycle 3;CM2;CM2;CLASSE-CM2;Oui;Oui;Admise;;

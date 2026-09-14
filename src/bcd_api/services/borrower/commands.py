@@ -38,11 +38,13 @@ def create_borrower(
     borrower_id: str,
     first_name: str,
     last_name: str,
+    external_id: Optional[str] = None,
     role: str = "student",
     class_id: Optional[int] = None,
     email: Optional[str] = None,
     phone: Optional[str] = None,
     notes: Optional[str] = None,
+    active: bool = True,
 ) -> Borrower:
     """
     Create a new borrower.
@@ -87,12 +89,13 @@ def create_borrower(
         name_full = full_name(first_name, last_name)
         borrower = Borrower(
             borrower_id=borrower_id,
+            external_id=external_id.strip() if external_id and external_id.strip() else None,
             first_name=first_name,
             last_name=last_name,
             full_name=name_full,
             role=validated_role,
             class_id=class_id,
-            active=True,
+            active=active,
             email=email,
             phone=phone,
             notes=notes,
@@ -113,6 +116,7 @@ def update_borrower(
     db: Session,
     borrower_id: str,
     new_borrower_id: Optional[str] = None,
+    external_id: Optional[str] = None,
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
     role: Optional[str] = None,
@@ -165,6 +169,19 @@ def update_borrower(
                 raise DuplicateError(f"Borrower ID '{new_borrower_id}' already exists")
 
             borrower.borrower_id = new_borrower_id
+
+        # Update optional ONDE identifier when explicitly supplied.
+        if external_id is not None:
+            normalized_external_id = external_id.strip() or None
+            if normalized_external_id != borrower.external_id:
+                existing_external_id = (
+                    db.query(Borrower)
+                    .filter(Borrower.external_id == normalized_external_id, Borrower.id != borrower.id)
+                    .first()
+                )
+                if existing_external_id:
+                    raise DuplicateError(f"External ID '{normalized_external_id}' already exists")
+                borrower.external_id = normalized_external_id
 
         # Update role if provided
         if role is not None:

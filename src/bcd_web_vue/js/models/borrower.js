@@ -23,6 +23,7 @@
  * @typedef {Object} Borrower
  * @property {number} id - Database auto-increment ID
  * @property {string} borrower_id - Unique alphanumeric borrower ID
+ * @property {string|null} external_id - Optional external reference
  * @property {string} first_name - First name
  * @property {string} last_name - Last name
  * @property {string} full_name - Full name (LAST First)
@@ -42,6 +43,7 @@
  * @typedef {Object} BorrowerDetailed
  * @property {number} id - Database ID
  * @property {string} borrower_id - Borrower identifier
+ * @property {string|null} external_id - Optional external reference
  * @property {string} first_name - First name
  * @property {string} last_name - Last name
  * @property {string} full_name - Full name
