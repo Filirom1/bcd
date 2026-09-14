@@ -1,12 +1,12 @@
 # Ajouter des livres
 
-Cette page te permet d'ajouter de nouveaux livres au catalogue de la bibliothèque.
+Cette page permet d'ajouter de nouveaux livres au catalogue de la bibliothèque.
 
 ---
 
 ## Étape 1 — Saisir le numéro ISBN
 
-Tape ou scanne le code-barres ISBN du livre (le numéro à 13 chiffres au dos du livre).
+Saisir ou scanner le code-barres ISBN du livre (le numéro à 13 chiffres au dos du livre).
 Le système cherche automatiquement la notice bibliographique auprès de la BNF (Bibliothèque nationale de France).
 
 ![Champ de saisie ISBN avec résultat BNF automatique](../images/cataloging-01-isbn.png)
@@ -16,22 +16,22 @@ Le système cherche automatiquement la notice bibliographique auprès de la BNF 
 ## Étape 2 — Vérifier les informations
 
 Les informations récupérées (titre, auteur, éditeur, année) s'affichent automatiquement.
-Vérifie et corrige si nécessaire avant de valider.
+Vérifier et corriger si nécessaire avant de valider.
 
 ![Formulaire pré-rempli avec les données de la BNF](../images/cataloging-02-form.png)
 
-> **Conseil :** Si l'ISBN n'est pas reconnu par la BNF, tu peux remplir le formulaire manuellement en cliquant sur « Saisie manuelle ».
+> **Conseil :** Si l'ISBN n'est pas reconnu par la BNF, remplir le formulaire manuellement en cliquant sur « Saisie manuelle ».
 
 ## Étape 3 — Ajouter le livre sans ISBN
 
-Pour les vieux livres sans code-barres ISBN, clique sur « Saisie manuelle » et remplis le formulaire.
+Pour les livres anciens sans code-barres ISBN, cliquer sur « Saisie manuelle » et remplir le formulaire.
 Seul le titre est obligatoire.
 
 ![Formulaire de saisie manuelle](../images/cataloging-03-manual.png)
 
 ## Étape 4 — Scanner le code-barres du livre
 
-Après avoir validé la notice, scanne le code-barres d'inventaire collé dans le livre.
+Après avoir validé la notice, scanner le code-barres d'inventaire collé dans le livre.
 Ce code-barres est l'identifiant unique de l'exemplaire physique.
 
 ![Étape de scan du code-barres d'inventaire](../images/cataloging-04-barcode.png)
@@ -97,29 +97,29 @@ Chaque exemplaire est une fiche distincte (un livre physique). Ces champs se ren
 | **Empruntable** | Décocher pour retirer un exemplaire du circuit de prêt sans le supprimer (ex : exemplaire réservé à la consultation sur place). |
 | **Statut** | Disponible / En prêt / Perdu / Retiré. Géré automatiquement par le système lors des prêts et retours. |
 
-> **Conseil :** Si tu as deux exemplaires du même livre rangés à des endroits différents (un en rayon, un dans une classe de lecture suivie), tu peux leur donner des emplacements distincts. Le filtre Inventaire → Emplacement te permet ensuite de retrouver chaque exemplaire précisément.
+> **Conseil :** Deux exemplaires du même livre rangés à des endroits différents (un en rayon, un dans une classe de lecture suivie) peuvent recevoir des emplacements distincts. Le filtre Inventaire → Emplacement permet ensuite de retrouver chaque exemplaire précisément.
 
 ---
 
 ## Migration depuis un ancien logiciel
 
-Si ta bibliothèque était déjà équipée de codes-barres avec un logiciel précédent, **il n'est pas nécessaire de recoller de nouvelles étiquettes**.
+Si la bibliothèque était déjà équipée de codes-barres avec un logiciel précédent, **il n'est pas nécessaire de recoller de nouvelles étiquettes**.
 
 ### Reprise des codes-barres existants
 
-Le code-barres d'inventaire (`item_id`) est un champ texte libre : BCD accepte n'importe quel format, qu'il soit numérique pur (`00123`), préfixé (`BCD001234`), ou alphanumériques mixte. Lors du catalogage d'un exemplaire déjà équipé, scanne simplement l'ancienne étiquette — BCD enregistre la valeur telle quelle.
+Le code-barres d'inventaire (`item_id`) est un champ texte libre : BCD accepte n'importe quel format, qu'il soit numérique pur (`00123`), préfixé (`BCD001234`), ou alphanumériques mixte. Lors du catalogage d'un exemplaire déjà équipé, scanner l'ancienne étiquette — BCD enregistre la valeur telle quelle.
 
 **Import BiblioPuce :** lors d'un import CSV BiblioPuce (Admin → Importer catalogue → format BiblioPuce), les codes d'inventaire de l'ancien logiciel sont rapatriés automatiquement. Aucune saisie manuelle n'est nécessaire.
 
 ### Continuer une numérotation existante
 
-Si une partie du fonds a déjà des codes-barres numeriques et tu veux continuer dans la même séquence pour les nouveaux livres :
+Si une partie du fonds possède déjà des codes-barres numériques et que la numérotation doit être poursuivie pour les nouveaux livres :
 
 1. **Admin → Étiquettes**
-2. Dans le champ **Commencer à partir de**, saisis le numéro suivant le dernier déjà utilisé (ex : si le dernier code-barres en service est `00847`, saisis `848`)
+2. Dans le champ **Commencer à partir de**, saisir le numéro suivant le dernier déjà utilisé (ex : si le dernier code-barres en service est `00847`, saisir `848`)
 3. Le système génère les prochains identifiants libres à partir de ce point, en sautant ceux déjà attribués
 
-> **Conseil :** Le générateur d'étiquettes de BCD produit des identifiants numériques. Si tu as besoin d'un préfixe fixe sur les étiquettes (voir section ci-dessous), configure-le dans Paramètres → Codes-barres avant d'imprimer.
+> **Conseil :** Le générateur d'étiquettes de BCD produit des identifiants numériques. Pour utiliser un préfixe fixe sur les étiquettes, le configurer dans Paramètres → Codes-barres avant l'impression.
 
 ### Préfixe de code-barres (convention BiblioPuce)
 
@@ -132,25 +132,25 @@ BiblioPuce et BCD utilisent la même convention de préfixe pour distinguer auto
 
 Lorsque la douchette lit un code, BCD détecte le préfixe et sait immédiatement si c'est un livre ou une carte élève — sans que l'enseignant ait à changer de champ manuellement.
 
-**Si tu migres depuis BiblioPuce :** les codes de BiblioPuce utilisent déjà cette convention. Les étiquettes existantes sont compatibles sans modification.
+**En cas de migration depuis BiblioPuce :** les codes de BiblioPuce utilisent déjà cette convention. Les étiquettes existantes sont compatibles sans modification.
 
-**Si tu n'utilises pas de préfixe** (douchette qui renvoie le numéro brut, ou ancien système différent) : laisse les champs de préfixe vides dans les Paramètres. Le préfixe est configurable — voir la section Paramètres → Codes-barres.
+**En l'absence de préfixe** (douchette qui renvoie le numéro brut ou ancien système différent), laisser les champs de préfixe vides dans les Paramètres. Le préfixe est configurable — voir la section Paramètres → Codes-barres.
 
-> **Conseil :** Le préfixe est imprimé sur les étiquettes générées par BCD (Admin → Étiquettes). Si tu changes le préfixe dans les Paramètres après avoir déjà imprimé des étiquettes, les anciennes étiquettes ne seront plus reconnues correctement.
+> **Conseil :** Le préfixe est imprimé sur les étiquettes générées par BCD (Admin → Étiquettes). En cas de modification du préfixe dans les Paramètres après l'impression d'étiquettes, les anciennes étiquettes ne seront plus reconnues correctement.
 
 ---
 
 ## Cataloguer un lot d'exemplaires (lecture suivie)
 
-Pour une lecture suivie en classe, tu as besoin de plusieurs exemplaires du même livre. Dans BCD, une seule notice bibliographique peut avoir autant d'exemplaires que nécessaire.
+Pour une lecture suivie en classe, plusieurs exemplaires du même livre peuvent être nécessaires. Dans BCD, une seule notice bibliographique peut avoir autant d'exemplaires que nécessaire.
 
 **Comment procéder :**
 
 1. Catalogue le livre une première fois normalement (ISBN → BNF → scan du premier code-barres).
-2. Pour ajouter les exemplaires suivants : dans le catalogue, ouvre la fiche du livre, puis clique sur **« Ajouter un exemplaire »**.
-3. Scanne le code-barres de chaque exemplaire supplémentaire l'un après l'autre.
+2. Pour ajouter les exemplaires suivants : dans le catalogue, ouvrir la fiche du livre, puis cliquer sur **« Ajouter un exemplaire »**.
+3. Scanner le code-barres de chaque exemplaire supplémentaire l'un après l'autre.
 
-> **Conseil :** Utilise une série d'étiquettes codes-barres consécutives (ex : `00120`, `00121`, `00122`…) pour faciliter le suivi du lot.
+> **Conseil :** Utiliser une série d'étiquettes codes-barres consécutives (ex : `00120`, `00121`, `00122`…) pour faciliter le suivi du lot.
 
 ---
 
@@ -162,32 +162,32 @@ Dans BCD, **une revue = une notice** dans le catalogue, et **chaque numéro phys
 
 **Via le code EAN-13 du kiosque (recommandé) :**
 
-1. Dans la page Catalogage, saisis ou scanne le code EAN-13 imprimé sur la couverture du magazine (le code à 13 chiffres commençant par `977`, ex : `9771163770025` pour Wakou).
+1. Dans la page Catalogage, saisir ou scanner le code EAN-13 imprimé sur la couverture du magazine (le code à 13 chiffres commençant par `977`, ex : `9771163770025` pour Wakou).
 2. Le système détecte automatiquement le préfixe `977` et extrait l'ISSN correspondant.
 3. Il interroge le **SUDOC** (Système Universitaire de Documentation) pour récupérer le titre, l'éditeur et la description de la revue.
-4. Vérifie les informations et valide la notice. Le **Type de support** est automatiquement réglé sur `Périodique`.
-5. Scanne le code-barres d'inventaire de l'exemplaire, puis saisis la **Numérotation** (ex : `274`).
+4. Vérifier les informations et valider la notice. Le **Type de support** est automatiquement réglé sur `Périodique`.
+5. Scanner le code-barres d'inventaire de l'exemplaire, puis saisir la **Numérotation** (ex : `274`).
 
 **Via l'ISSN saisi manuellement :**
 
-1. Dans le champ **ISBN ou ISSN**, saisis le code ISSN au format `NNNN-NNNX` (ex : `1163-7706` pour *Wakou*). L'ISSN est imprimé sur la couverture ou au dos de la revue.
+1. Dans le champ **ISBN ou ISSN**, saisir le code ISSN au format `NNNN-NNNX` (ex : `1163-7706` pour *Wakou*). L'ISSN est imprimé sur la couverture ou au dos de la revue.
 2. Le système reconnaît le format ISSN et interroge le SUDOC.
 3. Suite identique à partir de l'étape 3 ci-dessus.
 
 **Si la revue n'est pas trouvée dans le SUDOC :**
-utilise la saisie manuelle — saisis le titre, renseigne l'ISSN si disponible, et choisis `Périodique` comme type de support.
+utiliser la saisie manuelle — saisir le titre, renseigner l'ISSN si disponible et choisir `Périodique` comme type de support.
 
 ### Bulletiner un nouveau numéro (workflow quotidien)
 
 Quand un nouveau numéro arrive :
 
-1. Dans le catalogue, ouvre la fiche de la revue (ex : « Wakou »).
-2. Clique sur **« Ajouter un exemplaire »**.
-3. Saisis la **Numérotation** (ex : `274` ou `Avril 2026`) — champ obligatoire pour les périodiques.
-4. Scanne le code-barres d'inventaire de ce numéro physique.
+1. Dans le catalogue, ouvrir la fiche de la revue (ex : « Wakou »).
+2. Cliquer sur **« Ajouter un exemplaire »**.
+3. Saisir la **Numérotation** (ex : `274` ou `Avril 2026`) — champ obligatoire pour les périodiques.
+4. Scanner le code-barres d'inventaire de ce numéro physique.
 5. L'exemplaire est immédiatement disponible au prêt.
 
-> **Conseil :** La Numérotation s'affiche dans la fiche de la revue (colonne « Numérotation ») et dans le bilan de prêt (ex : « Wakou · n° 274 »). Utilise des numéros simples (`274`) plutôt que des libellés longs pour un affichage optimal.
+> **Conseil :** La Numérotation s'affiche dans la fiche de la revue (colonne « Numérotation ») et dans le bilan de prêt (ex : « Wakou · n° 274 »). Privilégier des numéros simples (`274`) plutôt que des libellés longs pour un affichage optimal.
 
 ---
 
@@ -195,7 +195,7 @@ Quand un nouveau numéro arrive :
 
 | Problème | Solution |
 |----------|----------|
-| L'ISBN n'est pas trouvé par la BNF | Utilise la saisie manuelle. Certains livres anciens ou étrangers ne sont pas dans la base BNF. |
-| L'ISSN n'est pas trouvé dans le SUDOC | Utilise la saisie manuelle. Saisis le titre et l'ISSN manuellement, puis choisis `Périodique` comme type de support. |
-| Le code-barres d'inventaire est déjà utilisé | Chaque exemplaire doit avoir un code-barres unique. Colle un nouveau code-barres sur ce livre. |
-| Les informations récupérées sont incorrectes | Corrige manuellement les champs dans le formulaire avant de valider. |
+| L'ISBN n'est pas trouvé par la BNF | Utiliser la saisie manuelle. Certains livres anciens ou étrangers ne sont pas dans la base BNF. |
+| L'ISSN n'est pas trouvé dans le SUDOC | Utiliser la saisie manuelle. Saisir le titre et l'ISSN manuellement, puis choisir `Périodique` comme type de support. |
+| Le code-barres d'inventaire est déjà utilisé | Chaque exemplaire doit avoir un code-barres unique. Coller un nouveau code-barres sur ce livre. |
+| Les informations récupérées sont incorrectes | Corriger manuellement les champs dans le formulaire avant de valider. |
