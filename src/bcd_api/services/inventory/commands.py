@@ -105,6 +105,9 @@ def bulk_update_items(
             .all()
         )
 
+        found_item_ids = {item.item_id for item in items}
+        items_not_found = [item_id for item_id in item_ids if item_id not in found_item_ids]
+
         items_updated = 0
         call_numbers_updated = 0
         updated_call_numbers = {}
@@ -135,6 +138,9 @@ def bulk_update_items(
                 for key, value in decision.accepted_updates.items():
                     if value is not None:
                         setattr(item, key, normalize_field_value(value))
+                    elif key == "call_number":
+                        # Explicit null is the opt-in operation for clearing a call number.
+                        item.call_number = None
 
                 # A call number is metadata and can be changed even for a copy
                 # currently on loan. Empty generated values intentionally clear
@@ -155,7 +161,7 @@ def bulk_update_items(
                     item.call_number = normalize_field_value(generated[:50])
                     updated_call_numbers[item.item_id] = item.call_number
                     call_numbers_updated += 1
-                elif "call_number" in item_updates and "call_number" in decision.accepted_updates:
+                elif item_updates and "call_number" in item_updates and "call_number" in decision.accepted_updates:
                     updated_call_numbers[item.item_id] = item.call_number
                     call_numbers_updated += 1
 
@@ -189,6 +195,7 @@ def bulk_update_items(
 
         return {
             "items_updated": items_updated,
+            "items_not_found": items_not_found,
             "items_skipped_on_loan": items_skipped_on_loan,
             "records_updated": records_updated,
             "other_copies_affected": other_copies_affected,

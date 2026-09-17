@@ -182,6 +182,7 @@ class BulkUpdateResponse(BaseModel):
     """Response schema for bulk item and record updates."""
 
     items_updated: int = Field(..., description="Number of items successfully updated")
+    items_not_found: list[str] = Field(default_factory=list, description="Item IDs not found in database")
     items_skipped_on_loan: int = Field(..., description="Items with status='on_loan' excluded from status changes")
     records_updated: int = Field(..., description="Number of unique bibliographic records updated")
     other_copies_affected: int = Field(..., description="Copies of same titles NOT in item_ids but affected by record updates")

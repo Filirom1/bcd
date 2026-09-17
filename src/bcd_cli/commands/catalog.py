@@ -199,6 +199,7 @@ def transform_csv(input_file: str, output_file: str, format: str):
     except Exception as e:
         print_error(f"Transformation failed: {str(e)}")
         import traceback
+
         console.print(f"[red]{traceback.format_exc()}[/red]")
         raise click.Abort()
 
@@ -212,12 +213,20 @@ def transform_csv(input_file: str, output_file: str, format: str):
     envvar="BCD_API_URL",
 )
 @click.option(
-    "--yes", "-y",
+    "--yes",
+    "-y",
     is_flag=True,
     default=False,
     help="Skip confirmation prompt (for automated/non-interactive use)",
 )
-def import_dublin_core(file_path: str, api_url: str, yes: bool):
+@click.option(
+    "--format",
+    "source_format",
+    default="dublin_core",
+    show_default=True,
+    help="Source format registered by the API, for example bibliopuce",
+)
+def import_dublin_core(file_path: str, api_url: str, yes: bool, source_format: str):
     """
     Import bibliographic records from Dublin Core CSV file.
 
@@ -249,12 +258,14 @@ def import_dublin_core(file_path: str, api_url: str, yes: bool):
         file_size = file_path_obj.stat().st_size
         console.print(f"[cyan]File:[/cyan] {file_path_obj.name}")
         console.print(f"[cyan]Size:[/cyan] {file_size:,} bytes")
-        console.print("[cyan]Format:[/cyan] Dublin Core CSV")
+        console.print(f"[cyan]Format:[/cyan] {source_format}")
         console.print()
 
         # Confirm import (unless --yes flag)
         if not yes:
-            console.print("[bold yellow]Warning:[/bold yellow] This will import data into the database.")
+            console.print(
+                "[bold yellow]Warning:[/bold yellow] This will import data into the database."
+            )
             if not click.confirm("Do you want to proceed?", default=True):
                 console.print("[yellow]Import cancelled[/yellow]")
                 return
@@ -266,7 +277,11 @@ def import_dublin_core(file_path: str, api_url: str, yes: bool):
         # Upload file
         with open(file_path_obj, "rb") as f:
             files = {"file": (file_path_obj.name, f, "text/csv")}
-            response = client.post("/api/v1/catalog/import", files=files)
+            response = client.post(
+                "/api/v1/catalog/import",
+                files=files,
+                params={"format": source_format},
+            )
 
         if response.status_code != 200:
             print_error(f"Import failed: {response.status_code}")

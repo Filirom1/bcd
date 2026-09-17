@@ -113,6 +113,7 @@ To avoid duplicating rules when you have sub-locations or custom medium types, y
 ### Available placeholders for patterns:
 - `{AUT1}` / `{AUT3}`: 1 or 3 first uppercase letters of the author's last name (normalized, no accents).
 - `{SER1}` / `{SER3}`: 1 or 3 first uppercase letters of the collection/series (or author if empty).
+- `{TIT}`: complete normalized title, without accents or the leading article (useful for periodicals).
 - `{TIT1}` / `{TIT3}`: 1 or 3 first uppercase letters of the title (ignoring leading articles).
 - `{DEWEY}`: The Dewey classification number (mostly used for non-fiction).
 

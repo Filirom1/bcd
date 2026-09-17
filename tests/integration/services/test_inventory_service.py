@@ -145,6 +145,50 @@ def test_search_with_never_inventoried_filter(db_session: Session):
     assert item_ids == {"0001", "0002"}
 
 
+def test_search_with_loanable_filter(db_session: Session):
+    """Test search with loanable=False returns only non-loanable items."""
+    # ARRANGE
+    record = BibliographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+        target_audience="child"
+    )
+    db_session.add(record)
+    db_session.flush()
+
+    loanable_item = Item(
+        item_id="LOANABLE",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=True,
+    )
+    reference_item = Item(
+        item_id="REFERENCE",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=False,
+    )
+    db_session.add_all([loanable_item, reference_item])
+    db_session.commit()
+
+    # ACT
+    result = inventory_service.search_items(db_session, loanable=False)
+
+    # ASSERT
+    assert result["total_count"] == 1
+    assert [item["item_id"] for item in result["items"]] == ["REFERENCE"]
+    assert result["items"][0]["loanable"] is False
+
+    loanable_result = inventory_service.search_items(db_session, loanable=True)
+    assert loanable_result["total_count"] == 1
+    assert [item["item_id"] for item in loanable_result["items"]] == ["LOANABLE"]
+
+
 def test_search_with_rotation_filter(db_session: Session):
     """Test search with rotation filter (max_borrows + since_date) returns items with low circulation."""
     # ARRANGE

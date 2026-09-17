@@ -113,6 +113,7 @@ Pour éviter de dupliquer les règles en présence de sous-emplacements ou de ty
 ### Variables disponibles dans les modèles (pattern) :
 - `{AUT1}` / `{AUT3}` : 1 ou 3 premières lettres du nom de l'auteur (majuscules, nettoyées de tout accent et article).
 - `{SER1}` / `{SER3}` : 1 ou 3 premières lettres de la collection/série (ou de l'auteur si absente).
+- `{TIT}` : titre complet normalisé, sans accent ni article initial (utile notamment pour les périodiques).
 - `{TIT1}` / `{TIT3}` : 1 ou 3 premières lettres du titre (ignorant les articles de début).
 - `{DEWEY}` : L'indice de classification Dewey (utilisé pour les documentaires).
 

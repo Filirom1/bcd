@@ -1487,6 +1487,25 @@ html {
     font-weight: 600;
 }
 
+/* Inventory column selector */
+.inventory-column-selector-menu {
+    min-width: min(360px, calc(100vw - 2rem));
+}
+
+.inventory-column-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inventory-column-options .form-check {
+    min-width: 0;
+}
+
+/* Keep column checkboxes aligned without Bootstrap's negative form-check offset. */
+.inventory-column-options .form-check .form-check-input {
+    margin-left: 0;
+}
+
 /* ============================================================
    INVENTORY PAGE — two-column layout (scanner + bulk edit | working table)
    ============================================================ */

@@ -1,7 +1,5 @@
-from types import SimpleNamespace
 from datetime import datetime
-import pytest
-from unittest.mock import MagicMock
+from types import SimpleNamespace
 
 from src.bcd_api.api.v1 import inventory
 from src.bcd_api.schemas.inventory import (
@@ -9,7 +7,7 @@ from src.bcd_api.schemas.inventory import (
     BulkInventoryRequest,
     BulkUpdateRequest,
     ItemUpdates,
-    RecordUpdates
+    RecordUpdates,
 )
 
 
@@ -44,7 +42,7 @@ def test_mark_item_inventoried_endpoint(monkeypatch):
 def test_bulk_mark_inventoried_endpoint(monkeypatch):
     """Test bulk_mark_inventoried_endpoint delegates to inventory_service."""
     called_ids = []
-    
+
     def mock_bulk(db, item_ids):
         called_ids.extend(item_ids)
         return {
@@ -90,6 +88,28 @@ def test_bulk_update_items_endpoint(monkeypatch):
     assert called[0][1]["status"] == "in_repair"
     assert called[0][2]["level"] == "easy"
     assert result.items_updated == 1
+
+
+def test_bulk_update_preserves_explicit_null_call_number(monkeypatch):
+    """An explicit null reaches the service so a caller can clear a call number."""
+    called = {}
+
+    def mock_update(db, item_ids, item_updates, record_updates):
+        called["item_updates"] = item_updates
+        return {
+            "items_updated": 1,
+            "items_not_found": [],
+            "items_skipped_on_loan": 0,
+            "records_updated": 0,
+            "other_copies_affected": 0,
+        }
+
+    monkeypatch.setattr(inventory.inventory_service, "bulk_update_items", mock_update)
+
+    req = BulkUpdateRequest(item_ids=["0001"], item_updates=ItemUpdates(call_number=None))
+    inventory.bulk_update_items_endpoint(req, db=object())
+
+    assert called["item_updates"] == {"call_number": None}
 
 
 def test_delete_items_bulk_endpoint(monkeypatch):

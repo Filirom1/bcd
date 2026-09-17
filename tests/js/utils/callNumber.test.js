@@ -7,6 +7,7 @@ import {
     computeSer1,
     computeSer3,
     computeSer,
+    computeTit,
     computeTit1,
     computeTit3,
     suggestShelfLocation,
@@ -68,7 +69,11 @@ describe('Call Number Generation Utilities', () => {
         });
     });
 
-    describe('computeTit1 and computeTit3', () => {
+    describe('computeTit, computeTit1 and computeTit3', () => {
+        it('returns complete normalized title without leading articles', () => {
+            expect(computeTit("Les belles histoires d'été")).toBe('BELLES HISTOIRES D ETE');
+        });
+
         it('returns first letter/letters of title stripping articles', () => {
             expect(computeTit1('Le Petit Prince')).toBe('P');
             expect(computeTit3('Le Petit Prince')).toBe('PET');
@@ -120,6 +125,10 @@ describe('Call Number Generation Utilities', () => {
 
             const fullSeriesRules = [{ medium_type: 'Book', pattern: '{SER}' }];
             expect(computeCallNumber(record, '', fullSeriesRules)).toBe('BIBLIOTHEQUE ROSE');
+
+            const periodicalRules = [{ medium_type: 'Périodique', pattern: 'PER {TIT}' }];
+            expect(computeCallNumber({ title: 'Les belles histoires', mediumType: 'Périodique' }, '', periodicalRules))
+                .toBe('PER BELLES HISTOIRES');
         });
     });
 });

@@ -111,6 +111,7 @@ def generate_call_number(record: Any, rules: Any) -> str:
     ser = _full_name(collection, aut3)
     title = _strip_articles(get("title") or "")
     title_clean = re.sub(r"[^A-Z0-9]", "", _normalize_ascii(title).upper())
+    tit = _full_name(get("title") or "", "")
     tit1, tit3 = title_clean[:1], title_clean[:3]
     dewey = (get("dewey_number") or "").strip()
     medium = (get("medium_type") or "").strip()
@@ -142,6 +143,7 @@ def generate_call_number(record: Any, rules: Any) -> str:
         "ILL": ill,
         "ILL1": ill1,
         "ILL3": ill3,
+        "TIT": tit,
         "TIT1": tit1,
         "TIT3": tit3,
         "DEWEY": dewey,

@@ -36,14 +36,16 @@ def search_items(
     max_borrows: Optional[int] = None,
     since_date: Optional[date] = None,
     never_borrowed: Optional[bool] = None,
-    no_limit: bool = False
+    no_limit: bool = False,
+    loanable: Optional[bool] = None
 ) -> dict:
     """
     Search items matching inventory criteria (rotation, last inventoried, condition, etc.).
     """
     query, period_loan_count_column = build_item_search_query(
-        db, q=q, status=status, condition=condition, shelf_location=shelf_location,
-        never_inventoried=never_inventoried, inventoried_before=inventoried_before,
+        db, q=q, status=status, condition=condition, loanable=loanable,
+        shelf_location=shelf_location, never_inventoried=never_inventoried,
+        inventoried_before=inventoried_before,
         acquired_before=acquired_before, acquired_after=acquired_after,
         medium_type=medium_type, target_audience=target_audience, level=level,
         language=language, publication_year_min=publication_year_min,

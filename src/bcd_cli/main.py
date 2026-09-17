@@ -66,10 +66,12 @@ def register_commands():
             checkout,
             config,
             hold,
+            inventory,
             item,
             renew,
             report,
             return_cmd,
+            settings,
         )
 
         # Register commands
@@ -80,9 +82,11 @@ def register_commands():
         cli.add_command(borrower.borrower)
         cli.add_command(item.item)
         cli.add_command(hold.hold)
+        cli.add_command(inventory.inventory)
         cli.add_command(report.report)
         cli.add_command(admin.admin)
         cli.add_command(config.config)
+        cli.add_command(settings.settings)
 
     except ImportError:
         # Commands not yet implemented - graceful degradation

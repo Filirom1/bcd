@@ -6,8 +6,21 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Generic borrower `external_id`, reusable borrower IDs, and improved CSV import support.
+- Borrower `external_id` support: optional unique external identifiers (such as INE) can match existing borrowers during imports while preserving their reusable BCD IDs; CSV import and ONDE conversion support has also been improved.
 - Organized converter packages with ONDE fixtures, tests, and borrower documentation updates.
+- Inventory CLI commands for applying grouped inventory data, clearing call numbers, deleting unlisted items, and generating operation reports.
+- CLI support for creating and replacing configured shelf locations.
+- A `loanable` inventory search filter in the API and Web UI.
+- `{TIT}` full normalized-title support for automatic call-number rules, including periodical cataloging updates.
+
+### Changed
+
+- Improved inventory column selection with a responsive two-column menu.
+- Updated English and French translations and help documentation for inventory and catalog settings.
+
+### Tests
+
+- Added coverage for inventory CLI workflows, settings commands, loanable filtering, explicit call-number clearing, and full-title call-number generation.
 
 ## [1.2.0]
 

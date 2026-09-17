@@ -30,6 +30,17 @@ def test_generate_call_number_uses_dewey_and_series_tokens():
     assert generate_call_number(record, rules) == "551.46 EXP P"
 
 
+def test_generate_call_number_supports_full_title_token_for_periodicals():
+    record = {
+        "title": "Les belles histoires",
+        "authors": [],
+        "medium_type": "Périodique",
+    }
+    rules = [{"medium_type": "Périodique", "pattern": "PER {TIT}"}]
+
+    assert generate_call_number(record, json.dumps(rules)) == "PER BELLES HISTOIRES"
+
+
 def test_generate_call_number_empty_matching_pattern_clears_number():
     record = {"title": "Revue", "authors": ["Durand, Ana"], "medium_type": "Périodique"}
     rules = [{"medium_type": "Périodique", "pattern": ""}]

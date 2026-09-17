@@ -129,6 +129,20 @@ export function computeTit3(title) {
 }
 
 /**
+ * TIT: complete normalized title (without leading articles and separators).
+ * @param {string|null|undefined} title
+ * @returns {string}
+ */
+export function computeTit(title) {
+    if (!title) return '';
+    const cleaned = stripLeadingArticles(title);
+    const normalized = normalizeAscii(cleaned).toUpperCase()
+        .replace(/[^A-Z0-9]+/g, ' ')
+        .trim();
+    return normalized.replace(/\s+/g, ' ');
+}
+
+/**
  * Suggest a shelf location based on medium type matching the available options
  * @param {string|null|undefined} mediumType
  * @param {any[]|null|undefined} locations
@@ -180,6 +194,7 @@ export function computeCallNumber(record, currentShelf = '', rules = []) {
     const ill1 = computeAut1(record.illustrators) || aut1;
     const ill3 = computeAut3(record.illustrators) || aut3;
     const ill = computeAut(record.illustrators) || aut;
+    const tit = computeTit(record.title);
     const tit1 = computeTit1(record.title);
     const tit3 = computeTit3(record.title);
     const dewey = record.deweyNumber ? record.deweyNumber.trim() : '';
@@ -224,6 +239,7 @@ export function computeCallNumber(record, currentShelf = '', rules = []) {
         .replace(/{ILL1}/g, ill1)
         .replace(/{ILL3}/g, ill3)
         .replace(/{ILL}/g, ill)
+        .replace(/{TIT}/g, tit)
         .replace(/{TIT1}/g, tit1)
         .replace(/{TIT3}/g, tit3)
         .replace(/{DEWEY}/g, dewey)
