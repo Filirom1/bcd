@@ -22,7 +22,7 @@ DEFAULT_SHELF_LOCATIONS = json.dumps([
     {"label": "Poésie",           "color": "#8e44ad"},
 ])
 
-DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":"Périodique","shelf_location":null,"pattern":""},{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires*","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]'
+DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires*","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]'
 
 
 def initialize_default_settings(db: Session) -> SystemSettings:
@@ -139,6 +139,7 @@ def update_settings(
         "catalog_languages",
         "catalog_levels",
         "inventory_search_result_limit",
+        "dewey_colors_enabled",
         "dewey_colors",
         "catalog_shelf_locations",
         "catalog_call_number_rules",
@@ -188,6 +189,7 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.id_length_min = 1
     settings.id_length_max = 10
     settings.catalog_medium_types = "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
+    settings.dewey_colors_enabled = True
     settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
 
     db.commit()

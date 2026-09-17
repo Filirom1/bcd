@@ -2,8 +2,8 @@
  * SearchTab Component
  *
  * Search and filter items for inventory operations.
- * - 15 optional filters (item, record, inventory, rotation)
- * - Results capped at 200 items
+ * - Optional item, record, inventory, and rotation filters
+ * - Results capped at the configured inventory search limit
  * - Add selected items to working table
  * - Displays archive cutoff warning
  */
@@ -43,6 +43,7 @@ export default defineComponent({
             q: '',
             status: '',
             condition: '',
+            loanable: null,
             shelf_location: '',
             never_inventoried: null,
             inventoried_before: null,
@@ -121,6 +122,7 @@ export default defineComponent({
                 q: '',
                 status: '',
                 condition: '',
+                loanable: null,
                 shelf_location: '',
                 never_inventoried: null,
                 inventoried_before: null,
@@ -302,6 +304,16 @@ export default defineComponent({
                         <option value="">{{ t('inventory.search.all') }}</option>
                         <option value="good">{{ t('item.condition_good') }}</option>
                         <option value="damaged">{{ t('item.condition_damaged') }}</option>
+                    </select>
+                </div>
+
+                <!-- Loanability -->
+                <div class="mb-3">
+                    <label class="form-label">{{ t('inventory.search.loanable') }}</label>
+                    <select v-model="filters.loanable" class="form-select">
+                        <option :value="null">{{ t('inventory.search.all') }}</option>
+                        <option :value="true">{{ t('inventory.search.loanable_yes') }}</option>
+                        <option :value="false">{{ t('inventory.search.loanable_no') }}</option>
                     </select>
                 </div>
 

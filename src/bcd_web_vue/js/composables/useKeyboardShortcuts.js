@@ -32,7 +32,7 @@ const NAV_SHORTCUTS = [
     { key: 'L', route: '/borrowers' },        // Alt+L — Lecteurs
     { key: 'S', route: '/classes' },          // Alt+S — claSSes
     { key: 'B', route: '/reports/overdue' },  // Alt+B — Bilan
-    { key: 'O', route: '/settings' },         // Alt+O — Options
+    { key: 'O', route: '/settings/general' }, // Alt+O — Options
     { key: 'G', route: '/cataloging' },       // Alt+G — cataloGage (hidden from nav)
 ];
 

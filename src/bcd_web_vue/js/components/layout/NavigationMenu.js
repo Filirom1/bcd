@@ -39,7 +39,16 @@ export default defineComponent({
             },
             { to: '/collections', icon: 'bi-diagram-3-fill', label: t('navigation.collections'), shortcut: 'F' },
             { to: '/inventory', icon: 'bi-box-seam', label: t('navigation.inventory'), shortcut: 'I' },
-            { to: '/settings', icon: 'bi-gear', label: t('navigation.settings'), shortcut: 'O' }
+            {
+                to: '/settings/general',
+                icon: 'bi-gear',
+                label: t('navigation.settings'),
+                shortcut: 'O',
+                submenu: [
+                    { to: '/settings/general', icon: 'bi-sliders', label: t('settings.tabs.general') },
+                    { to: '/settings/catalog', icon: 'bi-tags', label: t('settings.tabs.catalog') }
+                ]
+            }
         ]);
 
         return {

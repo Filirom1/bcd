@@ -5,7 +5,7 @@
  * Based on mockup: borrowers-import.png
  *
  * API Endpoint: POST /api/v1/borrowers/import
- * Expected CSV format: borrower_id, first_name, last_name, class_name, role, active
+ * Expected CSV format: borrower_id, external_id, first_name, last_name, class_name, role, active
  */
 
 import { apiClient } from '../../api/client.js';
@@ -21,6 +21,24 @@ export default {
       <template #header>
         <i class="bi bi-upload"></i> {{ $t('borrowers.import.title') }}
       </template>
+            <!-- Format selector -->
+            <div v-if="!importing && !importResult" class="mb-3">
+              <label class="form-label fw-bold">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                {{ $t('borrowers.import.format') }}
+              </label>
+              <div v-if="importersLoading" class="text-muted small">
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                {{ $t('common.loading') }}
+              </div>
+              <select v-else class="form-select" v-model="selectedFormat">
+                <option v-for="importer in importers" :key="importer.name" :value="importer.name">
+                  {{ $t('borrowers.import.format_' + importer.name, importer.name) }}
+                  — {{ $t('borrowers.import.format_' + importer.name + '_desc', importer.description) }}
+                </option>
+              </select>
+            </div>
+
             <!-- File Upload Section -->
             <div v-if="!importing && !importResult" class="mb-4">
               <label for="csv-file" class="form-label fw-bold">
@@ -42,24 +60,35 @@ export default {
 
             <!-- CSV Format Documentation -->
             <div v-if="!importing && !importResult" class="alert alert-info">
-              <h6 class="alert-heading">
-                <i class="bi bi-file-earmark-spreadsheet"></i>
-                {{ $t('borrowers.import.csv_format') }}
-              </h6>
-              <p class="mb-2">
+              <template v-if="selectedFormat === 'onde'">
+                <h6 class="alert-heading">
+                  <i class="bi bi-file-earmark-spreadsheet"></i>
+                  {{ $t('borrowers.import.format_onde_doc_title') }}
+                </h6>
+                <p class="mb-2">{{ $t('borrowers.import.format_onde_help') }}</p>
+                <code>Nom élève;Nom d'usage élève;Prénom élève;INE;Libellé classe</code>
+              </template>
+              <template v-else>
+                <h6 class="alert-heading">
+                  <i class="bi bi-file-earmark-spreadsheet"></i>
+                  {{ $t('borrowers.import.csv_format') }}
+                </h6>
+                <p class="mb-2">
                 <strong>{{ $t('borrowers.import.required_columns') }}:</strong>
-                <code>borrower_id, first_name, last_name, class_name, role, active</code>
+                <code>first_name, last_name</code><br>
+                <small>{{ $t('borrowers.import.optional_columns') }}: <code>borrower_id, external_id, class_name, role, active</code></small>
               </p>
               <p class="mb-0">
                 <strong>{{ $t('borrowers.import.example') }}:</strong><br>
                 <code>101,Amira,BENALI,CP-A,student,true</code><br>
                 <code>305,Samir,BOUTALEB,CE1-B,student,true</code>
               </p>
-              <div class="mt-3 pt-2 border-top border-info border-opacity-25">
-                <a href="/api/v1/borrowers/template" class="btn btn-sm btn-info text-white fw-bold" download>
-                  <i class="bi bi-download"></i> {{ $t('borrowers.import.download_template') }}
-                </a>
-              </div>
+                <div class="mt-3 pt-2 border-top border-info border-opacity-25">
+                  <a href="/api/v1/borrowers/template" class="btn btn-sm btn-info text-white fw-bold" download>
+                    <i class="bi bi-download"></i> {{ $t('borrowers.import.download_template') }}
+                  </a>
+                </div>
+              </template>
             </div>
 
             <!-- Import Progress -->
@@ -209,9 +238,30 @@ export default {
   setup(props, { emit }) {
     const { t } = VueI18n.useI18n();
     const selectedFile = Vue.ref(null);
+    const importers = Vue.ref([]);
+    const importersLoading = Vue.ref(false);
+    const selectedFormat = Vue.ref('bcd');
     const importing = Vue.ref(false);
     const importResult = Vue.ref(null);
     const fileInput = Vue.ref(null);
+
+    async function loadImporters() {
+      importersLoading.value = true;
+      try {
+        const response = await apiClient.get('/borrowers/importers');
+        importers.value = response.importers || [];
+        if (importers.value.length && !importers.value.some(item => item.name === selectedFormat.value)) {
+          selectedFormat.value = importers.value[0].name;
+        }
+      } catch (error) {
+        console.error('Failed to load borrower importers:', error);
+        importers.value = [{ name: 'bcd', description: 'BCD CSV' }];
+      } finally {
+        importersLoading.value = false;
+      }
+    }
+
+    Vue.onMounted(loadImporters);
 
     function onFileSelected(event) {
       const file = event.target.files[0];
@@ -234,22 +284,21 @@ export default {
         formData.append('file', selectedFile.value);
 
         // Don't set Content-Type header - browser will set it with boundary
-        const response = await apiClient.post('/borrowers/import', formData);
+        const response = await apiClient.post(`/borrowers/import?format=${encodeURIComponent(selectedFormat.value)}`, formData);
 
         importResult.value = response;
 
-        // Show notification summary
-        const total = (response.imported || 0) + (response.skipped || 0) + (response.errors || 0);
-        if (response.imported > 0) {
-          // Success notification handled in modal display
-        }
+        // The API returns successful_rows, not imported/skipped counters.
+        // The result panel is the notification summary for this modal.
       } catch (error) {
         console.error('Import failed:', error);
         importResult.value = {
-          imported: 0,
-          skipped: 0,
-          errors: 1,
-          error_details: [error.message || t('borrowers.import.import_failed')]
+          total_rows: 0,
+          successful_rows: 0,
+          failed_rows: 1,
+          borrowers_created: 0,
+          borrowers_updated: 0,
+          errors: [{ row_number: 0, error: error.message || t('borrowers.import.import_failed') }]
         };
       } finally {
         importing.value = false;
@@ -259,6 +308,7 @@ export default {
     function resetImport() {
       selectedFile.value = null;
       importResult.value = null;
+      selectedFormat.value = 'bcd';
       importing.value = false;
       if (fileInput.value) {
         fileInput.value.value = '';
@@ -271,7 +321,7 @@ export default {
     }
 
     function onImportComplete() {
-      if (importResult.value && importResult.value.imported > 0) {
+      if (importResult.value && importResult.value.successful_rows > 0) {
         emit('import-complete', importResult.value);
       }
       resetImport();
@@ -280,6 +330,9 @@ export default {
 
     return {
       selectedFile,
+      importers,
+      importersLoading,
+      selectedFormat,
       importing,
       importResult,
       fileInput,

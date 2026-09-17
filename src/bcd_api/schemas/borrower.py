@@ -12,6 +12,7 @@ class BorrowerBase(BaseModel):
     """Base schema for Borrower."""
 
     borrower_id: str = Field(..., min_length=1, max_length=20, description="Unique borrower ID")
+    external_id: Optional[str] = Field(None, max_length=100, description="External reference")
     first_name: str = Field(..., min_length=1, max_length=100, description="First name")
     last_name: str = Field(..., min_length=1, max_length=100, description="Last name")
     role: BorrowerRole = Field(..., description="Borrower role (student/teacher/staff)")
@@ -51,6 +52,7 @@ class BorrowerUpdate(BaseModel):
     """Schema for updating a borrower."""
 
     borrower_id: Optional[str] = Field(None, min_length=1, max_length=20, description="New borrower ID")
+    external_id: Optional[str] = Field(None, max_length=100, description="External reference")
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     role: Optional[BorrowerRole] = None

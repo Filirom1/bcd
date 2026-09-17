@@ -1,17 +1,17 @@
 # Retourner des livres
 
-Cette page te permet d'enregistrer le retour d'un ou plusieurs livres empruntés.
+Cette page permet d'enregistrer le retour d'un ou plusieurs livres empruntés.
 
 ---
 
 ## Étape 1 — Scanner le code-barres du livre
 
-Scanne directement le code-barres du livre à retourner.
+Scanner directement le code-barres du livre à retourner.
 Le retour est enregistré immédiatement, sans avoir à identifier l'emprunteur au préalable.
 
 ![Page de retour avec le champ de scan actif](../images/return-01-empty.png)
 
-> **Conseil :** Tu peux scanner les livres les uns après les autres sans aucune manipulation entre chaque scan.
+> **Conseil :** Les livres peuvent être scannés les uns après les autres sans aucune manipulation entre chaque scan.
 
 ## Étape 2 — Vérifier le résumé de retour
 
@@ -21,9 +21,9 @@ La liste indique le titre, le numéro d'inventaire et l'heure de retour.
 ![Liste des retours de la session en cours](../images/return-02-item-returned.png)
 
 > **Conseil :** Si un livre était en retard, un badge rouge « Retard » s'affiche dans la liste.
-> L'emprunteur n'est pas bloqué automatiquement — c'est toi qui décides.
+> L'emprunteur n'est pas bloqué automatiquement : la décision revient au personnel de la bibliothèque.
 
-> **Conseil :** Pour consulter la situation complète d'un élève (prêts en cours, retards), accède à la page **Emprunteurs** depuis le menu et recherche l'élève par nom ou identifiant.
+> **Conseil :** Pour consulter la situation complète d'un élève (prêts en cours, retards), accéder à la page **Emprunteurs** depuis le menu et rechercher l'élève par nom ou identifiant.
 
 ---
 
@@ -46,6 +46,6 @@ aucune action supplémentaire n'est nécessaire de la part de l'enseignant.
 
 | Problème | Solution |
 |----------|----------|
-| Le code-barres n'est pas reconnu | Vérifie que le préfixe d'article est bien configuré dans les paramètres, ou saisis le numéro d'inventaire manuellement. |
-| « Article non emprunté » | Ce livre n'est pas actuellement sorti. Vérifie le numéro d'inventaire. |
-| Le retard n'est pas affiché | Le retard s'affiche seulement si la date de retour prévue est dépassée. Vérifie la date système. |
+| Le code-barres n'est pas reconnu | Vérifier que le préfixe d'article est bien configuré dans les paramètres, ou saisir le numéro d'inventaire manuellement. |
+| « Article non emprunté » | Ce livre n'est pas actuellement sorti. Vérifier le numéro d'inventaire. |
+| Le retard n'est pas affiché | Le retard s'affiche seulement si la date de retour prévue est dépassée. Vérifier la date système. |

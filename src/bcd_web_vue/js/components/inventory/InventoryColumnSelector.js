@@ -74,8 +74,8 @@ export default defineComponent({
 
             <div
                 v-if="showDropdown"
-                class="dropdown-menu show"
-                style="position: absolute; right: 0; top: 100%; margin-top: 0.25rem; min-width: 200px; z-index: 1000;"
+                class="dropdown-menu show inventory-column-selector-menu"
+                style="position: absolute; right: 0; top: 100%; margin-top: 0.25rem; z-index: 1000;"
                 @click.stop
             >
                 <h6 class="dropdown-header">
@@ -83,25 +83,27 @@ export default defineComponent({
                 </h6>
                 <div class="dropdown-divider"></div>
 
-                <div
-                    v-for="column in INVENTORY_AVAILABLE_COLUMNS"
-                    :key="column.id"
-                    class="form-check px-3 py-1"
-                >
-                    <input
-                        type="checkbox"
-                        class="form-check-input"
-                        :id="'inv-col-' + column.id"
-                        :checked="isColumnVisible(column.id)"
-                        @change="toggleColumn(column.id)"
-                    />
-                    <label
-                        class="form-check-label"
-                        :for="'inv-col-' + column.id"
-                        style="cursor: pointer;"
+                <div class="inventory-column-options">
+                    <div
+                        v-for="column in INVENTORY_AVAILABLE_COLUMNS"
+                        :key="column.id"
+                        class="form-check px-3 py-1"
                     >
-                        {{ getColumnLabel(column) }}
-                    </label>
+                        <input
+                            type="checkbox"
+                            class="form-check-input"
+                            :id="'inv-col-' + column.id"
+                            :checked="isColumnVisible(column.id)"
+                            @change="toggleColumn(column.id)"
+                        />
+                        <label
+                            class="form-check-label"
+                            :for="'inv-col-' + column.id"
+                            style="cursor: pointer;"
+                        >
+                            {{ getColumnLabel(column) }}
+                        </label>
+                    </div>
                 </div>
 
                 <div class="dropdown-divider"></div>

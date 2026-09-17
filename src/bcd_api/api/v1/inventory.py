@@ -132,16 +132,17 @@ def search_items_endpoint(
     max_borrows: Optional[int] = Query(None, description="Max loans in period (rotation filter)"),
     since_date: Optional[date] = Query(None, description="Start date for rotation filter"),
     never_borrowed: Optional[bool] = Query(None, description="Only items with last_borrowed_at IS NULL"),
-    no_limit: bool = Query(False, description="Skip result limit, return all matching items")
+    no_limit: bool = Query(False, description="Skip result limit, return all matching items"),
+    loanable: Optional[bool] = Query(None, description="Whether the item can be loaned")
 ):
     """
     Search items matching inventory criteria (rotation, last inventoried, condition, etc.).
 
-    Supports 15 optional query parameters for filtering. Results capped at 200 items.
+    Supports optional query parameters for filtering. Results are capped according to the configured inventory search limit.
 
     **Query Parameters:** (all optional)
     - Text search: q
-    - Item filters: status, condition, shelf_location
+    - Item filters: status, condition, loanable, shelf_location
     - Inventory filters: never_inventoried, inventoried_before, acquired_before
     - Record filters: medium_type, target_audience, level, language
     - Publication year: publication_year_min, publication_year_max
@@ -159,6 +160,7 @@ def search_items_endpoint(
             q=q,
             status=status,
             condition=condition,
+            loanable=loanable,
             shelf_location=shelf_location,
             never_inventoried=never_inventoried,
             inventoried_before=inventoried_before,
@@ -195,8 +197,9 @@ def bulk_update_items_endpoint(
 
     **Request Body:**
     - item_ids: List of item barcodes to update
-    - item_updates: Optional item field updates (status, condition, loanable, shelf_location)
+    - item_updates: Optional item field updates (status, condition, loanable, shelf_location, call_number)
     - record_updates: Optional record field updates (level, target_audience)
+    - auto_call_number: Generate each selected copy's call number from the configured rules
 
     **Returns:**
     - 200: Items and records updated successfully with counts
@@ -205,16 +208,28 @@ def bulk_update_items_endpoint(
     **Usage:** Bulk edit panel in inventory page
     """
     try:
-        # Convert Pydantic models to dicts (excluding None values)
-        item_updates_dict = request.item_updates.model_dump(exclude_none=True) if request.item_updates else None
+        # Convert Pydantic models to dictionaries while preserving explicitly supplied null values.
+        # This lets the CLI opt in to clearing an existing call number.
+        item_updates_dict = (
+            request.item_updates.model_dump(exclude_unset=True, exclude_none=False)
+            if request.item_updates else None
+        )
         record_updates_dict = request.record_updates.model_dump(exclude_none=True) if request.record_updates else None
 
-        result = inventory_service.bulk_update_items(
-            db=db,
-            item_ids=request.item_ids,
-            item_updates=item_updates_dict,
-            record_updates=record_updates_dict
-        )
+        # Keep the legacy service call shape when automatic call-number generation
+        # is not requested.  Besides avoiding an unnecessary argument, this keeps
+        # integrations that provide a compatible bulk-update implementation from
+        # breaking as the optional feature is introduced.
+        update_kwargs = {
+            "db": db,
+            "item_ids": request.item_ids,
+            "item_updates": item_updates_dict,
+            "record_updates": record_updates_dict,
+        }
+        if request.auto_call_number:
+            update_kwargs["auto_call_number"] = True
+
+        result = inventory_service.bulk_update_items(**update_kwargs)
         return BulkUpdateResponse(**result)
 
     except Exception as e:

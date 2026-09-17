@@ -44,9 +44,14 @@ static func get_shelf_color(label: String) -> Color:
 
 
 # Dewey class color from GS.settings["dewey_colors"] JSON (10-element array).
+# The server-side dewey_colors_enabled setting is authoritative. Missing values
+# default to enabled for compatibility with older servers.
 # Derived from the first digit of call_number.
-# Returns Color(0,0,0,0) when absent or first char is not a digit.
+# Returns Color(0,0,0,0) when disabled, absent, or first char is not a digit.
 static func get_dewey_color(call_number: String) -> Color:
+	if GS.settings.get("dewey_colors_enabled", true) == false:
+		return Color(0, 0, 0, 0)
+
 	var trimmed := call_number.strip_edges()
 	if trimmed.is_empty():
 		return Color(0, 0, 0, 0)

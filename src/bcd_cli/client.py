@@ -70,9 +70,7 @@ class BCDAPIClient:
         url = f"{self.base_url}{endpoint}"
 
         try:
-            response = self.client.request(
-                method=method, url=url, json=json_data, params=params
-            )
+            response = self.client.request(method=method, url=url, json=json_data, params=params)
             response.raise_for_status()
             return response.json()
 
@@ -83,9 +81,7 @@ class BCDAPIClient:
                 "  • Check API URL in config"
             )
         except httpx.TimeoutException:
-            raise TimeoutError(
-                f"Request to {endpoint} timed out after {self.timeout}s"
-            )
+            raise TimeoutError(f"Request to {endpoint} timed out after {self.timeout}s")
         except httpx.HTTPStatusError as e:
             # Extract error details from response
             try:
@@ -108,7 +104,13 @@ class BCDAPIClient:
         url = f"{self.base_url}{endpoint}"
         return self.client.get(url, params=params)
 
-    def post(self, endpoint: str, json: Optional[Dict] = None, files: Optional[Dict] = None) -> httpx.Response:
+    def post(
+        self,
+        endpoint: str,
+        json: Optional[Dict] = None,
+        files: Optional[Dict] = None,
+        params: Optional[Dict] = None,
+    ) -> httpx.Response:
         """
         Make POST request to API endpoint.
 
@@ -121,7 +123,17 @@ class BCDAPIClient:
             httpx.Response object
         """
         url = f"{self.base_url}{endpoint}"
-        return self.client.post(url, json=json, files=files)
+        return self.client.post(url, json=json, files=files, params=params)
+
+    def put(self, endpoint: str, json: Optional[Dict] = None) -> httpx.Response:
+        """Make a PUT request to an API endpoint."""
+        url = f"{self.base_url}{endpoint}"
+        return self.client.put(url, json=json)
+
+    def delete(self, endpoint: str, json: Optional[Dict] = None) -> httpx.Response:
+        """Make a DELETE request to an API endpoint."""
+        url = f"{self.base_url}{endpoint}"
+        return self.client.request("DELETE", url, json=json)
 
     def health_check(self) -> Dict[str, Any]:
         """Check API health."""
@@ -150,9 +162,7 @@ class BCDAPIClient:
         }
         return self._request("POST", "/api/v1/circulation/checkout", json_data=payload)
 
-    def return_items(
-        self, item_ids: List[str], returned_by: str = "cli"
-    ) -> Dict[str, Any]:
+    def return_items(self, item_ids: List[str], returned_by: str = "cli") -> Dict[str, Any]:
         """
         Return items.
 
@@ -166,9 +176,7 @@ class BCDAPIClient:
         payload = {"item_ids": item_ids, "returned_by": returned_by}
         return self._request("POST", "/api/v1/circulation/return", json_data=payload)
 
-    def renew_items(
-        self, borrower_id: str, item_ids: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+    def renew_items(self, borrower_id: str, item_ids: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Renew items for a borrower.
 
@@ -194,9 +202,7 @@ class BCDAPIClient:
         Returns:
             Borrower detailed data including current loans
         """
-        return self._request(
-            "GET", f"/api/v1/borrowers/{borrower_id}?detail=true"
-        )
+        return self._request("GET", f"/api/v1/borrowers/{borrower_id}?detail=true")
 
     def get_item_history(self, item_id: str) -> Dict[str, Any]:
         """
@@ -220,9 +226,7 @@ class BCDAPIClient:
         Returns:
             Borrower history data
         """
-        return self._request(
-            "GET", f"/api/v1/circulation/borrower/{borrower_id}/history"
-        )
+        return self._request("GET", f"/api/v1/circulation/borrower/{borrower_id}/history")
 
     def close(self):
         """Close the HTTP client."""

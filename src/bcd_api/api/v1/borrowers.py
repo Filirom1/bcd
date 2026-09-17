@@ -55,6 +55,7 @@ def create_borrower(
     borrower = borrower_service.create_borrower(
         db=db,
         borrower_id=request.borrower_id,
+        external_id=request.external_id,
         first_name=request.first_name,
         last_name=request.last_name,
         role=request.role,
@@ -64,6 +65,24 @@ def create_borrower(
         notes=request.notes,
     )
     return borrower
+
+
+@router.get("/importers")
+def list_borrower_importers():
+    """List supported borrower import formats."""
+    from bcd_converters import list_borrower_converters
+
+    importers = [{
+        "name": "bcd",
+        "description": "BCD CSV — native borrower format",
+        "filename": None,
+    }]
+    importers.extend({
+        "name": converter["name"],
+        "description": converter["description"],
+        "filename": None,
+    } for converter in list_borrower_converters())
+    return {"importers": importers}
 
 
 @router.get("/template")
@@ -90,16 +109,19 @@ def get_borrowers_template():
 @router.post("/import")
 async def import_borrowers_csv(
     file: UploadFile = File(..., description="CSV file with borrower data"),
+    format: str = Query("bcd", description="Source format (bcd or a supported borrower converter)"),
     db: Session = Depends(get_db)
 ):
     """
     Import borrowers from CSV file with upsert behavior.
 
-    Expected CSV format: borrower_id, first_name, last_name, role, class (optional)
+    Expected CSV format: borrower_id, external_id, first_name, last_name, role, class (optional)
 
     **Upsert Behavior**:
     - If borrower_id exists: Update existing borrower
-    - If borrower_id is new: Create new borrower
+    - If external_id matches: Update the matching borrower
+    - If borrower_id is empty: Assign the smallest available numeric ID
+    - If no match exists: Create a new borrower
 
     **Returns**:
     - total_rows: Total rows in CSV
@@ -110,17 +132,29 @@ async def import_borrowers_csv(
     - errors: List of error details with row numbers
     """
     try:
-        # Read CSV file and handle different encodings
         contents = await file.read()
 
-        # Try UTF-8 first, then Latin-1 (ISO-8859-1) which handles French characters
-        try:
-            csv_text = contents.decode('utf-8')
-        except UnicodeDecodeError:
+        if format == "bcd":
             try:
-                csv_text = contents.decode('latin-1')
+                csv_text = contents.decode('utf-8-sig')
             except UnicodeDecodeError:
-                csv_text = contents.decode('windows-1252')
+                csv_text = contents.decode('cp1252')
+        else:
+            from bcd_converters import get_borrower_converter
+
+            try:
+                converter = get_borrower_converter(format)
+            except ModuleNotFoundError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unknown import format: '{format}'. See GET /borrowers/importers for supported formats.",
+                )
+            if not hasattr(converter, "convert"):
+                raise HTTPException(
+                    status_code=501,
+                    detail=f"Format '{format}' does not support server-side conversion.",
+                )
+            csv_text = converter.convert(contents)
 
         return borrower_service.import_borrowers_from_csv(db, csv_text)
 
@@ -351,6 +385,7 @@ def update_borrower(
         db=db,
         borrower_id=borrower_id,
         new_borrower_id=update_data.borrower_id,
+        external_id=update_data.external_id,
         first_name=update_data.first_name,
         last_name=update_data.last_name,
         role=update_data.role,

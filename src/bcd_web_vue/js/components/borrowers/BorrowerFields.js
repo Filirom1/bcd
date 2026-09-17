@@ -79,6 +79,28 @@ export default {
                 </div>
             </div>
 
+            <!-- External reference -->
+            <div class="row mb-3 align-items-center">
+                <label for="external-reference" class="col-sm-3 col-form-label fw-bold">
+                    {{ t('borrower.external_id') }}
+                </label>
+                <div class="col-sm-9">
+                    <input
+                        type="text"
+                        class="form-control"
+                        :class="{ 'is-invalid': errors.external_id }"
+                        id="external-reference"
+                        data-testid="input-external-reference"
+                        v-model="localData.external_id"
+                        :placeholder="t('borrower.external_id_placeholder')"
+                        maxlength="100"
+                    />
+                    <div v-if="errors.external_id" class="invalid-feedback">
+                        {{ errors.external_id }}
+                    </div>
+                </div>
+            </div>
+
             <!-- First Name -->
             <div class="row mb-3 align-items-center">
                 <label for="first-name" class="col-sm-3 col-form-label fw-bold">

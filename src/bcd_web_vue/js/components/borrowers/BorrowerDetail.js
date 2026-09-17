@@ -97,6 +97,9 @@ export default {
                                                 <dt class="col-sm-5">{{ t('borrower.id') }}</dt>
                                                 <dd class="col-sm-7"><code>{{ borrower.borrower_id }}</code></dd>
 
+                                                <dt class="col-sm-5">{{ t('borrower.external_id') }}</dt>
+                                                <dd class="col-sm-7"><code v-if="borrower.external_id">{{ borrower.external_id }}</code><span v-else class="text-muted">—</span></dd>
+
                                                 <dt class="col-sm-5">{{ t('borrower.role') }}</dt>
                                                 <dd class="col-sm-7">
                                                     <span class="badge bg-secondary">
@@ -525,6 +528,7 @@ export default {
         // Form state
         const formData = Vue.ref({
             borrower_id: '',
+            external_id: '',
             first_name: '',
             last_name: '',
             role: 'student',
@@ -565,6 +569,7 @@ export default {
             if (!b) return;
             formData.value = {
                 borrower_id: b.borrower_id || '',
+                external_id: b.external_id || '',
                 first_name: b.first_name || '',
                 last_name: b.last_name || '',
                 role: b.role || 'student',

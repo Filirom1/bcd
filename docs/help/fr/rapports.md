@@ -23,7 +23,7 @@ Ce rapport classe les **titres** (fiches bibliographiques) par nombre d'emprunts
 
 ### Méthodes d'analyse
 
-Choisis une méthode selon ton objectif :
+Choisir une méthode selon l'objectif :
 
 | Méthode | Ce qu'elle montre |
 |---------|------------------|
@@ -57,7 +57,7 @@ Le taux de rotation est l'indicateur ISO 11620 de performance d'une collection. 
 | **3 à 9** | Usage normal | Comparer d'une année à l'autre |
 | **> 9** | Demande supérieure à l'offre | Racheter des exemplaires supplémentaires |
 
-> **Bon à savoir** : un taux de rotation global faible peut masquer un segment fiction très actif et un fonds documentaire inerte. Utilise les panneaux de filtre pour calculer le taux par type de support.
+> **Bon à savoir** : un taux de rotation global faible peut masquer un segment fiction très actif et un fonds documentaire inerte. Utiliser les panneaux de filtre pour calculer le taux par type de support.
 
 ### Panneaux de filtres statistiques
 
@@ -74,7 +74,7 @@ La barre de méthode contient deux boutons à droite :
 - **⊞ (tableau)** — choisit quelles colonnes afficher dans le tableau de résultats
 - **⊟ (colonnes)** — choisit quels panneaux statistiques afficher
 
-Tes choix sont mémorisés pour les prochaines visites.
+Les choix sont mémorisés pour les prochaines visites.
 
 ---
 
@@ -87,7 +87,7 @@ Le désherbage est le **retrait méthodique des documents détériorés, obsolè
 ### Méthodes CREW disponibles
 
 **1. Jamais emprunté**
-Exemplaires sans aucun emprunt depuis l'achat. C'est la méthode de départ la plus révélatrice : pourquoi ce livre n'est-il jamais pris ? Couverture peu attractive, mauvais emplacement, thème inadapté ?
+Exemplaires sans aucun emprunt depuis l'achat. C'est la méthode de départ la plus révélatrice : pourquoi ce livre n'est-il jamais pris ? Couverture peu attractive, mauvais emplacement ou thème inadapté ?
 
 **2. Faible rotation**
 Exemplaires empruntés 2 fois ou moins sur les 2 dernières années. Libère de la place avant de nouveaux achats.
@@ -125,7 +125,7 @@ Chaque exemplaire reçoit un score automatique cumulant plusieurs critères :
 | 3–4 | 🟠 Orange | Vérifier physiquement |
 | ≥ 5 | 🔴 Rouge | Candidat prioritaire au retrait |
 
-> **Le score est une aide, pas une sentence.** Un livre avec un score élevé mais très populaire mérite d'être racheté plutôt que retiré. Vérifie toujours physiquement avant de décider.
+> **Le score est une aide, pas une sentence.** Un livre avec un score élevé mais très populaire mérite d'être racheté plutôt que retiré. Toujours vérifier physiquement avant de décider.
 
 ### Critères CREW par type de document
 
@@ -158,7 +158,7 @@ Les documentaires accessibles aux élèves de 6–11 ans doivent être **factuel
 
 ### Critères IOUPI (adaptation française de MUSTIE)
 
-Lors de l'inspection physique, applique les critères IOUPI :
+Lors de l'inspection physique, appliquer les critères IOUPI :
 
 | Lettre | Signification | Exemple concret |
 |--------|--------------|-----------------|
@@ -194,19 +194,19 @@ Un seul critère IOUPI suffit à justifier le retrait, indépendamment du score.
 1. **Rapport → Score élevé (≥ 5)** — vue d'ensemble des urgences
 2. **Filtrer** par type de support si le fonds est grand
 3. **Imprimer** ou noter les codes-barres des candidats
-4. **Inspection physique** de chaque livre flaggué (critères IOUPI)
-5. **Décision** : retirer / réparer / racheter exemplaire neuf
+4. **Inspection physique** de chaque livre signalé (critères IOUPI)
+5. **Décision** : retirer / réparer / racheter un exemplaire neuf
 6. **Retrait du système** : via la page Inventaire → modifier l'état ou supprimer l'exemplaire
-7. **Estampiller** les livres retirés "RETIRÉ" et les écarter physiquement
-8. **Acquisition compensatrice** : pour chaque lot retiré, prévoir des achats dans les segments identifiés comme populaires (rapport "Plus empruntés")
+7. **Estampiller** les livres retirés « RETIRÉ » et les écarter physiquement
+8. **Acquisition compensatrice** : pour chaque lot retiré, prévoir des achats dans les segments identifiés comme populaires (rapport « Plus empruntés »)
 
-> **Conseil** : le rapport "Plus empruntés" et le rapport CREW fonctionnent en binôme. Le désherbage libère de la place et du budget ; les titres les plus empruntés révèlent les thématiques et supports en demande. Acheter ciblé dans ces catégories maximise l'usage de la BCD.
+> **Conseil** : le rapport « Plus empruntés » et le rapport CREW fonctionnent en binôme. Le désherbage libère de la place et du budget ; les titres les plus empruntés révèlent les thématiques et supports en demande. Des achats ciblés dans ces catégories maximisent l'usage de la BCD.
 
 ---
 
 ## Rapport "Jamais empruntés"
 
-Variante du CREW centrée sur les exemplaires **sans aucun emprunt**. Utilise le même tableau et les mêmes filtres que le rapport CREW, avec en plus un histogramme de taux de rotation pour filtrer par plage.
+Variante du CREW centrée sur les exemplaires **sans aucun emprunt**. Ce rapport utilise le même tableau et les mêmes filtres que le rapport CREW, avec en plus un histogramme de taux de rotation pour filtrer par plage.
 
 Ce rapport est utile en début d'année pour repérer les acquisitions de l'année précédente qui n'ont jamais circulé.
 
@@ -222,7 +222,7 @@ Pour chaque retard :
 - Date d'emprunt et date prévue de retour
 - Nombre de jours de retard
 
-> **Conseil** : filtre par classe et transmets la liste à l'enseignant concerné pour une relance directe.
+> **Conseil** : filtrer par classe et transmettre la liste à l'enseignant concerné pour une relance directe.
 
 ---
 
@@ -261,9 +261,9 @@ Chaque rapport dispose d'un bouton **Imprimer** (en haut à droite de la page) q
 | Problème | Solution |
 |----------|----------|
 | Le rapport des retards est vide | Aucun emprunt n'est en retard — bonne nouvelle ! |
-| Un livre rendu apparaît encore en retard | Vérifie que le retour a bien été enregistré dans la page Retours. |
+| Un livre rendu apparaît encore en retard | Vérifier que le retour a bien été enregistré dans la page Retours. |
 | Le rapport CREW affiche des centaines de résultats | Commence par "Score élevé (≥ 5)" + filtre par type de support. Augmente l'ancienneté minimale. |
-| Un bon livre a un score élevé | Le score est indicatif. Si le livre est populaire, conserve-le ou rachète un exemplaire neuf. |
-| Un livre de la liste Éduscol a un score élevé | Les listes de référence Éduscol sont exemptées des critères d'âge — vérifie seulement l'état physique. |
-| Taux de rotation < 1 sur tout le fonds | Signal de désherbage ou d'inadéquation du fonds au lectorat — consulter le rapport "Plus empruntés" pour identifier ce qui fonctionne. |
+| Un bon livre a un score élevé | Le score est indicatif. Si le livre est populaire, le conserver ou racheter un exemplaire neuf. |
+| Un livre de la liste Éduscol a un score élevé | Les listes de référence Éduscol sont exemptées des critères d'âge — vérifier seulement l'état physique. |
+| Taux de rotation < 1 sur tout le fonds | Signal de désherbage ou d'inadéquation du fonds au lectorat — consulter le rapport « Plus empruntés » pour identifier ce qui fonctionne. |
 | Taux de rotation > 9 sur un titre | Racheter des exemplaires supplémentaires ou des titres similaires. |

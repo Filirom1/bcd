@@ -1,17 +1,17 @@
 # Consulter le catalogue
 
-Cette page te permet de rechercher et consulter tous les livres disponibles dans la bibliothèque.
+Cette page permet de rechercher et de consulter tous les livres disponibles dans la bibliothèque.
 
 ---
 
 ## Étape 1 — Rechercher un livre
 
-Tape un titre, un auteur ou un numéro ISBN dans la barre de recherche.
+Saisir un titre, un auteur ou un numéro ISBN dans la barre de recherche.
 Les résultats s'affichent immédiatement pendant la saisie.
 
 ![Barre de recherche du catalogue avec des résultats](../images/catalog-01-search.png)
 
-> **Conseil :** Tu peux laisser la barre de recherche vide pour afficher tous les livres du catalogue.
+> **Conseil :** Laisser la barre de recherche vide permet d'afficher tous les livres du catalogue.
 
 ## Étape 2 — Lire la disponibilité
 
@@ -22,12 +22,12 @@ Un badge vert signifie qu'au moins un exemplaire est disponible. Un badge rouge 
 
 ## Étape 3 — Consulter la fiche détail
 
-Clique sur un titre pour ouvrir la fiche complète du livre.
-Tu y trouves tous les exemplaires, leur statut, et l'historique des emprunts récents.
+Cliquer sur un titre pour ouvrir la fiche complète du livre.
+La fiche présente tous les exemplaires, leur statut et l'historique des emprunts récents.
 
 ![Fiche détail d'un livre avec les exemplaires](../images/catalog-03-detail.png)
 
-> **Conseil :** Dans la fiche détail, tu peux ajouter un nouvel exemplaire en cliquant sur « Ajouter un exemplaire ».
+> **Conseil :** Dans la fiche détail, il est possible d'ajouter un nouvel exemplaire en cliquant sur « Ajouter un exemplaire ».
 
 ---
 
@@ -37,7 +37,7 @@ Le menu **Admin** en haut à droite donne accès aux actions d'administration :
 
 | Action | Description |
 |--------|-------------|
-| **Ajouter un livre** | Accède directement à la page de catalogage pour créer une nouvelle notice. |
+| **Ajouter un livre** | Permet d'accéder directement à la page de catalogage pour créer une nouvelle notice. |
 | **Importer catalogue** | Importe une liste de livres depuis un fichier CSV préparé avec Excel ou exporté depuis BiblioPuce. |
 | **Exporter catalogue** | Exporte tout le catalogue en CSV pour sauvegarde ou migration vers un autre logiciel. |
 | **Édition groupée** | Modifie en lot un ou plusieurs champs des notices sélectionnées. |
@@ -45,7 +45,7 @@ Le menu **Admin** en haut à droite donne accès aux actions d'administration :
 
 ### Édition groupée — champs disponibles
 
-Coche les notices à modifier, puis clique sur **Édition groupée**. Tu peux mettre à jour :
+Cocher les notices à modifier, puis cliquer sur **Édition groupée**. Les champs suivants peuvent être mis à jour :
 
 | Champ | Description |
 |-------|-------------|
@@ -53,17 +53,17 @@ Coche les notices à modifier, puis clique sur **Édition groupée**. Tu peux me
 | **Public cible** | Enfant / Jeune / Adulte. |
 | **Langue** | Langue du livre (ex : Français, Anglais). Valeurs configurées dans les paramètres. |
 
-> **Conseil :** Laisse un champ vide pour ne pas le modifier — seuls les champs remplis sont mis à jour.
+> **Conseil :** Laisser un champ vide pour ne pas le modifier — seuls les champs remplis sont mis à jour.
 
 ### Format du fichier CSV d'import
 
-Le fichier d'import est un tableau que tu prépares avec **Excel** ou **LibreOffice Calc**, ou que tu exportes directement depuis **BiblioPuce**.
+Le fichier d'import est un tableau à préparer avec **Excel** ou **LibreOffice Calc**, ou à exporter directement depuis **BiblioPuce**.
 
-**Si tu utilises BiblioPuce :** exporte ta bibliothèque normalement, puis sélectionne le format « BiblioPuce » dans la fenêtre d'import de BCD. Aucune autre manipulation n'est nécessaire.
+**Avec BiblioPuce :** exporter la bibliothèque normalement, puis sélectionner le format « BiblioPuce » dans la fenêtre d'import de BCD. Aucune autre manipulation n'est nécessaire.
 
-**Si tu prépares le fichier manuellement avec Excel :**
+**Pour préparer le fichier manuellement avec Excel :**
 
-1. Ouvre un nouveau classeur Excel.
+1. Ouvrir un nouveau classeur Excel.
 2. En **ligne 1**, tape exactement ces en-têtes (attention au point `.` dans chaque nom) :
 
 | Colonne à saisir | Ce que ça contient | Obligatoire |
@@ -79,12 +79,12 @@ Le fichier d'import est un tableau que tu prépares avec **Excel** ou **LibreOff
 | `dc.type` | Type de document (ex : Livre, BD, Revue) | Non |
 | `dc.format` | Format physique (ex : broché, relié) | Non |
 
-3. Remplis les lignes suivantes avec un livre par ligne.
-4. Clique sur **Fichier → Enregistrer sous**, puis choisis **CSV UTF-8 (délimité par des virgules)**.
+3. Remplir les lignes suivantes avec un livre par ligne.
+4. Cliquer sur **Fichier → Enregistrer sous**, puis choisir **CSV UTF-8 (délimité par des virgules)**.
 
 > **Conseil :** Seul le titre (`dc.title`) est obligatoire. Plus les colonnes sont remplies, meilleures sont les recherches dans le catalogue.
 
-> **Conseil :** Pour utiliser l'édition groupée, coche d'abord les cases à gauche des notices. L'impression d'étiquettes ne nécessite aucune sélection préalable.
+> **Conseil :** Pour utiliser l'édition groupée, cocher d'abord les cases à gauche des notices. L'impression d'étiquettes ne nécessite aucune sélection préalable.
 
 ### Harmoniser les données du catalogue
 
@@ -92,21 +92,21 @@ Le catalogue peut aussi servir à **corriger et uniformiser les valeurs** d'un e
 
 **Exemple : unifier les variantes de niveau de lecture**
 
-Vous avez des notices avec `cp`, `C.P.`, `Cp` et vous voulez tout mettre à `CP` :
+Pour uniformiser des notices contenant `cp`, `C.P.`, `Cp` et les convertir en `CP` :
 
-1. Dans le champ **Niveau de lecture** des filtres avancés, tapez `cp`
-2. Passez la taille de page à **500** (en bas de la liste) pour voir tous les résultats d'un coup
-3. Cochez la case en haut pour **tout sélectionner**
-4. Menu Admin → **Édition groupée** → renseignez `Niveau de lecture = CP`
-5. Confirmez — toutes les notices sélectionnées sont corrigées en une fois
+1. Dans le champ **Niveau de lecture** des filtres avancés, saisir `cp`
+2. Régler la taille de page sur **500** (en bas de la liste) pour voir tous les résultats d'un coup
+3. Cocher la case en haut pour **tout sélectionner**
+4. Menu Admin → **Édition groupée** → renseigner `Niveau de lecture = CP`
+5. Confirmer — toutes les notices sélectionnées sont corrigées en une fois
 
-> **Conseil :** Vérifiez toujours les résultats de la recherche avant de tout sélectionner. Affinez les filtres si nécessaire pour n'attraper que les notices concernées.
+> **Conseil :** Vérifier toujours les résultats de la recherche avant de tout sélectionner. Affiner les filtres si nécessaire pour ne retenir que les notices concernées.
 
 **Autres cas d'usage courants :**
-- Uniformiser le public cible : filtre Type de support = `Revue` → mettre Public cible = `Jeune`
-- Corriger la langue d'un lot d'importation : filtre Langue = vide → mettre `Français`
+- Uniformiser le public cible : filtrer Type de support = `Revue` → définir Public cible = `Jeune`
+- Corriger la langue d'un lot d'importation : filtrer Langue = vide → définir `Français`
 
-> **Limite connue :** L'édition groupée remplace la valeur entière d'un champ. Elle ne permet pas de remplacer une sous-chaîne (ex : transformer `"roman policier"` en `"Policier"` en conservant le reste). Dans ce cas, procédez en deux étapes : filtrer sur la valeur exacte, puis éditer.
+> **Limite connue :** L'édition groupée remplace la valeur entière d'un champ. Elle ne permet pas de remplacer une sous-chaîne (ex : transformer `"roman policier"` en `"Policier"` en conservant le reste). Dans ce cas, procéder en deux étapes : filtrer sur la valeur exacte, puis éditer.
 
 ---
 
@@ -127,18 +127,18 @@ aucune synchronisation ou configuration supplémentaire n'est nécessaire.
 
 ## Imprimer des étiquettes de codes-barres
 
-BCD utilise un workflow **étiquette-d'abord** : on imprime les codes-barres avant de cataloguer les livres, puis on scanne l'étiquette lors de la catalogage pour l'attribuer à l'exemplaire.
+BCD utilise un workflow **étiquette-d'abord** : les codes-barres sont imprimés avant le catalogage des livres, puis l'étiquette est scannée lors du catalogage pour l'attribuer à l'exemplaire.
 
 ### Workflow recommandé
 
-1. **Admin → Étiquettes** — accède à la page d'impression.
-2. Choisis le **nombre d'étiquettes** à imprimer (le système génère automatiquement des identifiants disponibles non encore utilisés).
-3. Choisis le **format de planche** adapté à tes planches autocollantes (le format 21 étiquettes par A4 est recommandé par défaut).
-4. **Imprime** les planches sur du papier autocollant A4.
-5. **Colle** les étiquettes sur les livres à cataloguer.
-6. Lors du **catalogage**, scanne l'étiquette collée sur le livre — c'est le code-barres d'inventaire de l'exemplaire.
+1. **Admin → Étiquettes** — accéder à la page d'impression.
+2. Choisir le **nombre d'étiquettes** à imprimer (le système génère automatiquement des identifiants disponibles non encore utilisés).
+3. Choisir le **format de planche** adapté aux planches autocollantes (le format 21 étiquettes par A4 est recommandé par défaut).
+4. **Imprimer** les planches sur du papier autocollant A4.
+5. **Coller** les étiquettes sur les livres à cataloguer.
+6. Lors du **catalogage**, scanner l'étiquette collée sur le livre — c'est le code-barres d'inventaire de l'exemplaire.
 
-> **Conseil :** Recouvre les étiquettes imprimées d'un film plastique adhésif : les codes-barres deviennent illisibles quand l'encre s'abime. Les étiquettes plastifiées pré-imprimées vendues en rouleau résistent mieux dans le temps.
+> **Conseil :** Recouvrir les étiquettes imprimées d'un film plastique adhésif : les codes-barres deviennent illisibles quand l'encre s'abîme. Les étiquettes plastifiées pré-imprimées vendues en rouleau résistent mieux dans le temps.
 
 ### Formats de planches disponibles
 
@@ -157,9 +157,9 @@ BCD utilise un workflow **étiquette-d'abord** : on imprime les codes-barres ava
 ### Options avancées
 
 - **Commencer à partir de** : fixe le premier identifiant de la série (utile pour continuer une numérotation existante).
-- **Contiguous** : génère des identifiants consécutifs (décoche pour utiliser les identifiants libres dans les trous de la numérotation).
+- **Contiguous** : génère des identifiants consécutifs (désactiver pour utiliser les identifiants libres dans les trous de la numérotation).
 - **Nom de la BCD** : affiché sur chaque étiquette (configuré dans les paramètres).
-- **Paramètres avancés** : permet d'ajuster finement les marges et l'espacement si les codes-barres ne s'alignent pas exactement sur tes planches.
+- **Paramètres avancés** : permet d'ajuster finement les marges et l'espacement si les codes-barres ne s'alignent pas exactement sur les planches.
 
 ---
 
@@ -167,6 +167,6 @@ BCD utilise un workflow **étiquette-d'abord** : on imprime les codes-barres ava
 
 | Problème | Solution |
 |----------|----------|
-| Aucun résultat trouvé | Vérifie l'orthographe ou essaie avec seulement une partie du titre ou de l'auteur. |
-| Le livre est disponible mais introuvable sur l'étagère | Consulte l'historique des prêts dans la fiche détail pour voir qui l'a emprunté en dernier. |
-| L'ISBN ne donne aucun résultat | Certains vieux livres n'ont pas d'ISBN. Recherche par titre ou auteur à la place. |
+| Aucun résultat trouvé | Vérifier l'orthographe ou essayer avec seulement une partie du titre ou de l'auteur. |
+| Le livre est disponible mais introuvable sur l'étagère | Consulter l'historique des prêts dans la fiche détail pour voir qui l'a emprunté en dernier. |
+| L'ISBN ne donne aucun résultat | Certains livres anciens n'ont pas d'ISBN. Rechercher par titre ou auteur à la place. |

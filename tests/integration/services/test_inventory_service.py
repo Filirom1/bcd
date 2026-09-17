@@ -5,6 +5,7 @@ All tests use AAA pattern: Arrange-Act-Assert.
 """
 
 from datetime import datetime, timedelta, timezone
+import json
 
 import pytest
 from sqlalchemy.orm import Session
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session
 from src.bcd_api.core.exceptions import ItemNotFoundException
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
+from src.bcd_api.models.system_settings import SystemSettings
 from src.bcd_api.services import inventory_service
 
 # ==================== User Story 1: Barcode Scanning Tests ====================
@@ -141,6 +143,50 @@ def test_search_with_never_inventoried_filter(db_session: Session):
     assert len(result["items"]) == 2
     item_ids = {item["item_id"] for item in result["items"]}
     assert item_ids == {"0001", "0002"}
+
+
+def test_search_with_loanable_filter(db_session: Session):
+    """Test search with loanable=False returns only non-loanable items."""
+    # ARRANGE
+    record = BibliographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Antoine de Saint-Exupéry"]',
+        publication_year=1943,
+        medium_type="Livre",
+        target_audience="child"
+    )
+    db_session.add(record)
+    db_session.flush()
+
+    loanable_item = Item(
+        item_id="LOANABLE",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=True,
+    )
+    reference_item = Item(
+        item_id="REFERENCE",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=False,
+    )
+    db_session.add_all([loanable_item, reference_item])
+    db_session.commit()
+
+    # ACT
+    result = inventory_service.search_items(db_session, loanable=False)
+
+    # ASSERT
+    assert result["total_count"] == 1
+    assert [item["item_id"] for item in result["items"]] == ["REFERENCE"]
+    assert result["items"][0]["loanable"] is False
+
+    loanable_result = inventory_service.search_items(db_session, loanable=True)
+    assert loanable_result["total_count"] == 1
+    assert [item["item_id"] for item in loanable_result["items"]] == ["LOANABLE"]
 
 
 def test_search_with_rotation_filter(db_session: Session):
@@ -334,6 +380,51 @@ def test_search_with_no_limit_bypasses_cap(db_session: Session):
     assert result["displayed_count"] == 250  # All items returned
     assert result["capped"] is False  # No capping applied
     assert len(result["items"]) == 250  # All items in result
+
+
+def test_bulk_auto_generates_call_numbers_per_selected_copy(db_session: Session):
+    """Auto generation uses each copy's notice and the configured rule order."""
+    # ARRANGE
+    settings = db_session.query(SystemSettings).first()
+    if settings is None:
+        settings = SystemSettings(id=1)
+        db_session.add(settings)
+    settings.catalog_call_number_rules = json.dumps([
+        {"shelf_location": "Romans", "pattern": "R {AUT3}"},
+        {"pattern": "{AUT3}"},
+    ])
+    record = BibliographicRecord(
+        isbn="978-2070408504",
+        title="Le Petit Prince",
+        authors='["Éric Dupont"]',
+        medium_type="Livre",
+    )
+    db_session.add(record)
+    db_session.flush()
+    item = Item(
+        item_id="0090",
+        bibliographic_record_id=record.id,
+        shelf_location="Romans",
+        call_number="OLD",
+        status="available",
+        condition="good",
+        loanable=True,
+    )
+    db_session.add(item)
+    db_session.commit()
+
+    # ACT
+    result = inventory_service.bulk_update_items(
+        db_session,
+        item_ids=["0090"],
+        auto_call_number=True,
+    )
+
+    # ASSERT
+    db_session.refresh(item)
+    assert result["call_numbers_updated"] == 1
+    assert result["call_numbers"] == {"0090": "R DUP"}
+    assert item.call_number == "R DUP"
 
 
 def test_bulk_mark_inventoried(db_session: Session):

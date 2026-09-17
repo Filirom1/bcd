@@ -1,6 +1,6 @@
 # Paramètres
 
-Cette page te permet de configurer les règles de prêt et les options de la bibliothèque.
+Cette page permet de configurer les règles de prêt et les options de la bibliothèque.
 
 ---
 
@@ -17,7 +17,7 @@ Ces paramètres définissent les règles d'emprunt appliquées à tous les nouve
 | **Durée de prêt (jours)** | Nombre de jours avant la date de retour prévue. S'applique à tous les nouveaux emprunts. | 14 jours |
 | **Limite de prêt (élèves)** | Nombre maximum de livres qu'un élève peut avoir simultanément. | 3 livres |
 | **Limite de prêt (enseignants)** | Nombre maximum de livres qu'un enseignant peut avoir simultanément. | 10 livres |
-| **Renouvellements maximum** | Nombre de fois qu'un emprunt peut être prolongé sans retour physique. Mets 0 pour interdire les renouvellements. | 2 |
+| **Renouvellements maximum** | Nombre de fois qu'un emprunt peut être prolongé sans retour physique. Saisir 0 pour interdire les renouvellements. | 2 |
 | **Expiration des réservations (jours)** | Nombre de jours pendant lesquels un élève peut venir chercher un livre mis de côté pour lui avant que la réservation soit annulée. | 3 jours |
 | **Réservations actives max par élève** | Nombre maximum de réservations simultanées qu'un élève peut avoir en attente ou prêtes. | 1 |
 | **Année scolaire en cours** | Étiquette de l'année scolaire (ex : 2024-2025). Utilisée dans les rapports. | — |
@@ -34,7 +34,7 @@ Ces paramètres permettent au scanner de distinguer automatiquement les cartes �
 | **Préfixe article** | Caractère(s) ajoutés avant le numéro d'inventaire sur les étiquettes des livres. | `.` → étiquette lue comme `.00785` |
 | **Format d'identifiant** | Format de validation des numéros d'emprunteurs (numérique, alphanumérique, personnalisé). | numérique |
 
-> **Conseil :** Si ta douchette ne lit pas de préfixe (numéro brut), laisse les champs de préfixe vides.
+> **Conseil :** Si la douchette ne lit pas de préfixe (numéro brut), laisser les champs de préfixe vides.
 
 ## Étape 3 — Listes de classification
 
@@ -45,7 +45,7 @@ Ces listes définissent les valeurs suggérées dans les formulaires de cataloga
 | **Types de support** | Liste des types de support (ex : Livre, BD, Revue, CD, DVD). |
 | **Langues** | Liste des codes de langue ISO 639-1, séparés par des virgules (ex : `fr, en, es, de, ar`). Ces codes sont utilisés dans les formulaires de catalogage et les filtres d'inventaire. |
 
-> **Conseil :** Ces listes sont utilisées comme suggestions — tu peux toujours saisir une valeur qui n'y figure pas.
+> **Conseil :** Ces listes sont utilisées comme suggestions — une valeur qui n'y figure pas peut toujours être saisie.
 
 **Bonnes pratiques pour maintenir la cohérence du catalogue :**
 
@@ -73,17 +73,17 @@ La **marguerite des couleurs** associe une couleur à chacune des 10 grandes cla
 | **800** | Littérature |
 | **900** | Histoire, géographie, biographies |
 
-**Pour chaque classe, tu peux :**
+**Pour chaque classe, il est possible de :**
 - **Activer ou désactiver** la couleur avec la case à cocher (si désactivée, la cote s'affiche sans couleur)
 - **Choisir la couleur** avec le sélecteur de couleur
 
 Les couleurs par défaut suivent la **marguerite des couleurs** utilisée dans les bibliothèques scolaires françaises.
 
-> **Conseil :** Si tu colories déjà les étiquettes physiques sur tes livres, configure ici les mêmes couleurs pour que l'affichage à l'écran corresponde à ce que les élèves voient sur les étagères.
+> **Conseil :** Si les étiquettes physiques des livres sont déjà colorées, configurer ici les mêmes couleurs afin que l'affichage à l'écran corresponde à ce que les élèves voient sur les étagères.
 
 ## Étape 5 — Emplacements de rayonnage
 
-Cette liste définit les **emplacements physiques** de ta bibliothèque (Romans, Albums, Bandes dessinées, Documentaires…). Chaque emplacement peut avoir une couleur distincte.
+Cette liste définit les **emplacements physiques** de la bibliothèque (Romans, Albums, Bandes dessinées, Documentaires…). Chaque emplacement peut avoir une couleur distincte.
 
 Ces emplacements apparaissent comme des badges colorés dans :
 - Le **catalogue** (résultats de recherche et fiche d'un livre)
@@ -91,12 +91,12 @@ Ces emplacements apparaissent comme des badges colorés dans :
 - Le formulaire de **catalogage** (sélecteur d'emplacement au lieu d'un champ texte libre)
 
 **Pour gérer la liste :**
-- **Ajouter** un emplacement : clique sur « + Ajouter un emplacement »
+- **Ajouter** un emplacement : cliquer sur « + Ajouter un emplacement »
 - **Nommer** chaque emplacement dans le champ texte (ex : `Romans`, `Albums`)
-- **Colorier** (optionnel) : coche la case puis choisis une couleur avec le sélecteur
-- **Supprimer** un emplacement : clique sur l'icône corbeille
+- **Colorier** (optionnel) : cocher la case puis choisir une couleur avec le sélecteur
+- **Supprimer** un emplacement : cliquer sur l'icône corbeille
 
-> **Conseil :** Utilise les mêmes noms que les panneaux physiques sur tes étagères. Les élèves retrouveront plus facilement les livres si les noms à l'écran correspondent à ce qu'ils voient dans la bibliothèque.
+> **Conseil :** Utiliser les mêmes noms que les panneaux physiques sur les étagères. Les élèves retrouveront plus facilement les livres si les noms à l'écran correspondent à ce qu'ils voient dans la bibliothèque.
 
 ## Étape 6 — Règles de génération automatique des cotes
 
@@ -105,7 +105,7 @@ Ces règles permettent de pré-remplir automatiquement la **cote** d'un livre lo
 Le système applique la **première règle correspondante (de haut en bas)**.
 
 ### Support du caractère joker (wildcard `*`)
-Pour éviter de dupliquer les règles lorsque vous avez des sous-emplacements ou des types de supports personnalisés, vous pouvez utiliser le caractère `*` comme joker sur l'emplacement ou le type de support :
+Pour éviter de dupliquer les règles en présence de sous-emplacements ou de types de supports personnalisés, utiliser le caractère `*` comme joker sur l'emplacement ou le type de support :
 - Un emplacement configuré comme `Documentaires*` s'appliquera automatiquement à `Documentaires`, `Documentaires - Sciences`, `Documentaires - Nature`, etc.
 - Un type de support configuré comme `Livre*` s'appliquera à `Livre`, `Livre audio`, etc.
 - Une valeur configurée comme `*` s'appliquera à n'importe quel texte.
@@ -113,12 +113,13 @@ Pour éviter de dupliquer les règles lorsque vous avez des sous-emplacements ou
 ### Variables disponibles dans les modèles (pattern) :
 - `{AUT1}` / `{AUT3}` : 1 ou 3 premières lettres du nom de l'auteur (majuscules, nettoyées de tout accent et article).
 - `{SER1}` / `{SER3}` : 1 ou 3 premières lettres de la collection/série (ou de l'auteur si absente).
+- `{TIT}` : titre complet normalisé, sans accent ni article initial (utile notamment pour les périodiques).
 - `{TIT1}` / `{TIT3}` : 1 ou 3 premières lettres du titre (ignorant les articles de début).
 - `{DEWEY}` : L'indice de classification Dewey (utilisé pour les documentaires).
 
 ## Étape 7 — Sauvegarder les paramètres
 
-Clique sur **« Enregistrer »** pour appliquer tous les changements.
+Cliquer sur **« Enregistrer »** pour appliquer tous les changements.
 Un message de confirmation apparaît en haut de l'écran.
 
 ---
@@ -128,8 +129,8 @@ Un message de confirmation apparaît en haut de l'écran.
 | Problème | Solution |
 |----------|----------|
 | La nouvelle durée de prêt ne s'applique pas aux anciens emprunts | Les paramètres ne s'appliquent qu'aux nouveaux emprunts. Les anciens conservent leur date d'échéance. |
-| Le scanner ne distingue pas les cartes des livres | Vérifie que les préfixes emprunteur et article sont bien configurés et différents. |
-| Les modifications ne sont pas sauvegardées | Clique sur le bouton « Enregistrer » pour valider les changements. |
+| Le scanner ne distingue pas les cartes des livres | Vérifier que les préfixes emprunteur et article sont bien configurés et différents. |
+| Les modifications ne sont pas sauvegardées | Cliquer sur le bouton « Enregistrer » pour valider les changements. |
 
 ---
 
@@ -142,19 +143,19 @@ Pour les écoles gérant elles-mêmes leur installation ou souhaitant personnali
 ### Pourquoi modifier ces paramètres ?
 Ce volet s'adresse aux personnes qui s'occupent de l'installation informatique de l'école (enseignant référent pour le numérique, équipe technique de la mairie, etc.). Il permet par exemple de :
 * **Changer de base de données** : pour passer d'un fonctionnement local à une base partagée entre plusieurs ordinateurs de l'école (PostgreSQL).
-* **Déplacer les dossiers de stockage** : si vous préférez enregistrer vos sauvegardes automatiques ou vos couvertures d'images sur une clé USB ou un disque réseau plutôt que sur l'ordinateur principal.
+* **Déplacer les dossiers de stockage** : enregistrer les sauvegardes automatiques ou les couvertures d'images sur une clé USB ou un disque réseau plutôt que sur l'ordinateur principal.
 
 ### Comment modifier un paramètre ?
-1. Modifiez ou ajoutez les lignes de configuration dans la zone de texte. Les lignes commençant par un `#` sont de simples commentaires informatifs.
-2. Cliquez sur **« Enregistrer »**.
-3. **IMPORTANT :** Vous devez redémarrer complètement le logiciel BCD pour que ces nouveaux dossiers ou configurations soient pris en compte.
+1. Modifier ou ajouter les lignes de configuration dans la zone de texte. Les lignes commençant par un `#` sont de simples commentaires informatifs.
+2. Cliquer sur **« Enregistrer »**.
+3. **IMPORTANT :** Redémarrer complètement le logiciel BCD pour que ces nouveaux dossiers ou configurations soient pris en compte.
 
 ### Tous les paramètres du .env expliqués
 
-Voici la liste complète des paramètres personnalisables dans votre fichier `.env`, classés par catégorie :
+Voici la liste complète des paramètres personnalisables dans le fichier `.env`, classés par catégorie :
 
 #### 1. Base de données et dossiers de stockage personnalisés
-*Utile pour déplacer vos données sur un disque réseau, une clé USB, ou utiliser un serveur externe de base de données PostgreSQL.*
+*Utile pour déplacer les données sur un disque réseau, une clé USB, ou utiliser un serveur externe de base de données PostgreSQL.*
 
 | Paramètre | Valeur par défaut | Description |
 |-----------|-------------------|-------------|
@@ -169,7 +170,7 @@ Voici la liste complète des paramètres personnalisables dans votre fichier `.e
 
 | Paramètre | Valeur par défaut | Description |
 |-----------|-------------------|-------------|
-| **`API_HOST`** | `127.0.0.1` | **Adresse d'écoute du serveur.** `127.0.0.1` n'autorise que l'ordinateur local. Mettez `0.0.0.0` pour que le serveur accepte les connexions des autres ordinateurs du réseau de l'école. |
+| **`API_HOST`** | `127.0.0.1` | **Adresse d'écoute du serveur.** `127.0.0.1` n'autorise que l'ordinateur local. Saisir `0.0.0.0` pour que le serveur accepte les connexions des autres ordinateurs du réseau de l'école. |
 | **`API_PORT`** | `8888` | **Port réseau.** Port utilisé par le serveur BCD pour communiquer. |
 | **`CORS_ORIGINS`** | `http://localhost:3000, http://localhost:8888` | Origines Web autorisées à communiquer avec l'API (essentiellement utilisé pour le développement). |
 
@@ -186,12 +187,12 @@ Voici la liste complète des paramètres personnalisables dans votre fichier `.e
 
 | Paramètre | Valeur par défaut | Description |
 |-----------|-------------------|-------------|
-| **`AUTH_USERNAME`** | *(vide)* | **Nom d'utilisateur admin.** Renseignez ce champ pour activer la demande d'identifiants à l'ouverture du logiciel gestion. |
-| **`AUTH_PASSWORD`** | *(vide)* | **Mot de passe admin.** Doit être défini avec le nom d'utilisateur pour que la sécurité soit activée. |
+| **`AUTH_USERNAME`** | *(vide)* | **Nom d'utilisateur admin.** Renseigner ce champ pour activer la demande d'identifiants à l'ouverture du logiciel de gestion. |
+| **`AUTH_PASSWORD`** | *(vide)* | **Mot de passe admin.** À définir avec le nom d'utilisateur pour activer la sécurité. |
 | **`AUTH_SCHEME`** | `basic` | **Protocole de sécurité.** Choix entre `basic` (standard et hautement compatible) et `digest` (plus sécurisé pour les connexions sans HTTPS). |
 
 #### 5. Moteurs de recherche externes (Catalogage automatique par ISBN)
-*Activez ou désactivez ces sources pour optimiser la recherche d'informations sur les livres.*
+*Activer ou désactiver ces sources pour optimiser la recherche d'informations sur les livres.*
 
 | Paramètre | Valeur par défaut | Description |
 |-----------|-------------------|-------------|

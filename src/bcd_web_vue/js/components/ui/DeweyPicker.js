@@ -48,6 +48,10 @@ export default defineComponent({
         showBadge: {
             type: Boolean,
             default: true
+        },
+        enabled: {
+            type: Boolean,
+            default: true
         }
     },
 
@@ -65,6 +69,7 @@ export default defineComponent({
 
         // Badge: derived from first digit of current value
         const badgeClass = computed(() => {
+            if (!props.enabled) return null;
             const first = (props.modelValue || '').trim()[0];
             if (first >= '0' && first <= '9') return parseInt(first);
             return null;
@@ -195,6 +200,7 @@ export default defineComponent({
     </div>
     <!-- Bouton toggle -->
     <button
+      v-if="enabled"
       type="button"
       :class="['btn btn-sm border', open ? 'btn-primary' : 'btn-outline-secondary']"
       style="white-space:nowrap; flex-shrink:0;"

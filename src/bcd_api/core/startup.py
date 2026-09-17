@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 async def run_startup_tasks(config_settings, is_portable_fn) -> None:
     """Point d'entrée unique appelé par lifespan."""
     _log_startup_info(config_settings, is_portable_fn)
+    init_database_if_needed(config_settings)
     _configure_external_services(config_settings)
     library_code = await init_system_settings()
     expire_ready_holds_on_startup()

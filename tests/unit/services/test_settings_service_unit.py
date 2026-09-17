@@ -102,6 +102,19 @@ class TestUpdateSettings:
 
         assert result.library_name == "Unchanged"
 
+    def test_update_dewey_colors_enabled(self, db_session):
+        """Test updating dewey_colors_enabled."""
+        settings = SystemSettings(id=1, dewey_colors_enabled=True)
+        db_session.add(settings)
+        db_session.commit()
+
+        result = settings_service.update_settings(
+            db_session,
+            {"dewey_colors_enabled": False}
+        )
+
+        assert result.dewey_colors_enabled is False
+
     def test_update_not_found(self, db_session):
         """Test error when settings don't exist."""
         with pytest.raises(NotFoundError):
@@ -120,6 +133,7 @@ class TestResetToDefaults:
             language="en",
             loan_duration_days=30,
             loan_limit_default=5,
+            dewey_colors_enabled=False,
             catalog_medium_types="CustomType1, CustomType2",
         )
         db_session.add(settings)
@@ -135,6 +149,7 @@ class TestResetToDefaults:
         assert result.loan_limit_default == 2
         assert result.loan_limit_teacher == 5
         assert result.renewal_limit == 2
+        assert result.dewey_colors_enabled is True
         assert result.catalog_medium_types == "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
         assert result.catalog_call_number_rules is not None
 

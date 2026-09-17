@@ -16,6 +16,7 @@ class Borrower(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     borrower_id = Column(String(20), nullable=False, unique=True, index=True)
+    external_id = Column(String(100), nullable=True, unique=True, index=True)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     full_name = Column(String(200), nullable=False, index=True)

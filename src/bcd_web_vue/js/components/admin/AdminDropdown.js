@@ -30,11 +30,11 @@ export default defineComponent({
         page: {
             type: String,
             required: true,
-            validator: (value) => ['borrowers', 'catalog', 'inventory'].includes(value)
+            validator: (value) => ['borrowers', 'catalog', 'inventory', 'settings'].includes(value)
         }
     },
 
-    emits: ['import', 'export', 'bulk-edit', 'edit-selected', 'print-reference', 'print-cards', 'print-labels', 'cleanup-orphans'],
+    emits: ['import', 'export', 'bulk-edit', 'edit-selected', 'print-reference', 'print-cards', 'print-labels', 'cleanup-orphans', 'settings-section'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
@@ -85,6 +85,10 @@ export default defineComponent({
             }
         };
 
+        const handleSettingsSection = (section) => {
+            emit('settings-section', section);
+        };
+
         // Print handlers (page-contextual)
         const handlePrint = () => {
             if (props.page === 'borrowers') {
@@ -120,6 +124,7 @@ export default defineComponent({
             handleExport,
             handleBulkEdit,
             handleEditSelected,
+            handleSettingsSection,
             altHeld
         };
     },
@@ -138,36 +143,39 @@ export default defineComponent({
                 {{ t('admin.menu_title') }}
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
-                <!-- Import -->
-                <li>
-                    <a
-                        class="dropdown-item d-flex align-items-center"
-                        href="#"
-                        data-testid="admin-menu-import"
-                        @click.prevent="handleImport"
-                    >
-                        <i class="bi bi-upload me-2"></i>
-                        <span class="flex-grow-1">{{ importLabel }}</span>
-                        <kbd v-if="altHeld" class="admin-shortcut ms-2">I</kbd>
-                    </a>
-                </li>
+                <!-- Import / export are page-specific operations. -->
+                <template v-if="page !== 'settings'">
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="#" data-testid="admin-menu-import" @click.prevent="handleImport">
+                            <i class="bi bi-upload me-2"></i><span class="flex-grow-1">{{ importLabel }}</span>
+                            <kbd v-if="altHeld" class="admin-shortcut ms-2">I</kbd>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center" href="#" data-testid="admin-menu-export" @click.prevent="handleExport">
+                            <i class="bi bi-download me-2"></i><span class="flex-grow-1">{{ exportLabel }}</span>
+                            <kbd v-if="altHeld" class="admin-shortcut ms-2">X</kbd>
+                        </a>
+                    </li>
+                </template>
 
-                <!-- Export -->
-                <li>
-                    <a
-                        class="dropdown-item d-flex align-items-center"
-                        href="#"
-                        data-testid="admin-menu-export"
-                        @click.prevent="handleExport"
-                    >
-                        <i class="bi bi-download me-2"></i>
-                        <span class="flex-grow-1">{{ exportLabel }}</span>
-                        <kbd v-if="altHeld" class="admin-shortcut ms-2">X</kbd>
-                    </a>
-                </li>
+                <!-- Settings actions use the same AdminDropdown pattern as other pages. -->
+                <template v-else>
+                    <li v-for="action in [
+                        { section: 'backup', icon: 'bi-archive', key: 'settings_action_backup' },
+                        { section: 'covers', icon: 'bi-image', key: 'settings_action_covers' },
+                        { section: 'maintenance', icon: 'bi-tools', key: 'settings_action_maintenance' },
+                        { section: 'env', icon: 'bi-file-earmark-code', key: 'settings_action_env' }
+                    ]" :key="action.section">
+                        <a class="dropdown-item d-flex align-items-center" href="#" @click.prevent="handleSettingsSection(action.section)">
+                            <i :class="['bi', action.icon, 'me-2']"></i>
+                            <span class="flex-grow-1">{{ t('admin.' + action.key) }}</span>
+                        </a>
+                    </li>
+                </template>
 
                 <!-- Edit/Bulk operations (only for borrowers and catalog) -->
-                <template v-if="page !== 'inventory'">
+                <template v-if="page !== 'inventory' && page !== 'settings'">
                     <!-- Divider -->
                     <li><hr class="dropdown-divider"></li>
 

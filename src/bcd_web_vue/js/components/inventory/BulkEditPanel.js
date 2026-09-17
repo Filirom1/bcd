@@ -38,6 +38,8 @@ export default defineComponent({
         const itemStatus = ref('unchanged');
         const loanable = ref('unchanged');
         const shelfLocation = ref('');
+        const callNumber = ref('');
+        const autoCallNumber = ref(false);
 
         // Record fields
         const level = ref('');
@@ -82,6 +84,8 @@ export default defineComponent({
                    itemStatus.value !== 'unchanged' ||
                    loanable.value !== 'unchanged' ||
                    shelfLocation.value.trim() !== '' ||
+                   callNumber.value.trim() !== '' ||
+                   autoCallNumber.value ||
                    level.value.trim() !== '' ||
                    targetAudience.value !== 'unchanged' ||
                    language.value.trim() !== '' ||
@@ -119,6 +123,13 @@ export default defineComponent({
             const shelfVal = toPayload(shelfLocation.value);
             if (shelfVal !== null) payload.item_updates.shelf_location = shelfVal;
 
+            if (autoCallNumber.value) {
+                payload.auto_call_number = true;
+            } else {
+                const callNumberVal = toPayload(callNumber.value);
+                if (callNumberVal !== null) payload.item_updates.call_number = callNumberVal;
+            }
+
             // Record updates
             const levelVal = toPayload(level.value);
             if (levelVal !== null) payload.record_updates.level = levelVal;
@@ -147,6 +158,8 @@ export default defineComponent({
             loanable,
             shelfLocation,
             shelfLocationOptions,
+            callNumber,
+            autoCallNumber,
             level,
             targetAudience,
             language,
@@ -224,6 +237,29 @@ export default defineComponent({
                             :extra-options="[{ label: '__clear__', display: t('inventory.bulk_edit.clear_value') }]"
                             input-class="form-control-sm"
                         />
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label small">{{ t('catalog.call_number') }}</label>
+                        <input
+                            type="text"
+                            class="form-control form-control-sm"
+                            v-model="callNumber"
+                            :disabled="autoCallNumber"
+                            :placeholder="t('inventory.bulk_edit.call_number_placeholder')"
+                        />
+                        <div class="form-check mt-2">
+                            <input
+                                id="inventory-auto-call-number"
+                                type="checkbox"
+                                class="form-check-input"
+                                v-model="autoCallNumber"
+                            />
+                            <label class="form-check-label small" for="inventory-auto-call-number">
+                                {{ t('inventory.bulk_edit.auto_call_number') }}
+                            </label>
+                        </div>
+                        <div class="form-text">{{ t('inventory.bulk_edit.auto_call_number_help') }}</div>
                     </div>
                 </div>
 

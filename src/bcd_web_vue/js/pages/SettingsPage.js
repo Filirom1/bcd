@@ -1,73 +1,66 @@
 /**
- * Settings Page Component
- * System configuration and library settings
- * Matches HTMX version exactly with 14 fields
+ * Settings page.
+ * Like reports, each section has its own URL so the page stays focused and fast.
  */
 
-const { defineComponent, ref, onMounted } = Vue;
+const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
+const { useRoute, useRouter } = VueRouter;
 import { apiClient } from '../api/client.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { logger } from '../utils/logger.js';
 import LoadingSpinner from '../components/ui/LoadingSpinner.js';
+import HelpPanel from '../components/ui/HelpPanel.js';
+import AdminDropdown from '../components/admin/AdminDropdown.js';
 import SettingsForm from '../components/settings/SettingsForm.js';
 import BackupSection from '../components/settings/BackupSection.js';
 import CoverSection from '../components/settings/CoverSection.js';
 import EnvSection from '../components/settings/EnvSection.js';
 import DataMaintenanceSection from '../components/settings/DataMaintenanceSection.js';
-import HelpPanel from '../components/ui/HelpPanel.js';
+
+const VALID_SECTIONS = ['general', 'catalog', 'backup', 'covers', 'maintenance', 'env'];
 
 export default defineComponent({
     name: 'SettingsPage',
 
     components: {
-        LoadingSpinner,
-        SettingsForm,
-        BackupSection,
-        CoverSection,
-        EnvSection,
-        DataMaintenanceSection,
-        HelpPanel
+        LoadingSpinner, HelpPanel, AdminDropdown, SettingsForm,
+        BackupSection, CoverSection, EnvSection, DataMaintenanceSection
     },
 
     setup() {
         const { t } = useI18n();
+        const route = useRoute();
+        const router = useRouter();
         const { saveSettings: saveGlobalSettings } = useAppState();
         const { success } = useNotification();
         const { handleError } = useErrorHandler(t);
-
         const loading = ref(true);
         const saving = ref(false);
         const appVersion = ref('');
-
-        // Match HTMX version field structure exactly
         const settings = ref({
-            library_name: '',
-            library_code: '',
-            loan_duration_days: 14,
-            loan_limit_default: 3,
-            loan_limit_warning: 1,
-            loan_limit_teacher: 10,
-            renewal_limit: 2,
-            hold_expiration_days: 3,
-            max_holds_per_borrower: 1,
-            academic_year_start_month: 9,
-            academic_year_current: '2024-2025',
-            language: 'fr',
-            date_format: 'DD/MM/YYYY',
-            catalog_call_number_rules: null
+            library_name: '', library_code: '', loan_duration_days: 14,
+            loan_limit_default: 3, loan_limit_warning: 1, loan_limit_teacher: 10,
+            renewal_limit: 2, hold_expiration_days: 3, max_holds_per_borrower: 1,
+            academic_year_start_month: 9, academic_year_current: '2024-2025',
+            language: 'fr', date_format: 'DD/MM/YYYY', catalog_call_number_rules: null
         });
-
         const originalSettings = ref({});
+        const activeSection = computed(() => VALID_SECTIONS.includes(route.params.section)
+            ? route.params.section : 'general');
+        const isSettingsForm = computed(() => ['general', 'catalog'].includes(activeSection.value));
+
+        const navigateTo = (section) => {
+            if (VALID_SECTIONS.includes(section)) router.push(`/settings/${section}`);
+        };
 
         const loadSettings = async () => {
             try {
                 loading.value = true;
                 const [data, health] = await Promise.all([
-                    apiClient.get('/admin/settings'),
-                    apiClient.get('/health')
+                    apiClient.get('/admin/settings'), apiClient.get('/health')
                 ]);
                 settings.value = { ...settings.value, ...data };
                 originalSettings.value = { ...settings.value };
@@ -82,19 +75,13 @@ export default defineComponent({
         const saveSettings = async () => {
             try {
                 saving.value = true;
-                // Remove read-only fields (id, created_at, updated_at) before sending
-                const { id, created_at, updated_at, ...updateData } = settings.value;
-
-                // API expects data wrapped in "updates" field
-                const payload = { updates: updateData };
-
+                const { id, created_at, updated_at, ...updates } = settings.value;
                 logger.debug('Saving settings');
-                await apiClient.put('/admin/settings', payload);
+                await apiClient.put('/admin/settings', { updates });
                 originalSettings.value = { ...settings.value };
                 saveGlobalSettings(settings.value);
                 success(t('settings.save_success'));
             } catch (error) {
-                console.error('Settings save error:', error);
                 handleError(error);
             } finally {
                 saving.value = false;
@@ -105,48 +92,41 @@ export default defineComponent({
             settings.value = { ...originalSettings.value };
         };
 
-        onMounted(() => {
-            loadSettings();
-        });
+        onMounted(loadSettings);
 
         return {
-            loading,
-            saving,
-            settings,
-            appVersion,
-            saveSettings,
-            resetSettings,
-            t
+            t, loading, saving, settings, appVersion, activeSection, isSettingsForm,
+            navigateTo, saveSettings, resetSettings
         };
     },
 
     template: `
         <div class="page-container">
             <div class="page-header">
-                <h1 class="page-title">
-                    <i class="bi bi-gear me-2"></i>
-                    {{ t('navigation.settings') }}
-                </h1>
-                <div class="d-flex gap-2">
+                <h1 class="page-title"><i class="bi bi-gear me-2"></i>{{ t('navigation.settings') }}</h1>
+                <div class="d-flex gap-2 align-items-center">
+                    <admin-dropdown page="settings" @settings-section="navigateTo" />
                     <help-panel section="settings" />
                 </div>
             </div>
 
             <loading-spinner v-if="loading" />
-
             <template v-else>
                 <settings-form
+                    v-if="isSettingsForm"
+                    :section="activeSection"
                     :settings="settings"
                     :loading="saving"
                     @save="saveSettings"
                     @reset="resetSettings"
                 />
-                <backup-section class="mt-2" />
-                <cover-section class="mt-2" />
-                <data-maintenance-section class="mt-2" />
-                <env-section class="mt-2" />
+                <backup-section v-else-if="activeSection === 'backup'" />
+                <cover-section v-else-if="activeSection === 'covers'" />
+                <data-maintenance-section v-else-if="activeSection === 'maintenance'" />
+                <env-section v-else-if="activeSection === 'env'" />
                 <div v-if="appVersion" class="mt-3 text-muted small text-end">
-                    {{ t('settings.app_version') }} v{{ appVersion }} &mdash; <a href="https://github.com/Filirom1/bcd" target="_blank" rel="noopener">{{ t('settings.open_source') }}</a>
+                    {{ t('settings.app_version') }} v{{ appVersion }} &mdash;
+                    <a href="https://github.com/Filirom1/bcd" target="_blank" rel="noopener">{{ t('settings.open_source') }}</a>
                 </div>
             </template>
         </div>

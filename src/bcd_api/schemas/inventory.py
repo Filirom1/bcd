@@ -1,9 +1,11 @@
 """Pydantic schemas for Inventory operations."""
 
 from datetime import date, datetime
-from typing import Optional
+from typing import Dict, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from src.shared.validators import clean_call_number
 
 # T006: ItemInventoryResponse, BulkInventoryRequest, BulkInventoryResponse
 
@@ -107,6 +109,12 @@ class ItemUpdates(BaseModel):
     condition: Optional[str] = Field(default=None, description="Item condition")
     loanable: Optional[bool] = Field(default=None, description="Can be borrowed")
     shelf_location: Optional[str] = Field(default=None, description="Physical location")
+    call_number: Optional[str] = Field(default=None, max_length=50, description="Call number")
+
+    @field_validator("call_number", mode="before")
+    @classmethod
+    def clean_call_number_field(cls, v):
+        return clean_call_number(v)
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -114,7 +122,8 @@ class ItemUpdates(BaseModel):
                 "status": "withdrawn",
                 "condition": "damaged",
                 "loanable": False,
-                "shelf_location": "Archive"
+                "shelf_location": "Archive",
+                "call_number": "800 DUP"
             }
         }
     )
@@ -146,6 +155,10 @@ class BulkUpdateRequest(BaseModel):
     item_ids: list[str] = Field(..., min_length=1, description="List of item barcodes to update")
     item_updates: Optional[ItemUpdates] = Field(default=None, description="Item field updates")
     record_updates: Optional[RecordUpdates] = Field(default=None, description="Bibliographic record field updates")
+    auto_call_number: bool = Field(
+        default=False,
+        description="Generate a call number for every selected item using catalog rules",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -153,11 +166,13 @@ class BulkUpdateRequest(BaseModel):
                 "item_ids": ["0785", "0784"],
                 "item_updates": {
                     "status": "withdrawn",
-                    "condition": "damaged"
+                    "condition": "damaged",
+                    "call_number": "800 DUP"
                 },
                 "record_updates": {
                     "level": "CP"
-                }
+                },
+                "auto_call_number": False
             }
         }
     )
@@ -167,9 +182,12 @@ class BulkUpdateResponse(BaseModel):
     """Response schema for bulk item and record updates."""
 
     items_updated: int = Field(..., description="Number of items successfully updated")
+    items_not_found: list[str] = Field(default_factory=list, description="Item IDs not found in database")
     items_skipped_on_loan: int = Field(..., description="Items with status='on_loan' excluded from status changes")
     records_updated: int = Field(..., description="Number of unique bibliographic records updated")
     other_copies_affected: int = Field(..., description="Copies of same titles NOT in item_ids but affected by record updates")
+    call_numbers_updated: int = Field(default=0, description="Number of call numbers generated or assigned")
+    call_numbers: Dict[str, Optional[str]] = Field(default_factory=dict, description="Updated call numbers by item barcode")
 
 
 # T009: BulkDeleteRequest, BulkDeleteResponse

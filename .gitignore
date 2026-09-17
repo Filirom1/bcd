@@ -99,5 +99,9 @@ bcd_kids_rs
 
 tmp/
 
+# Sensitive data / personal imports
+lecteur*.csv
+lecteurs.csv
+
 # Windows Zone.Identifier alternate data streams (invalid path on Windows)
 *:Zone.Identifier

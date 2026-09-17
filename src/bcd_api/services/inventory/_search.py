@@ -1,7 +1,7 @@
 """Search helper for inventory query construction."""
 
 import logging
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Optional
 
 from sqlalchemy import and_, func, or_
@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from ...models.bibliographic_record import BibliographicRecord
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
-from ...models.system_settings import SystemSettings
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +50,7 @@ def build_item_search_query(
     max_borrows: Optional[int] = None,
     since_date: Optional[date] = None,
     never_borrowed: Optional[bool] = None,
+    loanable: Optional[bool] = None,
 ):
     """
     Constructs the base SQLAlchemy query with all filters applied.
@@ -119,6 +119,8 @@ def build_item_search_query(
         query = query.filter(Item.status == status)
     if condition:
         query = query.filter(Item.condition == condition)
+    if loanable is not None:
+        query = query.filter(Item.loanable == loanable)
     if shelf_location == "__none__":
         query = query.filter(
             or_(Item.shelf_location.is_(None), Item.shelf_location == "")

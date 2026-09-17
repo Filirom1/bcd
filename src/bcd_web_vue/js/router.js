@@ -103,7 +103,7 @@ const routes = [
         meta: { titleKey: 'navigation.inventory' }
     },
     {
-        path: '/settings',
+        path: '/settings/:section?',
         name: 'settings',
         component: SettingsPage,
         meta: { titleKey: 'navigation.settings' }
