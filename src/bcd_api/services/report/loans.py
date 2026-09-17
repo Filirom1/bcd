@@ -166,6 +166,9 @@ def get_holds_report(
             "borrower_id": borrower.borrower_id,
             "borrower_name": borrower.full_name,
             "class_name": class_obj.name if class_obj else None,
+            # Include the record id so clients can navigate to the catalog
+            # record (the report title is rendered as an entity link).
+            "bibliographic_record_id": biblio.id,
             "title": biblio.title,
             "authors": _deserialize_authors(biblio.authors),
             "status": hold.status,
