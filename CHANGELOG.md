@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.1]
+
 ### Fixed
 
 - Fixed book links in the holds report by including the bibliographic record ID in the report response.
