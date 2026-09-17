@@ -21,12 +21,13 @@ export default defineComponent({
 
         const totalCount = computed(() => borrowers.value.length);
 
-        // Add prefix to borrower barcodes for printing
+        // Use the borrower barcode prefix configured in Settings, followed by
+        // the borrower ID. The API's barcode value is the ID without a prefix.
         const borrowersWithPrefixedBarcodes = computed(() => {
             const prefix = settings.value?.borrower_barcode_prefix ?? '';
             return borrowers.value.map(b => ({
                 ...b,
-                barcodeWithPrefix: `${prefix}${b.barcode}`
+                barcodeWithPrefix: `${prefix}${b.borrower_id}`
             }));
         });
 

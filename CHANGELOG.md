@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed book links in the holds report by including the bibliographic record ID in the report response.
+- Fixed borrower barcode printing to use the configured borrower prefix and ID on reference sheets and student cards.
 
 ## [1.3.0]
 
