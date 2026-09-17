@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.0]
+
 ### Added
 
 - Borrower `external_id` support: optional unique external identifiers (such as INE) can match existing borrowers during imports while preserving their reusable BCD IDs; CSV import and ONDE conversion support has also been improved.
