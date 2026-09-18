@@ -88,9 +88,9 @@ export default defineComponent({
         // Column settings (with localStorage persistence)
         const { visibleColumns, isColumnVisible, toggleColumn, resetToDefaults } = useColumnSettings();
 
-        // Filters (default to borrowed/on loan)
+        // Filters (default to all items)
         const filters = reactive({
-            availability: 'borrowed',
+            availability: 'all',
             level: '',
             language: '',
             medium_type: '',
@@ -170,7 +170,7 @@ export default defineComponent({
                 // Locations are an optional filter; keep the catalog usable without them.
             });
 
-            // Always perform initial search to show borrowed items by default
+            // Always perform initial search to show all items by default
             performSearch();
         });
 
@@ -182,8 +182,8 @@ export default defineComponent({
             if (currentPage.value > 1) query.page = currentPage.value;
             if (pageSize.value !== 10) query.limit = pageSize.value;
 
-            // Persist filters to URL (skip 'borrowed' as it's the default)
-            if (filters.availability && filters.availability !== 'borrowed') {
+            // Persist filters to URL (skip 'all' as it's the default)
+            if (filters.availability && filters.availability !== 'all') {
                 query.availability = filters.availability;
             }
             if (filters.level) {
