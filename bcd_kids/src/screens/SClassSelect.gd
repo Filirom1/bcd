@@ -48,7 +48,7 @@ func _ready() -> void:
 	_load_classes()
 
 func _handle_scan(text: String) -> void:
-	var t := text.strip_edges()
+	var t := text.strip_edges().replace(" ", "")
 	_scan_input.clear()
 	_scan_input.call_deferred("grab_focus")
 	if t.is_empty():

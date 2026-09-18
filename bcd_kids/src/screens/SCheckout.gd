@@ -42,7 +42,7 @@ func _ready() -> void:
 	_refresh_list()
 
 func _do_checkout() -> void:
-	var text := _barcode_input.get_text().strip_edges()
+	var text := _barcode_input.get_text().strip_edges().replace(" ", "")
 	_error_lbl.text = ""
 	_barcode_input.clear()
 	_barcode_input.grab_focus()

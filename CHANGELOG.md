@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed book barcode scanning in the Kids client by ignoring spaces in entered or scanned barcodes.
+
 ## [1.3.1]
 
 ### Fixed

@@ -43,7 +43,7 @@ func _ready() -> void:
 	_history.add_child(placeholder_lbl)
 
 func _do_return() -> void:
-	var text := _barcode_input.get_text().strip_edges()
+	var text := _barcode_input.get_text().strip_edges().replace(" ", "")
 	_error_lbl.text = ""
 	_barcode_input.clear()
 	_barcode_input.grab_focus()
