@@ -1,4 +1,10 @@
 {
+	"quit": {
+		"title": "Quit BCD?",
+		"message": "Do you really want to quit the application?",
+		"confirm": "Quit",
+		"cancel": "Stay"
+	},
 	"class_select": {
 		"title": "Choose your class",
 		"scan_placeholder": "Scan book or child card…",

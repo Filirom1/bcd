@@ -1,4 +1,10 @@
 {
+	"quit": {
+		"title": "Quitter BCD ?",
+		"message": "Veux-tu vraiment quitter l'application ?",
+		"confirm": "Quitter",
+		"cancel": "Rester"
+	},
 	"class_select": {
 		"title": "Choisis ta classe",
 		"scan_placeholder": "Scanne un livre ou la carte d'un élève…",
