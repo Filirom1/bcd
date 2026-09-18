@@ -48,6 +48,7 @@ var _splash_msgs_shuffled: Array = []
 
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
+	_manual_input.text = _last_server_base_url()
 
 	_settings_btn.pressed.connect(func(): Mgr.push("settings"))
 	_fr_btn.pressed.connect(func():
@@ -90,6 +91,14 @@ func _ready() -> void:
 
 	_init_splash()
 	_discover_servers()
+
+func _last_server_base_url() -> String:
+	var saved_url := Settings.last_server_url.rstrip("/")
+	if saved_url.is_empty():
+		return _manual_input.text
+	if "/api/v1" in saved_url:
+		return saved_url.split("/api/v1")[0]
+	return saved_url
 
 func _refresh_ui() -> void:
 	_title_lbl.text = I18n.t("server_discovery.title")

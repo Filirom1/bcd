@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed book barcode scanning in the Kids client by ignoring spaces in entered or scanned barcodes.
+- The Kids client now restores the last server URL that connected successfully in the manual connection field after restarting.
 
 ## [1.3.1]
 
