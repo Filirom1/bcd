@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - The Kids client now restores the last server URL that connected successfully in the manual connection field after restarting.
 - Added a confirmation dialog before closing the Kids client to prevent accidental exits.
 - The Web UI catalog now shows all items by default.
+- Added navigation from notices to cataloging for creating, editing, and deleting physical items.
 
 ## [1.3.1]
 

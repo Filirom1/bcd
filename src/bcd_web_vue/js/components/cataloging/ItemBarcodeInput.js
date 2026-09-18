@@ -11,13 +11,14 @@ import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
 import DeweyPicker from '../ui/DeweyPicker.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
+import ItemEditForm from '../catalog/ItemEditForm.js';
 import { computeCallNumber, suggestShelfLocation } from '../../utils/callNumber.js';
 import { parseJsonSetting } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'ItemBarcodeInput',
 
-    components: { DeweyPicker, ShelfLocationPicker },
+    components: { DeweyPicker, ShelfLocationPicker, ItemEditForm },
 
     props: {
         recordId: {
@@ -79,6 +80,8 @@ export default defineComponent({
         const fundingSource = ref('');
         const condition = ref('good');
         const loanable = ref(true);
+        const showItemEditModal = ref(false);
+        const editingItem = ref(null);
 
         const isPeriodical = computed(() => props.recordMediumType === 'P\u00e9riodique');
 
@@ -223,6 +226,45 @@ export default defineComponent({
             emit('done');
         };
 
+        const editItem = (item) => {
+            editingItem.value = item;
+            showItemEditModal.value = true;
+        };
+
+        const handleItemSaved = (updatedItem) => {
+            const itemId = updatedItem.item_id || editingItem.value?.item_id;
+            const index = createdItems.value.findIndex(item => item.item_id === itemId);
+            if (index !== -1) {
+                createdItems.value[index] = { ...createdItems.value[index], ...updatedItem };
+            }
+            editingItem.value = null;
+        };
+
+        const deleteItem = async (item) => {
+            const itemId = item.item_id || item.barcode;
+            if (!itemId || !confirm(t('admin.confirm_delete_item', { item_id: itemId }))) return;
+
+            try {
+                await apiClient.delete(`/catalog/items/${itemId}`);
+                createdItems.value = createdItems.value.filter(createdItem => {
+                    return (createdItem.item_id || createdItem.barcode) !== itemId;
+                });
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                handleError(error);
+            }
+        };
+
+        const record = computed(() => ({
+            id: props.recordId,
+            title: props.recordTitle,
+            medium_type: props.recordMediumType,
+            dewey_number: props.recordDeweyNumber,
+            authors: props.recordAuthors,
+            collection: props.recordCollection,
+            illustrators: props.recordIllustrators
+        }));
+
         // Computed
         const itemCount = computed(() => createdItems.value.length);
 
@@ -244,9 +286,15 @@ export default defineComponent({
             fundingSource,
             condition,
             loanable,
+            showItemEditModal,
+            editingItem,
             createItem,
             handleKeypress,
-            finish
+            finish,
+            editItem,
+            handleItemSaved,
+            deleteItem,
+            record
         };
     },
 
@@ -418,7 +466,7 @@ export default defineComponent({
                 <ul class="list-group">
                     <li
                         v-for="item in createdItems"
-                        :key="item.id"
+                        :key="item.item_id || item.barcode || item.id"
                         class="list-group-item d-flex justify-content-between align-items-center"
                     >
                         <div>
@@ -431,12 +479,41 @@ export default defineComponent({
                                 {{ /^\\d+$/.test(item.call_number) ? 'n\u00b0 ' + item.call_number : item.call_number }}
                             </span>
                         </div>
-                        <span class="badge bg-success">
-                            {{ $t('item.status_available') }}
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success">
+                                {{ $t('item.status_' + (item.status || 'available')) }}
+                            </span>
+                            <button
+                                type="button"
+                                class="btn btn-link btn-sm p-0"
+                                :title="$t('admin.edit_item')"
+                                :aria-label="$t('admin.edit_item')"
+                                @click="editItem(item)"
+                            >
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-link btn-sm p-0 text-danger"
+                                :title="$t('common.delete')"
+                                :aria-label="$t('common.delete')"
+                                @click="deleteItem(item)"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </li>
                 </ul>
             </div>
+
+            <item-edit-form
+                v-if="editingItem"
+                :show="showItemEditModal"
+                :item="editingItem"
+                :record="record"
+                @update:show="showItemEditModal = $event"
+                @saved="handleItemSaved"
+            />
 
             <!-- New Record Button -->
             <div class="mt-4 d-flex justify-content-end">

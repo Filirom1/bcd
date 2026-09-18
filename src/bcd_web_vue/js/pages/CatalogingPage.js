@@ -3,8 +3,9 @@
  * Workflow: ISBN Lookup → Bibliographic Form → Item Creation
  */
 
-const { defineComponent, ref, computed } = Vue;
+const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
+const { useRoute } = VueRouter;
 import ISBNLookup from '../components/cataloging/ISBNLookup.js';
 import BibliographicForm from '../components/cataloging/BibliographicForm.js';
 import ItemBarcodeInput from '../components/cataloging/ItemBarcodeInput.js';
@@ -23,6 +24,7 @@ export default defineComponent({
 
     setup() {
         const { t } = useI18n();
+        const route = useRoute();
 
         // Workflow state machine
         const state = ref('isbn-lookup'); // 'isbn-lookup' | 'bibliographic-form' | 'item-creation'
@@ -141,6 +143,19 @@ export default defineComponent({
             createdRecord.value = null;
             existingRecord.value = null;
         };
+
+        // Open directly on item creation when launched from an existing notice.
+        onMounted(async () => {
+            const recordId = Number(route.query.record_id);
+            if (!Number.isInteger(recordId) || recordId <= 0) return;
+
+            try {
+                const record = await apiClient.get(`/catalog/bibliographic/${recordId}`);
+                handleExistingRecordFound(record);
+            } catch (error) {
+                console.error('Error loading record for item creation:', error);
+            }
+        });
 
         // Computed
         const pageTitle = computed(() => {

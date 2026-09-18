@@ -6,6 +6,7 @@
 
 const { defineComponent, ref, watch, computed } = Vue;
 const { useI18n } = VueI18n;
+const { useRouter } = VueRouter;
 import Modal from '../ui/Modal.js';
 import { formatCivilDate } from '../../utils/date.js';
 import LoadingSpinner from '../ui/LoadingSpinner.js';
@@ -18,6 +19,7 @@ import { ApiError } from '../../models/error.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
+import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { events } from '../../utils/events.js';
@@ -62,6 +64,8 @@ export default defineComponent({
 
     setup(props, { emit }) {
         const { t, locale } = useI18n();
+        const router = useRouter();
+        const { closeRecord } = useGlobalModal();
         const { settings: globalSettings } = useAppState();
         const settingsValue = computed(() => props.settings || globalSettings.value);
         const { getShelfBadge, getCoteBadge } = useItemBadge(settingsValue);
@@ -369,6 +373,17 @@ export default defineComponent({
             emit('update:show', false);
         };
 
+        const addItem = () => {
+            const recordId = record.value?.id || props.recordId;
+            if (!recordId) return;
+
+            closeRecord();
+            router.push({
+                name: 'cataloging',
+                query: { record_id: String(recordId) }
+            });
+        };
+
         const viewBorrower = (borrowerId) => {
             emit('view-borrower', borrowerId);
         };
@@ -531,6 +546,7 @@ export default defineComponent({
             formatDate,
             handleQuickReturn,
             handleClose,
+            addItem,
             viewBorrower,
             fetchBorrowers,
             formatBorrowerResult,
@@ -914,6 +930,10 @@ export default defineComponent({
                 <div v-if="!isEditMode" class="d-flex justify-content-end w-100 gap-2">
                     <button type="button" class="btn btn-secondary" @click="handleClose">
                         {{ t('common.close') }}
+                    </button>
+                    <button type="button" class="btn btn-success" @click="addItem">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        {{ t('cataloging.add_copy') }}
                     </button>
                     <button type="button" class="btn btn-primary" @click="isEditMode = true">
                         <i class="bi bi-pencil me-1"></i>
