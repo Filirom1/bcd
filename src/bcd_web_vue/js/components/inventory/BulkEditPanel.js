@@ -3,7 +3,7 @@
  * Bulk editing panel for inventory items and their bibliographic records
  */
 
-const { defineComponent, ref, computed } = Vue;
+const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 import { parseCsv, parseJsonSetting } from '../../utils/domain.js';
 import FilterSelect from '../ui/FilterSelect.js';
@@ -40,6 +40,15 @@ export default defineComponent({
         const shelfLocation = ref('');
         const callNumber = ref('');
         const autoCallNumber = ref(false);
+
+        // Choosing a shelf means the call number must follow the configured
+        // shelf rule for every selected item. The API performs the per-record
+        // generation during the bulk update.
+        watch(shelfLocation, (value) => {
+            if (value.trim() && value !== '__clear__') {
+                autoCallNumber.value = true;
+            }
+        });
 
         // Record fields
         const level = ref('');

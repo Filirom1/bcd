@@ -20,6 +20,7 @@ import Modal from '../ui/Modal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { apiClient } from '../../api/client.js';
 import { events } from '../../utils/events.js';
+import { computeCallNumber } from '../../utils/callNumber.js';
 
 export default {
   name: 'ItemEditForm',
@@ -29,6 +30,16 @@ export default {
       type: Object,
       required: true
     },
+    // Bibliographic data is required to generate a call number from the
+    // configured shelf rules when the item's location changes.
+    record: {
+      type: Object,
+      default: null
+    },
+    settings: {
+      type: Object,
+      default: null
+    },
     show: {
       type: Boolean,
       required: true
@@ -37,12 +48,13 @@ export default {
   emits: ['update:show', 'saved'],
   setup(props, { emit }) {
     const { t } = useI18n();
-    const { settings } = useAppState();
+    const { settings: globalSettings } = useAppState();
+    const effectiveSettings = computed(() => props.settings || globalSettings.value || {});
 
-    const deweyColors = computed(() => parseJsonSetting(settings.value?.dewey_colors, undefined));
-    const deweyEnabled = computed(() => settings.value?.dewey_colors_enabled !== false);
+    const deweyColors = computed(() => parseJsonSetting(effectiveSettings.value?.dewey_colors, undefined));
+    const deweyEnabled = computed(() => effectiveSettings.value?.dewey_colors_enabled !== false);
 
-    const shelfLocationOptions = computed(() => parseJsonSetting(settings.value?.catalog_shelf_locations, []));
+    const shelfLocationOptions = computed(() => parseJsonSetting(effectiveSettings.value?.catalog_shelf_locations, []));
 
     // Form data
     const formData = ref({
@@ -58,6 +70,24 @@ export default {
 
     const errors = ref({});
     const isSubmitting = ref(false);
+
+    const generateCallNumber = (shelfLocation) => {
+      const record = props.record?.value
+        || props.record
+        || props.item?.bibliographic_record
+        || props.item?.record
+        || props.item?.bibliographicRecord;
+      if (!record) return '';
+      const rules = parseJsonSetting(effectiveSettings.value?.catalog_call_number_rules, []);
+      return computeCallNumber({
+        title: record.title || record.name,
+        authors: record.authors,
+        collection: record.collection || record.collection_name,
+        deweyNumber: record.dewey_number || record.deweyNumber,
+        mediumType: record.medium_type || record.mediumType,
+        illustrators: record.illustrators
+      }, shelfLocation, rules);
+    };
 
     // Status options (from ItemStatus enum)
     const statusOptions = Object.keys(ITEM_STATUS_META).map(value => ({
@@ -88,6 +118,23 @@ export default {
         errors.value = {};
       }
     }, { immediate: true });
+
+    // Recalculate immediately after the picker emits the new shelf value.
+    // This is deliberately explicit rather than relying only on a computed
+    // watcher: the shelf picker is a child component using v-model.
+    watch(() => formData.value.shelf_location, (shelf) => {
+      if (!shelf || shelf === '__clear__') return;
+      const value = generateCallNumber(shelf);
+      if (value) {
+        formData.value.call_number = value;
+      }
+    });
+
+    const handleShelfLocationChange = (shelf) => {
+      formData.value.shelf_location = shelf;
+      const value = generateCallNumber(shelf);
+      if (value) formData.value.call_number = value;
+    };
 
     /**
      * Validate form data
@@ -176,6 +223,7 @@ export default {
       deweyColors,
       deweyEnabled,
       shelfLocationOptions,
+      handleShelfLocationChange,
       handleSubmit,
       handleCancel,
       t
@@ -240,6 +288,7 @@ export default {
                 <shelf-location-picker
                   v-model="formData.shelf_location"
                   :locations="shelfLocationOptions"
+                  @update:modelValue="handleShelfLocationChange"
                   data-testid="input-shelf-location"
                 />
                 <div v-if="errors.shelf_location" class="text-danger small mt-1" data-testid="error-shelf-location">

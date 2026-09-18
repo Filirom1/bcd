@@ -100,4 +100,43 @@ describe('ItemBarcodeInput', () => {
         // TIT1 -> "G" (strips "La " from "La gloire de mon père" -> "gloire..." -> first letter "G")
         expect(wrapper.vm.callNumber).toBe('840 BIB G');
     });
+
+    it('recalculates the call number when the shelf location changes', async () => {
+        const { saveSettings } = useAppState();
+        saveSettings({
+            catalog_shelf_locations: [
+                { label: 'Romans', color: null },
+                { label: 'Documentaires', color: null }
+            ],
+            catalog_call_number_rules: [
+                { medium_type: null, shelf_location: 'Romans', pattern: 'R {AUT3}' },
+                { medium_type: null, shelf_location: 'Documentaires', pattern: '{DEWEY} {AUT3}' }
+            ]
+        });
+
+        const wrapper = mountInput({ recordDeweyNumber: '500' });
+        await flushPromises();
+
+        expect(wrapper.vm.callNumber).toBe('SAI');
+        wrapper.vm.shelfLocation = 'Romans';
+        await wrapper.vm.$nextTick();
+
+        expect(wrapper.vm.callNumber).toBe('R SAI');
+    });
+
+    it('recalculates after the suggested shelf location is prefilled', async () => {
+        const { saveSettings } = useAppState();
+        saveSettings({
+            catalog_shelf_locations: [{ label: 'Romans', color: null }],
+            catalog_call_number_rules: [
+                { medium_type: null, shelf_location: 'Romans', pattern: 'R {AUT3}' }
+            ]
+        });
+
+        const wrapper = mountInput({ recordMediumType: 'Roman' });
+        await flushPromises();
+
+        expect(wrapper.vm.shelfLocation).toBe('Romans');
+        expect(wrapper.vm.callNumber).toBe('R SAI');
+    });
 });

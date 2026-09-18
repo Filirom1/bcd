@@ -165,6 +165,8 @@ export function suggestShelfLocation(mediumType, locations) {
  * @returns {boolean}
  */
 export function matchWildcard(str, rule) {
+    str = normalizeAscii(str).toLowerCase();
+    rule = normalizeAscii(rule).toLowerCase();
     if (rule.startsWith('*') && rule.endsWith('*')) {
         return str.includes(rule.slice(1, -1));
     }

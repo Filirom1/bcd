@@ -962,6 +962,8 @@ export default defineComponent({
           v-if="editingItem"
           :show="showItemEditModal"
           :item="editingItem"
+          :record="record"
+          :settings="settingsValue"
           @update:show="showItemEditModal = $event"
           @saved="handleItemSaved"
         />

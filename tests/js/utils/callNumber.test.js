@@ -129,6 +129,14 @@ describe('Call Number Generation Utilities', () => {
             const periodicalRules = [{ medium_type: 'Périodique', pattern: 'PER {TIT}' }];
             expect(computeCallNumber({ title: 'Les belles histoires', mediumType: 'Périodique' }, '', periodicalRules))
                 .toBe('PER BELLES HISTOIRES');
+
+            expect(computeCallNumber({
+                title: 'Astérix',
+                authors: ['Goscinny'],
+                collection: 'Les aventures d’Astérix'
+            }, 'Bandes dessinées', [
+                { shelf_location: 'Bandes dessinées', pattern: 'BD {SER}' }
+            ])).toBe('BD AVENTURES D ASTERIX');
         });
     });
 });

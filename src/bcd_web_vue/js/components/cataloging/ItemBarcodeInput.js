@@ -69,6 +69,9 @@ export default defineComponent({
         const callNumber = ref('');
         const callNumberInput = ref(null);
         const shelfLocation = ref('');
+        // Keep track of the value last generated automatically so changing the
+        // shelf can replace it without overwriting a manually edited call number.
+        const lastSuggestedCallNumber = ref('');
         const loading = ref(false);
         const createdItems = ref([]);
         const showOptional = ref(false);
@@ -105,11 +108,16 @@ export default defineComponent({
             return suggestShelfLocation(props.recordMediumType, shelfLocationOptions.value);
         });
 
-        // Update call number when suggestedCallNumber changes
-        watch(suggestedCallNumber, (val, oldVal) => {
-            if (val && (!callNumber.value.trim() || callNumber.value === oldVal)) {
+        // Update call number when the selected shelf changes the suggestion.
+        // Comparing with the previous computed value is fragile when several
+        // reactive updates are batched; the last value applied by this watcher
+        // is the reliable indication that the field is still automatic.
+        watch(suggestedCallNumber, (val) => {
+            const current = callNumber.value.trim();
+            if (val && (!current || current === lastSuggestedCallNumber.value)) {
                 callNumber.value = val;
             }
+            lastSuggestedCallNumber.value = val || '';
         }, { immediate: true });
 
         // Pre-fill shelf location only when it is still empty
