@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session, joinedload
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.models.hold import Hold
+from src.bcd_api.models.system_settings import SystemSettings
 from src.shared.constants import IDFormat
-from ._validation import require_record, require_item
+from ._validation import item_id_search_values, require_record, require_item
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +68,16 @@ def search_bibliographic_records(
             search_conditions.append(BibliographicRecord.id == int(q.strip()))
 
         from sqlalchemy import exists
+
+        settings = db.query(SystemSettings).first()
+        prefix = (settings.item_barcode_prefix if settings else ".").strip()
+        item_search_terms = item_id_search_values(q, prefix)
+
         search_conditions.append(
             exists().where(
                 and_(
                     Item.bibliographic_record_id == BibliographicRecord.id,
-                    Item.item_id.ilike(search_term)
+                    or_(*(Item.item_id.ilike(f"%{term}%") for term in item_search_terms)),
                 )
             )
         )

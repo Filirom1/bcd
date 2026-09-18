@@ -11,6 +11,7 @@ from src.bcd_api.core.exceptions import (
 )
 from src.bcd_api.services.catalog._validation import (
     _ean13_to_issn,
+    item_id_search_values,
     normalize_identifier,
     normalize_item_id,
     parse_item_acquisition_date,
@@ -52,6 +53,11 @@ def test_normalize_item_id():
     assert normalize_item_id(" 1234 ") == "1234"
     assert normalize_item_id("BC-1234", prefix="BC-") == "1234"
     assert normalize_item_id("BC-1234", prefix="  ") == "BC-1234"
+
+
+def test_item_id_search_values_accepts_prefixed_and_raw_values():
+    assert item_id_search_values(".787", prefix=".") == {".787", "787"}
+    assert item_id_search_values("787", prefix=".") == {".787", "787"}
 
 
 def test_validate_item_id_available():

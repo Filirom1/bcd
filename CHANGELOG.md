@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Added a confirmation dialog before closing the Kids client to prevent accidental exits.
 - The Web UI catalog now shows all items by default.
 - Added navigation from notices to cataloging for creating, editing, and deleting physical items.
+- Fixed catalog searches for item barcodes entered with or without the configured prefix.
 
 ## [1.3.1]
 

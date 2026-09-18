@@ -36,6 +36,20 @@ def normalize_item_id(item_id: str, prefix: Optional[str] = None) -> str:
     return cleaned
 
 
+def item_id_search_values(item_id: str, prefix: Optional[str] = None) -> set[str]:
+    """Return item ID values that should match a prefixed or raw barcode search."""
+    cleaned = item_id.strip()
+    prefix_strip = (prefix or "").strip()
+    values = {cleaned}
+
+    if prefix_strip:
+        raw_id = normalize_item_id(cleaned, prefix_strip)
+        values.add(raw_id)
+        values.add(f"{prefix_strip}{raw_id}")
+
+    return values
+
+
 def validate_item_id_available(db: Session, item_id: str) -> None:
     """Raise ConflictError/DuplicateItemIDException if item_id already in use."""
     existing = db.query(Item).filter(Item.item_id == item_id).first()
