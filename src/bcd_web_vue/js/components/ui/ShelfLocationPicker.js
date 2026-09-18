@@ -15,6 +15,7 @@ import { autoTextColor } from '../../utils/colors.js';
 
 const { defineComponent, ref, computed } = Vue;
 const { useI18n } = VueI18n;
+let pickerInstanceId = 0;
 
 export default defineComponent({
     name: 'ShelfLocationPicker',
@@ -48,6 +49,7 @@ export default defineComponent({
     setup(props, { emit }) {
         const { t } = useI18n();
         const open = ref(false);
+        const inputListId = `shelf-location-options-${++pickerInstanceId}`;
 
         // Match current value against locations list
         const matchedEntry = computed(() => {
@@ -108,7 +110,7 @@ export default defineComponent({
 
         return {
             open, badgeStyle, hasBadgeColor, locationButtons,
-            select, onInput, toggle, t
+            inputListId, select, onInput, toggle, t
         };
     },
 
@@ -126,11 +128,17 @@ export default defineComponent({
       <input
         type="text"
         :value="modelValue"
+        :list="inputListId"
         :placeholder="placeholder || t('catalog.shelf_location_placeholder')"
         :class="['form-control border-0 rounded-0', inputClass]"
         style="box-shadow:none;"
         @input="onInput"
       />
+            <datalist :id="inputListId">
+                <option v-for="entry in locations" :key="entry.label" :value="entry.label">
+                    {{ entry.label }}
+                </option>
+            </datalist>
     </div>
     <!-- Toggle button -->
     <button

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Added autocomplete suggestions for configured shelf locations in cataloging forms.
 - Fixed automatic call-number recalculation from shelf rules across catalog and inventory editing forms.
 - Fixed book barcode scanning in the Kids client by ignoring spaces in entered or scanned barcodes.
 - The Kids client now restores the last server URL that connected successfully in the manual connection field after restarting.
