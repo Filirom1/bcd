@@ -4,6 +4,8 @@
 import sys
 from pathlib import Path
 
+from PyInstaller.utils.hooks import get_package_paths
+
 # Verify that the Web UI production build is present before proceeding.
 # This prevents packaging stale development sources or an incomplete build.
 build_web_dir = Path('build/web')
@@ -91,6 +93,10 @@ hiddenimports = [
 
 # Data files to include in the bundle
 datas = [
+    # stopwordsiso loads its JSON database with pathlib at runtime rather than
+    # through an import, so PyInstaller does not discover it automatically.
+    # Keep the package data in its original package-relative location.
+    (str(Path(get_package_paths('stopwordsiso')[1]) / 'stopwords-iso.json'), 'stopwordsiso'),
     # Web UI (Vue 3 Production Build) - compiled assets
     ('build/web', 'bcd_web_vue'),
     # Help documentation (served via symlink at src/bcd_web_vue/help)

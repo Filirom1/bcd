@@ -59,6 +59,17 @@ async def init_system_settings() -> str:
         try:
             settings_service.initialize_default_settings(db)
             sys_settings = settings_service.get_settings(db)
+            from src.bcd_api.services.shelving import suggestion as shelf_suggestion_service
+
+            if not shelf_suggestion_service.is_enabled():
+                # Deliberately synchronous: the first model is fully persisted
+                # before the server announces itself as ready.
+                training = shelf_suggestion_service.train(db)
+                if training.ready:
+                    logger.info(
+                        "Shelf suggestion model trained on %s records",
+                        training.trained_on_records,
+                    )
             library_code = getattr(sys_settings, "library_code", None) or ""
             logger.info("System settings initialized")
 

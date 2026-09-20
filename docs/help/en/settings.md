@@ -164,6 +164,7 @@ Here is the complete list of settings you can customize in your `.env` file, gro
 | **`CONFIG_DIR_PATH`** | `.` | **Configuration directory path.** Where the `.env` file and settings reside. |
 | **`LOG_DIR_PATH`** | `logs` | **Logs directory path.** Where application error and activity logs are written. |
 | **`COVERS_DIR_PATH`** | `data/covers` | **Covers storage path.** Folder where downloaded book cover images are saved. |
+| **`MODELS_DIR_PATH`** | `data/models` | **Model storage path.** Folder where regenerable machine-learning model artifacts are saved. |
 | **`BACKUPS_DIR_PATH`** | `backups` | **Backups folder path.** Folder where automatic database backups are exported. |
 
 #### 2. Network & Server Configuration

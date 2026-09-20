@@ -16,18 +16,39 @@ from ...core.exceptions import (
     ExportFailedException,
     ExportTooLargeException,
 )
+from ...models.system_settings import SystemSettings
 from ...schemas.bibliographic_record import (
     BibliographicRecordCreate,
     BibliographicRecordResponse,
     BibliographicRecordUpdate,
 )
 from ...schemas.common import PaginatedResponse
-from ...schemas.item import AvailableIDsResponse, ItemCreate, ItemResponse, ItemWithCurrentLoan, ItemUpdate
+from ...schemas.item import (
+    AvailableIDsResponse,
+    ItemCreate,
+    ItemResponse,
+    ItemUpdate,
+    ItemWithCurrentLoan,
+)
+from ...schemas.shelf_suggestion import ShelfSuggestionRequest, ShelfSuggestionResponse
 from ...services import catalog as catalog_service
 from ...services.catalog.export import ExportService
+from ...services.shelving import suggestion as shelf_suggestion_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+
+@router.post("/shelf-suggestion", response_model=ShelfSuggestionResponse)
+def suggest_shelf_location(payload: ShelfSuggestionRequest, db: Session = Depends(get_db)):
+    """Suggest a shelf from the four cataloging metadata fields."""
+    model = (
+        shelf_suggestion_service.load_current_model(db)
+        if shelf_suggestion_service.is_enabled()
+        else None
+    )
+    suggested = shelf_suggestion_service.suggest(payload.model_dump(), model)
+    return {"suggested_shelf": suggested}
 
 
 @router.get("/locations")
@@ -331,6 +352,7 @@ def get_catalog_template():
     Download the CSV template for catalog import (Dublin Core format).
     """
     from fastapi.responses import FileResponse
+
     from ...core.portable import get_bundled_resource
 
     template_path = get_bundled_resource("data/templates/catalog_dublin_core.csv")

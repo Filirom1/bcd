@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     config_dir_path: str = ""     # Defaults to . (or app_dir/config in portable mode)
     log_dir_path: str = ""        # Defaults to ./logs (or app_dir/logs in portable mode)
     covers_dir_path: str = ""     # Defaults to ./data/covers
+    models_dir_path: str = ""     # Defaults to ./data/models
     backups_dir_path: str = ""    # Defaults to ./backups
 
     # Database

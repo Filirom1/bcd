@@ -89,6 +89,7 @@ test_import_final.py
 .claude/settings.local.json
 
 data/covers/
+data/models/
 coverage.json
 
 # godot

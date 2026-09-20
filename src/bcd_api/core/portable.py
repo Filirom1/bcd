@@ -178,6 +178,7 @@ def create_default_env_file(env_path: Path) -> None:
 # CONFIG_DIR_PATH=.
 # LOG_DIR_PATH=./logs
 # COVERS_DIR_PATH=./data/covers
+# MODELS_DIR_PATH=./data/models
 # BACKUPS_DIR_PATH=./backups
 
 # API Server

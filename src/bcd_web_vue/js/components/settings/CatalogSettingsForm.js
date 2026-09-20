@@ -14,14 +14,17 @@ export default defineComponent({
         shelfLocationsList: { type: Array, required: true },
         localRules: { type: Array, required: true },
         mediumTypesOptions: { type: Array, required: true },
-        shelfLocationLabels: { type: Array, required: true }
+        shelfLocationLabels: { type: Array, required: true },
+        shelfSuggestionStatus: { type: Object, default: () => ({}) },
+        shelfSuggestionTraining: Boolean
     },
 
     emits: [
         'update-dewey-color', 'toggle-dewey-color', 'update-shelf-location-label',
         'update-shelf-location-color', 'toggle-shelf-location-color',
         'add-shelf-location', 'remove-shelf-location', 'add-call-number-rule',
-        'remove-call-number-rule', 'move-call-number-rule-up', 'move-call-number-rule-down'
+        'remove-call-number-rule', 'move-call-number-rule-up', 'move-call-number-rule-down',
+        'train-shelf-suggestion'
     ],
 
     setup() {
@@ -80,6 +83,18 @@ export default defineComponent({
                     </div>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary mt-2" @click="$emit('add-shelf-location')"><i class="bi bi-plus-circle me-1"></i>{{ t('settings.shelf_location_add') }}</button>
+            </div>
+
+            <div class="col-12 mt-4">
+                <h4 class="border-bottom pb-2 mb-3"><i class="bi bi-magic me-1"></i>{{ t('settings.shelf_suggestion') }}</h4>
+                <p class="text-muted small mb-2">
+                    <span v-if="shelfSuggestionStatus.ready">{{ t('settings.shelf_suggestion_status_ready', { count: shelfSuggestionStatus.trained_on_records || 0 }) }}</span>
+                    <span v-else>{{ t('settings.shelf_suggestion_status_not_ready') }}</span>
+                </p>
+                <button type="button" class="btn btn-sm btn-outline-primary" @click="$emit('train-shelf-suggestion')" :disabled="shelfSuggestionTraining">
+                    <span v-if="shelfSuggestionTraining" class="spinner-border spinner-border-sm me-1"></span>
+                    <i v-else class="bi bi-arrow-repeat me-1"></i>{{ t('settings.shelf_suggestion_train_now') }}
+                </button>
             </div>
 
             <div class="col-12 mt-4">

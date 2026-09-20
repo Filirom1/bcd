@@ -71,7 +71,9 @@ export default defineComponent({
             createdRecord.value = {
                 id: record.record_id || record.id,
                 title: record.title,
+                subtitle: record.subtitle || null,
                 medium_type: record.medium_type,
+                identifier_type: record.identifier_type,
                 dewey_number: record.dewey_number || null,
                 authors: record.authors || [],
                 collection: record.collection || null,
@@ -87,7 +89,9 @@ export default defineComponent({
             createdRecord.value = {
                 id: record.record_id || record.id,
                 title: record.title,
+                subtitle: record.subtitle || null,
                 medium_type: record.medium_type,
+                identifier_type: record.identifier_type,
                 dewey_number: record.dewey_number || null,
                 authors: record.authors || [],
                 collection: record.collection || null,
@@ -249,7 +253,9 @@ export default defineComponent({
                         v-if="state === 'item-creation' && createdRecord"
                         :record-id="createdRecord.id"
                         :record-title="createdRecord.title"
+                        :record-subtitle="createdRecord.subtitle"
                         :record-medium-type="createdRecord.medium_type"
+                        :record-identifier-type="createdRecord.identifier_type"
                         :record-dewey-number="createdRecord.dewey_number"
                         :record-authors="createdRecord.authors"
                         :record-collection="createdRecord.collection"

@@ -68,6 +68,12 @@ from src.bcd_api.schemas.system_settings import (
     SystemSettingsResponse,
     SystemSettingsUpdate,
 )
+from src.bcd_api.schemas.shelf_suggestion import (
+    ShelfSuggestionRequest,
+    ShelfSuggestionResponse,
+    ShelfSuggestionStatus,
+    ShelfSuggestionTrainResponse,
+)
 
 __all__ = [
     # Common
@@ -116,4 +122,8 @@ __all__ = [
     # System Settings
     "SystemSettingsResponse",
     "SystemSettingsUpdate",
+    "ShelfSuggestionRequest",
+    "ShelfSuggestionResponse",
+    "ShelfSuggestionStatus",
+    "ShelfSuggestionTrainResponse",
 ]

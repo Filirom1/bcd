@@ -5,7 +5,7 @@
  * shared draft here means switching sections never loses unsaved changes.
  */
 
-const { defineComponent, ref, computed, watch } = Vue;
+const { defineComponent, ref, computed, watch, toRef } = Vue;
 const { useI18n } = VueI18n;
 import { DEWEY_DEFAULT_COLORS, parseCsv } from '../../utils/domain.js';
 import GeneralSettingsForm from './GeneralSettingsForm.js';
@@ -20,13 +20,17 @@ export default defineComponent({
         loading: Boolean,
         settings: { type: Object, required: true },
         // "all" is retained for consumers/tests that use SettingsForm directly.
-        section: { type: String, default: 'all' }
+        section: { type: String, default: 'all' },
+        shelfSuggestionStatus: { type: Object, default: () => ({}) },
+        shelfSuggestionTraining: Boolean
     },
 
-    emits: ['save', 'reset'],
+    emits: ['save', 'reset', 'train-shelf-suggestion'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
+        const shelfSuggestionStatus = toRef(props, 'shelfSuggestionStatus');
+        const shelfSuggestionTraining = toRef(props, 'shelfSuggestionTraining');
         const localSettings = ref({});
 
         watch(() => props.settings, (value) => {
@@ -97,6 +101,8 @@ export default defineComponent({
 
         return {
             t, handleSubmit, handleReset, localSettings,
+            shelfSuggestionStatus,
+            shelfSuggestionTraining,
             deweyColorsList, updateDeweyColor, toggleDeweyColor,
             shelfLocationsList, addShelfLocation, removeShelfLocation,
             updateShelfLocationLabel, updateShelfLocationColor, toggleShelfLocationColor,
@@ -119,6 +125,8 @@ export default defineComponent({
                 :local-rules="localRules"
                 :medium-types-options="mediumTypesOptions"
                 :shelf-location-labels="shelfLocationLabels"
+                :shelf-suggestion-status="shelfSuggestionStatus"
+                :shelf-suggestion-training="shelfSuggestionTraining"
                 @update-dewey-color="updateDeweyColor"
                 @toggle-dewey-color="toggleDeweyColor"
                 @update-shelf-location-label="updateShelfLocationLabel"
@@ -130,6 +138,7 @@ export default defineComponent({
                 @remove-call-number-rule="removeCallNumberRule"
                 @move-call-number-rule-up="moveCallNumberRuleUp"
                 @move-call-number-rule-down="moveCallNumberRuleDown"
+                @train-shelf-suggestion="$emit('train-shelf-suggestion')"
             />
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary" :disabled="loading"><i class="bi bi-save me-1"></i>{{ t('common.save') }}</button>

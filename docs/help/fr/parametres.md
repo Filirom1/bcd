@@ -164,6 +164,7 @@ Voici la liste complète des paramètres personnalisables dans le fichier `.env`
 | **`CONFIG_DIR_PATH`** | `.` | **Dossier de configuration.** Emplacement où se trouve le fichier `.env` de configuration. |
 | **`LOG_DIR_PATH`** | `logs` | **Dossier des journaux (logs).** Où sont écrits les fichiers d'erreur et d'activité du logiciel. |
 | **`COVERS_DIR_PATH`** | `data/covers` | **Dossier des couvertures.** Où sont stockées les images de couvertures de livres téléchargées automatiquement. |
+| **`MODELS_DIR_PATH`** | `data/models` | **Dossier des modèles.** Où sont stockés les fichiers régénérables des modèles d'apprentissage automatique. |
 | **`BACKUPS_DIR_PATH`** | `backups` | **Dossier des sauvegardes.** Où sont exportées les sauvegardes automatiques de la base de données. |
 
 #### 2. Configuration réseau et serveur

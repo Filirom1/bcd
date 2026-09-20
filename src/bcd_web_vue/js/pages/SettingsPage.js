@@ -39,6 +39,13 @@ export default defineComponent({
         const { handleError } = useErrorHandler(t);
         const loading = ref(true);
         const saving = ref(false);
+        const shelfSuggestionTraining = ref(false);
+        const shelfSuggestionStatus = ref({
+            enabled: true,
+            trained_at: null,
+            trained_on_records: null,
+            ready: false
+        });
         const appVersion = ref('');
         const settings = ref({
             library_name: '', library_code: '', loan_duration_days: 14,
@@ -65,6 +72,13 @@ export default defineComponent({
                 settings.value = { ...settings.value, ...data };
                 originalSettings.value = { ...settings.value };
                 appVersion.value = health.version || '';
+                try {
+                    shelfSuggestionStatus.value = await apiClient.get('/admin/shelf-suggestion/status');
+                } catch (statusError) {
+                    // An older server can still serve the settings page without
+                    // the optional model management endpoint.
+                    console.warn('Unable to load shelf suggestion status:', statusError);
+                }
             } catch (error) {
                 handleError(error);
             } finally {
@@ -88,6 +102,25 @@ export default defineComponent({
             }
         };
 
+        const trainShelfSuggestion = async () => {
+            try {
+                shelfSuggestionTraining.value = true;
+                const result = await apiClient.post('/admin/shelf-suggestion/train', {});
+                shelfSuggestionStatus.value = result;
+                // Training metadata is read from the model manifest, not saved
+                // back into the SQLite settings record.
+                if (result.status === 'completed') {
+                    success(t('settings.shelf_suggestion_train_done'));
+                } else {
+                    success(t('settings.shelf_suggestion_train_insufficient'));
+                }
+            } catch (error) {
+                handleError(error);
+            } finally {
+                shelfSuggestionTraining.value = false;
+            }
+        };
+
         const resetSettings = () => {
             settings.value = { ...originalSettings.value };
         };
@@ -96,7 +129,8 @@ export default defineComponent({
 
         return {
             t, loading, saving, settings, appVersion, activeSection, isSettingsForm,
-            navigateTo, saveSettings, resetSettings
+            shelfSuggestionTraining, shelfSuggestionStatus,
+            navigateTo, saveSettings, resetSettings, trainShelfSuggestion
         };
     },
 
@@ -117,8 +151,11 @@ export default defineComponent({
                     :section="activeSection"
                     :settings="settings"
                     :loading="saving"
+                    :shelf-suggestion-status="shelfSuggestionStatus"
+                    :shelf-suggestion-training="shelfSuggestionTraining"
                     @save="saveSettings"
                     @reset="resetSettings"
+                    @train-shelf-suggestion="trainShelfSuggestion"
                 />
                 <backup-section v-else-if="activeSection === 'backup'" />
                 <cover-section v-else-if="activeSection === 'covers'" />

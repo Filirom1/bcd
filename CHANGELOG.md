@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added synchronous automatic shelf suggestions during cataloging, using a lightweight pure-Python model trained from titles, subtitles, collections, authors, and unambiguous existing shelf assignments.
+- Added catalog settings to enable or disable shelf suggestions and manually retrain the model.
+- Stored the regenerable shelf suggestion model and its metadata outside SQLite in `data/models/shelf_suggestion.json`.
+
+### Changed
+
+- Shelf-model training is deliberately blocking: the train API request completes only after the model has been written atomically; no background task or polling is used.
+- SQLite stores only the shelf-suggestion feature flag; model metadata is kept in the standalone artifact.
+
+### Tests
+
+- Added integration coverage for shelf-model training, the minimum support threshold, ambiguous notices, and Top-1 prediction.
+
 ## [1.3.2]
 
 ### Fixed

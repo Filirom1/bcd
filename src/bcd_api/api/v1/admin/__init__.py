@@ -20,7 +20,7 @@ from ....services import (
 from ....services.admin import archive as archive_service
 from ....services.admin import backup as backup_service
 from ....services.admin import settings as settings_service
-from . import archive, backups, bulk, covers, maintenance, settings
+from . import archive, backups, bulk, covers, maintenance, settings, shelf_suggestion
 from .archive import (
     archive_transactions,
     get_archive_stats,
@@ -64,6 +64,7 @@ from .settings import (
     update_env_file_content,
     update_settings,
 )
+from .shelf_suggestion import get_shelf_suggestion_status, train_shelf_suggestion
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 router.include_router(settings.router)
@@ -72,6 +73,7 @@ router.include_router(archive.router)
 router.include_router(bulk.router)
 router.include_router(covers.router)
 router.include_router(maintenance.router)
+router.include_router(shelf_suggestion.router)
 
 __all__ = [
     "router",
@@ -118,4 +120,6 @@ __all__ = [
     "get_download_missing_covers_status",
     "cancel_download_missing_covers",
     "set_acquisition_dates_from_publication_year",
+    "get_shelf_suggestion_status",
+    "train_shelf_suggestion",
 ]

@@ -3,7 +3,7 @@
  * Creates physical items (copies) for a bibliographic record
  */
 
-const { defineComponent, ref, computed, watch } = Vue;
+const { defineComponent, ref, computed, watch, onMounted } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { useNotification } from '../../composables/useNotification.js';
@@ -14,6 +14,7 @@ import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import ItemEditForm from '../catalog/ItemEditForm.js';
 import { computeCallNumber, suggestShelfLocation } from '../../utils/callNumber.js';
 import { parseJsonSetting } from '../../utils/domain.js';
+import { isPeriodicalIdentifier } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'ItemBarcodeInput',
@@ -29,9 +30,17 @@ export default defineComponent({
             type: String,
             required: true
         },
+        recordSubtitle: {
+            type: String,
+            default: null
+        },
         recordMediumType: {
             type: String,
             default: ''
+        },
+        recordIdentifierType: {
+            type: String,
+            default: null
         },
         recordDeweyNumber: {
             type: String,
@@ -70,6 +79,7 @@ export default defineComponent({
         const callNumber = ref('');
         const callNumberInput = ref(null);
         const shelfLocation = ref('');
+        const lastSuggestedShelfLocation = ref('');
         // Keep track of the value last generated automatically so changing the
         // shelf can replace it without overwriting a manually edited call number.
         const lastSuggestedCallNumber = ref('');
@@ -83,7 +93,9 @@ export default defineComponent({
         const showItemEditModal = ref(false);
         const editingItem = ref(null);
 
-        const isPeriodical = computed(() => props.recordMediumType === 'P\u00e9riodique');
+        const isPeriodical = computed(() =>
+            isPeriodicalIdentifier(props.recordIdentifierType)
+        );
 
         // Suggested call number based on dynamic settings rules:
         const suggestedCallNumber = computed(() => {
@@ -125,10 +137,33 @@ export default defineComponent({
 
         // Pre-fill shelf location only when it is still empty
         watch(suggestedShelfLocation, (val) => {
-            if (val && !shelfLocation.value.trim()) {
+            if (val && (!shelfLocation.value.trim() || shelfLocation.value === lastSuggestedShelfLocation.value)) {
                 shelfLocation.value = val;
             }
+            lastSuggestedShelfLocation.value = val || '';
         }, { immediate: true });
+
+        // The model suggestion is asynchronous.  It may replace the static
+        // medium-type default, but never overwrites a librarian's edit.
+        onMounted(async () => {
+            try {
+                const result = await apiClient.post('/catalog/shelf-suggestion', {
+                    title: props.recordTitle,
+                    subtitle: props.recordSubtitle,
+                    collection: props.recordCollection,
+                    authors: props.recordAuthors
+                }, {}, { skipGlobalLoading: true });
+                const suggested = result?.suggested_shelf?.trim();
+                const current = shelfLocation.value.trim();
+                if (suggested && (!current || current === lastSuggestedShelfLocation.value)) {
+                    shelfLocation.value = suggested;
+                    lastSuggestedShelfLocation.value = suggested;
+                }
+            } catch (error) {
+                // A missing/untrained model is an expected fallback case.
+                console.debug('Shelf suggestion unavailable:', error);
+            }
+        });
 
         /**
          * Create item with barcode
@@ -344,9 +379,9 @@ export default defineComponent({
                     />
                 </div>
 
-                <!-- Shelf location + call number (non-periodicals) -->
-                <div v-if="!isPeriodical" class="row g-3 mb-3">
-                    <div class="col-md-6">
+                <!-- Shelf location is used for all media; call number is also used for non-periodicals. -->
+                <div class="row g-3 mb-3">
+                    <div :class="isPeriodical ? 'col-md-12' : 'col-md-6'">
                         <label class="form-label">{{ $t('catalog.shelf_location') }}</label>
                         <shelf-location-picker
                             v-model="shelfLocation"
@@ -354,7 +389,7 @@ export default defineComponent({
                             :disabled="loading"
                         />
                     </div>
-                    <div class="col-md-6">
+                    <div v-if="!isPeriodical" class="col-md-6">
                         <label class="form-label">{{ $t('catalog.call_number') }}</label>
                         <dewey-picker
                             v-model="callNumber"
