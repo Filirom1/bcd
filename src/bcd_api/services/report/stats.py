@@ -15,6 +15,7 @@ from ...models.bibliographic_record import BibliographicRecord
 from ...models.borrower import Borrower
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
+from ....shared.constants import MediumType
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ def get_collection_stats(
             q = q.filter(Item.acquisition_date <= cutoff)
 
         if exclude_periodicals:
-            q = q.filter(BibliographicRecord.medium_type != "Périodique")
+            q = q.filter(BibliographicRecord.medium_type != MediumType.PERIODIQUE.value)
 
         if medium_type and not exclude_medium_type:
             q = q.filter(BibliographicRecord.medium_type == medium_type)

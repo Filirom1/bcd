@@ -6,7 +6,7 @@
 
 const { defineComponent, computed, ref, watch } = Vue;
 const { useI18n } = VueI18n;
-import { formatAuthors, parseCsv } from '../../utils/domain.js';
+import { formatAuthors, isPeriodicalIdentifier, parseCsv } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
@@ -377,7 +377,7 @@ export default defineComponent({
         const filteredItems = computed(() => {
             let items = allItems.value;
             if (excludePeriodicals.value) {
-                items = items.filter(item => item.medium_type !== 'Périodique');
+                items = items.filter(item => !isPeriodicalIdentifier(item.identifier_type));
             }
             const tr = tauxRotationFilter.value;
             if (tr.min !== null || tr.max !== null) {

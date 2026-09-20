@@ -106,6 +106,7 @@ def get_never_borrowed_items(
             "level": biblio.level,
             "target_audience": biblio.target_audience,
             "medium_type": biblio.medium_type,
+            "identifier_type": biblio.identifier_type,
             "language": biblio.language,
             "publication_year": biblio.publication_year,
             "acquisition_date": item.acquisition_date,

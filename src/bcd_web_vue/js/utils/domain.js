@@ -67,6 +67,15 @@ export function itemStatusClass(status) {
 export const AUDIENCE_VALUES = Object.freeze(['child', 'youth', 'adult']);
 export const BINDING_TYPE_VALUES = Object.freeze(['hardcover', 'paperback', 'spiral', 'other']);
 
+/** Stable bibliographic identifier types returned by the API. */
+export const IDENTIFIER_TYPES = Object.freeze({
+    ISBN: 'isbn',
+    ISSN: 'issn',
+});
+
+export const isPeriodicalIdentifier = (identifierType) =>
+    identifierType === IDENTIFIER_TYPES.ISSN;
+
 /**
  * Format authors.
  * @param {string[]|string|null|undefined} value

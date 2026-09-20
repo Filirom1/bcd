@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
+from src.shared.constants import MediumType
 from .import_ import DublinCoreColumns, ImportResult, _normalize_isbn
 
 logger = logging.getLogger(__name__)
@@ -374,7 +375,7 @@ def _map_dc_type_to_medium_type(dc_type: str) -> str:
     # Map DC types to medium type strings (supports both Dublin Core standard values and French labels)
     # Check periodical before text because 'Text;Periodical' contains 'text'
     if "periodical" in dc_type_lower or "journal" in dc_type_lower or "magazine" in dc_type_lower or "revue" in dc_type_lower or "périodique" in dc_type_lower:
-        return "Périodique"
+        return MediumType.PERIODIQUE.value
     elif "text" in dc_type_lower or "book" in dc_type_lower or "livre" in dc_type_lower:
         return "Livre"
     elif "sound" in dc_type_lower or "audio" in dc_type_lower or "cd" in dc_type_lower:

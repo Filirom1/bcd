@@ -16,6 +16,7 @@ import ItemEditForm from './ItemEditForm.js';
 import RecordDeleteDialog from './RecordDeleteDialog.js';
 import BibliographicFields from './BibliographicFields.js';
 import { ApiError } from '../../models/error.js';
+import { isPeriodicalIdentifier } from '../../utils/domain.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
@@ -196,7 +197,7 @@ export default defineComponent({
             try {
                 const itemsData = await apiClient.get(`/catalog/bibliographic/${recId}/items`);
                 const rawItems = Array.isArray(itemsData) ? itemsData : (itemsData.items || []);
-                if (record.value && record.value.medium_type === 'P\u00e9riodique') {
+                if (isPeriodicalIdentifier(record.value?.identifier_type)) {
                     rawItems.sort((a, b) => {
                         const na = parseInt(a.call_number);
                         const nb = parseInt(b.call_number);
@@ -575,7 +576,8 @@ export default defineComponent({
             handleDeleteConfirm,
             showItemEditModal,
             editingItem,
-            showDeleteDialog
+            showDeleteDialog,
+            isPeriodicalRecord: computed(() => isPeriodicalIdentifier(record.value?.identifier_type))
         };
     },
 
@@ -606,7 +608,7 @@ export default defineComponent({
                             :edit-mode="isEditMode"
                             :errors="errors"
                             :settings="settingsValue"
-                            :hide-series-number="record && record.medium_type === 'P\u00e9riodique'"
+                            :hide-series-number="isPeriodicalRecord"
                           />
                         </form>
                     </div>
@@ -709,8 +711,8 @@ export default defineComponent({
                                 <thead>
                                     <tr>
                                         <th>{{ t('catalog.item_id') }}</th>
-                                        <th v-if="record && record.medium_type === 'P\u00e9riodique'">{{ t('periodical.issue_number') }}</th>
-                                        <th v-if="record && record.medium_type !== 'P\u00e9riodique'">{{ t('catalog.shelf_location_call_number') }}</th>
+                                        <th v-if="isPeriodicalRecord">{{ t('periodical.issue_number') }}</th>
+                                        <th>{{ t('catalog.shelf_location_call_number') }}</th>
                                         <th>{{ t('catalog.status') }}</th>
                                         <th v-if="!isEditMode">{{ t('catalog.due_date_borrower') }}</th>
                                         <th v-else>{{ t('catalog.condition') }}</th>
@@ -720,14 +722,14 @@ export default defineComponent({
                                 <tbody>
                                     <tr v-for="item in items" :key="item.id">
                                         <td class="font-monospace">{{ item.item_id }}</td>
-                                        <td v-if="record && record.medium_type === 'P\u00e9riodique'" class="text-muted">
+                                        <td v-if="isPeriodicalRecord" class="text-muted">
                                             {{ item.call_number ? (/^\d+$/.test(item.call_number) ? 'n\u00b0 ' + item.call_number : item.call_number) : '\u2014' }}
                                         </td>
-                                        <td v-if="record && record.medium_type !== 'P\u00e9riodique'">
+                                        <td>
                                             <div class="d-flex flex-wrap align-items-center gap-1">
                                                 <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
-                                                <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
-                                                <span v-if="!item.shelf_location && !item.call_number" class="text-muted">&mdash;</span>
+                                                <span v-if="!isPeriodicalRecord && item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
+                                                <span v-if="!item.shelf_location && (isPeriodicalRecord || !item.call_number)" class="text-muted">&mdash;</span>
                                             </div>
                                         </td>
                                         <td>
