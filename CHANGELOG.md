@@ -4,10 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+
 ## [1.4.0]
 
 ### Fixed
 
+- Fixed shelf-location and Dewey badge colors in the Godot Kids client by using the array format returned by the settings API.
 - Periodical detection now uses the bibliographic identifier type consistently across cataloging, reports, and collection statistics.
 - Periodical item displays now preserve shelf locations while correctly handling issue numbers and call numbers.
 - Never-borrowed report entries now include the bibliographic identifier type.

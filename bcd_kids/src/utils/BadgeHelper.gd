@@ -25,50 +25,31 @@ static func auto_text_color(bg: Color) -> Color:
 	return Color.BLACK if lum > 0.55 else Color.WHITE
 
 
-# Shelf location color from GS.settings["catalog_shelf_locations"] JSON.
-# Returns Color(0,0,0,0) when absent or no color defined.
+# Shelf location color from GS.settings["catalog_shelf_locations"].
+# The API response contains this setting as an Array of Dictionaries.
+# Returns transparent when absent or no color is defined.
 static func get_shelf_color(label: String) -> Color:
-	var raw: String = GS.settings.get("catalog_shelf_locations", "")
-	if raw.is_empty():
-		return Color(0, 0, 0, 0)
-	var parsed = JSON.parse_string(raw)
-	if not parsed is Array:
-		return Color(0, 0, 0, 0)
-	for entry in parsed:
-		if entry.get("label", "") == label:
-			var hex: String = str(entry.get("color", "")).strip_edges()
-			if hex.is_empty():
-				return Color(0, 0, 0, 0)
-			return Color.html(hex)
+	var locations: Array = GS.settings.get("catalog_shelf_locations", [])
+	for entry in locations:
+		if entry is Dictionary and str(entry.get("label", "")).strip_edges() == label.strip_edges():
+			var hex := str(entry.get("color", "")).strip_edges()
+			return Color.html(hex) if not hex.is_empty() else Color(0, 0, 0, 0)
 	return Color(0, 0, 0, 0)
 
 
-# Dewey class color from GS.settings["dewey_colors"] JSON (10-element array).
-# The server-side dewey_colors_enabled setting is authoritative. Missing values
-# default to enabled for compatibility with older servers.
-# Derived from the first digit of call_number.
-# Returns Color(0,0,0,0) when disabled, absent, or first char is not a digit.
+# Dewey class color from GS.settings["dewey_colors"] (10-element Array).
 static func get_dewey_color(call_number: String) -> Color:
 	if GS.settings.get("dewey_colors_enabled", true) == false:
 		return Color(0, 0, 0, 0)
-
 	var trimmed := call_number.strip_edges()
-	if trimmed.is_empty():
+	if trimmed.is_empty() or trimmed[0] < "0" or trimmed[0] > "9":
 		return Color(0, 0, 0, 0)
-	var first := trimmed[0]
-	if first < "0" or first > "9":
+	var colors: Array = GS.settings.get("dewey_colors", [])
+	var idx := int(trimmed[0])
+	if colors.size() < 10 or colors[idx] == null:
 		return Color(0, 0, 0, 0)
-	var idx := int(first)
-	var raw: String = GS.settings.get("dewey_colors", "")
-	if raw.is_empty():
-		return Color(0, 0, 0, 0)
-	var parsed = JSON.parse_string(raw)
-	if not parsed is Array or parsed.size() < 10:
-		return Color(0, 0, 0, 0)
-	var hex: String = str(parsed[idx]).strip_edges() if parsed[idx] != null else ""
-	if hex.is_empty():
-		return Color(0, 0, 0, 0)
-	return Color.html(hex)
+	var hex := str(colors[idx]).strip_edges()
+	return Color.html(hex) if not hex.is_empty() else Color(0, 0, 0, 0)
 
 
 # Build a badge PanelContainer.
