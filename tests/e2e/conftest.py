@@ -21,6 +21,8 @@ from playwright.sync_api import sync_playwright
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from tests.e2e.page_objects.base_page import navigate_and_wait_for_app
+
 # =============================================================================
 # Database Fixtures - Function Scoped for Isolation
 # =============================================================================
@@ -120,12 +122,12 @@ def db_session(test_database):
 # API Server Fixtures
 # =============================================================================
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def api_server_port():
-    """Get available port for API server."""
+    """Get a fresh available port for each isolated API server."""
     import socket
     sock = socket.socket()
-    sock.bind(('', 0))
+    sock.bind(('127.0.0.1', 0))
     port = sock.getsockname()[1]
     sock.close()
     return port
@@ -171,21 +173,40 @@ def api_server(test_database, api_server_port):
         cwd=PROJECT_ROOT
     )
 
-    # Wait for server to be ready
+    # Wait for both the API and the SPA shell to be ready. The API health
+    # endpoint alone is not sufficient: the browser also needs the HTML shell
+    # before the fixture can yield.
     import requests
     base_url = f"http://127.0.0.1:{api_server_port}"
     max_retries = 60
+    ready = False
 
     for i in range(max_retries):
+        if process.poll() is not None:
+            break
         try:
-            response = requests.get(f"{base_url}/api/v1/admin/health", timeout=2)
-            if response.status_code == 200:
+            api_response = requests.get(f"{base_url}/api/v1/admin/health", timeout=2)
+            shell_response = requests.get(base_url, timeout=2)
+            if api_response.status_code == 200 and shell_response.status_code == 200:
+                ready = True
                 break
         except (requests.ConnectionError, requests.Timeout):
-            if i == max_retries - 1:
-                process.terminate()
-                pytest.fail("API server failed to start")
-            time.sleep(0.5)
+            pass
+        time.sleep(0.5)
+
+    if not ready:
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+        log_file.flush()
+        log_file.close()
+        pytest.fail(
+            "API server failed to start. "
+            f"Process return code: {process.returncode}. "
+            "See test_e2e_server.log for details."
+        )
 
     yield base_url
 
@@ -259,17 +280,23 @@ def context(browser, browser_context_args):
 
 @pytest.fixture(scope="function")
 def page(context, app_url, request):
-    """Page instance with automatic navigation and screenshot on failure."""
+    """Page instance with deterministic SPA readiness and diagnostics."""
     page = context.new_page()
+    page.set_default_timeout(30_000)
+    page.set_default_navigation_timeout(30_000)
 
-    # Navigate to app
-    page.goto(app_url)
-
-    # Wait for Vue app to load
     try:
-        page.wait_for_selector('.sidebar', timeout=10000)
-    except:
-        print("⚠️  Sidebar not found, app may not have loaded")
+        navigate_and_wait_for_app(page, app_url)
+    except Exception:
+        # Preserve the browser state that caused setup to fail. This is much
+        # more actionable than a later, unrelated selector timeout in a test.
+        screenshot_dir = Path("test-results/screenshots")
+        screenshot_dir.mkdir(parents=True, exist_ok=True)
+        page.screenshot(
+            path=str(screenshot_dir / f"{request.node.name}-bootstrap.png"),
+            full_page=True,
+        )
+        raise
 
     yield page
 

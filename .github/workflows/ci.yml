@@ -69,6 +69,10 @@ jobs:
             pytest.log
             htmlcov/
             coverage.xml
+            test-results/
+            test_e2e_server.log
+            test_e2e_browser.log
+            test_e2e_page_content.html
           if-no-files-found: ignore
 
       - name: Generate coverage summary
