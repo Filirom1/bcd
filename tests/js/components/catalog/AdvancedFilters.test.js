@@ -3,7 +3,10 @@ import { mount } from '@vue/test-utils';
 
 import AdvancedFilters from '../../../../src/bcd_web_vue/js/components/catalog/AdvancedFilters.js';
 
-const FilterSelectStub = { template: '<select />' };
+const FilterSelectStub = {
+    props: ['options'],
+    template: '<div />'
+};
 const ColumnSelectorStub = { template: '<div />' };
 
 function mountFilters() {

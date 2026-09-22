@@ -21,7 +21,7 @@ import Pagination from '../ui/Pagination.js';
 import FilterChips from './FilterChips.js';
 import TauxRotationPanel from './TauxRotationPanel.js';
 
-const PANEL_IDS = ['crew_score', 'medium_type', 'condition', 'pub_year', 'acq_year', 'taux_rotation'];
+const PANEL_IDS = ['crew_score', 'medium_type', 'target_audience', 'condition', 'pub_year', 'acq_year', 'taux_rotation'];
 const HIDDEN_PANELS_KEY = 'collection_hidden_panels';
 
 export default defineComponent({
@@ -58,11 +58,18 @@ export default defineComponent({
 
         const hasActiveFilters = computed(() =>
             Object.values(crossFilters.value).some(v => v !== null)
+            || tauxRotationFilter.value.min !== null
+            || tauxRotationFilter.value.max !== null
+            || crewScoreFilter.value.min !== null
+            || crewScoreFilter.value.max !== null
         );
 
         // ── Panel visibility (localStorage) ───────────────────────────────────
         const saveHidden = hidden => setJSON(HIDDEN_PANELS_KEY, hidden);
-        const loadHidden = () => getJSON(HIDDEN_PANELS_KEY, []);
+        const loadHidden = () => {
+            const stored = getJSON(HIDDEN_PANELS_KEY, []);
+            return Array.isArray(stored) ? stored.filter(id => PANEL_IDS.includes(id)) : [];
+        };
         const hiddenPanels = ref(loadHidden());
         const visiblePanels = computed(() => PANEL_IDS.filter(id => !hiddenPanels.value.includes(id)));
         const showPanelDropdown = ref(false);
@@ -150,8 +157,11 @@ export default defineComponent({
         const clampScoreMin = () => { if (sliderScoreMin.value >= sliderScoreMax.value) sliderScoreMin.value = sliderScoreMax.value - 1; };
         const clampScoreMax = () => { if (sliderScoreMax.value <= sliderScoreMin.value) sliderScoreMax.value = sliderScoreMin.value + 1; };
         const applyScoreRange = () => {
-            const atDefault = sliderScoreMin.value === 0 && sliderScoreMax.value === scoreRange.value.max;
-            crewScoreFilter.value = { min: atDefault ? null : sliderScoreMin.value, max: atDefault ? null : sliderScoreMax.value };
+            const range = scoreRange.value;
+            crewScoreFilter.value = {
+                min: sliderScoreMin.value === range.min ? null : sliderScoreMin.value,
+                max: sliderScoreMax.value === range.max ? null : sliderScoreMax.value,
+            };
         };
         const scoreFillStyle = computed(() => {
             const { min, max } = scoreRange.value;
@@ -218,20 +228,18 @@ export default defineComponent({
         // Apply slider values to crossFilters (triggers reload via watcher)
         const applyPubRange = () => {
             const r = pubYearRange.value;
-            const atDefault = sliderPubMin.value === r.min && sliderPubMax.value === r.max;
             crossFilters.value = {
                 ...crossFilters.value,
-                pub_year_min: atDefault ? null : sliderPubMin.value,
-                pub_year_max: atDefault ? null : sliderPubMax.value,
+                pub_year_min: sliderPubMin.value === r.min ? null : sliderPubMin.value,
+                pub_year_max: sliderPubMax.value === r.max ? null : sliderPubMax.value,
             };
         };
         const applyAcqRange = () => {
             const r = acqYearRange.value;
-            const atDefault = sliderAcqMin.value === r.min && sliderAcqMax.value === r.max;
             crossFilters.value = {
                 ...crossFilters.value,
-                acq_year_min: atDefault ? null : sliderAcqMin.value,
-                acq_year_max: atDefault ? null : sliderAcqMax.value,
+                acq_year_min: sliderAcqMin.value === r.min ? null : sliderAcqMin.value,
+                acq_year_max: sliderAcqMax.value === r.max ? null : sliderAcqMax.value,
             };
         };
 
@@ -356,14 +364,40 @@ export default defineComponent({
 
         const printReport = () => window.print();
 
+        // Statistics are optional dashboard data. Keep the page renderable when
+        // an older server omits a histogram/breakdown or returns no body.
+        const normalizeStats = response => {
+            if (response === null || response === undefined) return null;
+            if (typeof response !== 'object' || Array.isArray(response)) {
+                throw new TypeError('Invalid collection statistics response');
+            }
+            const rawBreakdowns = response.breakdowns && typeof response.breakdowns === 'object'
+                ? response.breakdowns
+                : {};
+            return {
+                ...response,
+                breakdowns: {
+                    medium_type: Array.isArray(rawBreakdowns.medium_type) ? rawBreakdowns.medium_type : [],
+                    target_audience: Array.isArray(rawBreakdowns.target_audience) ? rawBreakdowns.target_audience : [],
+                    condition: Array.isArray(rawBreakdowns.condition) ? rawBreakdowns.condition : [],
+                },
+                pub_year_histogram: Array.isArray(response.pub_year_histogram) ? response.pub_year_histogram : [],
+                acq_year_histogram: Array.isArray(response.acq_year_histogram) ? response.acq_year_histogram : [],
+            };
+        };
+
         const loadStats = async () => {
             statsLoading.value = true;
             try {
-                stats.value = await apiClient.get('/reports/collection-stats', buildBaseParams());
+                const response = await apiClient.get('/reports/collection-stats', buildBaseParams());
+                stats.value = normalizeStats(response);
                 await nextTick();
-                rebuildCharts();
+                if (stats.value) rebuildCharts();
+                else destroyCharts();
             } catch (e) {
                 console.error('collection-stats error', e);
+                stats.value = null;
+                destroyCharts();
                 showError(t('reports.loadError'));
             } finally {
                 statsLoading.value = false;
@@ -612,7 +646,7 @@ export default defineComponent({
         const COL_STORAGE_KEY_CREW = 'crew_cols';
         const loadVisibleColsCrew = () => {
             const s = getJSON(COL_STORAGE_KEY_CREW);
-            if (s) return s.filter(id => COL_IDS_CREW.includes(id));
+            if (Array.isArray(s)) return s.filter(id => COL_IDS_CREW.includes(id));
             return [...COL_IDS_CREW];
         };
         const visibleCols = ref(loadVisibleColsCrew());
@@ -818,6 +852,31 @@ export default defineComponent({
                         <span style="min-width:90px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ row.value }}</span>
                         <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
                             <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.medium_type)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'3px'}"></div>
+                        </div>
+                        <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
+                        <span style="min-width:34px;font-size:11px;color:#999;">{{ Math.round(row.count/stats.total_count*100) }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Par public -->
+        <div class="col-6 col-md-4" v-if="isPanelVisible('target_audience')">
+            <div class="card h-100">
+                <div class="card-body p-3">
+                    <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                        {{ t('reports.collectionReport.byAudience') }}
+                        <span class="fw-normal text-muted ms-1" style="text-transform:none;letter-spacing:0;">· {{ t('reports.collectionReport.clickToFilter') }}</span>
+                    </div>
+                    <div v-if="!stats.breakdowns.target_audience.length" class="text-muted small">—</div>
+                    <div v-for="(row, i) in stats.breakdowns.target_audience" :key="row.value"
+                         @click="toggleBreakdown('target_audience', row.value)"
+                         class="d-flex align-items-center gap-2 mb-1 px-1 py-1 rounded"
+                         style="cursor:pointer;"
+                         :style="crossFilters.target_audience === row.value ? 'background:#ddeeff;outline:2px solid #4D99F2;' : ''">
+                        <span style="min-width:90px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ audienceLabel(row.value) }}</span>
+                        <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
+                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.target_audience)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'3px'}"></div>
                         </div>
                         <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
                         <span style="min-width:34px;font-size:11px;color:#999;">{{ Math.round(row.count/stats.total_count*100) }}%</span>

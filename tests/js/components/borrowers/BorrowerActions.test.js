@@ -98,4 +98,35 @@ describe('BorrowerActions', () => {
         }));
         expect(wrapper.emitted('action-completed')).toEqual([['renew']]);
     });
+
+    it('confirms an unblock request and resets its loading state', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
+        const wrapper = mountActions({ ...borrower, active: false });
+
+        await wrapper.get('button.btn-success').trigger('click');
+        await wrapper.get('.modal-footer .btn-success').trigger('click');
+        await flushPromises();
+
+        expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/v1/borrowers/B-201/unblock'), expect.objectContaining({ method: 'POST' }));
+        expect(wrapper.vm.unblockLoading).toBe(false);
+        expect(wrapper.emitted('action-completed')).toEqual([['unblock']]);
+    });
+
+    it('handles no renewable items and network failures gracefully', async () => {
+        const noRenewable = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+            error_code: 'no_renewable_items', message: 'None'
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } }));
+        vi.stubGlobal('fetch', noRenewable);
+        const wrapper = mountActions({ ...borrower, current_loans_count: 1 });
+
+        await wrapper.vm.renewAll();
+        await flushPromises();
+        expect(wrapper.vm.renewLoading).toBe(false);
+        expect(wrapper.emitted('action-completed')).toBeUndefined();
+
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+        await wrapper.vm.renewAll();
+        expect(wrapper.vm.renewLoading).toBe(false);
+    });
 });

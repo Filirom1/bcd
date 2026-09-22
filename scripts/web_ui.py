@@ -79,7 +79,16 @@ def main() -> None:
 
     if args.e2e:
         run(
-            [sys.executable, "-m", "pytest", "tests/e2e/test_web_production.py", "--cov-append", "-v"],
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                "tests/e2e/test_web_production.py",
+                "-m",
+                "e2e",
+                "--cov-append",
+                "-v",
+            ],
             env,
         )
 

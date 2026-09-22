@@ -196,12 +196,16 @@ export default defineComponent({
         const loadRecordItems = async (recId) => {
             try {
                 const itemsData = await apiClient.get(`/catalog/bibliographic/${recId}/items`);
-                const rawItems = Array.isArray(itemsData) ? itemsData : (itemsData.items || []);
+                const rawItems = Array.isArray(itemsData)
+                    ? itemsData
+                    : (Array.isArray(itemsData?.items) ? itemsData.items : []);
                 if (isPeriodicalIdentifier(record.value?.identifier_type)) {
                     rawItems.sort((a, b) => {
                         const na = parseInt(a.call_number);
                         const nb = parseInt(b.call_number);
                         if (!isNaN(na) && !isNaN(nb)) return nb - na;
+                        if (!isNaN(na)) return -1;
+                        if (!isNaN(nb)) return 1;
                         return (b.call_number || '').localeCompare(a.call_number || '');
                     });
                 }

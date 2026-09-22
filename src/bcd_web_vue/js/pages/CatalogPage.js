@@ -416,19 +416,15 @@ export default defineComponent({
         /**
          * Handle record deleted from edit modal
          */
-        const handleRecordDeleted = (record_id) => {
+        const handleRecordDeleted = () => {
             success(t('admin.record_deleted'));
 
-            // Close detail modal if it was showing the deleted record
-            if (selectedRecordId.value === record_id) {
-                showRecordDetail.value = false;
-                selectedRecordId.value = null;
-            }
-
-            // Close edit modal
+            // This page only owns the edit modal. Global record-detail modals
+            // are hosted by App, so there is no local selectedRecordId to close.
             showRecordEditModal.value = false;
+            editingRecord.value = null;
 
-            // Refresh search results to reflect deletion
+            // Refresh search results to reflect deletion.
             performSearch();
         };
 
@@ -533,6 +529,7 @@ export default defineComponent({
             bulkProgress,
             bulkShowProgress,
             settings,
+            openBorrower,
             t,
             altHeld
         };

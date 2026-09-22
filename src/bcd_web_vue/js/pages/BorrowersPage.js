@@ -27,7 +27,6 @@ import { usePagination } from '../composables/usePagination.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useAdminShortcuts, altHeld } from '../composables/useKeyboardShortcuts.js';
-import { ApiError } from '../models/error.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { apiClient } from '../api/client.js';
@@ -346,11 +345,6 @@ export default defineComponent({
             // Show success notification
             success(t('admin.borrower_deleted'));
 
-            // Close detail modal if it was showing the deleted borrower
-            if (selectedBorrowerId.value === borrower_id) {
-                closeBorrowerDetail();
-            }
-
             // Clear selection
             selectedBorrowerIds.value = [];
 
@@ -375,27 +369,17 @@ export default defineComponent({
 
                 // Determine endpoint and request body
                 if (operation === 'change_class') {
-                    endpoint = '/api/v1/admin/borrowers/bulk-change-class';
+                    endpoint = '/admin/borrowers/bulk-change-class';
                     requestBody.target_class_id = targetClassId;
                 } else if (operation === 'delete') {
-                    endpoint = '/api/v1/admin/borrowers/bulk-delete';
+                    endpoint = '/admin/borrowers/bulk-delete';
                 }
 
-                // Execute operation
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    const apiError = await ApiError.fromResponse(response);
-                    throw apiError;
-                }
-
-                const result = await response.json();
+                // Execute through the same API boundary as every other page.
+                // This keeps authentication, locale headers, loading state, and
+                // error normalization consistent and makes the workflow easy to
+                // test without a browser or a live server.
+                const result = await apiClient.post(endpoint, requestBody);
 
                 // Show success notification
                 let operationName = '';
@@ -419,9 +403,10 @@ export default defineComponent({
                 // Clear selection
                 selectedBorrowerIds.value = [];
 
-                // Reload borrower list
+                // Reload borrower list. The page owns this operation, so an
+                // additional refresh event would make its own listener issue
+                // the same request twice.
                 await loadBorrowers();
-                events.emit('borrowers:refresh');
 
             } catch (error) {
                 handleError(error);

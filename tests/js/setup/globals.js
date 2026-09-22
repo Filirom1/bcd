@@ -4,10 +4,21 @@ import * as Vue from 'vue';
 // The source SPA expects Vue, Vue Router, and Vue I18n browser globals.
 // Recreate the public contracts used by modules in the test runtime.
 globalThis.Vue = Vue;
-globalThis.VueRouter = {
-    useRoute: () => ({ query: {} }),
-    useRouter: () => ({ replace: () => {} })
+const testRoute = {
+    query: {},
+    params: {},
+    meta: {}
 };
+const testRouter = {
+    push: () => Promise.resolve(),
+    replace: () => Promise.resolve()
+};
+globalThis.VueRouter = {
+    useRoute: () => testRoute,
+    useRouter: () => testRouter
+};
+globalThis.__testRoute = testRoute;
+globalThis.__testRouter = testRouter;
 globalThis.__testTranslate = key => key;
 const testLocale = Vue.ref('fr');
 globalThis.VueI18n = {
@@ -20,5 +31,10 @@ globalThis.VueI18n = {
 
 afterEach(() => {
     globalThis.__testTranslate = key => key;
+    globalThis.__testRoute.query = {};
+    globalThis.__testRoute.params = {};
+    globalThis.__testRoute.meta = {};
+    globalThis.__testRouter.push = () => Promise.resolve();
+    globalThis.__testRouter.replace = () => Promise.resolve();
     document.body.innerHTML = '';
 });

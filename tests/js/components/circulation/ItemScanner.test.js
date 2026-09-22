@@ -99,4 +99,55 @@ describe('ItemScanner', () => {
         expect(wrapper.emitted('item-scanned')).toEqual([['.I-001']]);
         expect(wrapper.vm.itemBarcode).toBe('');
     });
+
+    it('filters return suggestions to copies that are currently on loan', async () => {
+        const returnRecord = { id: 2, title: 'Returned candidate', physical_items: [{ item_id: 'I-2', status: 'available' }] };
+        vi.mocked(apiClient.get).mockResolvedValueOnce({ items: [mockSearchResponse.items[0], returnRecord] });
+        const wrapper = mount(ItemScanner, { props: { mode: 'return' } });
+
+        const results = await wrapper.vm.fetchItems('book', new AbortController().signal);
+        expect(results).toHaveLength(1);
+        expect(results[0].physical_items[0].status).toBe('available');
+    });
+
+    it('selects the available copy for checkout and the loaned copy for return', async () => {
+        vi.useFakeTimers();
+        const checkout = mount(ItemScanner, { props: { mode: 'checkout', borrower: { id: 1 } } });
+        const returned = mount(ItemScanner, { props: { mode: 'return' } });
+        await checkout.vm.handleItemSelect(mockSearchResponse.items[0]);
+        await returned.vm.handleItemSelect(mockSearchResponse.items[0]);
+
+        expect(checkout.emitted('item-scanned')).toEqual([['I-001']]);
+        expect(returned.emitted('item-scanned')).toEqual([['I-002']]);
+        vi.advanceTimersByTime(50);
+        expect(checkout.vm.scanning).toBe(false);
+        vi.useRealTimers();
+    });
+
+    it('does not scan without a borrower, with a blank barcode, or during another scan', async () => {
+        vi.useFakeTimers();
+        const noBorrower = mount(ItemScanner, { props: { mode: 'checkout' } });
+        await noBorrower.vm.scanItem('I-1');
+        expect(noBorrower.emitted('item-scanned')).toBeUndefined();
+
+        const wrapper = mount(ItemScanner, { props: { mode: 'checkout', borrower: { id: 1 } } });
+        await wrapper.vm.scanItem('');
+        await wrapper.vm.scanItem('I-1');
+        await wrapper.vm.scanItem('I-2');
+        expect(wrapper.emitted('item-scanned')).toEqual([['I-1']]);
+        vi.advanceTimersByTime(50);
+        vi.useRealTimers();
+    });
+
+    it('formats missing metadata and propagates autocomplete API failures', async () => {
+        const wrapper = mount(ItemScanner, { props: { mode: 'checkout', borrower: { id: 1 } } });
+        const html = wrapper.vm.formatItemResult({ physical_items: [], authors: [] });
+        expect(html).toContain('N/A');
+        expect(html).toContain('catalog.unknown_title');
+        expect(html).toContain('catalog.unknown_author');
+
+        const error = new Error('offline');
+        vi.mocked(apiClient.get).mockRejectedValue(error);
+        await expect(wrapper.vm.fetchItems('x', new AbortController().signal)).rejects.toBe(error);
+    });
 });

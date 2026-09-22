@@ -14,7 +14,8 @@ def print_header(title):
 
 FAST_TEST_MARKER = "not e2e and not slow and not external"
 SLOW_OR_EXTERNAL_TEST_MARKER = "not e2e and (slow or external)"
-ACTIVE_E2E_TEST_MARKER = "e2e and not e2e_to_be_removed"
+CLI_E2E_TEST_MARKER = "e2e and external"
+BROWSER_SMOKE_MARKER = "browser_smoke"
 CI_TRUE_VALUES = {"1", "true", "yes"}
 
 
@@ -132,16 +133,17 @@ def python_test_suites(fast, coverage, verbose=False):
                 "CLI end-to-end Pytest",
                 pytest_command(
                     "tests/cli/test_e2e_real_data.py",
+                    marker=CLI_E2E_TEST_MARKER,
                     coverage=coverage,
                     append_coverage=coverage,
                     verbose=verbose,
                 ),
             ),
             (
-                "Browser end-to-end Pytest",
+                "Browser smoke Pytest",
                 pytest_command(
                     "tests/e2e",
-                    marker=ACTIVE_E2E_TEST_MARKER,
+                    marker=BROWSER_SMOKE_MARKER,
                     coverage=coverage,
                     append_coverage=coverage,
                     verbose=verbose,

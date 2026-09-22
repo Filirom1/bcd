@@ -32,7 +32,7 @@ The reports must not be added together: they cover different languages and runti
 |---|---|---|
 | Python | `pytest … --cov=src` | `coverage.xml`, `htmlcov/` |
 | JavaScript | `npm run test:js:coverage` | `coverage-js/lcov.info`, `coverage-js/index.html` |
-| Browser journeys | `pytest tests/e2e -m e2e` | Playwright failure screenshots |
+| Browser boundary | `pytest tests/e2e -m browser_smoke` | Playwright failure screenshots |
 
 ## Layout
 
@@ -125,9 +125,12 @@ parent/child interaction is the contract being tested.
 
 ### E2E tests
 
-Keep E2E tests for browser-only or integration-only behavior: keyboard focus,
-scanner input, downloads/uploads, routing, printing, charts, static resources,
-accessibility, and persisted server mutations.
+Keep E2E tests for the smallest browser-only or integration-only boundary: SPA
+startup/navigation and one critical browser-to-API journey. Other browser-only
+contracts (keyboard focus, scanner input, downloads/uploads, routing, printing,
+charts, static resources, accessibility, and persisted server mutations) may be
+added only when JSDOM cannot prove them. The default suite runs the
+`browser_smoke` marker; feature permutations belong in Vitest.
 
 When a fast JS test supersedes a redundant E2E state permutation, follow the
 non-destructive process in [`../e2e/README.md`](../e2e/README.md): mark the E2E test

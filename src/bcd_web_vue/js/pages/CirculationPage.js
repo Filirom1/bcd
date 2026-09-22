@@ -172,7 +172,10 @@ export default defineComponent({
                     checked_out_by: 'web-ui'
                 });
 
-                const transaction = result.transactions[0];
+                const transaction = result?.transactions?.[0];
+                if (!transaction) {
+                    throw new Error(t('circulation.error_checkout_failed'));
+                }
 
                 // Add to scanned items list
                 scannedItems.value.push({
@@ -290,7 +293,10 @@ export default defineComponent({
                     returned_by: 'web-ui'
                 });
 
-                const transaction = result.items[0];
+                const transaction = result?.items?.[0];
+                if (!transaction) {
+                    throw new Error(t('circulation.error_return_failed'));
+                }
 
                 // Add to scanned items list
                 scannedItems.value.push({

@@ -3,7 +3,7 @@
  * Displays search results for inventory operations with selection
  */
 
-const { defineComponent, computed, ref, watch } = Vue;
+const { defineComponent, computed, ref, watch, onMounted } = Vue;
 const { useI18n } = VueI18n;
 
 export default defineComponent({
@@ -28,6 +28,12 @@ export default defineComponent({
 
     setup(props, { emit }) {
         const { t } = useI18n();
+        const MAX_RESULTS = 200;
+
+        // The API normally enforces this cap as well. Keep the presentation
+        // boundary defensive so a malformed/older response cannot render an
+        // unbounded list in the inventory panel.
+        const displayedItems = computed(() => props.items.slice(0, MAX_RESULTS));
 
         // Ref for header checkbox
         const headerCheckboxRef = ref(null);
@@ -35,26 +41,35 @@ export default defineComponent({
         /**
          * Header checkbox state
          */
+        const selectedDisplayedCount = computed(() =>
+            displayedItems.value.filter(item => props.selectedIds.has(item.item_id)).length
+        );
+
         const allSelected = computed(() => {
-            return props.items.length > 0 && props.selectedIds.size === props.items.length;
+            return displayedItems.value.length > 0 && selectedDisplayedCount.value === displayedItems.value.length;
         });
 
         const someSelected = computed(() => {
-            return props.selectedIds.size > 0 && props.selectedIds.size < props.items.length;
+            return selectedDisplayedCount.value > 0 && selectedDisplayedCount.value < displayedItems.value.length;
         });
 
         /**
-         * Update header checkbox indeterminate state
+         * Update header checkbox indeterminate state. The immediate watcher can
+         * run before the input ref from the template exists, so repeat this once
+         * the component has mounted.
          */
+        const updateHeaderCheckbox = () => {
+            if (headerCheckboxRef.value) {
+                headerCheckboxRef.value.indeterminate = someSelected.value;
+            }
+        };
+
         watch(
             () => someSelected.value,
-            (newVal) => {
-                if (headerCheckboxRef.value) {
-                    headerCheckboxRef.value.indeterminate = newVal;
-                }
-            },
+            updateHeaderCheckbox,
             { immediate: true }
         );
+        onMounted(updateHeaderCheckbox);
 
         /**
          * Handle header checkbox click
@@ -94,7 +109,9 @@ export default defineComponent({
             handleHeaderCheckbox,
             handleRowCheckbox,
             isSelected,
-            truncateTitle
+            truncateTitle,
+            displayedItems,
+            MAX_RESULTS
         };
     },
 
@@ -121,7 +138,7 @@ export default defineComponent({
 
             <div v-else class="search-results-list" style="max-height: 400px; overflow-y: auto;">
                 <div
-                    v-for="item in items"
+                    v-for="item in displayedItems"
                     :key="item.item_id"
                     class="search-result-item mb-2 p-2"
                     :class="{ 'selected': isSelected(item.item_id) }"

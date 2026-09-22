@@ -52,15 +52,19 @@ export default defineComponent({
             collection: '',
             series_number: '',
             language: 'fr',
+            country_code: '',
             binding_type: null,
             level: '',
             medium_type: 'Livre',
             target_audience: 'child',
             keywords: [],
             description: '',
+            dewey_number: '',
             page_count: null,
             has_illustrations: null,
-            dimensions: ''
+            dimensions: '',
+            physical_size: '',
+            cover_image: ''
         });
 
         // UI state
@@ -85,13 +89,18 @@ export default defineComponent({
                 formData.collection = rec.collection || '';
                 formData.series_number = rec.series_number || '';
                 formData.language = rec.language || 'fr';
+                formData.country_code = rec.country_code || '';
+                formData.binding_type = rec.binding_type || null;
                 formData.level = rec.level || '';
                 formData.medium_type = rec.medium_type || 'Livre';
                 formData.target_audience = rec.target_audience || 'child';
                 formData.description = rec.description || '';
+                formData.dewey_number = rec.dewey_number || '';
                 formData.page_count = rec.page_count || null;
-                formData.has_illustrations = rec.has_illustrations !== null ? rec.has_illustrations : false;
+                formData.has_illustrations = rec.has_illustrations ?? false;
                 formData.dimensions = rec.dimensions || '';
+                formData.physical_size = rec.physical_size || '';
+                formData.cover_image = rec.cover_image || '';
 
                 // Handle arrays
                 formData.authors = Array.isArray(rec.authors) ? rec.authors : [];
@@ -108,13 +117,18 @@ export default defineComponent({
                 formData.collection = bnf.collection || '';
                 formData.series_number = bnf.series_number || '';
                 formData.language = bnf.language || 'fr';
+                formData.country_code = bnf.country_code || '';
+                formData.binding_type = bnf.binding_type || null;
                 formData.level = bnf.level || '';
                 formData.medium_type = bnf.medium_type || 'Livre';
                 formData.target_audience = bnf.target_audience || 'child';
                 formData.description = bnf.description || '';
+                formData.dewey_number = bnf.dewey_number || '';
                 formData.page_count = bnf.page_count || null;
-                formData.has_illustrations = bnf.has_illustrations !== null ? bnf.has_illustrations : false;
+                formData.has_illustrations = bnf.has_illustrations ?? false;
                 formData.dimensions = bnf.dimensions || '';
+                formData.physical_size = bnf.physical_size || '';
+                formData.cover_image = bnf.cover_image || '';
 
                 // Handle arrays
                 formData.authors = bnf.authors || [];

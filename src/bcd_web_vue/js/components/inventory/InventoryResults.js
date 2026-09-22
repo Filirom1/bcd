@@ -4,7 +4,7 @@
  * Follows the same pattern as catalog SearchResults for consistency
  */
 
-const { defineComponent, computed, ref, watch } = Vue;
+const { defineComponent, computed, ref, watch, onMounted } = Vue;
 const { useI18n } = VueI18n;
 import DataTable from '../ui/DataTable.js';
 import { formatCivilDate } from '../../utils/date.js';
@@ -41,7 +41,7 @@ export default defineComponent({
     emits: ['toggle-selection', 'toggle-select-all', 'edit-item', 'edit-record'],
 
     setup(props, { emit }) {
-        const { t } = useI18n();
+        const { t, locale } = useI18n();
         const { settings } = useAppState();
         const { getShelfBadge, getCoteBadge } = useItemBadge(settings);
 
@@ -98,17 +98,25 @@ export default defineComponent({
         // Ref for header checkbox to handle indeterminate state
         const headerCheckboxRef = ref(null);
 
-        // Watch for indeterminate state (some but not all selected)
+        // Watch for indeterminate state (some but not all visible rows selected).
+        // The immediate watcher runs before the slotted header input is mounted,
+        // so also apply the state once the DOM ref becomes available.
+        const selectedVisibleCount = computed(() =>
+            props.items.filter(item => props.selectedIds.has(item.item_id)).length
+        );
+        const updateHeaderCheckbox = () => {
+            if (headerCheckboxRef.value) {
+                const someSelected = selectedVisibleCount.value > 0 && selectedVisibleCount.value < props.items.length;
+                headerCheckboxRef.value.indeterminate = someSelected;
+            }
+        };
+
         watch(
-            () => [props.selectedIds.size, props.items.length, props.selectAllChecked],
-            ([selectedSize, totalItems, allChecked]) => {
-                if (headerCheckboxRef.value) {
-                    const someSelected = selectedSize > 0 && selectedSize < totalItems;
-                    headerCheckboxRef.value.indeterminate = someSelected;
-                }
-            },
+            () => [selectedVisibleCount.value, props.items.length, props.selectAllChecked],
+            updateHeaderCheckbox,
             { immediate: true }
         );
+        onMounted(updateHeaderCheckbox);
 
         /**
          * Truncate title if too long

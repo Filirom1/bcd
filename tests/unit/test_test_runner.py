@@ -89,7 +89,7 @@ def test_python_test_suites_splits_loop_and_server_owners_without_coverage():
         "Python Pytest (fast)",
         "Python Pytest (slow/external)",
         "CLI end-to-end Pytest",
-        "Browser end-to-end Pytest",
+        "Browser smoke Pytest",
     ]
     assert suites[0][1] == [
         "pytest",
@@ -107,13 +107,20 @@ def test_python_test_suites_splits_loop_and_server_owners_without_coverage():
         "not e2e and (slow or external)",
         "--no-cov",
     ]
-    assert suites[2][1] == ["pytest", "tests/cli/test_e2e_real_data.py", "-q", "--no-cov"]
+    assert suites[2][1] == [
+        "pytest",
+        "tests/cli/test_e2e_real_data.py",
+        "-q",
+        "-m",
+        "e2e and external",
+        "--no-cov",
+    ]
     assert suites[3][1] == [
         "pytest",
         "tests/e2e",
         "-q",
         "-m",
-        "e2e and not e2e_to_be_removed",
+        "browser_smoke",
         "--no-cov",
     ]
 

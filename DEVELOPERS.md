@@ -219,7 +219,7 @@ tests/
 The recommended and simplest way to run all test suites is via the central unified runner:
 
 ```bash
-python run_tests.py all         # Run all active Python + JS tests
+python run_tests.py all         # Run Python + JS plus the minimal browser smoke suite
 python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
 python run_tests.py js          # Run JavaScript Vitest tests only
 python run_tests.py python      # Run Python Pytest tests only
@@ -236,7 +236,7 @@ pytest
 pytest tests/unit -v
 pytest tests/integration -v
 pytest tests/cli -v
-pytest tests/e2e -v
+pytest tests/e2e -m browser_smoke -v
 
 # With coverage
 pytest --cov=src --cov-report=html

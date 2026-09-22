@@ -57,6 +57,54 @@ describe('HelpPanel', () => {
         expect(fetchMock).toHaveBeenCalledWith('/help/en/checkout.md');
     });
 
+    it('falls back to the English help file when the active locale file is missing', async () => {
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(new Response('Not Found', { status: 404 }))
+            .mockResolvedValueOnce(new Response('### Return help', { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        const wrapper = mount(HelpPanel, {
+            props: { section: 'return' },
+            global: { mocks: { $t: key => key } }
+        });
+        await flushPromises();
+        await flushPromises();
+
+        expect(fetchMock).toHaveBeenNthCalledWith(1, '/help/fr/retourner.md');
+        expect(fetchMock).toHaveBeenNthCalledWith(2, '/help/en/return.md');
+        expect(wrapper.vm.error).toBe(false);
+        await vi.waitFor(() => {
+            expect(wrapper.vm.renderedMarkdown).toContain('Return help');
+        });
+    });
+
+    it('uses the documented French file for every contextual help section', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response('# Help', { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
+        const expectedFiles = {
+            checkout: 'emprunter.md',
+            return: 'retourner.md',
+            catalog: 'catalogue.md',
+            cataloging: 'catalogage.md',
+            borrowers: 'eleves.md',
+            classes: 'classes.md',
+            reports: 'rapports.md',
+            settings: 'parametres.md',
+            inventory: 'inventaire.md',
+            collections: 'fonds.md'
+        };
+
+        for (const [section, filename] of Object.entries(expectedFiles)) {
+            const wrapper = mount(HelpPanel, {
+                props: { section },
+                global: { mocks: { $t: key => key } }
+            });
+            await flushPromises();
+            expect(fetchMock).toHaveBeenCalledWith(`/help/fr/${filename}`);
+            wrapper.unmount();
+        }
+    });
+
     it('displays error state when content is missing', async () => {
         const fetchMock = vi.fn().mockResolvedValue(new Response('Not Found', { status: 404 }));
         vi.stubGlobal('fetch', fetchMock);

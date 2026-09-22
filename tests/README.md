@@ -23,7 +23,7 @@ tests/
 The recommended way to run tests is using the unified central test runner:
 
 ```bash
-python run_tests.py all         # Run all active Python + JS tests (complete suite)
+python run_tests.py all         # Run Python + JS plus the minimal browser smoke suite
 python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
 python run_tests.py js          # Run JavaScript Vitest tests only
 python run_tests.py python      # Run Python Pytest tests only
@@ -38,8 +38,8 @@ You can also run individual suites directly:
 # Fast phase: local tests without E2E, external network, or slow tests
 pytest tests -m "not external and not e2e and not slow"
 
-# Remaining phase: every test excluded from the fast phase, exactly once
-pytest tests -m "slow or external or e2e"
+# Remaining non-E2E phase: slow and external Python tests
+pytest tests -m "not e2e and (slow or external)"
 
 # Fast Python baseline with coverage and duration reporting
 pytest tests -m "not external and not e2e and not slow" \\
@@ -62,6 +62,18 @@ npm run test:js:coverage
 
 See [`tests/js/README.md`](js/README.md) for the fast JS test layout, baseline, and prioritized gaps.
 
+### Browser boundary policy
+
+The Web UI behavior is primarily tested by Vitest in `tests/js`: API payloads,
+reactive state, validation, notifications, page workflows, and child-component
+contracts run without FastAPI or Chromium. The default complete runner keeps only
+`browser_smoke` tests for the browser boundary. Those two checks protect SPA
+startup/navigation and one real circulation transaction; production assets are
+checked separately by `npm run test:web-production`.
+
+The historical Playwright scenarios remain available for deliberate migration or
+regression investigations, but are not part of the default test path.
+
 ### Targeted categories
 
 ```bash
@@ -69,7 +81,7 @@ pytest tests/unit -m "not slow and not external and not e2e"
 pytest tests/integration -m "not slow and not external and not e2e"
 pytest tests/api -m "not slow and not external and not e2e"
 pytest tests/cli -m "not slow and not external and not e2e"
-pytest tests/e2e -m e2e
+pytest tests/e2e -m browser_smoke
 pytest tests -m slow
 pytest tests -m external
 ```

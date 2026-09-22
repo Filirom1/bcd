@@ -86,9 +86,10 @@ pythonpath = ["src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-# Do not filter tests globally: unmarked tests must run too. Use the explicit
-# commands documented in CLAUDE.md for fast and complete suites.
-addopts = "-m 'not e2e_to_be_removed' --verbose --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml --strict-markers"
+# Browser E2E is an explicit boundary suite. The default pytest invocation stays
+# fast and deterministic; the central runner selects browser_smoke and CLI E2E
+# explicitly when a complete run is requested.
+addopts = "-m 'not e2e and not e2e_to_be_removed' --verbose --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml --strict-markers"
 asyncio_mode = "auto"
 filterwarnings = [
     "error",
@@ -103,6 +104,7 @@ markers = [
     "contract: Contract tests (external APIs)",
     "slow: Slow running tests",
     "e2e: End-to-end tests",
+    "browser_smoke: Minimal browser boundary tests that must run in the default complete suite",
     "e2e_to_be_removed: Legacy E2E test superseded by fast JS coverage; retained pending review",
     "external: Tests requiring an external service, network, or a running server",
 ]

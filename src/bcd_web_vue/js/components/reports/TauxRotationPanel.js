@@ -68,9 +68,8 @@ export default defineComponent({
 
         const applyRange = () => {
             const r = dataRange.value;
-            const atDefault = sliderMin.value === r.min && sliderMax.value === r.max;
-            emit('update:modelMin', atDefault ? null : sliderMin.value);
-            emit('update:modelMax', atDefault ? null : sliderMax.value);
+            emit('update:modelMin', sliderMin.value === r.min ? null : sliderMin.value);
+            emit('update:modelMax', sliderMax.value === r.max ? null : sliderMax.value);
         };
 
         const isInRange = bin => {

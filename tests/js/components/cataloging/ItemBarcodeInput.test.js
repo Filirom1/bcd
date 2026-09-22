@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import ItemBarcodeInput from '../../../../src/bcd_web_vue/js/components/cataloging/ItemBarcodeInput.js';
 import { apiClient } from '../../../../src/bcd_web_vue/js/api/client.js';
 import { useAppState } from '../../../../src/bcd_web_vue/js/composables/useAppState.js';
+import { useNotification } from '../../../../src/bcd_web_vue/js/composables/useNotification.js';
 
 function mountInput(props = {}) {
     return mount(ItemBarcodeInput, {
@@ -42,6 +43,7 @@ afterEach(() => {
     vi.restoreAllMocks();
     const { clearStorage } = useAppState();
     clearStorage();
+    useNotification().clear();
 });
 
 describe('ItemBarcodeInput', () => {
@@ -138,5 +140,102 @@ describe('ItemBarcodeInput', () => {
 
         expect(wrapper.vm.shelfLocation).toBe('Romans');
         expect(wrapper.vm.callNumber).toBe('R SAI');
+    });
+
+    it('rejects an empty barcode and keeps the form available for cancellation', async () => {
+        const wrapper = mountInput();
+        await flushPromises();
+        await wrapper.vm.createItem();
+
+        expect(apiClient.post).not.toHaveBeenCalledWith('/catalog/items', expect.anything());
+        expect(useNotification().notifications.value).toContainEqual(
+            expect.objectContaining({ type: 'error', message: 'cataloging.error_no_barcode' })
+        );
+        wrapper.vm.finish();
+        expect(wrapper.emitted('done')).toHaveLength(1);
+    });
+
+    it('sends optional fields and loanability when creating an item', async () => {
+        const postSpy = vi.mocked(apiClient.post);
+        const wrapper = mountInput();
+        await flushPromises();
+        wrapper.vm.barcode = 'I-002';
+        wrapper.vm.shelfLocation = 'Romans';
+        wrapper.vm.callNumber = 'R SAI';
+        wrapper.vm.fundingSource = 'Donation';
+        wrapper.vm.condition = 'damaged';
+        wrapper.vm.loanable = false;
+        await wrapper.vm.createItem();
+
+        expect(postSpy).toHaveBeenCalledWith('/catalog/items', expect.objectContaining({
+            item_id: 'I-002', bibliographic_record_id: 42,
+            shelf_location: 'Romans', call_number: 'R SAI',
+            funding_source: 'Donation', condition: 'damaged', loanable: false
+        }));
+        expect(wrapper.vm.itemCount).toBe(1);
+        expect(wrapper.vm.barcode).toBe('');
+    });
+
+    it('reports duplicate barcode and generic server errors', async () => {
+        const postSpy = vi.mocked(apiClient.post);
+        const wrapper = mountInput();
+        await flushPromises();
+        postSpy.mockRejectedValueOnce({ code: 'duplicate_item_id' });
+        wrapper.vm.barcode = 'DUPLICATE';
+        await wrapper.vm.createItem();
+        expect(useNotification().notifications.value).toContainEqual(
+            expect.objectContaining({ type: 'error', message: 'cataloging.error_barcode_exists' })
+        );
+
+        postSpy.mockRejectedValueOnce(new Error('server error'));
+        wrapper.vm.barcode = 'ERROR';
+        await wrapper.vm.createItem();
+        expect(wrapper.vm.loading).toBe(false);
+    });
+
+    it('requires an issue number for periodicals and clears it after creation', async () => {
+        const postSpy = vi.mocked(apiClient.post);
+        const wrapper = mountInput({ recordIdentifierType: 'issn' });
+        await flushPromises();
+        wrapper.vm.callNumber = '';
+        wrapper.vm.barcode = 'ISSUE-1';
+        await wrapper.vm.createItem();
+        expect(postSpy.mock.calls.filter(([endpoint]) => endpoint === '/catalog/items')).toHaveLength(0);
+        expect(useNotification().notifications.value).toContainEqual(
+            expect.objectContaining({ type: 'error', message: 'periodical.required' })
+        );
+
+        wrapper.vm.callNumber = '42';
+        await wrapper.vm.createItem();
+        expect(postSpy).toHaveBeenCalledWith('/catalog/items', expect.objectContaining({ item_id: 'ISSUE-1', call_number: '42' }));
+        expect(wrapper.vm.callNumber).toBe('');
+    });
+
+    it('updates and deletes created items with confirmation', async () => {
+        const deleteSpy = vi.spyOn(apiClient, 'delete').mockResolvedValue(null);
+        const wrapper = mountInput();
+        await flushPromises();
+        wrapper.vm.createdItems = [{ item_id: 'I-1', status: 'available' }];
+        wrapper.vm.editItem(wrapper.vm.createdItems[0]);
+        expect(wrapper.vm.showItemEditModal).toBe(true);
+        wrapper.vm.handleItemSaved({ item_id: 'I-1', status: 'on_loan' });
+        expect(wrapper.vm.createdItems[0].status).toBe('on_loan');
+
+        vi.stubGlobal('confirm', vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true));
+        await wrapper.vm.deleteItem(wrapper.vm.createdItems[0]);
+        expect(deleteSpy).not.toHaveBeenCalled();
+        await wrapper.vm.deleteItem(wrapper.vm.createdItems[0]);
+        expect(deleteSpy).toHaveBeenCalledWith('/catalog/items/I-1');
+        expect(wrapper.vm.createdItems).toEqual([]);
+    });
+
+    it('emits edit-record and handles scanner Enter events', async () => {
+        const wrapper = mountInput();
+        await flushPromises();
+        await wrapper.get('button').trigger('click');
+        expect(wrapper.emitted('edit-record')).toHaveLength(1);
+        const createSpy = vi.spyOn(wrapper.vm, 'createItem');
+        wrapper.vm.handleKeypress({ key: 'Escape', preventDefault: vi.fn() });
+        expect(createSpy).not.toHaveBeenCalled();
     });
 });

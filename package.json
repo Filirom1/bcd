@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "npm run test:js && pytest tests",
-    "test:fast": "npm run test:js && pytest tests -m 'not e2e and not slow'",
+    "test": "python run_tests.py all",
+    "test:fast": "python run_tests.py all --fast",
     "type-check": "tsc --noEmit",
     "test:js": "npm run type-check && vitest run",
     "test:js:watch": "vitest",

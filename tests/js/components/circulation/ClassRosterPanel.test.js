@@ -78,5 +78,84 @@ describe('ClassRosterPanel', () => {
 
         expect(wrapper.vm.studentStatus(mockRoster[0])).toBe('none');
         expect(wrapper.vm.studentStatus(mockRoster[1])).toBe('overdue');
+        expect(wrapper.vm.bookCountLabel(mockRoster[0])).toContain('book_singular');
+        expect(wrapper.vm.bookCountLabel(mockRoster[1])).toContain('books_plural');
+        expect(wrapper.vm.stats).toEqual({ borrowed: 0, overdue: 1, notYet: 1 });
+    });
+
+    it('auto-selects a single class and loads its student roster', async () => {
+        const get = vi.mocked(apiClient.get).mockImplementation(async (endpoint) => {
+            if (endpoint === '/classes') return [{ id: 9, name: 'CM2' }];
+            if (endpoint === '/borrowers') return { data: mockRoster };
+            return [];
+        });
+        const wrapper = mount(ClassRosterPanel);
+        await flushPromises();
+
+        expect(wrapper.vm.selectedClassId).toBe(9);
+        expect(wrapper.vm.roster).toEqual(mockRoster);
+        expect(get).toHaveBeenCalledWith('/borrowers', { class_id: 9, role: 'student', limit: 500 });
+    });
+
+    it('selects roster students from prefixed scans and leaves text filters local', async () => {
+        vi.useFakeTimers();
+        const wrapper = mount(ClassRosterPanel, {
+            props: { settings: { borrower_barcode_prefix: '%' } }
+        });
+        await flushPromises();
+        wrapper.vm.selectedClassId = 1;
+        wrapper.vm.roster = mockRoster;
+
+        wrapper.vm.handleFilterInput('%102');
+        vi.advanceTimersByTime(300);
+        await flushPromises();
+        expect(wrapper.emitted('borrower-selected')).toEqual([['102']]);
+        expect(wrapper.vm.filterQuery).toBe('');
+
+        const before = apiClient.get.mock.calls.length;
+        wrapper.vm.handleFilterInput('Amira');
+        vi.advanceTimersByTime(500);
+        await flushPromises();
+        expect(wrapper.vm.filterQuery).toBe('Amira');
+        expect(apiClient.get.mock.calls.length).toBe(before);
+        vi.useRealTimers();
+    });
+
+    it('looks up unknown numeric scans, switches class, and leaves unknown IDs visible', async () => {
+        vi.useFakeTimers();
+        const get = vi.mocked(apiClient.get);
+        get.mockImplementation(async (endpoint) => {
+            if (endpoint === '/classes') return mockClasses;
+            if (endpoint === '/borrowers') return mockRoster;
+            if (endpoint === '/borrowers/999') return { borrower_id: '999', class_id: 2 };
+            return [];
+        });
+        const wrapper = mount(ClassRosterPanel, { props: { settings: {} } });
+        await flushPromises();
+        wrapper.vm.selectedClassId = 1;
+        wrapper.vm.roster = mockRoster;
+
+        wrapper.vm.handleFilterInput('999');
+        vi.advanceTimersByTime(300);
+        await flushPromises();
+        expect(wrapper.emitted('borrower-selected')).toEqual([['999']]);
+        expect(wrapper.vm.selectedClassId).toBe(2);
+
+        get.mockRejectedValueOnce(new Error('not found'));
+        wrapper.vm.handleFilterInput('123');
+        vi.advanceTimersByTime(300);
+        await flushPromises();
+        expect(wrapper.vm.filterQuery).toBe('123');
+        vi.useRealTimers();
+    });
+
+    it('renders the no-class state when class loading fails or is empty', async () => {
+        vi.mocked(apiClient.get).mockResolvedValueOnce([]);
+        const wrapper = mount(ClassRosterPanel);
+        await flushPromises();
+
+        expect(wrapper.vm.classes).toEqual([]);
+        expect(wrapper.vm.selectedClassId).toBeNull();
+        expect(wrapper.text()).toContain('circulation.no_class_selected');
     });
 });

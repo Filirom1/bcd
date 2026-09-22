@@ -1,8 +1,25 @@
-# E2E Testing - World-Class Architecture
+# E2E Testing - Browser Boundary
 
-**Status**: Foundation Complete | Tests In Progress
+**Status**: Minimal smoke suite is the default; historical scenarios are retained for
+focused regression work and migration to Vitest.
 
 ---
+
+## Testing pyramid
+
+The browser suite is intentionally small. Most Web UI behavior belongs in
+`tests/js`, where Vitest can mount pages/components with a mocked API client in
+milliseconds and cover success, validation, loading, and error permutations.
+
+The default complete runner executes only tests marked `browser_smoke`:
+
+- SPA bootstrap and navigation across the main routes;
+- one real checkout transaction through Chromium, FastAPI, and SQLite.
+
+The production-build check (`npm run test:web-production`) separately protects the
+bundled static-resource boundary. The remaining Playwright files are useful for
+focused investigations, but their CRUD/filter permutations should not be added to
+the default suite when a JS contract can cover them.
 
 ## Overview
 
@@ -50,53 +67,58 @@ tests/e2e/
 ### Quick Start
 
 ```bash
-# Run all E2E tests
-pytest tests/e2e/ -v
+# Run the minimal default browser boundary
+pytest tests/e2e/ -m browser_smoke -v
 
-# Run all user story tests (US1-US6)
-pytest tests/e2e/test_us*.py -v
+# Run every non-migrated browser scenario deliberately (slow)
+pytest tests/e2e/ -o addopts='' -m e2e -v
 
-# Run specific user story
-pytest tests/e2e/test_us1_circulation.py -v    # Circulation
-pytest tests/e2e/test_us2_catalog.py -v        # Catalog Search
-pytest tests/e2e/test_us3_borrowers.py -v      # Borrower Management
-pytest tests/e2e/test_us4_cataloging.py -v     # Cataloging with ISBN Lookup
-pytest tests/e2e/test_us5_reports.py -v        # Reports & Statistics
-pytest tests/e2e/test_us6_settings.py -v       # System Settings
+# Run the historical user story scenarios deliberately (slow)
+pytest tests/e2e/test_us*.py -o addopts='' -m e2e -v
+
+# Run specific historical user stories
+pytest tests/e2e/test_us1_circulation.py -o addopts='' -m e2e -v    # Circulation
+pytest tests/e2e/test_us2_catalog.py -o addopts='' -m e2e -v        # Catalog Search
+pytest tests/e2e/test_us3_borrowers.py -o addopts='' -m e2e -v      # Borrower Management
+pytest tests/e2e/test_us4_cataloging.py -o addopts='' -m e2e -v     # Cataloging with ISBN Lookup
+pytest tests/e2e/test_us5_reports.py -o addopts='' -m e2e -v       # Reports & Statistics
+pytest tests/e2e/test_us6_settings.py -o addopts='' -m e2e -v      # System Settings
 
 # Run with visible browser (debugging)
-HEADED=1 pytest tests/e2e/test_us1_circulation.py -v
+HEADED=1 pytest tests/e2e/test_us1_circulation.py -o addopts='' -m e2e -v
 
-# Run single test
-pytest tests/e2e/test_us1_circulation.py::TestUS1CirculationBasics::test_us1_ac1_borrower_info_displays -v
+# Run single historical test
+pytest tests/e2e/test_us1_circulation.py::TestUS1CirculationBasics::test_us1_ac1_borrower_info_displays -o addopts='' -m e2e -v
 ```
 
 ### `e2e-to-be-removed` lifecycle
 
 `e2e_to_be_removed` is a pytest marker for a legacy E2E scenario whose behavioral contract is now covered by a fast JavaScript test. The hyphenated review label is **`e2e-to-be-removed`**; Python marker names use underscores.
 
-Marked tests are deliberately retained and continue to run with the E2E suite. Do not exclude or delete one solely because it has this marker. Remove it only in a dedicated review after confirming that:
+Marked tests are deliberately retained for focused legacy runs, but are excluded
+from the default pytest invocation and the default runner. Do not delete one solely
+because it has this marker. Remove it only in a dedicated review after confirming that:
 
 - the matching JS test covers the success and error contract;
 - a separate E2E smoke test still protects the critical browser-to-server journey where needed;
 - the candidate itself has no unique accessibility, browser, or database assertion.
 
 ```bash
-# Inspect the candidates without removing them from normal E2E CI
-pytest tests/e2e -m e2e_to_be_removed -v
+# Inspect the candidates explicitly (including the default marker override)
+pytest tests/e2e -o addopts='' -m e2e_to_be_removed -v
 ```
 
 ### Advanced Options
 
 ```bash
-# Enable video recording
-VIDEO=1 pytest tests/e2e/ -v
+# Enable video recording for a deliberate legacy run
+VIDEO=1 pytest tests/e2e/ -o addopts='' -m e2e -v
 
-# Run in parallel (faster)
-pytest tests/e2e/ -n 4
+# Run the legacy suite in parallel (faster)
+pytest tests/e2e/ -o addopts='' -m e2e -n 4
 
-# Run in random order (test isolation)
-pytest tests/e2e/ --random-order
+# Run the legacy suite in random order (test isolation)
+pytest tests/e2e/ -o addopts='' -m e2e --random-order
 ```
 
 ---
@@ -209,7 +231,7 @@ test-results/screenshots/test_us1_ac1_borrower_info_displays.png
 | Accessibility | 8 | TODO |
 
 **Total**: 46 user story tests (US1-US6)
-**Passing**: Run `pytest tests/e2e/ -v` to see current status
+**Passing**: Run `pytest tests/e2e/ -m browser_smoke -v` to see the default browser status
 **Status**: Foundation complete ✅
 
 > **Note**: Test counts and pass rates should be verified by running the test suite. Numbers may be out of date.

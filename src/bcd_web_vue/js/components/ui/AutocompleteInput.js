@@ -75,6 +75,10 @@ export default defineComponent({
 
         // Debounce and scanner detection
         let abortController = null;
+        // AbortController is advisory: a fetcher may still resolve after abort.
+        // Use a generation as well so an obsolete response can never overwrite
+        // the results of a newer query or reopen a closed dropdown.
+        let searchGeneration = 0;
         let lastKeystrokeTime = 0;
         let keystrokeTimes = [];
 
@@ -121,10 +125,12 @@ export default defineComponent({
         // Fetch autocomplete results
         const fetchAutocomplete = async () => {
             const query = inputValue.value.trim();
+            const generation = ++searchGeneration;
 
             if (!hasMinChars.value) {
                 results.value = [];
                 showDropdown.value = false;
+                loading.value = false;
                 return;
             }
 
@@ -133,23 +139,31 @@ export default defineComponent({
                 abortController.abort();
             }
 
-            abortController = new AbortController();
+            const controller = new AbortController();
+            abortController = controller;
             loading.value = true;
             error.value = null;
 
             try {
-                const data = await props.fetchResults(query, abortController.signal);
-                results.value = data || [];
+                const data = await props.fetchResults(query, controller.signal);
+                if (generation !== searchGeneration) return;
+                // A fetcher is an integration boundary: only arrays are valid
+                // autocomplete collections. Treat null and malformed objects
+                // as an empty result set rather than breaking the template.
+                results.value = Array.isArray(data) ? data : [];
                 showDropdown.value = true;
                 selectedIndex.value = -1; // Reset selection
             } catch (err) {
+                if (generation !== searchGeneration) return;
                 if (err.name !== 'AbortError') {
                     console.error('Autocomplete fetch error:', err);
                     error.value = t('autocomplete.error');
                     results.value = [];
                 }
             } finally {
-                loading.value = false;
+                if (generation === searchGeneration) {
+                    loading.value = false;
+                }
             }
         };
 
@@ -174,7 +188,16 @@ export default defineComponent({
 
         // Handle keyboard navigation
         const handleKeydown = (event) => {
+            // A disabled native input normally receives no keyboard events. Keep
+            // Escape available for a parent that closes the dropdown itself,
+            // while ignoring actions that would submit or select a value.
+            if (props.disabled && event.key !== 'Escape') return;
             if (!showDropdown.value || !hasResults.value) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeDropdown();
+                    return;
+                }
                 // If Enter pressed and dropdown not shown, submit
                 if (event.key === 'Enter') {
                     event.preventDefault();
@@ -250,6 +273,7 @@ export default defineComponent({
         const closeDropdown = () => {
             showDropdown.value = false;
             selectedIndex.value = -1;
+            searchGeneration += 1;
 
             // Cancel any pending request
             if (abortController) {
@@ -269,7 +293,7 @@ export default defineComponent({
         // Click outside to close dropdown
         const handleClickOutside = (event) => {
             if (inputRef.value && !inputRef.value.contains(event.target) &&
-                dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+                (!dropdownRef.value || !dropdownRef.value.contains(event.target))) {
                 closeDropdown();
             }
         };

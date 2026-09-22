@@ -58,4 +58,74 @@ describe('SettingsForm', () => {
         expect(loanLimitInput.attributes('min')).toBe('1');
         expect(loanLimitInput.attributes('required')).toBeDefined();
     });
+
+    it('updates, toggles, and disables individual Dewey colors', async () => {
+        const value = settings();
+        value.dewey_colors = Array.from({ length: 10 }, (_, index) => `#${index}${index}${index}${index}${index}${index}`);
+        const wrapper = mount(SettingsForm, { props: { settings: value } });
+
+        wrapper.vm.updateDeweyColor(2, '#abcdef');
+        expect(wrapper.vm.deweyColorsList[2]).toBe('#abcdef');
+        wrapper.vm.toggleDeweyColor(2);
+        expect(wrapper.vm.deweyColorsList[2]).toBeNull();
+        wrapper.vm.toggleDeweyColor(2);
+        expect(wrapper.vm.deweyColorsList[2]).toBeTruthy();
+        await wrapper.vm.$nextTick();
+        expect(value.dewey_colors[2]).toBeTruthy();
+    });
+
+    it('adds, edits, colors, reorders, and removes shelf locations', async () => {
+        const value = settings();
+        const wrapper = mount(SettingsForm, { props: { settings: value } });
+
+        wrapper.vm.addShelfLocation();
+        wrapper.vm.updateShelfLocationLabel(1, 'Non-fiction');
+        wrapper.vm.updateShelfLocationColor(1, '#123456');
+        wrapper.vm.toggleShelfLocationColor(0);
+        expect(wrapper.vm.shelfLocationsList).toEqual([
+            { label: 'Fiction', color: null },
+            { label: 'Non-fiction', color: '#123456' }
+        ]);
+        wrapper.vm.toggleShelfLocationColor(0);
+        expect(wrapper.vm.shelfLocationsList[0].color).toBe('#6c757d');
+        wrapper.vm.removeShelfLocation(1);
+        expect(wrapper.vm.shelfLocationsList).toHaveLength(1);
+        await wrapper.vm.$nextTick();
+        expect(value.catalog_shelf_locations).toHaveLength(1);
+    });
+
+    it('reorders and removes call-number rules while respecting list boundaries', () => {
+        const value = settings();
+        value.catalog_call_number_rules = [
+            { medium_type: 'Book', pattern: 'A' },
+            { medium_type: 'Magazine', pattern: 'B' }
+        ];
+        const wrapper = mount(SettingsForm, { props: { settings: value } });
+
+        wrapper.vm.moveCallNumberRuleUp(0);
+        wrapper.vm.moveCallNumberRuleDown(1);
+        wrapper.vm.moveCallNumberRuleUp(1);
+        expect(wrapper.vm.localRules).toEqual([
+            { medium_type: 'Magazine', pattern: 'B' },
+            { medium_type: 'Book', pattern: 'A' }
+        ]);
+        wrapper.vm.moveCallNumberRuleDown(0);
+        expect(wrapper.vm.localRules[0].medium_type).toBe('Book');
+        wrapper.vm.removeCallNumberRule(1);
+        expect(wrapper.vm.localRules).toHaveLength(1);
+    });
+
+    it('handles absent catalog settings and exposes shelf training props', () => {
+        const wrapper = mount(SettingsForm, {
+            props: {
+                settings: {},
+                shelfSuggestionStatus: { ready: false, trained_on_records: 2 },
+                shelfSuggestionTraining: true
+            }
+        });
+        expect(wrapper.vm.shelfLocationsList).toEqual([]);
+        expect(wrapper.vm.localRules).toEqual([]);
+        expect(wrapper.vm.shelfSuggestionStatus).toEqual({ ready: false, trained_on_records: 2 });
+        expect(wrapper.vm.shelfSuggestionTraining).toBe(true);
+    });
 });

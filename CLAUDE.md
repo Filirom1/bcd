@@ -56,7 +56,7 @@ python -m src.bcd_cli.main catalog import data/sample_bibliographic.csv
 The recommended way to run tests is using the unified central test runner:
 
 ```bash
-python run_tests.py all         # Run all active Python + JS tests (complete suite)
+python run_tests.py all         # Run Python + JS plus the minimal browser smoke suite
 python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
 python run_tests.py js          # Run JavaScript Vitest tests only
 python run_tests.py python      # Run Python Pytest tests only
@@ -71,10 +71,11 @@ npm run test:js                                                # Run JS tests
 npm run test:js:coverage                                       # Run JS tests with coverage
 
 # Pure Python (Pytest)
-pytest tests -m "not e2e and not slow"                         # Fast Python suite
-pytest tests                                                   # Complete Python suite (excluding deactivated E2E)
+pytest tests -m "not e2e and not slow and not external"           # Fast Python suite
+pytest tests                                                   # Complete non-browser Python suite
 pytest tests/integration/services/ -v                           # Service-layer integration tests
 pytest tests/integration/test_catalog_service.py -v            # Run a single file
+pytest tests/e2e -m browser_smoke -v                          # Minimal browser boundary
 ```
 
 Pre-commit hook: `./scripts/install-hooks.sh` (runs `pytest tests/integration tests/unit` before each commit; skips CLI tests due to known setup issues).

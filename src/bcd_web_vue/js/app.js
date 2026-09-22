@@ -14,7 +14,7 @@ import App from './components/App.js';
 /**
  * Initialize and mount the Vue app
  */
-async function initApp() {
+export async function initApp() {
     // Initialize global test state BEFORE async operations
     if (typeof window !== 'undefined') {
         window.__BCD_APP__ = {
@@ -182,9 +182,12 @@ async function initApp() {
     }
 }
 
-// Initialize app when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
-} else {
-    initApp();
+// Initialize app when DOM is ready. Tests can import initApp without starting a
+// second application instance by setting this opt-out before module evaluation.
+if (typeof window !== 'undefined' && !window.__BCD_DISABLE_AUTO_INIT__) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+        initApp();
+    }
 }

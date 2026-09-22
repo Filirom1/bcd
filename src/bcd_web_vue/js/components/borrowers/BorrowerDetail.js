@@ -630,7 +630,10 @@ export default {
         const loadClasses = async () => {
             isLoadingClasses.value = true;
             try {
-                classes.value = await apiClient.get('/classes', { limit: 500 });
+                const response = await apiClient.get('/classes', { limit: 500 });
+                classes.value = Array.isArray(response)
+                    ? response
+                    : (Array.isArray(response?.items) ? response.items : []);
             } catch (error) {
                 console.error('Error loading classes:', error);
                 classes.value = [];

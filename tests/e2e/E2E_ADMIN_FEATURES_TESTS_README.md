@@ -1,6 +1,11 @@
 # E2E Tests for Admin Features (User Stories 1-3)
 
-This document describes the comprehensive end-to-end test suite for the admin features (specs/006-admin-features).
+This document describes the historical comprehensive end-to-end test suite for the admin features (specs/006-admin-features).
+
+These browser permutations are not part of the default test path. Run them explicitly
+with `pytest tests/e2e -o addopts='' -m e2e` when investigating a browser-specific
+regression; the normal contracts belong in `tests/js` and the default browser boundary
+is `pytest tests/e2e -m browser_smoke`.
 
 ## Overview
 
