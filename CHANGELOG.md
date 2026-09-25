@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Added direct checkout navigation from borrower and copy details through the existing checkout workflow.
 - Updated item-label printing to a 40-label (4 × 10, no-margin) A4 format with auto-saved custom layouts and same-tab language-aware navigation.
 
 ## [1.5.0]

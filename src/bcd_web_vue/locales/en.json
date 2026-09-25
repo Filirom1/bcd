@@ -224,6 +224,7 @@
     "return_this_item": "Return this item",
     "quick_return": "Quick return",
     "view_borrower": "View borrower",
+    "checkout_item": "Check out this copy",
     "circulation_history": "Circulation history",
     "year": "Year",
     "add_record": "Add Book",

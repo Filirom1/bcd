@@ -29,6 +29,10 @@ export default defineComponent({
         disabled: {
             type: Boolean,
             default: false
+        },
+        initialItemId: {
+            type: String,
+            default: ''
         }
     },
 
@@ -170,10 +174,22 @@ export default defineComponent({
             emit('focus');
         };
 
+        // Pre-fill the scanner when circulation was opened from an item detail.
+        // The checkout page still owns the actual checkout operation; this only
+        // carries the selected copy into its existing scanner workflow.
+        const applyInitialItem = () => {
+            if (props.initialItemId && !itemBarcode.value) {
+                itemBarcode.value = props.initialItemId;
+            }
+        };
+
         // Auto-focus when component mounts
         onMounted(() => {
+            applyInitialItem();
             focusInput();
         });
+
+        watch(() => props.initialItemId, applyInitialItem);
 
         // Re-focus when mode changes, borrower loads, or input becomes enabled
         watch([() => props.mode, () => props.borrower, () => props.disabled], () => {

@@ -224,6 +224,7 @@
     "return_this_item": "Retourner cet article",
     "quick_return": "Retour rapide",
     "view_borrower": "Voir l'emprunteur",
+    "checkout_item": "Emprunter cet exemplaire",
     "circulation_history": "Historique de circulation",
     "year": "Année",
     "add_record": "Ajouter un livre",

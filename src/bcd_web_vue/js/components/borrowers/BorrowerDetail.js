@@ -16,6 +16,8 @@ import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { events } from '../../utils/events.js';
 
+const { useRouter } = VueRouter;
+
 export default {
     name: 'BorrowerDetail',
 
@@ -444,6 +446,17 @@ export default {
 
                                 <button
                                     type="button"
+                                    class="btn btn-success rounded-pill"
+                                    data-testid="button-checkout"
+                                    @click="checkoutForBorrower"
+                                    :disabled="!borrower.active"
+                                >
+                                    <i class="bi bi-box-arrow-right me-1"></i>
+                                    {{ t('circulation.checkout') }}
+                                </button>
+
+                                <button
+                                    type="button"
                                     class="btn btn-secondary rounded-pill"
                                     @click="close"
                                 >
@@ -515,6 +528,7 @@ export default {
 
     setup(props, { emit }) {
         const { t, locale } = VueI18n.useI18n();
+        const router = useRouter();
         const formatDate = (value) => formatCivilDate(value, locale.value);
         const { translateBlockReason } = useBlockReasonTranslation();
         const borrower = Vue.ref(null);
@@ -862,6 +876,16 @@ export default {
             emit('view-item', recordId);
         };
 
+        // Reuse the existing checkout page with this borrower preselected.
+        const checkoutForBorrower = () => {
+            if (!borrower.value?.borrower_id || !borrower.value.active) return;
+            close();
+            router.push({
+                name: 'checkout',
+                query: { borrower_id: String(borrower.value.borrower_id) }
+            });
+        };
+
         // Close modal
         const close = () => {
             emit('close');
@@ -947,6 +971,7 @@ export default {
             handleDeleteConfirm,
             handleSubmit,
             viewItem,
+            checkoutForBorrower,
             translateBlockReason,
             close
         };

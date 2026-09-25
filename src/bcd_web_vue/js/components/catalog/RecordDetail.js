@@ -272,6 +272,17 @@ export default defineComponent({
             emit('quick-return', itemId);
         };
 
+        // Reuse the normal checkout page and carry the selected copy as
+        // context. The librarian still selects the borrower there.
+        const checkoutItem = (item) => {
+            if (!item?.item_id) return;
+            handleClose();
+            router.push({
+                name: 'checkout',
+                query: { item_id: String(item.item_id) }
+            });
+        };
+
         const fetchBorrowers = async (query, signal) => {
             const data = await apiClient.get('/borrowers', { q: query, limit: 10 }, { signal });
             const normalized = normalizeCollection(data);
@@ -528,6 +539,7 @@ export default defineComponent({
             getStatusBadge,
             formatDate,
             handleQuickReturn,
+            checkoutItem,
             handleClose,
             addItem,
             viewBorrower,
@@ -693,10 +705,12 @@ export default defineComponent({
                             :show-current-loan="!isEditMode"
                             :show-condition="isEditMode"
                             :show-quick-return="!isEditMode"
+                            :show-checkout="!isEditMode"
                             :format-date="formatDate"
                             @edit="handleEditItem"
                             @delete="handleDeleteItem"
                             @quick-return="handleQuickReturn"
+                            @checkout="checkoutItem"
                             @view-borrower="viewBorrower"
                         />
                     </div>

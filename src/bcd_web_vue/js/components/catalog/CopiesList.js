@@ -50,6 +50,10 @@ export default defineComponent({
             type: Boolean,
             default: false
         },
+        showCheckout: {
+            type: Boolean,
+            default: false
+        },
         emptyMessage: {
             type: String,
             default: ''
@@ -64,7 +68,7 @@ export default defineComponent({
         }
     },
 
-    emits: ['edit', 'delete', 'quick-return', 'view-borrower'],
+    emits: ['edit', 'delete', 'quick-return', 'checkout', 'view-borrower'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
@@ -113,6 +117,7 @@ export default defineComponent({
             emitEdit: item => emit('edit', item),
             emitDelete: item => emit('delete', item),
             emitQuickReturn: item => emit('quick-return', item),
+            emitCheckout: item => emit('checkout', item),
             emitViewBorrower: borrowerId => emit('view-borrower', borrowerId)
         };
     },
@@ -134,7 +139,7 @@ export default defineComponent({
                             <th>{{ t('catalog.status') }}</th>
                             <th v-if="showCurrentLoan">{{ t('catalog.due_date_borrower') }}</th>
                             <th v-else-if="showCondition">{{ t('catalog.condition') }}</th>
-                            <th v-if="editable || showQuickReturn">{{ t('common.actions') }}</th>
+                            <th v-if="editable || showQuickReturn || showCheckout">{{ t('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -188,7 +193,18 @@ export default defineComponent({
                                 <span v-else class="text-muted">—</span>
                             </td>
                             <td v-else-if="showCondition">{{ getConditionLabel(item.condition) }}</td>
-                            <td v-if="editable || showQuickReturn">
+                            <td v-if="editable || showQuickReturn || showCheckout">
+                                <button
+                                    v-if="showCheckout && item.status === 'available' && item.loanable !== false"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-success me-1"
+                                    :title="t('catalog.checkout_item')"
+                                    :aria-label="t('catalog.checkout_item')"
+                                    @click="emitCheckout(item)"
+                                >
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    {{ t('circulation.checkout') }}
+                                </button>
                                 <button
                                     v-if="showQuickReturn && (item.status === 'on_loan' || item.status === 'overdue')"
                                     type="button"
@@ -218,7 +234,7 @@ export default defineComponent({
                                 >
                                     <i class="bi bi-trash"></i>
                                 </button>
-                                <span v-if="!editable && !(showQuickReturn && (item.status === 'on_loan' || item.status === 'overdue'))" class="text-muted">—</span>
+                                <span v-if="!editable && !(showCheckout && item.status === 'available' && item.loanable !== false) && !(showQuickReturn && (item.status === 'on_loan' || item.status === 'overdue'))" class="text-muted">—</span>
                             </td>
                         </tr>
                     </tbody>

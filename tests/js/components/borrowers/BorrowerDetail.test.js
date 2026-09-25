@@ -142,6 +142,22 @@ describe('BorrowerDetail', () => {
         expect(wrapper.emitted('close')).toBeDefined();
     });
 
+    it('redirects to checkout with the selected borrower prefilled', async () => {
+        const push = vi.fn().mockResolvedValue(undefined);
+        globalThis.__testRouter.push = push;
+        mockBorrowerApi();
+        const wrapper = mountDetail({ initialMode: 'view' });
+        await flushPromises();
+
+        await wrapper.get('[data-testid="button-checkout"]').trigger('click');
+
+        expect(push).toHaveBeenCalledWith({
+            name: 'checkout',
+            query: { borrower_id: 'B-101' }
+        });
+        expect(wrapper.emitted('close')).toBeTruthy();
+    });
+
     it('shows loan limits, overdue warnings, and active loan details', async () => {
         const detailedBorrower = makeBorrower({
             current_loans_count: 2,

@@ -204,6 +204,22 @@ describe('RecordDetail', () => {
         expect(wrapper.find('.bi-book.display-4').exists()).toBe(true);
     });
 
+    it('redirects to checkout with the selected available copy prefilled', async () => {
+        const push = vi.fn().mockResolvedValue(undefined);
+        globalThis.__testRouter.push = push;
+        const wrapper = mountDetail();
+        await flushPromises();
+
+        wrapper.vm.checkoutItem(mockItems[0]);
+        await flushPromises();
+
+        expect(push).toHaveBeenCalledWith({
+            name: 'checkout',
+            query: { item_id: 'COPY001' }
+        });
+        expect(wrapper.emitted('close')).toBeTruthy();
+    });
+
     it('navigates to add a copy and emits borrower navigation events', async () => {
         const push = vi.fn().mockResolvedValue(undefined);
         globalThis.__testRouter.push = push;

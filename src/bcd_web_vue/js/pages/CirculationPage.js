@@ -3,7 +3,7 @@
  * Checkout and Return workflows with <200ms scanner feedback
  */
 
-const { defineComponent, ref, computed, onMounted } = Vue;
+const { defineComponent, ref, computed, onMounted, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../api/client.js';
 import { formatCivilDate, formatTime } from '../utils/date.js';
@@ -40,6 +40,8 @@ export default defineComponent({
 
     setup(props) {
         const { t, d, locale } = useI18n();
+        const { useRoute } = VueRouter;
+        const route = useRoute();
         const { openRecord } = useGlobalModal();
         const { settings: appSettings, loadSettings } = useAppState();
         const { getShelfBadge, getCoteBadge } = useItemBadge(appSettings);
@@ -54,6 +56,14 @@ export default defineComponent({
             item_barcode_prefix: '.'
         });
         const settingsLoading = computed(() => !appSettings.value);
+        const initialItemId = computed(() => {
+            const itemId = route.query?.item_id;
+            return Array.isArray(itemId) ? String(itemId[0] || '') : String(itemId || '');
+        });
+        const initialBorrowerId = computed(() => {
+            const borrowerId = route.query?.borrower_id;
+            return Array.isArray(borrowerId) ? String(borrowerId[0] || '') : String(borrowerId || '');
+        });
 
         // Borrower state
         const borrower = ref(null);
@@ -69,6 +79,12 @@ export default defineComponent({
                 await loadSettings();
             } catch (error) {
                 console.error('Failed to load settings:', error);
+            }
+
+            // Keep the normal checkout page as the single workflow. Detail
+            // pages only provide context through query parameters.
+            if (props.mode === 'checkout' && initialBorrowerId.value) {
+                await loadBorrower(initialBorrowerId.value);
             }
         });
 
@@ -504,6 +520,15 @@ export default defineComponent({
 
         const helpSection = computed(() => props.mode === 'return' ? 'return' : 'checkout');
 
+        // Support opening checkout context through in-app navigation without
+        // adding another view. This also handles navigation between two
+        // checkout links while the checkout page is already mounted.
+        watch(initialBorrowerId, (borrowerId) => {
+            if (props.mode === 'checkout' && borrowerId && borrowerId !== borrower.value?.borrower_id) {
+                loadBorrower(borrowerId);
+            }
+        });
+
         return {
             borrower,
             borrowerLoading,
@@ -517,6 +542,7 @@ export default defineComponent({
             scannerDisabled,
             borrowerAtLimit,
             settings,
+            initialItemId,
             loadBorrower,
             handleItemScanned,
             renewAll,
@@ -600,6 +626,7 @@ export default defineComponent({
                                 :mode="mode"
                                 :borrower="borrower"
                                 :disabled="scannerDisabled"
+                                :initial-item-id="initialItemId"
                                 @item-scanned="handleItemScanned"
                                 class="mb-3"
                             />
