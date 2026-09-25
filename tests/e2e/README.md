@@ -91,22 +91,20 @@ HEADED=1 pytest tests/e2e/test_us1_circulation.py -o addopts='' -m e2e -v
 pytest tests/e2e/test_us1_circulation.py::TestUS1CirculationBasics::test_us1_ac1_borrower_info_displays -o addopts='' -m e2e -v
 ```
 
-### `e2e-to-be-removed` lifecycle
+### E2E suite policy
 
-`e2e_to_be_removed` is a pytest marker for a legacy E2E scenario whose behavioral contract is now covered by a fast JavaScript test. The hyphenated review label is **`e2e-to-be-removed`**; Python marker names use underscores.
+The former `e2e_to_be_removed` bucket has been reviewed and removed. Those tests
+were either redundant with the fast JavaScript contracts, lacked real assertions,
+or used timing-dependent selectors. The retained browser suite is intentionally
+small and protects only browser-specific behavior that unit, service, and API tests
+cannot prove.
 
-Marked tests are deliberately retained for focused legacy runs, but are excluded
-from the default pytest invocation and the default runner. Do not delete one solely
-because it has this marker. Remove it only in a dedicated review after confirming that:
+- `browser_smoke`: short browser-to-server checks run by `run_tests.py all`.
+- `e2e`: deliberate, slower workflows that are excluded from the default pytest run.
 
-- the matching JS test covers the success and error contract;
-- a separate E2E smoke test still protects the critical browser-to-server journey where needed;
-- the candidate itself has no unique accessibility, browser, or database assertion.
-
-```bash
-# Inspect the candidates explicitly (including the default marker override)
-pytest tests/e2e -o addopts='' -m e2e_to_be_removed -v
-```
+When adding an E2E test, prefer one complete business workflow with a UI assertion
+and a database/API assertion. Do not add separate browser tests for every modal
+state already covered by `tests/js`.
 
 ### Advanced Options
 

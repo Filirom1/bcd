@@ -22,7 +22,6 @@ Note: Tests are marked as xfail because some UI features may still be in develop
 This provides comprehensive test coverage once the UI is ready.
 """
 
-import re
 import pytest
 from playwright.sync_api import expect
 
@@ -30,229 +29,20 @@ from playwright.sync_api import expect
 class TestBorrowerSelection:
     """Test borrower selection with checkboxes."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_select_single_borrower_with_checkbox(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Select a single borrower using checkbox.
 
-        Arrange: Create 3 borrowers
-        Act: Check one borrower's checkbox
-        Assert: Selection count = 1
-        """
-        # Arrange
-        borrower_factory.create_batch(3)
-        borrowers_page.goto()
 
-        # Act
-        borrowers_page.select_borrower_by_index(0)
-
-        # Assert
-        selected_count = borrowers_page.get_selected_count()
-        assert selected_count == 1, "Should have 1 borrower selected"
-
-    @pytest.mark.e2e_to_be_removed
-    def test_select_multiple_borrowers(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Select multiple borrowers by checking individual checkboxes.
-
-        Arrange: Create 5 borrowers
-        Act: Check 3 borrowers' checkboxes
-        Assert: Selection count = 3
-        """
-        # Arrange
-        borrower_factory.create_batch(5)
-        borrowers_page.goto()
-
-        # Act - Select first 3 borrowers
-        borrowers_page.select_borrower_by_index(0)
-        borrowers_page.select_borrower_by_index(1)
-        borrowers_page.select_borrower_by_index(2)
-
-        # Assert
-        selected_count = borrowers_page.get_selected_count()
-        assert selected_count == 3, "Should have 3 borrowers selected"
-
-    @pytest.mark.e2e_to_be_removed
-    def test_select_all_functionality(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Select All checkbox selects all borrowers on current page.
-
-        Arrange: Create 5 borrowers
-        Act: Click "Select All" checkbox
-        Assert: All 5 borrowers selected
-        """
-        # Arrange
-        borrower_factory.create_batch(5)
-        borrowers_page.goto()
-
-        # Act
-        borrowers_page.select_all()
-
-        # Assert
-        selected_count = borrowers_page.get_selected_count()
-        assert selected_count >= 5, "All borrowers should be selected"
 
 
 class TestBulkEditModal:
     """Test Bulk Edit modal opening and navigation."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_bulk_edit_disabled_when_no_selection(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Bulk Edit is disabled when no borrowers selected.
 
-        Arrange: Navigate to Borrowers page
-        Act: Open admin dropdown
-        Assert: Bulk Edit menu item is disabled
-        """
-        # Arrange
-        borrower_factory.create_batch(3)
-        borrowers_page.goto()
-
-        # Act & Assert
-        # Note: is_bulk_edit_enabled checks by opening dropdown and inspecting disabled class
-        is_enabled = borrowers_page.is_bulk_edit_enabled()
-        assert not is_enabled, "Bulk Edit should be disabled with no selection"
-
-    @pytest.mark.e2e_to_be_removed
-    def test_bulk_edit_modal_opens_with_2_or_more_selected(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Bulk Edit modal opens when 2+ borrowers selected.
-
-        Arrange: Create 5 borrowers, select 2
-        Act: Click Bulk Edit from admin dropdown
-        Assert: Bulk Edit modal is visible
-        """
-        # Arrange
-        borrower_factory.create_batch(5)
-        borrowers_page.goto()
-
-        # Select 2 borrowers
-        borrowers_page.select_borrower_by_index(0)
-        borrowers_page.select_borrower_by_index(1)
-
-        # Act
-        borrowers_page.open_bulk_edit_modal()
-
-        # Assert
-        modal = borrowers_page.page.locator('.modal.show')
-        expect(modal).to_be_visible(timeout=5000)
-
-        # Modal should show title with selection count
-        modal_title = borrowers_page.page.locator('.modal-title')
-        expect(modal_title).to_contain_text('2', timeout=3000)
 
 
 class TestBulkChangeClass:
     """Test bulk change class operation with 3-step wizard."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_bulk_change_class_wizard_step1_select_operation(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Step 1: Select "Change Class" operation.
 
-        Arrange: Select 2 borrowers, open bulk edit modal
-        Act: Click "Change Class" operation
-        Assert: Operation is selected (button highlighted)
-        """
-        # Arrange
-        borrower_factory.create_batch(3)
-        borrowers_page.goto()
-
-        borrowers_page.select_borrower_by_index(0)
-        borrowers_page.select_borrower_by_index(1)
-        borrowers_page.open_bulk_edit_modal()
-
-        # Act - Select Change Class operation
-        change_class_button = borrowers_page.page.locator('button.list-group-item:has-text("Change Class"), button.list-group-item:has-text("Changer de classe")')
-        change_class_button.click()
-
-        # Assert - Button should be highlighted (active class)
-        expect(change_class_button).to_have_class(re.compile(r'active'), timeout=2000)
-
-    @pytest.mark.e2e_to_be_removed
-    def test_bulk_change_class_wizard_step2_select_target_class(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Step 2: Select target class from dropdown.
-
-        Arrange: Navigate to step 2 of Change Class wizard
-        Act: Select target class
-        Assert: Class selection is recorded
-        """
-        # Arrange - Create class
-        from src.bcd_api.models.class_model import Class
-
-        target_class = Class(name="CP-TARGET")
-        db_session.add(target_class)
-
-        # Create borrowers and select them
-        borrower_factory.create_batch(2)
-        db_session.commit()
-        target_class_id = target_class.id
-        db_session.close()
-
-        # Debug: Check uvicorn classes endpoint
-        import requests
-        resp = requests.get(f"{borrowers_page.server_url}/api/v1/classes")
-        print(f"\n🔍 DEBUG API Classes Response: {resp.status_code} - {resp.json()}")
-        print(f"🔍 Created target class ID in test: {target_class_id}")
-
-        borrowers_page.goto()
-
-        borrowers_page.select_borrower_by_index(0)
-        borrowers_page.select_borrower_by_index(1)
-        borrowers_page.open_bulk_edit_modal()
-
-        # Select Change Class operation
-        change_class_button = borrowers_page.page.locator('button.list-group-item:has-text("Change Class"), button.list-group-item:has-text("Changer de classe")')
-        change_class_button.click()
-
-        # Click Next to go to step 2
-        next_button = borrowers_page.page.locator('button.btn-primary:has-text("Next"), button.btn-primary:has-text("Suivant")')
-        next_button.click()
-        borrowers_page.page.wait_for_timeout(500)
-
-        # Act - Select target class
-        class_select = borrowers_page.page.locator('.modal.show select')
-        class_select.select_option(value=str(target_class_id))
-
-        # Assert - Selection is recorded (Next button should be enabled)
-        expect(next_button).not_to_be_disabled(timeout=2000)
 
     def test_bulk_change_class_wizard_step3_confirm_and_execute(
         self,
@@ -328,48 +118,6 @@ class TestBulkChangeClass:
 class TestBulkDelete:
     """Test bulk delete operation."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_bulk_delete_shows_confirmation_with_count(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Bulk delete shows confirmation dialog with borrower count.
-
-        Arrange: Create 3 borrowers, select 2
-        Act: Choose Delete operation, go to confirmation step
-        Assert: Confirmation message shows count (2)
-        """
-        # Arrange
-        borrower_factory.create_batch(3)
-        borrowers_page.goto()
-
-        borrowers_page.select_borrower_by_index(0)
-        borrowers_page.select_borrower_by_index(1)
-        borrowers_page.open_bulk_edit_modal()
-
-        # Select Delete operation
-        delete_button = borrowers_page.page.locator('button.list-group-item-danger:has-text("Delete"), button.list-group-item-danger:has-text("Supprimer")')
-        delete_button.click()
-
-        # Go to Step 2 (warning)
-        next_button = borrowers_page.page.locator('button.btn-primary:has-text("Next"), button.btn-primary:has-text("Suivant")')
-        next_button.click()
-        borrowers_page.page.wait_for_timeout(500)
-
-        # Assert - Warning should be visible
-        warning = borrowers_page.page.locator('.alert-danger')
-        expect(warning).to_be_visible()
-
-        # Go to Step 3 (confirmation)
-        next_button.click()
-        borrowers_page.page.wait_for_timeout(500)
-
-        # Assert - Confirmation should mention count
-        confirmation = borrowers_page.page.locator('.alert-info')
-        expect(confirmation).to_contain_text('2')
 
     def test_bulk_delete_removes_borrowers(
         self,
@@ -429,62 +177,6 @@ class TestBulkDelete:
 class TestBulkOperationNotifications:
     """Test success notifications after bulk operations."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_bulk_operation_shows_success_notification(
-        self,
-        borrowers_page,
-        borrower_factory,
-        db_session
-    ):
-        """
-        Successful bulk operation shows success notification.
-
-        Arrange: Create 2 borrowers, execute bulk change class
-        Act: Confirm operation
-        Assert: Success toast/alert appears
-        """
-        # Arrange
-        from src.bcd_api.models.class_model import Class
-        target_class = Class(name="CE1-NEW")
-        db_session.add(target_class)
-
-        borrower_factory.create_batch(2)
-        db_session.commit()
-        target_class_id = target_class.id
-        db_session.close()
-
-        borrowers_page.goto()
-
-        borrowers_page.select_borrower_by_index(0)
-        borrowers_page.select_borrower_by_index(1)
-        borrowers_page.open_bulk_edit_modal()
-
-        # Execute change class operation
-        change_class_button = borrowers_page.page.locator('button.list-group-item:has-text("Change Class"), button.list-group-item:has-text("Changer de classe")')
-        change_class_button.click()
-
-        next_button = borrowers_page.page.locator('button.btn-primary:has-text("Next"), button.btn-primary:has-text("Suivant")')
-        next_button.click()
-        borrowers_page.page.wait_for_timeout(500)
-
-        class_select = borrowers_page.page.locator('.modal.show select')
-        class_select.select_option(value=str(target_class_id))
-
-        next_button.click()
-        borrowers_page.page.wait_for_timeout(500)
-
-        # Act - Confirm
-        confirm_button = borrowers_page.page.locator('button.btn-danger:has-text("Confirm"), button.btn-danger:has-text("Confirmer")')
-        confirm_button.click()
-
-        # Assert - Success notification should appear (toast or alert)
-        # Wait for notification (implementation-specific)
-        borrowers_page.page.wait_for_timeout(2000)
-
-        # Look for success indicators (may be toast, alert, or other)
-        # For now, just verify modal closed successfully
-        modal = borrowers_page.page.locator('.modal.show')
-        expect(modal).not_to_be_visible(timeout=5000)
 
 
 class TestBulkOperationTableRefresh:

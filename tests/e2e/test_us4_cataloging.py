@@ -18,7 +18,6 @@ Test Quality:
 - Mocked BNF API for reliability
 """
 
-from unittest.mock import patch
 
 import pytest
 
@@ -26,94 +25,10 @@ import pytest
 class TestUS4FindNotice:
     """Test ISBN lookup and BNF integration."""
 
-    @patch('src.bcd_api.services.external.bnf.search_by_isbn')
-    @pytest.mark.e2e_to_be_removed
-    def test_us4_ac1_isbn_lookup_retrieves_bnf_data(
-        self,
-        mock_bnf,
-        page,
-        server_url
-    ):
-        """
-        US4-AC1: ISBN lookup retrieves and auto-fills form from BNF.
-
-        Arrange: Mock BNF API response
-        Act: Enter ISBN and press lookup
-        Assert: Form fields auto-filled with BNF data
-        """
-        # Arrange - Mock BNF API response
-        mock_bnf.return_value = {
-            'title': "L'équipe des mascottes",
-            'authors': ["Petit, Dominique"],
-            'publisher': "Hemma",
-            'publication_year': 2004,
-            'language': 'fr',
-            'isbn': '9782800687346'
-        }
-
-        # Act
-        page.goto(f"{server_url}/#/cataloging")
-        page.wait_for_selector('.cataloging-page', timeout=10000)
-
-        # Enter ISBN and click lookup
-        isbn_input = page.locator('input[type="text"]').first
-        isbn_input.fill("9782800687346")
-
-        lookup_button = page.locator('button:has-text("Lookup"), button:has-text("Rechercher")')
-        if lookup_button.count() > 0:
-            lookup_button.first.click()
-            page.wait_for_timeout(2000)
 
             # Assert - Form should be populated
             # (Check if title field has value)
 
-    @patch('src.bcd_api.services.external.bnf.search_by_isbn')
-    @pytest.mark.e2e_to_be_removed
-    def test_us4_ac2_scan_bcd_barcode_creates_item(
-        self,
-        mock_bnf,
-        page,
-        server_url
-    ):
-        """
-        US4-AC2: After BNF lookup, scan BCD barcode to create item.
-
-        Arrange: Mock BNF success, form populated
-        Act: Enter BCD barcode in item field
-        Assert: Bibliographic record and item created
-        """
-        # Arrange
-        mock_bnf.return_value = {
-            'title': "Test Book",
-            'authors': ["Test Author"],
-            'publisher': "Test Publisher",
-            'publication_year': 2024,
-            'isbn': '9781234567890'
-        }
-
-        # Act
-        page.goto(f"{server_url}/#/cataloging")
-        page.wait_for_selector('.cataloging-page', timeout=10000)
-
-        # Enter ISBN
-        isbn_input = page.locator('input').first
-        isbn_input.fill("9781234567890")
-
-        # Trigger lookup
-        lookup_button = page.locator('button').first
-        if lookup_button.count() > 0:
-            lookup_button.click()
-            page.wait_for_timeout(1500)
-
-        # Enter BCD barcode
-        barcode_input = page.locator('input').last
-        barcode_input.fill("ITEM-TEST-001")
-
-        # Submit form
-        submit_button = page.locator('button[type="submit"]')
-        if submit_button.count() > 0:
-            submit_button.click()
-            page.wait_for_timeout(1500)
 
             # Assert - Success notification
 
@@ -121,64 +36,11 @@ class TestUS4FindNotice:
 class TestUS4ManualEntry:
     """Test manual cataloging without BNF lookup."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us4_ac3_bnf_not_found_manual_entry(
-        self,
-        page,
-        server_url
-    ):
-        """
-        US4-AC3: BNF not found, allow manual entry in blank form.
-
-        Arrange: Mock BNF failure
-        Act: Enter data manually
-        Assert: Can create record without BNF data
-        """
-        # Act
-        page.goto(f"{server_url}/#/cataloging")
-        page.wait_for_selector('.cataloging-page', timeout=10000)
-
-        # Fill form manually (without lookup)
-        title_input = page.locator('input[placeholder*="title"], input[placeholder*="Title"]')
-        if title_input.count() > 0:
-            title_input.first.fill("Manual Entry Book")
 
         # Fill other required fields
         # Then submit
         # Assert - Record created
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us4_ac5_manual_entry_with_validation(
-        self,
-        page,
-        server_url
-    ):
-        """
-        US4-AC5: Manual entry validates required fields.
-
-        Arrange: Navigate to cataloging page
-        Act: Fill required fields, submit
-        Assert: Validation prevents submission if required fields missing
-        """
-        # Act
-        page.goto(f"{server_url}/#/cataloging")
-        page.wait_for_selector('.cataloging-page', timeout=10000)
-
-        # First, need to navigate to manual entry mode
-        manual_entry_btn = page.locator('button:has-text("Manual"), button:has-text("Saisie manuelle")')
-        if manual_entry_btn.count() > 0:
-            manual_entry_btn.first.click()
-            page.wait_for_timeout(1000)
-
-        # Try to submit without required fields
-        submit_button = page.locator('button[type="submit"]')
-        if submit_button.count() > 0:
-            try:
-                submit_button.click(timeout=5000)
-                page.wait_for_timeout(500)
-            except:
-                # Submit button not found or not clickable - test incomplete
-                pass
 
             # Assert - Should show validation errors
             # (Browser HTML5 validation or custom errors)
@@ -187,39 +49,6 @@ class TestUS4ManualEntry:
 class TestUS4DuplicateHandling:
     """Test handling of duplicate ISBNs."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us4_ac4_duplicate_isbn_add_copy(
-        self,
-        page,
-        item_factory,
-        server_url
-    ):
-        """
-        US4-AC4: Duplicate ISBN detected, prompt to add copy.
-
-        Arrange: Create existing record with ISBN
-        Act: Enter same ISBN
-        Assert: System shows existing record, prompts for BCD barcode to add copy
-        """
-        # Arrange - Create existing record
-        item_factory.create_with_record(
-            title="Existing Book",
-            isbn="9780000000001"
-        )
-
-        # Act
-        page.goto(f"{server_url}/#/cataloging")
-        page.wait_for_selector('.cataloging-page', timeout=10000)
-
-        # Enter duplicate ISBN
-        isbn_input = page.locator('input').first
-        isbn_input.fill("9780000000001")
-
-        # Trigger lookup
-        lookup_button = page.locator('button').first
-        if lookup_button.count() > 0:
-            lookup_button.click()
-            page.wait_for_timeout(1500)
 
             # Assert - Should show duplicate message
             # And allow adding copy with new barcode
@@ -228,30 +57,6 @@ class TestUS4DuplicateHandling:
 class TestUS4KeyboardEntry:
     """Test keyboard/manual entry without scanner."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us4_ac6_manual_barcode_entry_works(
-        self,
-        page,
-        server_url
-    ):
-        """
-        US4-AC6: Manual ISBN and BCD barcode entry via keyboard.
-
-        Arrange: No scanner available
-        Act: Type ISBN and barcode manually
-        Assert: System processes just like scanning
-        """
-        # Act
-        page.goto(f"{server_url}/#/cataloging")
-        page.wait_for_selector('.cataloging-page', timeout=10000)
-
-        # Type ISBN manually
-        isbn_input = page.locator('input').first
-        isbn_input.type("9781111111111")  # Type character by character
-
-        # Type barcode manually
-        barcode_input = page.locator('input').last
-        barcode_input.type("MANUAL-001")
 
         # Assert - Should work same as scanning
 

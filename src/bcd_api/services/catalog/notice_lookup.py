@@ -72,8 +72,42 @@ def _normalize_search_text(value: str) -> str:
     return normalize_catalog_text(value or "").replace(" ", "")
 
 
-def _normalized_column(column):
-    """Build a portable SQL expression matching ``_normalize_search_text``."""
+def _register_sqlite_normalizer(db: Session) -> str:
+    """Register the search normalizer on the current SQLite connection.
+
+    SQLite has no built-in accent-folding function.  The old implementation
+    expressed every accent and separator replacement as a nested ``replace``
+    call.  That produced an expression deep enough to trigger SQLite's
+    ``parser stack overflow`` on the Python 3.11 runners (and on some older
+    school machines).  A scalar function keeps the SQL expression shallow
+    while retaining the same matching behaviour.
+
+    The function is registered per DB-API connection because SQLite user
+    functions are connection-local.  PostgreSQL keeps the SQL fallback below;
+    deployments that need accent folding there can provide an ``unaccent``
+    function without changing this search contract.
+    """
+    dialect_name = db.get_bind().dialect.name
+    if dialect_name != "sqlite":
+        return dialect_name
+
+    connection = db.connection()
+    connection.connection.driver_connection.create_function(
+        "bcd_normalize", 1, _normalize_search_text, deterministic=True
+    )
+    return dialect_name
+
+
+def _normalized_column(column, dialect_name: str | None = None):
+    """Build a SQL expression matching ``_normalize_search_text``.
+
+    SQLite uses the connection-local scalar function rather than a deeply
+    nested chain of ``replace`` calls.  The fallback remains deliberately
+    portable for other SQL dialects.
+    """
+    if dialect_name == "sqlite":
+        return func.bcd_normalize(column)
+
     expression = column
     for source, target in _ACCENT_REPLACEMENTS:
         expression = func.replace(expression, source, target)
@@ -83,28 +117,30 @@ def _normalized_column(column):
     return expression
 
 
-def _text_search_expressions(raw_query: str) -> dict[str, Any]:
+def _text_search_expressions(
+    raw_query: str, dialect_name: str | None = None
+) -> dict[str, Any]:
     """Build one normalized set of SQL expressions for local notice search."""
     raw = raw_query.strip()
     raw_normalized = _normalize_search_text(raw)
     title_normalized = _normalize_search_text(strip_periodical_issue_suffix(raw))
-    title_expression = _normalized_column(BibliographicRecord.title)
+    title_expression = _normalized_column(BibliographicRecord.title, dialect_name)
     search_expressions = {
         "exact_title": title_expression == raw_normalized,
         "exact_title_without_issue": title_expression == title_normalized,
         "title_contains": title_expression.like(f"%{raw_normalized}%"),
-        "author_contains": _normalized_column(BibliographicRecord.authors).like(
-            f"%{raw_normalized}%"
-        ),
-        "subtitle_contains": _normalized_column(BibliographicRecord.subtitle).like(
-            f"%{raw_normalized}%"
-        ),
-        "publisher_contains": _normalized_column(BibliographicRecord.publisher).like(
-            f"%{raw_normalized}%"
-        ),
-        "collection_contains": _normalized_column(BibliographicRecord.collection).like(
-            f"%{raw_normalized}%"
-        ),
+        "author_contains": _normalized_column(
+            BibliographicRecord.authors, dialect_name
+        ).like(f"%{raw_normalized}%"),
+        "subtitle_contains": _normalized_column(
+            BibliographicRecord.subtitle, dialect_name
+        ).like(f"%{raw_normalized}%"),
+        "publisher_contains": _normalized_column(
+            BibliographicRecord.publisher, dialect_name
+        ).like(f"%{raw_normalized}%"),
+        "collection_contains": _normalized_column(
+            BibliographicRecord.collection, dialect_name
+        ).like(f"%{raw_normalized}%"),
     }
     return search_expressions
 
@@ -153,9 +189,10 @@ def _local_match_expressions(
     raw_query: str,
     classified: CatalogInput,
     exact_item_barcode: Any = False,
+    dialect_name: str | None = None,
 ) -> tuple[list[Any], Any]:
     """Build the shared filter and ranking expressions for local search."""
-    text = _text_search_expressions(raw_query)
+    text = _text_search_expressions(raw_query, dialect_name)
     exact_title = text["exact_title"]
     exact_title_without_issue = text["exact_title_without_issue"]
     title_contains = text["title_contains"]
@@ -293,6 +330,8 @@ def search_local_notices(
     if not raw:
         return [], 0, classified
 
+    dialect_name = _register_sqlite_normalizer(db)
+
     # Search the raw barcode exactly.  The stored item ID does not include the
     # display prefix, so accept both forms configured in the singleton settings.
     settings_row = db.query(SystemSettings).first()
@@ -304,7 +343,7 @@ def search_local_notices(
             Item.item_id.in_(barcode_values),
         )
     )
-    matches, rank = _local_match_expressions(raw, classified, exact_item_barcode)
+    matches, rank = _local_match_expressions(raw, classified, exact_item_barcode, dialect_name)
 
     query_builder = db.query(BibliographicRecord).filter(or_(*matches))
     total = query_builder.count()

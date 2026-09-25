@@ -50,70 +50,11 @@ class TestUS6BasicSettings:
         saved_duration = settings_page.get_loan_duration()
         assert saved_duration == new_duration, f"Duration should be {new_duration}"
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us6_ac3_display_current_settings_on_load(
-        self,
-        settings_page,
-        db_session
-    ):
-        """
-        US6-AC3: Display all current settings on page load.
-
-        Arrange: Settings exist in database
-        Act: Navigate to settings page
-        Assert: All configurable parameters displayed with current values
-        """
-        # Arrange - Update settings in database
-        from src.bcd_api.models.system_settings import SystemSettings
-
-        settings = db_session.query(SystemSettings).first()
-        if settings:
-            settings.loan_duration_days = 14
-            settings.loan_limit_default = 2
-            settings.library_name = "Test Library"
-            db_session.commit()
-
-        # Act
-        settings_page.goto()
-
-        # Assert - Form should show current values
-        loan_duration = settings_page.get_loan_duration()
-        assert loan_duration > 0, "Loan duration should be loaded"
-
-        library_name = settings_page.get_library_name()
-        assert library_name != "", "Library name should be loaded"
 
 
 class TestUS6SettingsValidation:
     """Test settings form validation."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us6_ac4_validation_prevents_invalid_values(
-        self,
-        page,
-        settings_page
-    ):
-        """
-        US6-AC4: Validation prevents saving invalid values.
-
-        Arrange: Navigate to settings page
-        Act: Enter invalid value (e.g., negative loan duration)
-        Assert: Validation error displayed, changes not saved
-        """
-        # Act
-        settings_page.goto()
-
-        # Try to set negative value
-        loan_input = page.locator('input[type="number"]').first
-        loan_input.fill("-5")
-
-        # Try to save
-        settings_page.save(wait_for_confirmation=False)
-        page.wait_for_timeout(1000)
-
-        # Assert - Should show validation error
-        # (Either HTML5 validation or custom error)
-        error_message = page.locator('.error, .invalid-feedback, .alert-danger')
         # Validation should prevent invalid save
 
 

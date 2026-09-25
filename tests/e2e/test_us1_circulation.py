@@ -21,7 +21,6 @@ Test Quality:
 - Clear AAA pattern (Arrange-Act-Assert)
 """
 
-import pytest
 
 
 class TestUS1CirculationBasics:
@@ -87,37 +86,6 @@ class TestUS1CirculationBasics:
         # 2000ms is reasonable for full E2E flow (API target is <200ms)
         performance_monitor.assert_faster_than("checkout", 2000)
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us1_ac3_multiple_item_checkout(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory
-    ):
-        """
-        US1-AC3: Multiple items can be checked out in sequence.
-
-        Superseded by the fast CirculationPage repeated-checkout contract test.
-        Retained as an E2E candidate until explicit removal review.
-
-        Arrange: Create borrower and 2 available items
-        Act: Scan first item, then scan second item
-        Assert: Both items in scanned list
-        """
-        # Arrange
-        borrower = borrower_factory.create(borrower_id="103")
-        item1, _ = item_factory.create_with_record(item_id="786", title="Book 1")
-        item2, _ = item_factory.create_with_record(item_id="787", title="Book 2")
-
-        # Act
-        circulation_page.goto_checkout()
-        circulation_page.enter_borrower_id(borrower.borrower_id)
-        circulation_page.scan_item(item1.item_id)
-        circulation_page.scan_item(item2.item_id)
-
-        # Assert
-        scanned_count = circulation_page.get_scanned_items_count()
-        assert scanned_count >= 2, "Both items should appear in list"
 
     def test_us1_ac4_manual_barcode_entry(
         self,
@@ -145,156 +113,14 @@ class TestUS1CirculationBasics:
         scanned_count = circulation_page.get_scanned_items_count()
         assert scanned_count >= 1
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us1_ac5_immediate_item_return(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory,
-        db_session
-    ):
-        """
-        US1-AC5: Item returned immediately on barcode scan.
-
-        Superseded by the fast `CirculationPage` return-command contract test.
-        Retained as an E2E candidate until explicit removal review.
-
-        Arrange: Create borrower with checked-out item
-        Act: Go to return page, scan item barcode
-        Assert: Return confirmation shows (title, borrower name, overdue status)
-        """
-        # Arrange
-        borrower = borrower_factory.create(borrower_id="105")
-        item, record = item_factory.create_with_record(
-            item_id="789",
-            title="Charlotte's Web",
-            status="on_loan"  # Already on loan
-        )
-
-        # Act
-        circulation_page.goto_return()
-        circulation_page.return_item(item.item_id)
-
-        # Assert - notification or success message should appear
-        # Note: Exact assertion depends on UI implementation
-        # For now, just verify no error occurred
-        circulation_page.page.wait_for_timeout(1000)
 
 
 class TestUS1CirculationErrors:
     """Error handling scenarios."""
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us1_ac6_already_on_loan_error(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory
-    ):
-        """
-        US1-AC6: Error shown when item already on loan.
-
-        Superseded by the fast `CirculationPage` error-state contract test.
-        Retained as an E2E candidate until explicit removal review.
-
-        Arrange: Create 2 borrowers, item on loan to borrower 1
-        Act: Try to checkout item to borrower 2
-        Assert: Error message shows current borrower and due date
-        """
-        # Arrange
-        borrower1 = borrower_factory.create(borrower_id="106")
-        borrower2 = borrower_factory.create(borrower_id="107")
-        item, _ = item_factory.create_with_record(
-            item_id="790",
-            status="on_loan"  # Already on loan
-        )
-
-        # Act
-        circulation_page.goto_checkout()
-        circulation_page.enter_borrower_id(borrower2.borrower_id)
-        circulation_page.scan_item(item.item_id, wait_for_feedback=False)
-
-        # Assert - error notification should appear
-        circulation_page.page.wait_for_timeout(2000)
         # Note: Specific error message checking depends on UI implementation
 
-    @pytest.mark.e2e_to_be_removed
-    def test_us1_ac8_loan_limit_prevention(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory,
-        db_session
-    ):
-        """
-        US1-AC8: Checkout blocked when borrower at loan limit.
 
-        Superseded by the fast CirculationPage loan-limit error contract test.
-        Retained as an E2E candidate until explicit removal review.
-
-        Arrange: Create borrower with 2/2 items (at limit)
-        Act: Try to checkout another item
-        Assert: Error message, checkout prevented
-        """
-        # Arrange - borrower at limit (2 loans)
-        borrower = borrower_factory.create(borrower_id="108")
-
-        # Create 2 items already on loan (at limit)
-        item1, _ = item_factory.create_with_record(item_id="791", status="on_loan")
-        item2, _ = item_factory.create_with_record(item_id="792", status="on_loan")
-
-        # New item to attempt checkout
-        item3, _ = item_factory.create_with_record(item_id="793", status="available")
-
-        # Simulate loans (would need loan records in real test)
-        # For this test, we're checking UI prevents checkout
-
-        # Act
-        circulation_page.goto_checkout()
-        circulation_page.enter_borrower_id(borrower.borrower_id)
-        circulation_page.scan_item(item3.item_id, wait_for_feedback=False)
-
-        # Assert - error or warning should appear
-        circulation_page.page.wait_for_timeout(2000)
-
-
-class TestUS1CirculationRenewAll:
-    """Renew All functionality tests."""
-
-    @pytest.mark.e2e_to_be_removed
-    def test_us1_ac9_renew_all_success(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory
-    ):
-        """
-        US1-AC9: Renew All extends due dates for all items.
-
-        Superseded by the fast CirculationPage renewal-result contract test.
-        Retained as an E2E candidate until explicit removal review.
-
-        Arrange: Create borrower with 3 renewable items
-        Act: Click Renew All button
-        Assert: Success notification "Renewed 3 item(s) successfully"
-                Updated due dates shown
-        """
-        # Arrange
-        borrower = borrower_factory.create(borrower_id="109")
-
-        # Would need to create actual loan records here
-        # For now, test UI interaction
-
-        # Act
-        circulation_page.goto_checkout()
-        circulation_page.enter_borrower_id(borrower.borrower_id)
-
-        # Try to click Renew All if button visible
-        if circulation_page.page.locator(circulation_page.RENEW_ALL_BUTTON).count() > 0:
-            circulation_page.click_renew_all()
-
-        # Assert - would check for success notification
-        circulation_page.page.wait_for_timeout(1000)
 
 
 class TestUS1PerformanceTargets:

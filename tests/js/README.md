@@ -132,9 +132,11 @@ charts, static resources, accessibility, and persisted server mutations) may be
 added only when JSDOM cannot prove them. The default suite runs the
 `browser_smoke` marker; feature permutations belong in Vitest.
 
-When a fast JS test supersedes a redundant E2E state permutation, follow the
-non-destructive process in [`../e2e/README.md`](../e2e/README.md): mark the E2E test
-`e2e_to_be_removed`, keep it running, and remove it only in a dedicated review.
+Keep E2E tests focused on browser-to-server behavior that JSDOM cannot prove. When
+a fast JS test covers a UI state permutation, do not add a second browser test for
+that permutation; reserve the browser suite for a complete workflow or a browser-
+specific boundary such as downloads, static resources, scanner input, or persisted
+mutations.
 
 ## Coverage policy
 
