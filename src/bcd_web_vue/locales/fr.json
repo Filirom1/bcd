@@ -130,6 +130,7 @@
     "filter_or_scan_student": "Filtrer ou scanner un ID élève…",
     "scan_auto_selects": "Scanner la carte élève sélectionne automatiquement",
     "select_class": "Sélectionner une classe",
+    "class_with_teacher": "{name} - {teacher}",
     "no_class_selected": "Sélectionnez une classe pour voir les élèves",
     "no_students_found": "Aucun élève trouvé",
     "not_yet_borrowed": "Sans emprunt",

@@ -81,6 +81,15 @@ export default defineComponent({
             classes.value.find(c => c.id === selectedClassId.value) || null
         );
 
+        // Keep the teacher visible in the class selector when one is assigned.
+        // Classes without a teacher retain their name-only label.
+        const classLabel = (classObj) => classObj.homeroom_teacher
+            ? t('circulation.class_with_teacher', {
+                name: classObj.name,
+                teacher: classObj.homeroom_teacher
+            })
+            : classObj.name;
+
         // ── Status helper ─────────────────────────────────────────────────────
 
         const studentStatus = (borrower) => {
@@ -210,6 +219,7 @@ export default defineComponent({
             classes,
             selectedClassId,
             selectedClass,
+            classLabel,
             roster,
             filteredRoster,
             filterQuery,
@@ -249,7 +259,7 @@ export default defineComponent({
                             {{ t('circulation.select_class') }}
                         </option>
                         <option v-for="cls in classes" :key="cls.id" :value="cls.id">
-                            {{ cls.name }}
+                            {{ classLabel(cls) }}
                         </option>
                     </select>
                     <div v-else class="text-muted small mb-2">

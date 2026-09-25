@@ -24,7 +24,7 @@ const testLocale = Vue.ref('fr');
 globalThis.VueI18n = {
     useI18n: () => ({
         locale: testLocale,
-        t: key => globalThis.__testTranslate(key),
+        t: (key, params) => globalThis.__testTranslate(key, params),
         d: value => String(value)
     })
 };

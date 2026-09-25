@@ -130,6 +130,7 @@
     "filter_or_scan_student": "Filter or scan a student ID…",
     "scan_auto_selects": "Scanning a student card auto-selects",
     "select_class": "Select a class",
+    "class_with_teacher": "{name} - {teacher}",
     "no_class_selected": "Select a class to view the student roster",
     "no_students_found": "No students found",
     "not_yet_borrowed": "No loans",

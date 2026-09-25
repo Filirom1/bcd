@@ -3,10 +3,11 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 import ClassRosterPanel from '../../../../src/bcd_web_vue/js/components/circulation/ClassRosterPanel.js';
 import { apiClient } from '../../../../src/bcd_web_vue/js/api/client.js';
+import { setTestTranslator } from '../../helpers/i18n.js';
 
 const mockClasses = [
-    { id: 1, name: 'CP' },
-    { id: 2, name: 'CE1' }
+    { id: 1, name: 'CP', homeroom_teacher: 'Mme Dupont' },
+    { id: 2, name: 'CE1', homeroom_teacher: null }
 ];
 
 const mockRoster = [
@@ -31,6 +32,19 @@ afterEach(() => {
 });
 
 describe('ClassRosterPanel', () => {
+    it('shows the homeroom teacher after the class name in the class selector', async () => {
+        setTestTranslator((key, params) => key === 'circulation.class_with_teacher'
+            ? `${params.name} - ${params.teacher}`
+            : key
+        );
+        const wrapper = mount(ClassRosterPanel);
+        await flushPromises();
+
+        const options = wrapper.findAll('option');
+        expect(options.map(option => option.text())).toContain('CP - Mme Dupont');
+        expect(options.map(option => option.text())).toContain('CE1');
+    });
+
     it('populates classes and filters the roster by search query', async () => {
         const wrapper = mount(ClassRosterPanel, {
             props: {
