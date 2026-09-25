@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ....core.deps import get_db
+from ....schemas.cataloging import ExternalSourceTestRequest
 from ....schemas.system_settings import SystemSettingsResponse, SystemSettingsUpdate
 
 logger = logging.getLogger(__name__)
@@ -77,6 +78,18 @@ async def update_settings(
             logger.warning("mDNS restart after settings update failed (non-fatal): %s", exc)
 
     return settings
+
+
+@router.post("/settings/external-sources/{source}/test")
+def test_external_catalog_source(
+    source: str,
+    request: ExternalSourceTestRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    """Test one external catalog source from the Settings page."""
+    from ....services import catalog as catalog_service
+
+    return catalog_service.test_external_source(db, source, request.query if request else None)
 
 
 @router.post("/settings/reset", response_model=SystemSettingsResponse)

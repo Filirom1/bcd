@@ -165,7 +165,8 @@ export default defineComponent({
                         { section: 'backup', icon: 'bi-archive', key: 'settings_action_backup' },
                         { section: 'covers', icon: 'bi-image', key: 'settings_action_covers' },
                         { section: 'maintenance', icon: 'bi-tools', key: 'settings_action_maintenance' },
-                        { section: 'env', icon: 'bi-file-earmark-code', key: 'settings_action_env' }
+                        { section: 'env', icon: 'bi-file-earmark-code', key: 'settings_action_env' },
+                        { section: 'external-sources', icon: 'bi-cloud-download', key: 'settings_action_external_sources' }
                     ]" :key="action.section">
                         <a class="dropdown-item d-flex align-items-center" href="#" @click.prevent="handleSettingsSection(action.section)">
                             <i :class="['bi', action.icon, 'me-2']"></i>

@@ -100,11 +100,6 @@ class Settings(BaseSettings):
     sudoc_api_url: str = "https://www.sudoc.abes.fr/cbs/sru/"
     sudoc_rate_limit: int = 1  # requests per second
 
-    # Catalog source enable/disable (set in .env)
-    bnf_enabled: bool = True
-    google_books_enabled: bool = True
-    sudoc_enabled: bool = True
-
     # Pagination
     default_page_size: int = 50
     max_page_size: int = 100

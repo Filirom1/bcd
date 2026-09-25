@@ -138,6 +138,12 @@ def update_settings(
         "catalog_medium_types",
         "catalog_languages",
         "catalog_levels",
+        "bnf_enabled",
+        "bnf_timeout",
+        "google_books_enabled",
+        "google_books_timeout",
+        "sudoc_enabled",
+        "sudoc_timeout",
         "inventory_search_result_limit",
         "dewey_colors_enabled",
         "dewey_colors",
@@ -189,6 +195,12 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.id_length_min = 1
     settings.id_length_max = 10
     settings.catalog_medium_types = "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
+    settings.bnf_enabled = True
+    settings.bnf_timeout = 4
+    settings.google_books_enabled = True
+    settings.google_books_timeout = 4
+    settings.sudoc_enabled = True
+    settings.sudoc_timeout = 5
     settings.dewey_colors_enabled = True
     settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
 

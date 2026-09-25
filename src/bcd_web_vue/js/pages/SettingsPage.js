@@ -20,7 +20,7 @@ import CoverSection from '../components/settings/CoverSection.js';
 import EnvSection from '../components/settings/EnvSection.js';
 import DataMaintenanceSection from '../components/settings/DataMaintenanceSection.js';
 
-const VALID_SECTIONS = ['general', 'catalog', 'backup', 'covers', 'maintenance', 'env'];
+const VALID_SECTIONS = ['general', 'catalog', 'backup', 'covers', 'maintenance', 'env', 'external-sources'];
 
 export default defineComponent({
     name: 'SettingsPage',

@@ -23,7 +23,8 @@ class Item(Base):
         index=True
     )
 
-    # Location and classification
+    # Location and classification.  For periodicals the existing call_number
+    # column stores the explicit issue number; the UI labels it as such.
     call_number = Column(String(50), nullable=True, index=True)
     shelf_location = Column(String(100), nullable=True)
 

@@ -1,13 +1,14 @@
 """Private validation helpers for the catalog domain."""
 
-import re
 from datetime import date, datetime
 from typing import Optional
+
 from sqlalchemy.orm import Session
 
-from src.bcd_api.core.exceptions import NotFoundError, NotFoundException, ConflictError
+from src.bcd_api.core.exceptions import NotFoundError, NotFoundException
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
+from src.bcd_api.utils.catalog_input import _ean13_to_issn, classify_catalog_input
 
 
 def require_record(db: Session, record_id: int) -> BibliographicRecord:
@@ -59,41 +60,18 @@ def validate_item_id_available(db: Session, item_id: str) -> None:
 
 
 def normalize_identifier(isbn_or_issn: str) -> str:
-    """Clean and return isbn:xxx or issn:xxx from input identifier."""
-    from src.bcd_api.services.external.sudoc import ISSN_PATTERN as SUDOC_ISSN_PATTERN
-    
-    normalized = isbn_or_issn.replace(" ", "").strip()
-
-    # If it's periodical EAN-13
-    if re.match(r"^\d{13}$", normalized) and normalized.startswith("977"):
-        from ._validation import _ean13_to_issn
-        extracted = _ean13_to_issn(normalized)
-        if not extracted:
-            from src.bcd_api.core.exceptions import ValidationError
-            raise ValidationError(f"Barcode {isbn_or_issn} does not yield a valid ISSN")
-        normalized = extracted
-
-    if SUDOC_ISSN_PATTERN.match(normalized):
-        return f"issn:{normalized.upper()}"
-    else:
-        bare = normalized.replace("-", "")
-        return f"isbn:{bare}"
-
-
-_EAN13_PERIODICAL_RE = re.compile(r"^977(\d{7})\d{3}$")
-
-
-def _ean13_to_issn(ean13: str) -> Optional[str]:
-    """Extract and validate ISSN from a kiosk EAN-13 barcode (prefix 977)."""
-    m = _EAN13_PERIODICAL_RE.match(ean13)
-    if not m:
-        return None
-    digits = m.group(1)
-    weights = [8, 7, 6, 5, 4, 3, 2]
-    total = sum(int(d) * w for d, w in zip(digits, weights))
-    check = (11 - (total % 11)) % 11
-    check_char = "X" if check == 10 else str(check)
-    return f"{digits[:4]}-{digits[4:7]}{check_char}"
+    """Normalize a supported ISBN, ISSN, or EAN-977 into storage format."""
+    compact = (isbn_or_issn or "").replace("-", "").replace(" ", "")
+    # Keep this compatibility seam for callers that monkeypatch the legacy
+    # helper; classification itself remains centralized in catalog_input.py.
+    if compact.startswith("977") and len(compact) == 13 and _ean13_to_issn(compact) is None:
+        from src.bcd_api.core.exceptions import ValidationError
+        raise ValidationError(f"Unsupported bibliographic identifier: {isbn_or_issn}")
+    classified = classify_catalog_input(isbn_or_issn)
+    if not classified.normalized_identifier:
+        from src.bcd_api.core.exceptions import ValidationError
+        raise ValidationError(f"Unsupported bibliographic identifier: {isbn_or_issn}")
+    return classified.normalized_identifier
 
 
 def parse_item_acquisition_date(value: Optional[str | date]) -> Optional[date]:

@@ -192,18 +192,15 @@ Voici la liste complète des paramètres personnalisables dans le fichier `.env`
 | **`AUTH_PASSWORD`** | *(vide)* | **Mot de passe admin.** À définir avec le nom d'utilisateur pour activer la sécurité. |
 | **`AUTH_SCHEME`** | `basic` | **Protocole de sécurité.** Choix entre `basic` (standard et hautement compatible) et `digest` (plus sécurisé pour les connexions sans HTTPS). |
 
-#### 5. Moteurs de recherche externes (Catalogage automatique par ISBN)
-*Activer ou désactiver ces sources pour optimiser la recherche d'informations sur les livres.*
+#### 5. Moteurs de recherche externes
+*Les URLs, clés API et limites de débit restent des paramètres de déploiement. L'activation, la désactivation et le délai d'attente de chaque source se configurent dans **Paramètres → Sources de catalogues externes** et sont stockés dans la base de données.*
 
 | Paramètre | Valeur par défaut | Description |
 |-----------|-------------------|-------------|
-| **`BNF_ENABLED`** | `true` | Active ou désactive la recherche sur le catalogue de la Bibliothèque Nationale de France (BnF). |
 | **`BNF_API_URL`** | `https://catalogue.bnf.fr/api/SRU` | URL de l'API BnF. |
 | **`BNF_RATE_LIMIT`** | `1` | Limite de requêtes sur l'API BnF (requêtes par seconde, maximum 1/s autorisé par la BnF). |
-| **`GOOGLE_BOOKS_ENABLED`** | `true` | Active ou désactive la recherche sur Google Books. |
 | **`GOOGLE_BOOKS_API_KEY`** | *(vide)* | Clé d'API Google Books (optionnelle, pour augmenter les quotas de recherche). |
 | **`GOOGLE_BOOKS_RATE_LIMIT`** | `1` | Limite de requêtes Google Books (requêtes par seconde). |
-| **`SUDOC_ENABLED`** | `true` | Active ou désactive la recherche sur le catalogue universitaire français SUDOC (idéal pour les périodiques). |
 | **`SUDOC_API_URL`** | `https://www.sudoc.abes.fr/cbs/sru/` | URL de l'API SUDOC. |
 | **`SUDOC_RATE_LIMIT`** | `1` | Limite de requêtes SUDOC (requêtes par seconde). |
 

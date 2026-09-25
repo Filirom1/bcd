@@ -260,6 +260,14 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
 
         item_dict = item_data.model_dump()
         item_dict['item_id'] = item_id
+
+        # The catalog stores periodical numbering in call_number for schema
+        # compatibility.  The cataloging UI presents this field explicitly as
+        # "Issue number" whenever the notice is a periodical.
+        if biblio_record.identifier_type == "issn":
+            if not (item_dict.get("call_number") or "").strip():
+                raise ValidationError("A periodical copy requires an issue number")
+            item_dict["call_number"] = item_dict["call_number"].strip()
         if item_dict.get('acquisition_date') is None:
             item_dict['acquisition_date'] = date.today()
 

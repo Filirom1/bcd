@@ -192,18 +192,15 @@ Here is the complete list of settings you can customize in your `.env` file, gro
 | **`AUTH_PASSWORD`** | *(empty)* | **Admin/Librarian password.** Must be set along with `AUTH_USERNAME` to enable authentication. |
 | **`AUTH_SCHEME`** | `basic` | **Authentication protocol.** Choose `basic` (standard, high compatibility) or `digest` (more secure over HTTP). |
 
-#### 5. External Cataloging APIs (ISBN Lookups)
-*Toggle these to enable/disable or rate-limit external books metadata search engines.*
+#### 5. External cataloging APIs
+*URLs, API keys, and rate limits remain deployment settings. Enable/disable switches and per-source timeouts are configured in **Settings → External catalog sources** and stored in the database.*
 
 | Parameter | Default value | Description |
 |-----------|---------------|-------------|
-| **`BNF_ENABLED`** | `true` | Enable/disable lookup on the French National Library (BnF). |
 | **`BNF_API_URL`** | `https://catalogue.bnf.fr/api/SRU` | API endpoint for BnF. |
 | **`BNF_RATE_LIMIT`** | `1` | Rate limit for BnF requests (requests per second; BnF requests maximum 1 req/sec). |
-| **`GOOGLE_BOOKS_ENABLED`** | `true` | Enable/disable lookup on Google Books. |
 | **`GOOGLE_BOOKS_API_KEY`** | *(empty)* | Optional API key to increase Google Books quota. |
 | **`GOOGLE_BOOKS_RATE_LIMIT`** | `1` | Rate limit for Google Books (requests per second). |
-| **`SUDOC_ENABLED`** | `true` | Enable/disable lookup on SUDOC (French university library catalog, great fallback). |
 | **`SUDOC_API_URL`** | `https://www.sudoc.abes.fr/cbs/sru/` | API endpoint for SUDOC. |
 | **`SUDOC_RATE_LIMIT`** | `1` | Rate limit for SUDOC requests (requests per second). |
 

@@ -54,6 +54,12 @@ import { downloadBlob } from '../utils/download.js';
  * @property {string|null} [catalog_genres] - Comma separated genres
  * @property {string|null} [catalog_languages] - Comma separated languages
  * @property {string|null} [catalog_levels] - Comma separated levels
+ * @property {boolean} [bnf_enabled] - Whether BnF is enabled for ISBN lookup
+ * @property {number} [bnf_timeout] - BnF timeout in seconds
+ * @property {boolean} [google_books_enabled] - Whether Google Books is enabled for ISBN lookup
+ * @property {number} [google_books_timeout] - Google Books timeout in seconds
+ * @property {boolean} [sudoc_enabled] - Whether SUDOC is enabled for ISSN lookup
+ * @property {number} [sudoc_timeout] - SUDOC timeout in seconds
  * @property {number} [inventory_search_result_limit] - Inventory search limit
  * @property {string[]|null} [dewey_colors] - List of 10 hex colors for Dewey classes
  * @property {ShelfLocation[]|null} [catalog_shelf_locations] - List of configured shelf locations

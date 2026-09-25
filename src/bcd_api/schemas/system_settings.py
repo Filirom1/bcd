@@ -50,6 +50,12 @@ class SystemSettingsResponse(BaseModel):
     catalog_genres: Optional[str] = None
     catalog_languages: Optional[str] = None
     catalog_levels: Optional[str] = None
+    bnf_enabled: bool = True
+    bnf_timeout: int = Field(4, ge=1, le=60)
+    google_books_enabled: bool = True
+    google_books_timeout: int = Field(4, ge=1, le=60)
+    sudoc_enabled: bool = True
+    sudoc_timeout: int = Field(5, ge=1, le=60)
     inventory_search_result_limit: int = 200
     dewey_colors_enabled: bool = True
     dewey_colors: Optional[List[str]] = None
@@ -144,6 +150,12 @@ class SystemSettingsUpdate(BaseModel):
     catalog_genres: Optional[str] = None
     catalog_languages: Optional[str] = None
     catalog_levels: Optional[str] = None
+    bnf_enabled: Optional[bool] = None
+    bnf_timeout: Optional[int] = Field(None, ge=1, le=60)
+    google_books_enabled: Optional[bool] = None
+    google_books_timeout: Optional[int] = Field(None, ge=1, le=60)
+    sudoc_enabled: Optional[bool] = None
+    sudoc_timeout: Optional[int] = Field(None, ge=1, le=60)
     inventory_search_result_limit: Optional[int] = Field(None, ge=1, le=1000)
     dewey_colors_enabled: Optional[bool] = None
     dewey_colors: Optional[List[str]] = None

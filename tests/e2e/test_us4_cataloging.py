@@ -23,7 +23,7 @@ from unittest.mock import patch
 import pytest
 
 
-class TestUS4ISBNLookup:
+class TestUS4FindNotice:
     """Test ISBN lookup and BNF integration."""
 
     @patch('src.bcd_api.services.external.bnf.search_by_isbn')

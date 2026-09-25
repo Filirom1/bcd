@@ -17,6 +17,7 @@ const BorrowersPage = () => import('./pages/BorrowersPage.js');
 const ReportsPage = () => import('./pages/ReportsPage.js');
 const CollectionsPage = () => import('./pages/CollectionsPage.js');
 const SettingsPage = () => import('./pages/SettingsPage.js');
+const ExternalCatalogSourcesPage = () => import('./pages/ExternalCatalogSourcesPage.js');
 const PrintBorrowerReference = () => import('./pages/PrintBorrowerReference.js');
 const PrintStudentCards = () => import('./pages/PrintStudentCards.js');
 const PrintItemLabels = () => import('./pages/PrintItemLabels.js');
@@ -101,6 +102,12 @@ const routes = [
         name: 'inventory',
         component: InventoryPage,
         meta: { titleKey: 'navigation.inventory' }
+    },
+    {
+        path: '/settings/external-sources',
+        name: 'external-catalog-sources',
+        component: ExternalCatalogSourcesPage,
+        meta: { titleKey: 'settings.external_catalog_sources' }
     },
     {
         path: '/settings/:section?',

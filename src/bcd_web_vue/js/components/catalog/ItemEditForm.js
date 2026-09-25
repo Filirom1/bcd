@@ -14,7 +14,7 @@ const { ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 import DeweyPicker from '../ui/DeweyPicker.js';
 import { logger } from '../../utils/logger.js';
-import { ITEM_STATUS_META, parseJsonSetting } from '../../utils/domain.js';
+import { ITEM_STATUS_META, parseJsonSetting, isPeriodicalRecord } from '../../utils/domain.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import Modal from '../ui/Modal.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -55,6 +55,13 @@ export default {
     const deweyEnabled = computed(() => effectiveSettings.value?.dewey_colors_enabled !== false);
 
     const shelfLocationOptions = computed(() => parseJsonSetting(effectiveSettings.value?.catalog_shelf_locations, []));
+    const recordData = computed(() => props.record?.value
+      || props.record
+      || props.item?.bibliographic_record
+      || props.item?.record
+      || props.item?.bibliographicRecord
+      || null);
+    const isPeriodical = computed(() => isPeriodicalRecord(recordData.value));
 
     // Form data
     const formData = ref({
@@ -72,11 +79,7 @@ export default {
     const isSubmitting = ref(false);
 
     const generateCallNumber = (shelfLocation) => {
-      const record = props.record?.value
-        || props.record
-        || props.item?.bibliographic_record
-        || props.item?.record
-        || props.item?.bibliographicRecord;
+      const record = recordData.value;
       if (!record) return '';
       const rules = parseJsonSetting(effectiveSettings.value?.catalog_call_number_rules, []);
       return computeCallNumber({
@@ -236,6 +239,7 @@ export default {
       deweyColors,
       deweyEnabled,
       shelfLocationOptions,
+      isPeriodical,
       handleShelfLocationChange,
       handleSubmit,
       handleCancel,
@@ -283,7 +287,7 @@ export default {
 
               <!-- Call Number -->
               <div class="mb-3">
-                <label class="form-label">{{ t('catalog.call_number') }}</label>
+                <label class="form-label">{{ isPeriodical ? t('periodical.issue_number') : t('catalog.call_number') }}</label>
                 <dewey-picker
                   v-model="formData.call_number"
                   :colors="deweyColors"

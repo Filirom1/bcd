@@ -6,7 +6,7 @@ import { apiClient } from '../../../../src/bcd_web_vue/js/api/client.js';
 import { useAppState } from '../../../../src/bcd_web_vue/js/composables/useAppState.js';
 import { useNotification } from '../../../../src/bcd_web_vue/js/composables/useNotification.js';
 
-function mountInput(props = {}) {
+function mountInput(props = {}, mountOptions = {}) {
     return mount(ItemBarcodeInput, {
         props: {
             recordId: 42,
@@ -20,7 +20,8 @@ function mountInput(props = {}) {
                 DeweyPicker: true,
                 ShelfLocationPicker: true
             }
-        }
+        },
+        ...mountOptions
     });
 }
 
@@ -35,7 +36,10 @@ beforeEach(() => {
     saveSettings({
         catalog_call_number_rules: JSON.stringify([
             { medium_type: 'Book', pattern: '{AUT3}' }
-        ])
+        ]),
+        catalog_shelf_locations: [
+            { label: 'Romans', color: '#c0392b' }
+        ]
     });
 });
 
@@ -60,6 +64,22 @@ describe('ItemBarcodeInput', () => {
             item_id: 'BCD000123'
         }));
         expect(wrapper.emitted('item-created')).toHaveLength(1);
+    });
+
+    it('focuses the barcode input on mount and after a failed scan', async () => {
+        const wrapper = mountInput({}, { attachTo: document.body });
+        await flushPromises();
+
+        const input = wrapper.get('#item-barcode-input').element;
+        expect(document.activeElement).toBe(input);
+
+        vi.mocked(apiClient.post).mockRejectedValueOnce({ code: 'duplicate_item_id' });
+        wrapper.vm.barcode = 'DUPLICATE';
+        await wrapper.vm.createItem();
+        await flushPromises();
+
+        expect(document.activeElement).toBe(input);
+        wrapper.unmount();
     });
 
     it('computes suggested call number based on authors correctly (AUT3)', async () => {
@@ -209,6 +229,57 @@ describe('ItemBarcodeInput', () => {
         await wrapper.vm.createItem();
         expect(postSpy).toHaveBeenCalledWith('/catalog/items', expect.objectContaining({ item_id: 'ISSUE-1', call_number: '42' }));
         expect(wrapper.vm.callNumber).toBe('');
+    });
+
+    it('loads other copies of the notice and lets the librarian edit them', async () => {
+        const existing = {
+            id: 7,
+            item_id: 'OLD-1',
+            shelf_location: 'Romans',
+            call_number: 'R SAI',
+            status: 'available'
+        };
+        const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue([existing]);
+        const wrapper = mountInput();
+        await flushPromises();
+
+        expect(getSpy).toHaveBeenCalledWith(
+            '/catalog/bibliographic/42/items',
+            {},
+            { skipGlobalLoading: true }
+        );
+        expect(wrapper.vm.existingItems).toEqual([existing]);
+        expect(wrapper.find('.copies-list').text()).toContain('OLD-1');
+        expect(wrapper.findComponent({ name: 'CopiesList' }).props('settings')).toEqual(
+            expect.objectContaining({
+                catalog_shelf_locations: [{ label: 'Romans', color: '#c0392b' }]
+            })
+        );
+
+        wrapper.vm.editItem(existing);
+        expect(wrapper.vm.editingItem).toEqual(existing);
+        expect(wrapper.vm.showItemEditModal).toBe(true);
+        wrapper.vm.handleItemSaved({ ...existing, shelf_location: 'Documentaires' });
+        expect(wrapper.vm.existingItems[0].shelf_location).toBe('Documentaires');
+    });
+
+    it('paginates the reusable copy recap', async () => {
+        const existing = Array.from({ length: 26 }, (_, index) => ({
+            id: index + 1,
+            item_id: `OLD-${index + 1}`,
+            status: 'available'
+        }));
+        vi.spyOn(apiClient, 'get').mockResolvedValue(existing);
+        const wrapper = mountInput();
+        await flushPromises();
+
+        expect(wrapper.findAll('.copies-list tbody tr')).toHaveLength(25);
+        const pagination = wrapper.findComponent({ name: 'Pagination' });
+        expect(pagination.exists()).toBe(true);
+        pagination.vm.goToPage(2);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.findAll('.copies-list tbody tr')).toHaveLength(1);
+        expect(wrapper.find('.copies-list tbody tr').text()).toContain('OLD-26');
     });
 
     it('updates and deletes created items with confirmation', async () => {

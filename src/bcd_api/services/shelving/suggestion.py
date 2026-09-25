@@ -38,6 +38,9 @@ MODEL_VERSION = "1.0"
 SGD_EPOCHS = 3
 SGD_LEARNING_RATE = 0.05
 SGD_DECAY = 0.0002
+# Linear scores are not probabilities.  A small score gap means that the
+# model has insufficient discriminating evidence and should abstain.
+MIN_SUGGESTION_MARGIN = 0.1
 
 # stopwordsiso provides curated stop-word lists for many languages.  Merge
 # every available language so imported catalogues are not biased toward French.
@@ -280,6 +283,13 @@ class TrainedModel:
             if key in counts:
                 vector[key] = float(weight)
 
+        # Do not classify from class priors alone.  If none of the input
+        # metadata terms occurred often enough in the training set, the model
+        # has no evidence for a shelf and must let the deterministic caller
+        # fallback apply instead.
+        if not vector:
+            return []
+
         norm = math.sqrt(sum(value * value for value in vector.values())) or 1.0
         scores = list(self.intercepts)
         for key, raw_value in vector.items():
@@ -299,7 +309,11 @@ class TrainedModel:
 
     def suggest(self, fields: Mapping[str, Any]) -> str | None:
         ranked = self.predict(fields)
-        return ranked[0][0] if ranked else None
+        if not ranked:
+            return None
+        if len(ranked) > 1 and ranked[0][1] - ranked[1][1] < MIN_SUGGESTION_MARGIN:
+            return None
+        return ranked[0][0]
 
 
 def _build_model(rows: list[tuple[BibliographicRecord, str]]) -> tuple[dict[str, Any], int]:

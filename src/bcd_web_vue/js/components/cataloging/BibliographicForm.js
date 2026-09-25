@@ -25,6 +25,18 @@ export default defineComponent({
             type: String,
             default: ''
         },
+        originalInput: {
+            type: String,
+            default: ''
+        },
+        inputType: {
+            type: String,
+            default: 'text'
+        },
+        initialTitle: {
+            type: String,
+            default: ''
+        },
         existingRecord: {
             type: Object,
             default: null
@@ -74,7 +86,13 @@ export default defineComponent({
          */
         const normalizeISBN = (isbn) => {
             if (!isbn) return '';
-            return isbn.replace(/^(isbn:|issn:)/, '').replace(/[-\s]/g, '');
+            const value = String(isbn).trim();
+            const isIssn = value.toLowerCase().startsWith('issn:') || /^\d{4}-?\d{3}[\dXx]$/.test(value.replace(/\s/g, ''));
+            const bare = value.replace(/^(isbn:|issn:)/i, '').replace(/[\s-]/g, '');
+            if (isIssn && /^\d{8}$/.test(bare)) {
+                return `${bare.slice(0, 4)}-${bare.slice(4).toUpperCase()}`;
+            }
+            return bare;
         };
 
         // Pre-fill from existing record if provided, otherwise auto-fill from BNF data
@@ -135,14 +153,20 @@ export default defineComponent({
                 formData.illustrators = bnf.illustrators || [];
                 formData.keywords = bnf.keywords || [];
 
-            } else if (props.isbn) {
-                formData.isbn = normalizeISBN(props.isbn);
+            } else {
+                // Preserve supported identifiers for manual entry.  An
+                // unsupported press barcode is shown as a hint only and must
+                // never be written to the ISBN field.
+                formData.isbn = props.inputType === 'unsupported_barcode'
+                    ? '' : normalizeISBN(props.isbn);
+                formData.title = props.initialTitle || '';
             }
         };
 
         // Watchers/Lifecycle
         watch(() => props.existingRecord, prefillForm, { immediate: true });
         watch(() => props.bnfData, prefillForm, { immediate: true });
+        watch(() => [props.isbn, props.originalInput, props.inputType, props.initialTitle], prefillForm);
         onMounted(prefillForm);
 
         /**
@@ -241,6 +265,13 @@ export default defineComponent({
 
     template: `
         <div class="bibliographic-form">
+            <!-- Unsupported input / preserved scan -->
+            <div v-if="!existingRecord && originalInput && inputType === 'unsupported_barcode'" class="alert alert-warning mb-4">
+                <strong>{{ $t('cataloging.unsupported_barcode_title') }}</strong>
+                <div class="small mt-1">{{ $t('cataloging.original_barcode', { barcode: originalInput }) }}</div>
+                <div class="small mt-1">{{ $t('cataloging.original_barcode_not_identifier') }}</div>
+            </div>
+
             <!-- Existing Record Banner -->
             <div v-if="existingRecord" class="alert alert-warning mb-4 d-flex gap-3 align-items-start">
                 <div class="flex-grow-1">

@@ -58,17 +58,21 @@ class BibliographicRecordCreate(BibliographicRecordBase):
     @field_validator("isbn", mode="before")
     @classmethod
     def normalize_isbn(cls, v):
-        """Ensure isbn/issn are stored with their prefix."""
-        if v is None:
-            return v
-        v = str(v).strip()
-        if v.startswith("isbn:") or v.startswith("issn:"):
-            return v
-        # Strip hyphens/spaces to check length
-        digits = v.replace("-", "").replace(" ", "")
-        if len(digits) == 8 or "-" in v and v.count("-") >= 2 and len(digits) < 13:
-            return f"issn:{v}"
-        return f"isbn:{v}"
+        """Keep the historic prefixed storage format for manual identifiers.
+
+        Find-a-notice classification is intentionally stricter, but manual
+        cataloging and old imports may contain provisional identifiers.  Do
+        not reject those values at the schema boundary.
+        """
+        if v is None or str(v).strip() == "":
+            return None
+        value = str(v).strip()
+        if value.lower().startswith(("isbn:", "issn:")):
+            return value
+        compact = value.replace("-", "").replace(" ", "")
+        if len(compact) == 8 or ("-" in value and value.count("-") >= 2 and len(compact) < 13):
+            return f"issn:{value}"
+        return f"isbn:{value}"
 
     @field_validator("dewey_number", mode="before")
     @classmethod
@@ -100,16 +104,21 @@ class BibliographicRecordUpdate(BaseModel):
     @field_validator("isbn", mode="before")
     @classmethod
     def normalize_isbn(cls, v):
-        """Ensure isbn/issn are stored with their prefix."""
-        if v is None:
-            return v
-        v = str(v).strip()
-        if v.startswith("isbn:") or v.startswith("issn:"):
-            return v
-        digits = v.replace("-", "").replace(" ", "")
-        if len(digits) == 8 or "-" in v and v.count("-") >= 2 and len(digits) < 13:
-            return f"issn:{v}"
-        return f"isbn:{v}"
+        """Keep the historic prefixed storage format for manual identifiers.
+
+        Find-a-notice classification is intentionally stricter, but manual
+        cataloging and old imports may contain provisional identifiers.  Do
+        not reject those values at the schema boundary.
+        """
+        if v is None or str(v).strip() == "":
+            return None
+        value = str(v).strip()
+        if value.lower().startswith(("isbn:", "issn:")):
+            return value
+        compact = value.replace("-", "").replace(" ", "")
+        if len(compact) == 8 or ("-" in value and value.count("-") >= 2 and len(compact) < 13):
+            return f"issn:{value}"
+        return f"isbn:{value}"
 
     @field_validator("dewey_number", mode="before")
     @classmethod

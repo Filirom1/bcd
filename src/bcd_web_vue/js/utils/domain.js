@@ -74,7 +74,29 @@ export const IDENTIFIER_TYPES = Object.freeze({
 });
 
 export const isPeriodicalIdentifier = (identifierType) =>
-    identifierType === IDENTIFIER_TYPES.ISSN;
+    String(identifierType || '').toLowerCase() === IDENTIFIER_TYPES.ISSN;
+
+/**
+ * Detect a periodical from a complete bibliographic record.
+ *
+ * Some imported/manual periodicals have no ISSN (or have an identifier stored
+ * without the `issn:` prefix), so checking identifier_type alone is not enough
+ * to decide whether an item's call_number is actually an issue number.
+ */
+export const isPeriodicalRecord = (record) => {
+    if (!record) return false;
+
+    const identifierType = record.identifier_type || record.identifierType;
+    const identifier = record.isbn || record.isbn_value || record.issn || '';
+    if (isPeriodicalIdentifier(identifierType) || /^issn:/i.test(String(identifier))) {
+        return true;
+    }
+
+    const medium = normalizeText(record.medium_type || record.mediumType);
+    return ['periodique', 'periodical', 'magazine', 'journal', 'revue'].some(
+        value => medium === value || medium.startsWith(`${value} /`)
+    );
+};
 
 /**
  * Format authors.

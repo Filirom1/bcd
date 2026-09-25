@@ -55,6 +55,26 @@ def test_train_persists_model_and_predicts_top_one(db_session, tmp_path, monkeyp
     )
 
 
+def test_unknown_metadata_returns_no_model_suggestion(db_session, tmp_path, monkeypatch):
+    for index in range(10):
+        _add_labeled_record(db_session, index, "Albums", "Albums jeunesse")
+        _add_labeled_record(db_session, index, "Romans", "Romans jeunesse")
+    db_session.commit()
+    monkeypatch.setattr(suggestion, "MODEL_DIR", tmp_path / "models")
+
+    suggestion.train(db_session)
+
+    assert suggestion.suggest(
+        {
+            "title": "Wakou",
+            "subtitle": "",
+            "collection": "Wakou",
+            "authors": [],
+        },
+        suggestion.load_current_model(db_session),
+    ) is None
+
+
 def test_train_ignores_shelves_with_fewer_than_ten_notices(db_session, tmp_path, monkeypatch):
     for index in range(9):
         _add_labeled_record(db_session, index, "Albums", "Albums jeunesse")

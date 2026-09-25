@@ -178,6 +178,20 @@ describe('ItemEditForm', () => {
         }
     };
 
+    it('uses the issue number field for periodicals identified by their medium', () => {
+        const wrapper = mount(ItemEditForm, {
+            props: {
+                item,
+                record: { title: 'J-magazine', medium_type: 'Périodique' },
+                show: true
+            },
+            global
+        });
+
+        expect(wrapper.vm.isPeriodical).toBe(true);
+        expect(wrapper.findAll('label')[1].text()).toBe('periodical.issue_number');
+    });
+
     it('validates, saves and closes an item form', async () => {
         const patch = vi.spyOn(apiClient, 'patch').mockResolvedValue({ ...item, condition: 'damaged' });
         const wrapper = mount(ItemEditForm, {

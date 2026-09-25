@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from ...core.deps import get_db
@@ -23,6 +23,7 @@ from ...schemas.bibliographic_record import (
     BibliographicRecordUpdate,
 )
 from ...schemas.common import PaginatedResponse
+from ...schemas.cataloging import ExternalSourceTestRequest, NoticeLookupRequest
 from ...schemas.item import (
     AvailableIDsResponse,
     ItemCreate,
@@ -56,6 +57,81 @@ def get_shelf_locations(db: Session = Depends(get_db)):
     """Returns distinct non-empty shelf_location values, sorted."""
     locations = catalog_service.get_shelf_locations(db)
     return {"locations": locations}
+
+
+@router.get("/notices/search")
+def search_cataloging_notices(
+    q: str = Query(..., min_length=1, max_length=200, description="ISBN, ISSN, barcode, title, or author"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum notice choices"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+    db: Session = Depends(get_db),
+):
+    """Search the local catalog for the Find a notice workflow.
+
+    This endpoint is intentionally database-only.  It classifies the input and
+    tells the client which fixed external route is available, but it never
+    calls BnF, Google Books, or SUDOC.
+    """
+    items, total, classified = catalog_service.search_local_notices(
+        db, q, limit=limit, offset=offset
+    )
+    return {
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "input_type": classified.kind,
+        "normalized_identifier": classified.normalized_identifier,
+        "identifier_type": classified.identifier_type,
+        "derived_from_ean": classified.derived_from_ean,
+        "external_sources": classified.external_sources,
+    }
+
+
+@router.get("/notice-search", include_in_schema=False)
+def search_cataloging_notices_alias(
+    q: str = Query(..., min_length=1, max_length=200),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Short alias for clients that use the design document terminology."""
+    return search_cataloging_notices(q=q, limit=limit, offset=offset, db=db)
+
+
+@router.post("/notices/lookup")
+def lookup_cataloging_notice_source(
+    request: NoticeLookupRequest,
+    db: Session = Depends(get_db),
+):
+    """Call one applicable external source after a local-search recheck."""
+    return catalog_service.lookup_notice_source(db, request.query, request.source)
+
+
+@router.post("/lookup-source", include_in_schema=False)
+def lookup_cataloging_notice_source_alias(
+    source: str = Query(...),
+    query: str = Query(..., min_length=1, max_length=200),
+    db: Session = Depends(get_db),
+):
+    """Query-parameter alias for simple clients and API integrations."""
+    return catalog_service.lookup_notice_source(db, query, source)
+
+
+@router.get("/external-sources")
+def get_external_catalog_sources(db: Session = Depends(get_db)):
+    """Return the fixed external source configuration for cataloging."""
+    return {"sources": catalog_service.source_configuration(db)}
+
+
+@router.post("/external-sources/{source}/test")
+def test_external_catalog_source(
+    source: str,
+    request: Optional[ExternalSourceTestRequest] = Body(default=None),
+    db: Session = Depends(get_db),
+):
+    """Test one configured external source without changing routing settings."""
+    return catalog_service.test_external_source(db, source, request.query if request else None)
 
 
 @router.post("/lookup-isbn")

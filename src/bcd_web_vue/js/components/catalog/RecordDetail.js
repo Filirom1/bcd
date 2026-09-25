@@ -13,13 +13,15 @@ import LoadingSpinner from '../ui/LoadingSpinner.js';
 import AutocompleteInput from '../ui/AutocompleteInput.js';
 import Pagination from '../ui/Pagination.js';
 import ItemEditForm from './ItemEditForm.js';
+import CopiesList from './CopiesList.js';
 import RecordDeleteDialog from './RecordDeleteDialog.js';
 import BibliographicFields from './BibliographicFields.js';
 import { ApiError } from '../../models/error.js';
-import { isPeriodicalIdentifier } from '../../utils/domain.js';
+import { isPeriodicalRecord } from '../../utils/domain.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
+import { getItemStatusBadge, getItemConditionLabel } from '../../utils/itemPresentation.js';
 import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
@@ -34,6 +36,7 @@ export default defineComponent({
         AutocompleteInput,
         Pagination,
         ItemEditForm,
+        CopiesList,
         RecordDeleteDialog,
         BibliographicFields
     },
@@ -199,7 +202,7 @@ export default defineComponent({
                 const rawItems = Array.isArray(itemsData)
                     ? itemsData
                     : (Array.isArray(itemsData?.items) ? itemsData.items : []);
-                if (isPeriodicalIdentifier(record.value?.identifier_type)) {
+                if (isPeriodicalRecord(record.value)) {
                     rawItems.sort((a, b) => {
                         const na = parseInt(a.call_number);
                         const nb = parseInt(b.call_number);
@@ -259,18 +262,9 @@ export default defineComponent({
             }
         };
 
-        const getStatusBadge = (item) => {
-            const statusMap = {
-                'available': { class: 'bg-success', text: t('item.status_available'), icon: 'bi-check-circle' },
-                'on_loan': { class: 'bg-warning', text: t('item.status_on_loan'), icon: 'bi-clock' },
-                'on_hold': { class: 'bg-info', text: t('item.status_on_hold'), icon: 'bi-pause-circle' },
-                'in_repair': { class: 'bg-primary', text: t('item.status_in_repair'), icon: 'bi-tools' },
-                'lost': { class: 'bg-danger', text: t('item.status_lost'), icon: 'bi-question-circle' },
-                'withdrawn': { class: 'bg-dark', text: t('item.status_withdrawn'), icon: 'bi-x-circle' },
-                'overdue': { class: 'bg-danger', text: t('catalog.overdue'), icon: 'bi-exclamation-triangle' }
-            };
-            return statusMap[item.status] || { class: 'bg-secondary', text: item.status, icon: 'bi-dash-circle' };
-        };
+        // Kept as a small compatibility helper for consumers of RecordDetail;
+        // the rendered copy list uses the shared presentation helper directly.
+        const getStatusBadge = (item) => getItemStatusBadge(t, item.status);
 
         const formatDate = (dateStr) => formatCivilDate(dateStr, locale.value);
 
@@ -415,27 +409,11 @@ export default defineComponent({
             editingItem.value = null;
         };
 
-        const getConditionLabel = (condition) => {
-            const conditionMap = {
-                'good': t('item.condition_good'),
-                'damaged': t('item.condition_damaged'),
-                'lost': t('item.status_lost') || t('item.condition_lost'),
-                'withdrawn': t('item.status_withdrawn') || t('item.condition_withdrawn')
-            };
-            return conditionMap[condition] || condition;
-        };
+        // These helpers remain exposed for existing callers/tests while the
+        // shared CopiesList owns the actual copy-row rendering.
+        const getConditionLabel = (condition) => getItemConditionLabel(t, condition);
 
-        const getStatusLabel = (status) => {
-            const statusMap = {
-                'available': t('item.status_available'),
-                'on_loan': t('item.status_on_loan'),
-                'on_hold': t('item.status_on_hold'),
-                'in_repair': t('item.status_in_repair'),
-                'lost': t('item.status_lost'),
-                'withdrawn': t('item.status_withdrawn')
-            };
-            return statusMap[status] || status;
-        };
+        const getStatusLabel = (status) => getItemStatusBadge(t, status).text;
 
         const handleDeleteItem = async (item) => {
             if (!confirm(t('admin.confirm_delete_item', { item_id: item.item_id }) || `Delete item ${item.item_id}?`)) {
@@ -581,7 +559,7 @@ export default defineComponent({
             showItemEditModal,
             editingItem,
             showDeleteDialog,
-            isPeriodicalRecord: computed(() => isPeriodicalIdentifier(record.value?.identifier_type))
+            isPeriodicalRecord: computed(() => isPeriodicalRecord(record.value))
         };
     },
 
@@ -703,112 +681,24 @@ export default defineComponent({
                         </li>
                     </ul>
 
-                    <!-- Items Tab -->
+                    <!-- Items Tab: shared with the cataloging copy workflow so
+                         copy navigation and status presentation stay consistent. -->
                     <div v-if="activeTab === 'items'">
-                        <div v-if="items.length === 0" class="alert alert-info">
-                            <i class="bi bi-info-circle me-2"></i>
-                            {{ t('catalog.no_items') }}
-                        </div>
-
-                        <div v-else class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>{{ t('catalog.item_id') }}</th>
-                                        <th v-if="isPeriodicalRecord">{{ t('periodical.issue_number') }}</th>
-                                        <th>{{ t('catalog.shelf_location_call_number') }}</th>
-                                        <th>{{ t('catalog.status') }}</th>
-                                        <th v-if="!isEditMode">{{ t('catalog.due_date_borrower') }}</th>
-                                        <th v-else>{{ t('catalog.condition') }}</th>
-                                        <th>{{ t('common.actions') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="item in items" :key="item.id">
-                                        <td class="font-monospace">{{ item.item_id }}</td>
-                                        <td v-if="isPeriodicalRecord" class="text-muted">
-                                            {{ item.call_number ? (/^\d+$/.test(item.call_number) ? 'n\u00b0 ' + item.call_number : item.call_number) : '\u2014' }}
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-wrap align-items-center gap-1">
-                                                <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
-                                                <span v-if="!isPeriodicalRecord && item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
-                                                <span v-if="!item.shelf_location && (isPeriodicalRecord || !item.call_number)" class="text-muted">&mdash;</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex flex-wrap gap-1">
-                                                <span :class="['badge', getStatusBadge(item).class]">
-                                                    <i :class="getStatusBadge(item).icon"></i>
-                                                    {{ getStatusBadge(item).text }}
-                                                </span>
-                                                <span v-if="item.condition === 'damaged'" class="badge bg-warning text-dark">
-                                                    <i class="bi bi-exclamation-triangle"></i>
-                                                    {{ t('item.condition_damaged') }}
-                                                </span>
-                                                <span v-if="item.loanable === false" class="badge bg-secondary">
-                                                    <i class="bi bi-lock"></i>
-                                                    {{ t('item.status_not_loanable') || t('catalog.loanable') }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td v-if="!isEditMode">
-                                            <div v-if="item.current_loan">
-                                                <div class="mb-1">
-                                                    {{ formatDate(item.current_loan.due_date) }}
-                                                    <span v-if="item.current_loan.is_overdue" class="badge bg-danger ms-1">
-                                                        <i class="bi bi-exclamation-circle"></i>
-                                                        {{ t('catalog.overdue') }}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <a
-                                                        href="#"
-                                                        @click.prevent="viewBorrower(item.current_loan.borrower_id)"
-                                                        class="link-entity fw-bold"
-                                                    >
-                                                        {{ item.current_loan.borrower_name }}
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <span v-else class="text-muted">—</span>
-                                        </td>
-                                        <td v-else>
-                                            {{ getConditionLabel(item.condition) }}
-                                        </td>
-                                        <td>
-                                            <button
-                                                v-if="!isEditMode && (item.status === 'on_loan' || item.status === 'overdue')"
-                                                class="btn btn-sm btn-outline-primary"
-                                                @click="handleQuickReturn(item.item_id)"
-                                            >
-                                                <i class="bi bi-arrow-return-left"></i>
-                                                {{ t('catalog.quick_return') }}
-                                            </button>
-                                            <div v-else-if="isEditMode" class="d-flex gap-1">
-                                                <button
-                                                  type="button"
-                                                  class="btn btn-sm btn-outline-primary"
-                                                  @click.stop="handleEditItem(item)"
-                                                  :title="t('common.edit')"
-                                                >
-                                                  <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  class="btn btn-sm btn-outline-danger"
-                                                  @click.stop="handleDeleteItem(item)"
-                                                  :title="t('common.delete')"
-                                                >
-                                                  <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                            <span v-else class="text-muted">—</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <copies-list
+                            :items="items"
+                            :settings="settingsValue"
+                            :periodical="isPeriodicalRecord"
+                            :editable="isEditMode"
+                            :allow-delete="isEditMode"
+                            :show-current-loan="!isEditMode"
+                            :show-condition="isEditMode"
+                            :show-quick-return="!isEditMode"
+                            :format-date="formatDate"
+                            @edit="handleEditItem"
+                            @delete="handleDeleteItem"
+                            @quick-return="handleQuickReturn"
+                            @view-borrower="viewBorrower"
+                        />
                     </div>
 
                     <!-- Holds Tab -->

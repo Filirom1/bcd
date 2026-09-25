@@ -46,7 +46,8 @@ export default defineComponent({
                 shortcut: 'O',
                 submenu: [
                     { to: '/settings/general', icon: 'bi-sliders', label: t('settings.tabs.general') },
-                    { to: '/settings/catalog', icon: 'bi-tags', label: t('settings.tabs.catalog') }
+                    { to: '/settings/catalog', icon: 'bi-tags', label: t('settings.tabs.catalog') },
+                    { to: '/settings/external-sources', icon: 'bi-cloud-download', label: t('settings.tabs.external_sources') }
                 ]
             }
         ]);

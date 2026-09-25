@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added notice-first cataloging: librarians can search the local catalog before consulting configured external sources (BnF, Google Books, and SUDOC), then create physical copies from an existing notice.
+- Added configurable external catalog source enablement and request timeouts in the Web UI settings.
+- Added copy recaps during cataloging
+
+### Fixed
+
+- Improved periodical detection from bibliographic metadata and normalized identifier types.
 
 ## [1.4.0]
 

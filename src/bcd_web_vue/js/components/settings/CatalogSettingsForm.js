@@ -8,6 +8,7 @@ const { useI18n } = VueI18n;
 export default defineComponent({
     name: 'CatalogSettingsForm',
 
+
     props: {
         settings: { type: Object, required: true },
         deweyColorsList: { type: Array, required: true },

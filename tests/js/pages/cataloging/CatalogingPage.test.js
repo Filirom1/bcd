@@ -45,9 +45,9 @@ describe('CatalogingPage', () => {
     it('starts at ISBN lookup and moves to the bibliographic form after a successful lookup', () => {
         const wrapper = mountCatalogingPage();
 
-        expect(wrapper.vm.state).toBe('isbn-lookup');
+        expect(wrapper.vm.state).toBe('find-notice');
         expect(wrapper.vm.showBackButton).toBe(false);
-        expect(wrapper.vm.pageTitle).toBe('cataloging.page_title');
+        expect(wrapper.vm.pageTitle).toBe('cataloging.find_notice_title');
 
         wrapper.vm.handleLookupSuccess({ isbn: '9782070612758', title: record.title });
 
@@ -58,7 +58,7 @@ describe('CatalogingPage', () => {
         expect(wrapper.vm.pageTitle).toBe('cataloging.bibliographic_form_title');
     });
 
-    it('keeps the ISBN and opens the form for not-found and manual-entry workflows', () => {
+    it('keeps supported identifiers and opens the form for not-found and manual-entry workflows', () => {
         const wrapper = mountCatalogingPage();
 
         wrapper.vm.handleLookupNotFound('9780000000000');
@@ -72,6 +72,29 @@ describe('CatalogingPage', () => {
         expect(wrapper.vm.isbn).toBe('123456789X');
     });
 
+    it('does not use a title search query as an ISBN', () => {
+        const wrapper = mountCatalogingPage();
+
+        wrapper.vm.handleLookupNotFound({
+            value: 'J-magazine',
+            inputType: 'text',
+            title: 'J-magazine'
+        });
+
+        expect(wrapper.vm.isbn).toBe('');
+        expect(wrapper.vm.initialTitle).toBe('J-magazine');
+
+        wrapper.vm.resetWorkflow();
+        wrapper.vm.handleManualEntry({
+            value: 'Jmagazine',
+            inputType: 'text',
+            title: 'Jmagazine'
+        });
+
+        expect(wrapper.vm.isbn).toBe('');
+        expect(wrapper.vm.initialTitle).toBe('Jmagazine');
+    });
+
     it('normalizes a newly created record and enters item creation', () => {
         const wrapper = mountCatalogingPage();
 
@@ -80,6 +103,7 @@ describe('CatalogingPage', () => {
         expect(wrapper.vm.state).toBe('item-creation');
         expect(wrapper.vm.createdRecord).toEqual({
             id: 42,
+            record_id: 42,
             title: record.title,
             subtitle: record.subtitle,
             medium_type: record.medium_type,
@@ -113,6 +137,16 @@ describe('CatalogingPage', () => {
             collection: null,
             illustrators: []
         });
+    });
+
+    it('places the action to catalog another document in the page header', async () => {
+        const wrapper = mountCatalogingPage();
+        wrapper.vm.handleExistingRecordFound(record);
+        await wrapper.vm.$nextTick();
+
+        const header = wrapper.find('.page-header');
+        expect(header.text()).toContain('cataloging.catalog_another');
+        expect(header.find('button').exists()).toBe(true);
     });
 
     it('loads a record from the route when launched from the catalog', async () => {
@@ -150,14 +184,14 @@ describe('CatalogingPage', () => {
         wrapper.vm.handleManualEntry('123456789X');
         wrapper.vm.handleFormCancel();
 
-        expect(wrapper.vm.state).toBe('isbn-lookup');
+        expect(wrapper.vm.state).toBe('find-notice');
         expect(wrapper.vm.isbn).toBe('');
         expect(wrapper.vm.bnfData).toBe(null);
         expect(wrapper.vm.createdRecord).toBe(null);
 
         wrapper.vm.handleExistingRecordFound(record);
         wrapper.vm.handleItemsDone();
-        expect(wrapper.vm.state).toBe('isbn-lookup');
+        expect(wrapper.vm.state).toBe('find-notice');
         expect(wrapper.vm.createdRecord).toBe(null);
     });
 });

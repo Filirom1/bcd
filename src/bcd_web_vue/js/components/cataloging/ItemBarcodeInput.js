@@ -3,7 +3,7 @@
  * Creates physical items (copies) for a bibliographic record
  */
 
-const { defineComponent, ref, computed, watch, onMounted } = Vue;
+const { defineComponent, ref, computed, watch, onMounted, nextTick } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { useNotification } from '../../composables/useNotification.js';
@@ -12,14 +12,15 @@ import { useAppState } from '../../composables/useAppState.js';
 import DeweyPicker from '../ui/DeweyPicker.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import ItemEditForm from '../catalog/ItemEditForm.js';
+import CopiesList from '../catalog/CopiesList.js';
 import { computeCallNumber, suggestShelfLocation } from '../../utils/callNumber.js';
 import { parseJsonSetting } from '../../utils/domain.js';
-import { isPeriodicalIdentifier } from '../../utils/domain.js';
+import { isPeriodicalRecord } from '../../utils/domain.js';
 
 export default defineComponent({
     name: 'ItemBarcodeInput',
 
-    components: { DeweyPicker, ShelfLocationPicker, ItemEditForm },
+    components: { DeweyPicker, ShelfLocationPicker, ItemEditForm, CopiesList },
 
     props: {
         recordId: {
@@ -85,6 +86,8 @@ export default defineComponent({
         const lastSuggestedCallNumber = ref('');
         const loading = ref(false);
         const createdItems = ref([]);
+        const existingItems = ref([]);
+        const loadingExistingItems = ref(false);
         const showOptional = ref(false);
         const acquisitionDate = ref(new Date().toISOString().slice(0, 10));
         const fundingSource = ref('');
@@ -93,9 +96,10 @@ export default defineComponent({
         const showItemEditModal = ref(false);
         const editingItem = ref(null);
 
-        const isPeriodical = computed(() =>
-            isPeriodicalIdentifier(props.recordIdentifierType)
-        );
+        const isPeriodical = computed(() => isPeriodicalRecord({
+            identifier_type: props.recordIdentifierType,
+            medium_type: props.recordMediumType
+        }));
 
         // Suggested call number based on dynamic settings rules:
         const suggestedCallNumber = computed(() => {
@@ -143,9 +147,24 @@ export default defineComponent({
             lastSuggestedShelfLocation.value = val || '';
         }, { immediate: true });
 
+        // Keep the scanner workflow keyboard-friendly.  The input is disabled
+        // while the request is running, which makes the browser drop focus;
+        // autofocus alone cannot restore it after that happens.
+        const focusNextInput = () => {
+            nextTick(() => {
+                if (loading.value) return;
+                const input = isPeriodical.value
+                    ? callNumberInput.value
+                    : barcodeInput.value;
+                input?.focus();
+            });
+        };
+
         // The model suggestion is asynchronous.  It may replace the static
         // medium-type default, but never overwrites a librarian's edit.
         onMounted(async () => {
+            focusNextInput();
+            await loadExistingItems();
             try {
                 const result = await apiClient.post('/catalog/shelf-suggestion', {
                     title: props.recordTitle,
@@ -164,6 +183,32 @@ export default defineComponent({
                 console.debug('Shelf suggestion unavailable:', error);
             }
         });
+
+        /**
+         * Load copies already attached to this notice.  This is intentionally
+         * kept separate from createdItems: a librarian may edit existing
+         * copies here, but deletion remains limited to copies created in the
+         * current cataloging session.
+         */
+        const loadExistingItems = async () => {
+            loadingExistingItems.value = true;
+            try {
+                const result = await apiClient.get(
+                    `/catalog/bibliographic/${props.recordId}/items`,
+                    {},
+                    { skipGlobalLoading: true }
+                );
+                existingItems.value = Array.isArray(result)
+                    ? result
+                    : (Array.isArray(result?.items) ? result.items : []);
+            } catch (error) {
+                // The copy form remains usable when the recap cannot be loaded.
+                console.error('Error loading existing copies:', error);
+                existingItems.value = [];
+            } finally {
+                loadingExistingItems.value = false;
+            }
+        };
 
         /**
          * Create item with barcode
@@ -186,13 +231,15 @@ export default defineComponent({
                 };
 
                 if (isPeriodical.value) {
-                    const cn = callNumber.value.trim();
-                    if (!cn) {
+                    const issue = callNumber.value.trim();
+                    if (!issue) {
                         showError(t('periodical.required'));
                         loading.value = false;
                         return;
                     }
-                    itemData.call_number = cn;
+                    // The API stores the explicit periodical numbering in the
+                    // existing call_number column for schema compatibility.
+                    itemData.call_number = issue;
                 } else {
                     const cn = callNumber.value.trim();
                     if (cn) itemData.call_number = cn;
@@ -222,15 +269,6 @@ export default defineComponent({
                 barcode.value = '';
                 if (isPeriodical.value) callNumber.value = '';
 
-                // Re-focus input for rapid scanning
-                setTimeout(() => {
-                    if (isPeriodical.value) {
-                        callNumberInput.value?.focus();
-                    } else {
-                        barcodeInput.value?.focus();
-                    }
-                }, 100);
-
             } catch (err) {
                 if (err.code === 'duplicate_item_id') {
                     showError(t('cataloging.error_barcode_exists', {
@@ -241,6 +279,9 @@ export default defineComponent({
                 }
             } finally {
                 loading.value = false;
+                // Restore focus on both success and error so the next scan can
+                // be entered immediately without requiring a mouse click.
+                focusNextInput();
             }
         };
 
@@ -268,10 +309,14 @@ export default defineComponent({
 
         const handleItemSaved = (updatedItem) => {
             const itemId = updatedItem.item_id || editingItem.value?.item_id;
-            const index = createdItems.value.findIndex(item => item.item_id === itemId);
-            if (index !== -1) {
-                createdItems.value[index] = { ...createdItems.value[index], ...updatedItem };
-            }
+            const updateCollection = (collection) => {
+                const index = collection.value.findIndex(item => item.item_id === itemId);
+                if (index !== -1) {
+                    collection.value[index] = { ...collection.value[index], ...updatedItem };
+                }
+            };
+            updateCollection(existingItems);
+            updateCollection(createdItems);
             editingItem.value = null;
         };
 
@@ -294,6 +339,7 @@ export default defineComponent({
             id: props.recordId,
             title: props.recordTitle,
             medium_type: props.recordMediumType,
+            identifier_type: props.recordIdentifierType,
             dewey_number: props.recordDeweyNumber,
             authors: props.recordAuthors,
             collection: props.recordCollection,
@@ -311,11 +357,16 @@ export default defineComponent({
             shelfLocation,
             loading,
             createdItems,
+            existingItems,
+            loadingExistingItems,
             itemCount,
             isPeriodical,
             deweyColors,
             deweyEnabled,
             shelfLocationOptions,
+            // Expose global settings to CopiesList and ItemEditForm so their
+            // shelf-location badges use the configured database colours.
+            settings,
             showOptional,
             acquisitionDate,
             fundingSource,
@@ -329,6 +380,7 @@ export default defineComponent({
             editItem,
             handleItemSaved,
             deleteItem,
+            loadExistingItems,
             record
         };
     },
@@ -493,52 +545,42 @@ export default defineComponent({
                 </div>
             </form>
 
-            <!-- Created Items List -->
+            <!-- Copies already attached to this notice.  The same reusable
+                 list is also used by the record detail page. -->
+            <div v-if="loadingExistingItems" class="text-center text-muted mt-4">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                {{ $t('common.loading') }}
+            </div>
+            <div v-else-if="existingItems.length > 0" class="mt-4">
+                <h6>
+                    {{ $t('cataloging.other_copies') }} ({{ existingItems.length }})
+                </h6>
+                <p class="small text-muted mb-2">{{ $t('cataloging.other_copies_help') }}</p>
+                <copies-list
+                    :items="existingItems"
+                    :settings="settings"
+                    :periodical="isPeriodical"
+                    :editable="true"
+                    :dense="true"
+                    @edit="editItem"
+                />
+            </div>
+
+            <!-- Copies created during this session -->
             <div v-if="createdItems.length > 0" class="mt-4">
                 <h6>
                     {{ $t('cataloging.created_items') }} ({{ itemCount }})
                 </h6>
-                <ul class="list-group">
-                    <li
-                        v-for="item in createdItems"
-                        :key="item.item_id || item.barcode || item.id"
-                        class="list-group-item d-flex justify-content-between align-items-center"
-                    >
-                        <div>
-                            <i class="bi bi-box-seam text-success me-2"></i>
-                            <strong>{{ item.item_id || item.barcode }}</strong>
-                            <span v-if="item.shelf_location" class="ms-2 text-muted small">
-                                <i class="bi bi-geo-alt"></i> {{ item.shelf_location }}
-                            </span>
-                            <span v-if="item.call_number" class="ms-2 text-muted small">
-                                {{ /^\\d+$/.test(item.call_number) ? 'n\u00b0 ' + item.call_number : item.call_number }}
-                            </span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-success">
-                                {{ $t('item.status_' + (item.status || 'available')) }}
-                            </span>
-                            <button
-                                type="button"
-                                class="btn btn-link btn-sm p-0"
-                                :title="$t('admin.edit_item')"
-                                :aria-label="$t('admin.edit_item')"
-                                @click="editItem(item)"
-                            >
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button
-                                type="button"
-                                class="btn btn-link btn-sm p-0 text-danger"
-                                :title="$t('common.delete')"
-                                :aria-label="$t('common.delete')"
-                                @click="deleteItem(item)"
-                            >
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </li>
-                </ul>
+                <copies-list
+                    :items="createdItems"
+                    :settings="settings"
+                    :periodical="isPeriodical"
+                    :editable="true"
+                    :allow-delete="true"
+                    :dense="true"
+                    @edit="editItem"
+                    @delete="deleteItem"
+                />
             </div>
 
             <item-edit-form
@@ -546,21 +588,11 @@ export default defineComponent({
                 :show="showItemEditModal"
                 :item="editingItem"
                 :record="record"
+                :settings="settings"
                 @update:show="showItemEditModal = $event"
                 @saved="handleItemSaved"
             />
 
-            <!-- New Record Button -->
-            <div class="mt-4 d-flex justify-content-end">
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    @click="finish"
-                >
-                    <i class="bi bi-plus-circle me-2"></i>
-                    {{ $t('cataloging.catalog_another') }}
-                </button>
-            </div>
         </div>
     `
 });

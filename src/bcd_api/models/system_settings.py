@@ -70,6 +70,16 @@ class SystemSettings(Base):
     catalog_languages = Column(Text, nullable=True, default="fr, en, es, de, ar")
     catalog_levels = Column(Text, nullable=True, default="CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, Lycée, Adulte")
 
+    # External catalog sources used by the Find a notice workflow.  These are
+    # per-school settings rather than environment-only switches so a librarian
+    # can disable a slow source without editing deployment files.
+    bnf_enabled = Column(Boolean, nullable=False, default=True)
+    bnf_timeout = Column(Integer, nullable=False, default=4)
+    google_books_enabled = Column(Boolean, nullable=False, default=True)
+    google_books_timeout = Column(Integer, nullable=False, default=4)
+    sudoc_enabled = Column(Boolean, nullable=False, default=True)
+    sudoc_timeout = Column(Integer, nullable=False, default=5)
+
     # Dewey classification colors (JSON array of 10 hex strings or null, index = class 0–9)
     dewey_colors_enabled = Column(Boolean, nullable=False, default=True)
     dewey_colors = Column(Text, nullable=True, default='["#000000","#9e6633","#f20000","#ff9813","#ffee00","#409d42","#0fafe9","#98238b","#d3d5d4","#ffffff"]')
@@ -114,6 +124,12 @@ class SystemSettings(Base):
         CheckConstraint(
             "academic_year_start_month >= 1 AND academic_year_start_month <= 12",
             name="check_academic_year_start_month"
+        ),
+        CheckConstraint(
+            "bnf_timeout >= 1 AND bnf_timeout <= 60 AND "
+            "google_books_timeout >= 1 AND google_books_timeout <= 60 AND "
+            "sudoc_timeout >= 1 AND sudoc_timeout <= 60",
+            name="check_external_catalog_timeouts",
         ),
     )
 

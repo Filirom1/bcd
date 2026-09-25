@@ -22,9 +22,17 @@ from .queries import (
     get_available_item_ids,
     get_shelf_locations,
 )
-from .lookup import lookup_isbn, _download_cover
+from .lookup import (
+    lookup_isbn,
+    _download_cover,
+    classify_catalog_input,
+    lookup_notice_source,
+    search_local_notices,
+    source_configuration,
+    test_external_source,
+)
 from .projections import availability_by_record as enrich_bibliographic_records_with_availability
-from ._validation import _ean13_to_issn
+from src.bcd_api.utils.catalog_input import _ean13_to_issn
 from .import_dc import import_dublin_core_csv
 from .export import export_catalog_to_dublin_core_csv
 
@@ -52,6 +60,11 @@ __all__ = [
     "get_shelf_locations",
     "lookup_isbn",
     "_download_cover",
+    "classify_catalog_input",
+    "lookup_notice_source",
+    "search_local_notices",
+    "source_configuration",
+    "test_external_source",
     "enrich_bibliographic_records_with_availability",
     "_ean13_to_issn",
     "import_dublin_core_csv",

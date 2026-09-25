@@ -1,12 +1,12 @@
 /**
  * Cataloging Page Component
- * Workflow: ISBN Lookup → Bibliographic Form → Item Creation
+ * Workflow: Find a notice → Bibliographic Form → Item Creation
  */
 
 const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
 const { useRoute } = VueRouter;
-import ISBNLookup from '../components/cataloging/ISBNLookup.js';
+import FindNotice from '../components/cataloging/FindNotice.js';
 import BibliographicForm from '../components/cataloging/BibliographicForm.js';
 import ItemBarcodeInput from '../components/cataloging/ItemBarcodeInput.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
@@ -16,7 +16,7 @@ export default defineComponent({
     name: 'CatalogingPage',
 
     components: {
-        ISBNLookup,
+        FindNotice,
         BibliographicForm,
         ItemBarcodeInput,
         HelpPanel
@@ -27,53 +27,90 @@ export default defineComponent({
         const route = useRoute();
 
         // Workflow state machine
-        const state = ref('isbn-lookup'); // 'isbn-lookup' | 'bibliographic-form' | 'item-creation'
+        const state = ref('find-notice'); // 'find-notice' | 'bibliographic-form' | 'item-creation'
 
         // Data passed between workflow steps
         const bnfData = ref(null);
         const isbn = ref('');
+        const originalInput = ref('');
+        const inputType = ref('text');
+        const initialTitle = ref('');
         const createdRecord = ref(null);
         const existingRecord = ref(null);
 
         /**
-         * Handle successful ISBN lookup
+         * Only identifiers should be copied into the ISBN/ISSN form field.
+         * Free text is a title/author search query and must not be persisted as
+         * an ISBN (for example, entering "J-magazine" to find a periodical).
+         * The string form is retained for compatibility with older callers.
          */
+        const isSupportedIdentifier = (value, inputType) => {
+            if (inputType === 'unsupported_barcode' || inputType === 'ean977' || !value) return false;
+
+            const compact = String(value).trim().replace(/^(isbn:|issn:)/i, '').replace(/[\s-]/g, '');
+            return /^(?:\d{9}[\dXx]|(?:978|979)\d{10}|\d{7}[\dXx])$/.test(compact);
+        };
+
         const handleLookupSuccess = (data) => {
             bnfData.value = data;
-            isbn.value = data.isbn;
+            isbn.value = data.isbn || '';
+            originalInput.value = data.isbn || originalInput.value;
+            inputType.value = (data.identifier_type || '').toLowerCase() === 'issn'
+                || String(data.isbn || '').toLowerCase().startsWith('issn:') ? 'issn' : 'isbn';
+            initialTitle.value = data.title || '';
             state.value = 'bibliographic-form';
         };
 
         /**
-         * Handle ISBN not found in BNF
+         * Handle a local/external lookup miss.  A title or author query is not
+         * an identifier and should start with an empty ISBN/ISSN field.
          */
-        const handleLookupNotFound = (isbnValue) => {
+        const handleLookupNotFound = (value) => {
+            const input = typeof value === 'string' ? { value } : (value || {});
+            const inputValue = input.value || '';
+            const inputTypeValue = input.inputType || 'text';
             bnfData.value = null;
-            isbn.value = isbnValue;
+            isbn.value = isSupportedIdentifier(inputValue, inputTypeValue) ? inputValue : '';
+            originalInput.value = input.originalInput || inputValue;
+            inputType.value = inputTypeValue;
+            initialTitle.value = input.title || (inputTypeValue === 'text' ? inputValue : '');
             state.value = 'bibliographic-form';
         };
 
         /**
-         * Handle manual entry (no ISBN lookup)
+         * Handle manual entry after a local miss, source timeout, or barcode
+         * that is not an ISBN/ISSN.
          */
-        const handleManualEntry = (isbnValue = '') => {
+        const handleManualEntry = (payload = {}) => {
+            const input = typeof payload === 'string' ? { value: payload } : payload;
+            const inputValue = input.value || '';
+            const inputTypeValue = input.inputType || 'text';
             bnfData.value = null;
-            isbn.value = isbnValue; // Copy ISBN from lookup to form
+            isbn.value = isSupportedIdentifier(inputValue, inputTypeValue) ? inputValue : '';
+            originalInput.value = input.originalInput || inputValue;
+            inputType.value = inputTypeValue;
+            initialTitle.value = input.title || (inputTypeValue === 'text' ? inputValue : '');
             state.value = 'bibliographic-form';
+        };
+
+        const handleNoticeSelected = (record) => {
+            handleExistingRecordFound(record);
         };
 
         /**
          * Handle existing record found (ISBN already exists in database)
          */
         const handleExistingRecordFound = (record) => {
-            // Skip bibliographic form, go directly to item creation
-            // Ensure we use the correct ID field (record_id or id)
+            // Selecting an existing notice skips notice creation and goes
+            // directly to adding a physical copy.
+            const identifierType = record.identifier_type
+                || (String(record.isbn || '').toLowerCase().startsWith('issn:') ? 'issn' : 'isbn');
             createdRecord.value = {
-                id: record.record_id || record.id,
-                title: record.title,
+                ...record,
+                id: record.record_id || record.notice_id || record.id,
                 subtitle: record.subtitle || null,
-                medium_type: record.medium_type,
-                identifier_type: record.identifier_type,
+                medium_type: record.medium_type || (identifierType === 'issn' ? 'Périodique' : 'Livre'),
+                identifier_type: identifierType,
                 dewey_number: record.dewey_number || null,
                 authors: record.authors || [],
                 collection: record.collection || null,
@@ -86,12 +123,14 @@ export default defineComponent({
          * Handle bibliographic record created or updated
          */
         const handleRecordCreated = (record) => {
+            const identifierType = record.identifier_type
+                || (String(record.isbn || '').toLowerCase().startsWith('issn:') ? 'issn' : 'isbn');
             createdRecord.value = {
+                ...record,
                 id: record.record_id || record.id,
-                title: record.title,
                 subtitle: record.subtitle || null,
-                medium_type: record.medium_type,
-                identifier_type: record.identifier_type,
+                medium_type: record.medium_type || (identifierType === 'issn' ? 'Périodique' : 'Livre'),
+                identifier_type: identifierType,
                 dewey_number: record.dewey_number || null,
                 authors: record.authors || [],
                 collection: record.collection || null,
@@ -141,9 +180,12 @@ export default defineComponent({
          * Reset workflow to start
          */
         const resetWorkflow = () => {
-            state.value = 'isbn-lookup';
+            state.value = 'find-notice';
             bnfData.value = null;
             isbn.value = '';
+            originalInput.value = '';
+            inputType.value = 'text';
+            initialTitle.value = '';
             createdRecord.value = null;
             existingRecord.value = null;
         };
@@ -164,8 +206,8 @@ export default defineComponent({
         // Computed
         const pageTitle = computed(() => {
             switch (state.value) {
-                case 'isbn-lookup':
-                    return t('cataloging.page_title');
+                case 'find-notice':
+                    return t('cataloging.find_notice_title');
                 case 'bibliographic-form':
                     return t('cataloging.bibliographic_form_title');
                 case 'item-creation':
@@ -176,13 +218,16 @@ export default defineComponent({
         });
 
         const showBackButton = computed(() => {
-            return state.value !== 'isbn-lookup';
+            return state.value !== 'find-notice';
         });
 
         return {
             state,
             bnfData,
             isbn,
+            originalInput,
+            inputType,
+            initialTitle,
             createdRecord,
             existingRecord,
             pageTitle,
@@ -190,6 +235,7 @@ export default defineComponent({
             handleLookupSuccess,
             handleLookupNotFound,
             handleManualEntry,
+            handleNoticeSelected,
             handleExistingRecordFound,
             handleRecordCreated,
             handleEditRecord,
@@ -219,8 +265,8 @@ export default defineComponent({
                         class="btn btn-outline-secondary"
                         @click="resetWorkflow"
                     >
-                        <i class="bi bi-arrow-left me-2"></i>
-                        {{ $t('cataloging.start_over') }}
+                        <i :class="state === 'item-creation' ? 'bi bi-plus-circle me-2' : 'bi bi-arrow-left me-2'"></i>
+                        {{ state === 'item-creation' ? $t('cataloging.catalog_another') : $t('cataloging.start_over') }}
                     </button>
                     <help-panel section="cataloging" />
                 </div>
@@ -229,13 +275,13 @@ export default defineComponent({
             <!-- Workflow Steps -->
             <div class="card">
                 <div class="card-body">
-                    <!-- Step 1: ISBN Lookup -->
-                    <ISBNLookup
-                        v-if="state === 'isbn-lookup'"
+                    <!-- Step 1: Find a notice -->
+                    <FindNotice
+                        v-if="state === 'find-notice'"
                         @lookup-success="handleLookupSuccess"
                         @lookup-not-found="handleLookupNotFound"
                         @manual-entry="handleManualEntry"
-                        @existing-record-found="handleExistingRecordFound"
+                        @notice-selected="handleNoticeSelected"
                     />
 
                     <!-- Step 2: Bibliographic Form -->
@@ -243,6 +289,9 @@ export default defineComponent({
                         v-if="state === 'bibliographic-form'"
                         :bnf-data="bnfData"
                         :isbn="isbn"
+                        :original-input="originalInput"
+                        :input-type="inputType"
+                        :initial-title="initialTitle"
                         :existing-record="existingRecord"
                         @record-created="handleRecordCreated"
                         @cancel="handleFormCancel"
@@ -274,8 +323,8 @@ export default defineComponent({
                         <button
                             type="button"
                             class="btn"
-                            :class="state === 'isbn-lookup' ? 'btn-primary' : 'btn-outline-secondary'"
-                            :disabled="state === 'isbn-lookup'"
+                            :class="state === 'find-notice' ? 'btn-primary' : 'btn-outline-secondary'"
+                            :disabled="state === 'find-notice'"
                             @click="resetWorkflow"
                         >
                             <i class="bi bi-1-circle me-1"></i>

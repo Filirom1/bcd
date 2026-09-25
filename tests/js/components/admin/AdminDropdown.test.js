@@ -85,7 +85,7 @@ describe('AdminDropdown', () => {
         const wrapper = mountDropdown(0, 'settings', key => key);
         const actions = wrapper.findAll('a.dropdown-item');
 
-        expect(actions).toHaveLength(4);
+        expect(actions).toHaveLength(5);
         expect(wrapper.find('[data-testid="admin-menu-import"]').exists()).toBe(false);
 
         await actions[0].trigger('click');
