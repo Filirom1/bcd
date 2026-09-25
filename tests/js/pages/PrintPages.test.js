@@ -28,6 +28,7 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.restoreAllMocks();
+    localStorage.removeItem('bcd_print_labels_custom_format');
     document.body.innerHTML = '';
 });
 
@@ -134,6 +135,33 @@ describe('PrintItemLabels', () => {
         wrapper.vm.advancedOpen = true;
         await wrapper.vm.printPage();
         expect(print).toHaveBeenCalledTimes(1);
+    });
+
+    it('auto-saves and restores a custom format as the default', async () => {
+        vi.spyOn(apiClient, 'get').mockImplementation(async endpoint => {
+            if (endpoint === '/catalog/items/available-ids') return { ids: ['.I-010'] };
+            return settings;
+        });
+
+        const wrapper = mount(PrintItemLabels);
+        await flushPromises();
+        expect(wrapper.vm.selectedFormatId).toBe('40');
+
+        wrapper.vm.customParams.label.width_mm = 50;
+        wrapper.vm.customParams.layout.cols = 5;
+        await flushPromises();
+
+        const stored = JSON.parse(localStorage.getItem('bcd_print_labels_custom_format'));
+        expect(stored.label.width_mm).toBe(50);
+        expect(stored.layout.cols).toBe(5);
+        expect(wrapper.vm.selectedFormatId).toBe('custom');
+        expect(wrapper.vm.labelFormats.some(format => format.id === 'custom')).toBe(true);
+
+        wrapper.unmount();
+        const restored = mount(PrintItemLabels);
+        await flushPromises();
+        expect(restored.vm.selectedFormatId).toBe('custom');
+        expect(restored.vm.customParams.label.width_mm).toBe(50);
     });
 
     it('passes generation parameters and exposes generation errors', async () => {

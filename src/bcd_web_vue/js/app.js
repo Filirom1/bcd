@@ -8,6 +8,7 @@ const { createI18n } = VueI18n;
 
 import { createAppRouter } from './router.js';
 import { useAppState } from './composables/useAppState.js';
+import { getItem } from './utils/storage.js';
 import { apiClient } from './api/client.js';
 import App from './components/App.js';
 
@@ -37,7 +38,10 @@ export async function initApp() {
         try {
             const settingsData = await loadSettings();
             if (settingsData) {
-                if (typeof localStorage !== 'undefined' && !localStorage.getItem('locale')) {
+                // Check through the BCD storage adapter. The adapter prefixes
+                // keys, so reading raw localStorage('locale') would always
+                // miss the user's persisted language choice.
+                if (getItem('locale') === null) {
                     setLocale(settingsData.language);
                 }
             }

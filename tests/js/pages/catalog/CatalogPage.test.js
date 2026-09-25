@@ -266,7 +266,7 @@ describe('CatalogPage', () => {
     it('exports the catalog, reports export failures, and builds the print route', async () => {
         mockCatalogApi();
         const download = vi.spyOn(apiClient, 'download').mockResolvedValue();
-        const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+        const push = vi.spyOn(globalThis.__testRouter, 'push');
         const wrapper = mountCatalogPage();
         await flushPromises();
 
@@ -286,7 +286,7 @@ describe('CatalogPage', () => {
             expect.objectContaining({ type: 'error', message: 'catalog.export_failed: disk full' })
         );
 
-        wrapper.vm.handlePrintLabels();
-        expect(open).toHaveBeenCalledWith('#/print/catalog/labels', '_blank');
+        await wrapper.vm.handlePrintLabels();
+        expect(push).toHaveBeenCalledWith({ name: 'print-item-labels' });
     });
 });

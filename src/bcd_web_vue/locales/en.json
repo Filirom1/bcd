@@ -1313,6 +1313,10 @@
   "print_labels": {
     "configuration": "Label Configuration",
     "label_format": "Label format",
+    "format_names": {
+      "a4_40_no_margin": "A4 — 40 labels — 4 × 10 — 52.5 × 29.7 mm — no margins",
+      "custom_format": "My custom format"
+    },
     "labels_per_sheet_unit": "labels/sheet",
     "labels_per_sheet_computed": "Labels per sheet",
     "advanced_settings": "Advanced settings",

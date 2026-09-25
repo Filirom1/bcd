@@ -13,6 +13,24 @@
 
 export const LABEL_FORMATS = [
     {
+        // Generic A4 full-bleed grid: 210 / 4 × 297 / 10 mm.
+        // It is commonly described as “A4 — 40 étiquettes — 4 × 10 —
+        // 52,5 × 29,7 mm — sans marge” rather than by a brand/model.
+        id: '40',
+        nameKey: 'a4_40_no_margin',
+        labelsPerSheet: 40,
+        recommended: true,
+        label: { width_mm: 52.5, height_mm: 29.7 },
+        layout: {
+            cols: 4,
+            rows: 10,
+            top_margin_mm: 0.0,
+            left_margin_mm: 0.0,
+            col_gap_mm: 0.0,
+            row_gap_mm: 0.0,
+        },
+    },
+    {
         id: '48',
         labelsPerSheet: 48,
         recommended: false,
@@ -140,5 +158,5 @@ export const LABEL_FORMATS = [
     },
 ];
 
-/** Default format: 21 labels per sheet (63.5 × 38.1 mm), recommended for BCD */
-export const DEFAULT_FORMAT_ID = '21';
+/** Default format: A4, 40 labels in a 4 × 10 grid, without margins. */
+export const DEFAULT_FORMAT_ID = '40';

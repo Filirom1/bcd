@@ -30,9 +30,9 @@ export default defineComponent({
     },
 
     setup() {
-        const { t } = useI18n();
+        const { t, locale } = useI18n();
         const route = useRoute();
-        const { saveSettings: saveGlobalSettings } = useAppState();
+        const { saveSettings: saveGlobalSettings, setLocale } = useAppState();
         const { success } = useNotification();
         const { handleError } = useErrorHandler(t);
         const loading = ref(true);
@@ -88,6 +88,12 @@ export default defineComponent({
                 await apiClient.put('/admin/settings', { updates });
                 originalSettings.value = { ...settings.value };
                 saveGlobalSettings(settings.value);
+                // The setting is also the library default. Apply it to the
+                // current UI immediately instead of waiting for a reload.
+                if (settings.value.language === 'fr' || settings.value.language === 'en') {
+                    locale.value = settings.value.language;
+                    setLocale(settings.value.language);
+                }
                 success(t('settings.save_success'));
             } catch (error) {
                 handleError(error);

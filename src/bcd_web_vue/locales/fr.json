@@ -1314,6 +1314,10 @@
   "print_labels": {
     "configuration": "Configuration des étiquettes",
     "label_format": "Format d'étiquettes",
+    "format_names": {
+      "a4_40_no_margin": "A4 — 40 étiquettes — 4 × 10 — 52,5 × 29,7 mm — sans marge",
+      "custom_format": "Mon format personnalisé"
+    },
     "labels_per_sheet_unit": "étiquettes/feuille",
     "labels_per_sheet_computed": "Étiquettes par feuille",
     "advanced_settings": "Réglages avancés",

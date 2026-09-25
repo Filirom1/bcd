@@ -5,6 +5,31 @@ import { useAppState } from '../composables/useAppState.js';
 import { LABEL_FORMATS, DEFAULT_FORMAT_ID } from '../config/labelFormats.js';
 import { apiClient } from '../api/client.js';
 import { useDebouncedAction } from '../composables/useDebouncedAction.js';
+import { getJSON, setJSON, removeItem } from '../utils/storage.js';
+
+const CUSTOM_FORMAT_ID = 'custom';
+const CUSTOM_FORMAT_STORAGE_KEY = 'print_labels_custom_format';
+
+function isValidFormat(format) {
+    if (!format || !format.label || !format.layout) return false;
+    const numbers = [
+        format.label.width_mm,
+        format.label.height_mm,
+        format.layout.cols,
+        format.layout.rows,
+        format.layout.top_margin_mm,
+        format.layout.left_margin_mm,
+        format.layout.col_gap_mm,
+        format.layout.row_gap_mm,
+    ];
+    return numbers.every(value => Number.isFinite(Number(value)) && Number(value) >= 0)
+        && Number(format.label.width_mm) > 0
+        && Number(format.label.height_mm) > 0
+        && Number.isInteger(Number(format.layout.cols))
+        && Number.isInteger(Number(format.layout.rows))
+        && Number(format.layout.cols) >= 1
+        && Number(format.layout.rows) >= 1;
+}
 
 export default defineComponent({
     name: 'PrintItemLabels',
@@ -13,31 +38,68 @@ export default defineComponent({
         const { t } = useI18n();
         const { renderBarcodes } = useBarcodeRenderer();
         const { settings, loadSettings } = useAppState();
+        const defaultFormat = LABEL_FORMATS.find(f => f.id === DEFAULT_FORMAT_ID);
 
         // --- Generation params ---
         const startId = ref('');
-        const labelCount = ref(21);
+        const labelCount = ref(defaultFormat.layout.cols * defaultFormat.layout.rows);
         const generatedIds = ref([]);
         const loading = ref(false);
         const error = ref(null);
 
         // --- Format state ---
-        const selectedFormatId = ref(DEFAULT_FORMAT_ID);
-        const advancedOpen = ref(false);
-
+        // Custom dimensions are deliberately kept in localStorage: label stock
+        // varies from one school/printer to another and is not an API setting.
         function deepCopyFormat(fmt) {
             return {
-                label: { ...fmt.label },
-                layout: { ...fmt.layout },
+                label: {
+                    width_mm: Number(fmt.label.width_mm),
+                    height_mm: Number(fmt.label.height_mm),
+                },
+                layout: {
+                    cols: Number(fmt.layout.cols),
+                    rows: Number(fmt.layout.rows),
+                    top_margin_mm: Number(fmt.layout.top_margin_mm),
+                    left_margin_mm: Number(fmt.layout.left_margin_mm),
+                    col_gap_mm: Number(fmt.layout.col_gap_mm),
+                    row_gap_mm: Number(fmt.layout.row_gap_mm),
+                },
             };
         }
 
-        const customParams = ref(deepCopyFormat(LABEL_FORMATS.find(f => f.id === DEFAULT_FORMAT_ID)));
+        const storedCustomFormat = getJSON(CUSTOM_FORMAT_STORAGE_KEY);
+        const hasStoredCustomFormat = isValidFormat(storedCustomFormat);
+        const savedCustomFormat = ref(hasStoredCustomFormat ? deepCopyFormat(storedCustomFormat) : null);
+        const selectedFormatId = ref(hasStoredCustomFormat ? CUSTOM_FORMAT_ID : DEFAULT_FORMAT_ID);
+        const advancedOpen = ref(false);
+        const customParams = ref(
+            hasStoredCustomFormat ? deepCopyFormat(storedCustomFormat) : deepCopyFormat(defaultFormat)
+        );
+
+        // A preset selection updates the editor; that update must not overwrite
+        // the user's saved custom format. The next deep-watch notification is
+        // therefore ignored once.
+        let skipCustomPersistence = false;
 
         // --- Computed ---
         const totalCount = computed(() => generatedIds.value.length);
         const libraryName = computed(() => settings.value?.library_name || '');
         const barcodePrefix = computed(() => settings.value?.item_barcode_prefix ?? '');
+
+        const labelFormats = computed(() => {
+            if (!savedCustomFormat.value) return LABEL_FORMATS;
+            return [
+                ...LABEL_FORMATS,
+                {
+                    id: CUSTOM_FORMAT_ID,
+                    nameKey: 'custom_format',
+                    custom: true,
+                    recommended: false,
+                    labelsPerSheet: savedCustomFormat.value.layout.cols * savedCustomFormat.value.layout.rows,
+                    ...deepCopyFormat(savedCustomFormat.value),
+                },
+            ];
+        });
 
         const labelsPerSheet = computed(() =>
             customParams.value.layout.cols * customParams.value.layout.rows
@@ -57,6 +119,9 @@ export default defineComponent({
         const sheetsCount = computed(() => labelSheets.value.length);
 
         const isModified = computed(() => {
+            // A saved custom format has no preset baseline, but still needs to
+            // expose the reset action so it can be forgotten by the user.
+            if (selectedFormatId.value === CUSTOM_FORMAT_ID) return true;
             const preset = LABEL_FORMATS.find(f => f.id === selectedFormatId.value);
             if (!preset) return false;
             return JSON.stringify(customParams.value) !== JSON.stringify(deepCopyFormat(preset));
@@ -90,14 +155,44 @@ export default defineComponent({
 
         // --- Watchers ---
 
-        // When user picks a different preset, reset custom params and fill one sheet by default
+        // When user picks a different preset, reset custom params and fill one sheet by default.
         watch(selectedFormatId, (newId) => {
+            if (newId === CUSTOM_FORMAT_ID) {
+                if (savedCustomFormat.value && JSON.stringify(customParams.value) !== JSON.stringify(savedCustomFormat.value)) {
+                    skipCustomPersistence = true;
+                    customParams.value = deepCopyFormat(savedCustomFormat.value);
+                }
+                if (savedCustomFormat.value) {
+                    labelCount.value = savedCustomFormat.value.layout.cols * savedCustomFormat.value.layout.rows;
+                }
+                return;
+            }
+
             const preset = LABEL_FORMATS.find(f => f.id === newId);
             if (preset) {
+                skipCustomPersistence = true;
                 customParams.value = deepCopyFormat(preset);
                 labelCount.value = preset.layout.cols * preset.layout.rows;
             }
         });
+
+        // A custom format is saved as soon as the user changes it. Once a
+        // custom value has been used, it becomes the selected default on the
+        // next visit and remains available in the format list.
+        watch(customParams, (newParams) => {
+            if (skipCustomPersistence) {
+                skipCustomPersistence = false;
+                return;
+            }
+            if (!isValidFormat(newParams)) return;
+
+            const snapshot = deepCopyFormat(newParams);
+            savedCustomFormat.value = snapshot;
+            setJSON(CUSTOM_FORMAT_STORAGE_KEY, snapshot);
+            if (selectedFormatId.value !== CUSTOM_FORMAT_ID) {
+                selectedFormatId.value = CUSTOM_FORMAT_ID;
+            }
+        }, { deep: true });
 
         // Auto-regenerate when count or starting ID changes (debounced)
         const regenDelay = ref(400);
@@ -154,8 +249,18 @@ export default defineComponent({
         };
 
         const resetToPreset = () => {
-            const preset = LABEL_FORMATS.find(f => f.id === selectedFormatId.value);
-            if (preset) customParams.value = deepCopyFormat(preset);
+            // Resetting also forgets the persisted custom format. Otherwise it
+            // would unexpectedly come back as the default on the next visit.
+            if (selectedFormatId.value === CUSTOM_FORMAT_ID) {
+                removeItem(CUSTOM_FORMAT_STORAGE_KEY);
+                savedCustomFormat.value = null;
+                selectedFormatId.value = DEFAULT_FORMAT_ID;
+            }
+
+            const preset = LABEL_FORMATS.find(f => f.id === selectedFormatId.value) || defaultFormat;
+            skipCustomPersistence = true;
+            customParams.value = deepCopyFormat(preset);
+            labelCount.value = preset.layout.cols * preset.layout.rows;
         };
 
         const fillOneSheet = () => {
@@ -171,9 +276,16 @@ export default defineComponent({
             return w + '\u00a0\u00d7\u00a0' + h + '\u00a0mm';
         };
 
+        const formatOptionLabel = (fmt) => {
+            const label = fmt.nameKey
+                ? t('print_labels.format_names.' + fmt.nameKey)
+                : `${fmt.labelsPerSheet} ${t('print_labels.labels_per_sheet_unit')} — ${formatDims(fmt)}`;
+            return label + (fmt.recommended ? ' ★' : '');
+        };
+
         return {
             t,
-            labelFormats: LABEL_FORMATS,
+            labelFormats,
             startId,
             labelCount,
             generatedIds,
@@ -200,6 +312,7 @@ export default defineComponent({
             fillOneSheet,
             printPage,
             formatDims,
+            formatOptionLabel,
         };
     },
 
@@ -235,9 +348,7 @@ export default defineComponent({
                         </label>
                         <select class="form-select" v-model="selectedFormatId">
                             <option v-for="fmt in labelFormats" :key="fmt.id" :value="fmt.id">
-                                {{ fmt.labelsPerSheet }}
-                                {{ t('print_labels.labels_per_sheet_unit') }}
-                                \u2014 {{ formatDims(fmt) }}{{ fmt.recommended ? ' \u2605' : '' }}
+                                {{ formatOptionLabel(fmt) }}
                             </option>
                         </select>
                     </div>

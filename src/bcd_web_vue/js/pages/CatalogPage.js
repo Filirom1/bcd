@@ -589,9 +589,10 @@ export default defineComponent({
             }
         };
 
-        // Handle print item labels (from admin dropdown)
+        // Handle print item labels (from admin dropdown). Keep the workflow in
+        // the current tab; browser back returns to the catalog.
         const handlePrintLabels = () => {
-            window.open('#/print/catalog/labels', '_blank');
+            router.push({ name: 'print-item-labels' });
         };
 
         useAdminShortcuts({ N: () => { window.location.hash = '/cataloging'; } });
