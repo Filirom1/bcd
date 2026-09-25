@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added catalog filters for copy status, condition, loanability, acquisition date, and publication year.
 - Added notice-first cataloging: librarians can search the local catalog before consulting configured external sources (BnF, Google Books, and SUDOC), then create physical copies from an existing notice.
 - Added configurable external catalog source enablement and request timeouts in the Web UI settings.
 - Added copy recaps during cataloging

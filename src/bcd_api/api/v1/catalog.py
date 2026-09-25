@@ -4,7 +4,7 @@ Handles bibliographic records and items management.
 """
 
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Response, UploadFile, status
@@ -225,6 +225,13 @@ def search_bibliographic_records(
     borrowed_only: Optional[bool] = Query(None, description="Filter to borrowed items only"),
     has_holds: Optional[bool] = Query(None, description="Filter to records with active holds"),
     shelf_location: Optional[str] = Query(None, description="Filter by shelf location"),
+    status: Optional[str] = Query(None, description="Filter by physical copy status"),
+    condition: Optional[str] = Query(None, description="Filter by physical copy condition"),
+    loanable: Optional[bool] = Query(None, description="Filter by whether a physical copy is loanable"),
+    acquired_before: Optional[date] = Query(None, description="Copies acquired before this date"),
+    acquired_after: Optional[date] = Query(None, description="Copies acquired on or after this date"),
+    publication_year_min: Optional[int] = Query(None, description="Minimum publication year"),
+    publication_year_max: Optional[int] = Query(None, description="Maximum publication year"),
     limit: int = Query(50, ge=1, le=500, description="Maximum records per page"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     include_items: bool = Query(False, description="Include physical items for each bibliographic record"),
@@ -236,6 +243,8 @@ def search_bibliographic_records(
     **Search capabilities:**
     - General search (q): Searches in title and authors
     - Specific filters: title, author, ISBN, language, audience, medium
+    - Copy filters: status, condition, loanable, acquisition date range
+    - Publication filters: publication year range
     - Pagination: limit (max 100) and offset
     - Availability filter: available_only shows only items with available copies
     - Borrowed filter: borrowed_only shows only items with at least one copy borrowed
@@ -259,6 +268,13 @@ def search_bibliographic_records(
         borrowed_only=borrowed_only,
         has_holds=has_holds,
         shelf_location=shelf_location,
+        status=status,
+        condition=condition,
+        loanable=loanable,
+        acquired_before=acquired_before,
+        acquired_after=acquired_after,
+        publication_year_min=publication_year_min,
+        publication_year_max=publication_year_max,
         limit=limit,
         offset=offset,
     )

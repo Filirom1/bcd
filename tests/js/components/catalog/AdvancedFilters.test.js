@@ -12,7 +12,11 @@ const ColumnSelectorStub = { template: '<div />' };
 function mountFilters() {
     return mount(AdvancedFilters, {
         props: {
-            filters: { availability: 'all', level: '', language: '', medium_type: '', shelf_location: '' },
+            filters: {
+                availability: 'all', level: '', language: '', medium_type: '', shelf_location: '',
+                status: '', condition: '', loanable: '', acquired_after: '', acquired_before: '',
+                publication_year_min: '', publication_year_max: ''
+            },
             settings: {
                 catalog_levels: 'CP, CE1, CE2',
                 catalog_languages: 'fr, en',
@@ -44,8 +48,16 @@ describe('AdvancedFilters', () => {
         wrapper.vm.clearFilters();
 
         expect(wrapper.emitted('update:filters')).toEqual([
-            [{ availability: 'available', level: '', language: '', medium_type: '', shelf_location: '' }],
-            [{ availability: 'all', level: '', language: '', medium_type: '', shelf_location: '' }]
+            [{
+                availability: 'available', level: '', language: '', medium_type: '', shelf_location: '',
+                status: '', condition: '', loanable: '', acquired_after: '', acquired_before: '',
+                publication_year_min: '', publication_year_max: ''
+            }],
+            [{
+                availability: 'all', level: '', language: '', medium_type: '', shelf_location: '',
+                status: '', condition: '', loanable: '', acquired_after: '', acquired_before: '',
+                publication_year_min: '', publication_year_max: ''
+            }]
         ]);
         expect(wrapper.emitted('filter')).toHaveLength(2);
     });

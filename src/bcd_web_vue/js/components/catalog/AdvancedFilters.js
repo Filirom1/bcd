@@ -53,6 +53,25 @@ export default defineComponent({
             { value: 'reserved', label: t('catalog.reserved_only') }
         ];
 
+        const statusOptions = [
+            { value: 'available', label: t('item.status_available') },
+            { value: 'on_loan', label: t('item.status_on_loan') },
+            { value: 'on_hold', label: t('item.status_on_hold') },
+            { value: 'in_repair', label: t('item.status_in_repair') },
+            { value: 'lost', label: t('item.status_lost') },
+            { value: 'withdrawn', label: t('item.status_withdrawn') }
+        ];
+
+        const conditionOptions = [
+            { value: 'good', label: t('item.condition_good') },
+            { value: 'damaged', label: t('item.condition_damaged') }
+        ];
+
+        const loanableOptions = [
+            { value: 'true', label: t('catalog.loanable_yes') },
+            { value: 'false', label: t('catalog.loanable_no') }
+        ];
+
         const locationOptions = computed(() =>
             props.shelfLocations.map(loc => ({ value: loc, label: loc }))
         );
@@ -73,7 +92,14 @@ export default defineComponent({
                 level: '',
                 language: '',
                 medium_type: '',
-                shelf_location: ''
+                shelf_location: '',
+                status: '',
+                condition: '',
+                loanable: '',
+                acquired_after: '',
+                acquired_before: '',
+                publication_year_min: '',
+                publication_year_max: ''
             };
             emit('update:filters', clearedFilters);
             emit('filter', clearedFilters);
@@ -86,6 +112,9 @@ export default defineComponent({
         return {
             showAdvanced,
             availabilityOptions,
+            statusOptions,
+            conditionOptions,
+            loanableOptions,
             locationOptions,
             levelSuggestions,
             languageSuggestions,
@@ -164,6 +193,39 @@ export default defineComponent({
 
                 <!-- Advanced Filters Section -->
                 <div v-if="showAdvanced" class="row g-3 mt-2">
+                    <!-- Copy status -->
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t('catalog.item_status') }}</label>
+                        <filter-select
+                            :model-value="filters.status"
+                            :options="statusOptions"
+                            :placeholder="t('catalog.all_items')"
+                            @update:model-value="updateFilter('status', $event)"
+                        />
+                    </div>
+
+                    <!-- Copy condition -->
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t('catalog.item_condition') }}</label>
+                        <filter-select
+                            :model-value="filters.condition"
+                            :options="conditionOptions"
+                            :placeholder="t('catalog.all_items')"
+                            @update:model-value="updateFilter('condition', $event)"
+                        />
+                    </div>
+
+                    <!-- Loanability -->
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t('catalog.loanable') }}</label>
+                        <filter-select
+                            :model-value="filters.loanable"
+                            :options="loanableOptions"
+                            :placeholder="t('catalog.all_items')"
+                            @update:model-value="updateFilter('loanable', $event)"
+                        />
+                    </div>
+
                     <!-- Medium Type -->
                     <div class="col-md-3">
                         <label class="form-label">{{ t('catalog.medium_type') || 'Support' }}</label>
@@ -210,6 +272,48 @@ export default defineComponent({
                         <datalist id="filter-language-suggestions">
                             <option v-for="s in languageSuggestions" :key="s" :value="s" />
                         </datalist>
+                    </div>
+
+                    <!-- Acquisition dates -->
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t('catalog.acquired_after') }}</label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            :value="filters.acquired_after"
+                            @input="updateFilter('acquired_after', $event.target.value)"
+                        />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t('catalog.acquired_before') }}</label>
+                        <input
+                            type="date"
+                            class="form-control"
+                            :value="filters.acquired_before"
+                            @input="updateFilter('acquired_before', $event.target.value)"
+                        />
+                    </div>
+
+                    <!-- Publication years -->
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t('catalog.publication_year_min') }}</label>
+                        <input
+                            type="number"
+                            class="form-control"
+                            min="0"
+                            :value="filters.publication_year_min"
+                            @input="updateFilter('publication_year_min', $event.target.value)"
+                        />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ t('catalog.publication_year_max') }}</label>
+                        <input
+                            type="number"
+                            class="form-control"
+                            min="0"
+                            :value="filters.publication_year_max"
+                            @input="updateFilter('publication_year_max', $event.target.value)"
+                        />
                     </div>
 
                 </div>

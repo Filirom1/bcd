@@ -56,7 +56,7 @@ BEST PRACTICES DEMONSTRATED:
     - Validate error details provide debugging information
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -623,6 +623,88 @@ class TestBibliographicRecordSearch:
         # Assert - Should only match Le Petit Prince
         assert total == 1
         assert results[0].title == "Le Petit Prince"
+
+
+    def test_search_by_copy_filters_and_publication_year_range(self, db_session):
+        """Search notices by copy metadata and publication year without duplicates."""
+        matching = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(
+                title="Matching title", isbn="991", publication_year=2020
+            ),
+            isbn_lookup=False,
+        )
+        outside_range = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(
+                title="Outside range", isbn="992", publication_year=2010
+            ),
+            isbn_lookup=False,
+        )
+
+        for item_id, record_id, loanable in (
+            ("MATCH1", matching.id, False),
+            ("MATCH2", matching.id, True),
+            ("OUTSIDE", outside_range.id, False),
+        ):
+            catalog_service.create_item(
+                db_session,
+                ItemCreate(
+                    item_id=item_id,
+                    bibliographic_record_id=record_id,
+                    status="in_repair" if item_id == "MATCH1" else "available",
+                    condition="damaged" if item_id == "MATCH1" else "good",
+                    loanable=loanable,
+                    acquisition_date=date(2021, 6, 1),
+                ),
+            )
+
+        results, total = catalog_service.search_bibliographic_records(
+            db_session,
+            status="in_repair",
+            condition="damaged",
+            loanable=False,
+            acquired_after=date(2021, 1, 1),
+            acquired_before=date(2022, 1, 1),
+            publication_year_min=2015,
+            publication_year_max=2025,
+        )
+
+        assert total == 1
+        assert [record.id for record in results] == [matching.id]
+
+    def test_search_by_copy_filter_requires_matching_copy(self, db_session):
+        """A notice is included when at least one of its copies matches."""
+        record = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Mixed copies", isbn="993"),
+            isbn_lookup=False,
+        )
+        catalog_service.create_item(
+            db_session,
+            ItemCreate(
+                item_id="MIXED1",
+                bibliographic_record_id=record.id,
+                status="available",
+                acquisition_date=date(2020, 1, 1),
+            ),
+        )
+        catalog_service.create_item(
+            db_session,
+            ItemCreate(
+                item_id="MIXED2",
+                bibliographic_record_id=record.id,
+                status="lost",
+                acquisition_date=date(2020, 1, 1),
+            ),
+        )
+
+        results, total = catalog_service.search_bibliographic_records(
+            db_session, status="lost"
+        )
+
+        assert total == 1
+        assert results[0].id == record.id
 
 
 class TestItemManagement:

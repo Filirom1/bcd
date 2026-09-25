@@ -43,6 +43,13 @@ def search_bibliographic_records(
     borrowed_only: Optional[bool] = None,
     has_holds: Optional[bool] = None,
     shelf_location: Optional[str] = None,
+    status: Optional[str] = None,
+    condition: Optional[str] = None,
+    loanable: Optional[bool] = None,
+    acquired_before: Optional[date] = None,
+    acquired_after: Optional[date] = None,
+    publication_year_min: Optional[int] = None,
+    publication_year_max: Optional[int] = None,
     limit: int = 50,
     offset: int = 0,
 ) -> Tuple[List[BibliographicRecord], int]:
@@ -138,16 +145,40 @@ def search_bibliographic_records(
             )
         )
 
+    # Item-level filters apply to notices having at least one matching copy.
+    # EXISTS avoids duplicate bibliographic records when a title has several copies.
+    item_filters = []
+    if status:
+        item_filters.append(Item.status == status)
+    if condition:
+        item_filters.append(Item.condition == condition)
+    if loanable is not None:
+        item_filters.append(Item.loanable == loanable)
+    if acquired_before:
+        item_filters.append(Item.acquisition_date.is_not(None))
+        item_filters.append(Item.acquisition_date < acquired_before)
+    if acquired_after:
+        item_filters.append(Item.acquisition_date.is_not(None))
+        item_filters.append(Item.acquisition_date >= acquired_after)
+
     if shelf_location:
+        item_filters.append(Item.shelf_location == shelf_location)
+
+    if item_filters:
         from sqlalchemy import exists
         query = query.filter(
             exists().where(
                 and_(
                     Item.bibliographic_record_id == BibliographicRecord.id,
-                    Item.shelf_location == shelf_location
+                    *item_filters,
                 )
             )
         )
+
+    if publication_year_min is not None:
+        query = query.filter(BibliographicRecord.publication_year >= publication_year_min)
+    if publication_year_max is not None:
+        query = query.filter(BibliographicRecord.publication_year <= publication_year_max)
 
     total = query.count()
     limit = min(limit, 100)

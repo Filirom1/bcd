@@ -94,7 +94,14 @@ export default defineComponent({
             level: '',
             language: '',
             medium_type: '',
-            shelf_location: ''
+            shelf_location: '',
+            status: '',
+            condition: '',
+            loanable: '',
+            acquired_after: '',
+            acquired_before: '',
+            publication_year_min: '',
+            publication_year_max: ''
         });
 
         // Shelf locations loaded from API for the filter dropdown
@@ -162,6 +169,27 @@ export default defineComponent({
             if (route.query.shelf_location) {
                 filters.shelf_location = route.query.shelf_location;
             }
+            if (route.query.status) {
+                filters.status = route.query.status;
+            }
+            if (route.query.condition) {
+                filters.condition = route.query.condition;
+            }
+            if (route.query.loanable) {
+                filters.loanable = route.query.loanable;
+            }
+            if (route.query.acquired_after) {
+                filters.acquired_after = route.query.acquired_after;
+            }
+            if (route.query.acquired_before) {
+                filters.acquired_before = route.query.acquired_before;
+            }
+            if (route.query.publication_year_min) {
+                filters.publication_year_min = route.query.publication_year_min;
+            }
+            if (route.query.publication_year_max) {
+                filters.publication_year_max = route.query.publication_year_max;
+            }
 
             // Load shelf locations for the filter dropdown
             apiClient.get('/catalog/locations').then(data => {
@@ -194,6 +222,30 @@ export default defineComponent({
             }
             if (filters.medium_type) {
                 query.medium_type = filters.medium_type;
+            }
+            if (filters.shelf_location) {
+                query.shelf_location = filters.shelf_location;
+            }
+            if (filters.status) {
+                query.status = filters.status;
+            }
+            if (filters.condition) {
+                query.condition = filters.condition;
+            }
+            if (filters.loanable) {
+                query.loanable = filters.loanable;
+            }
+            if (filters.acquired_after) {
+                query.acquired_after = filters.acquired_after;
+            }
+            if (filters.acquired_before) {
+                query.acquired_before = filters.acquired_before;
+            }
+            if (filters.publication_year_min) {
+                query.publication_year_min = filters.publication_year_min;
+            }
+            if (filters.publication_year_max) {
+                query.publication_year_max = filters.publication_year_max;
             }
 
             router.push({ query }).catch(() => {
@@ -243,6 +295,27 @@ export default defineComponent({
                 }
                 if (filters.shelf_location) {
                     params.shelf_location = filters.shelf_location;
+                }
+                if (filters.status) {
+                    params.status = filters.status;
+                }
+                if (filters.condition) {
+                    params.condition = filters.condition;
+                }
+                if (filters.loanable) {
+                    params.loanable = filters.loanable === 'true';
+                }
+                if (filters.acquired_after) {
+                    params.acquired_after = filters.acquired_after;
+                }
+                if (filters.acquired_before) {
+                    params.acquired_before = filters.acquired_before;
+                }
+                if (filters.publication_year_min) {
+                    params.publication_year_min = Number(filters.publication_year_min);
+                }
+                if (filters.publication_year_max) {
+                    params.publication_year_max = Number(filters.publication_year_max);
                 }
 
                 const data = await apiClient.get('/catalog/bibliographic/search', params);
