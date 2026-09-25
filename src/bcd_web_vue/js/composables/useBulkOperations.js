@@ -189,6 +189,45 @@ export function useBulkOperations(resourceType) {
     };
 
     /**
+     * Merge catalog records into a target record
+     * @param {Array<number>} sourceIds - IDs of records to merge
+     * @param {number} targetId - ID of the record to keep
+     * @param {Array<{item_id: number, shelf_location: string|null, call_number: string|null}>} itemUpdates - Values for each physical copy
+     * @returns {Promise<any>} Operation result
+     */
+    const mergeRecords = async (sourceIds, targetId, itemUpdates = []) => {
+        loading.value = true;
+        error.value = null;
+        showProgress.value = shouldShowProgress(sourceIds.length);
+        progress.value = 0;
+
+        try {
+            /** @type {{source_ids: number[], target_id: number, item_updates?: Array<Object>}} */
+            const payload = {
+                source_ids: sourceIds,
+                target_id: targetId
+            };
+            if (itemUpdates.length) {
+                payload.item_updates = itemUpdates;
+            }
+
+            const result = await apiClient.post('/admin/catalog/merge', payload);
+
+            progress.value = 100;
+            return result;
+        } catch (err) {
+            error.value = /** @type {any} */ (err).message;
+            throw err;
+        } finally {
+            loading.value = false;
+            setTimeout(() => {
+                showProgress.value = false;
+                progress.value = 0;
+            }, 500);
+        }
+    };
+
+    /**
      * Update single record
      * @param {number} recordId - Record ID
      * @param {Partial<BibliographicRecord>} data - Update data
@@ -240,6 +279,7 @@ export function useBulkOperations(resourceType) {
         // Catalog operations
         bulkEditRecords,
         bulkDeleteRecords,
+        mergeRecords,
         updateRecord,
         updateItem
     };

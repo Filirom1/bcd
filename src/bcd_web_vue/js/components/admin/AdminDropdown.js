@@ -13,6 +13,7 @@
  * - export: User clicked Export menu item
  * - bulk-edit: User clicked Bulk Edit menu item (enabled when selectedCount >= 1)
  * - edit-selected: User clicked Edit Selected menu item (enabled when selectedCount === 1)
+ * - merge-records: User clicked Merge Records menu item (enabled when selectedCount >= 2)
  */
 
 const { defineComponent, computed } = Vue;
@@ -34,7 +35,7 @@ export default defineComponent({
         }
     },
 
-    emits: ['import', 'export', 'bulk-edit', 'edit-selected', 'print-reference', 'print-cards', 'print-labels', 'cleanup-orphans', 'settings-section'],
+    emits: ['import', 'export', 'bulk-edit', 'edit-selected', 'merge-records', 'print-reference', 'print-cards', 'print-labels', 'cleanup-orphans', 'settings-section'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
@@ -42,6 +43,7 @@ export default defineComponent({
         // Conditional enabling logic
         const isBulkEditEnabled = computed(() => props.selectedCount >= 2);
         const isEditSelectedEnabled = computed(() => props.selectedCount === 1);
+        const isMergeRecordsEnabled = computed(() => props.page === 'catalog' && props.selectedCount >= 2);
 
         // Import/Export labels based on page context
         const importLabel = computed(() => {
@@ -85,6 +87,12 @@ export default defineComponent({
             }
         };
 
+        const handleMergeRecords = () => {
+            if (isMergeRecordsEnabled.value) {
+                emit('merge-records');
+            }
+        };
+
         const handleSettingsSection = (section) => {
             emit('settings-section', section);
         };
@@ -110,6 +118,7 @@ export default defineComponent({
             X: handleExport,
             E: handleEditSelected,
             M: handleBulkEdit,
+            F: handleMergeRecords,
             P: handlePrint,
             K: handlePrintCards,
         });
@@ -120,10 +129,12 @@ export default defineComponent({
             exportLabel,
             isBulkEditEnabled,
             isEditSelectedEnabled,
+            isMergeRecordsEnabled,
             handleImport,
             handleExport,
             handleBulkEdit,
             handleEditSelected,
+            handleMergeRecords,
             handleSettingsSection,
             altHeld
         };
@@ -217,6 +228,25 @@ export default defineComponent({
                                 </span>
                             </span>
                             <kbd v-if="altHeld" class="admin-shortcut ms-2">M</kbd>
+                        </a>
+                    </li>
+
+                    <li v-if="page === 'catalog'">
+                        <a
+                            class="dropdown-item d-flex align-items-center"
+                            :class="{ 'disabled': !isMergeRecordsEnabled }"
+                            href="#"
+                            data-testid="admin-menu-merge-records"
+                            @click.prevent="handleMergeRecords"
+                        >
+                            <i class="bi bi-intersect me-2"></i>
+                            <span class="flex-grow-1">
+                                {{ t('admin.merge_records') }}
+                                <span v-if="!isMergeRecordsEnabled" class="text-muted small">
+                                    ({{ t('admin.select_at_least_two') }})
+                                </span>
+                            </span>
+                            <kbd v-if="altHeld" class="admin-shortcut ms-2">F</kbd>
                         </a>
                     </li>
 

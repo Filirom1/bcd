@@ -25,6 +25,7 @@ import { useGlobalModal } from '../composables/useGlobalModal.js';
 import AdminDropdown from '../components/admin/AdminDropdown.js';
 import Pagination from '../components/ui/Pagination.js';
 import BulkEditModal from '../components/catalog/BulkEditModal.js';
+import MergeRecordsModal from '../components/catalog/MergeRecordsModal.js';
 import RecordDetail from '../components/catalog/RecordDetail.js';
 import ProgressIndicator from '../components/admin/ProgressIndicator.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
@@ -40,6 +41,7 @@ export default defineComponent({
         AdminDropdown,
         Pagination,
         BulkEditModal,
+        MergeRecordsModal,
         RecordDetail,
         ProgressIndicator,
         HelpPanel
@@ -82,6 +84,7 @@ export default defineComponent({
             showProgress: bulkShowProgress,
             bulkEditRecords,
             bulkDeleteRecords,
+            mergeRecords,
             updateRecord
         } = useBulkOperations('catalog');
 
@@ -366,6 +369,10 @@ export default defineComponent({
          * Handle page change
          */
         const handlePageChange = (page) => {
+            // Selection belongs to the current result page. Do not carry
+            // selected records into another page, where they are no longer
+            // visible and cannot be reviewed before a bulk operation.
+            clearSelection();
             goToPage(page);
             performSearch();
         };
@@ -374,6 +381,9 @@ export default defineComponent({
          * Handle page size change
          */
         const handlePageSizeChange = (size) => {
+            // Changing the page size also changes the visible result set and
+            // resets pagination to page 1, so discard the current selection.
+            clearSelection();
             setPageSize(size);
             performSearch(true); // Reset to page 1
         };
@@ -403,6 +413,7 @@ export default defineComponent({
 
         // Bulk edit modal state
         const showBulkEditModal = ref(false);
+        const showMergeRecordsModal = ref(false);
         const selectedRecords = computed(() => {
             return results.value.filter(r => selectedIds.value.has(r.id));
         });
@@ -420,6 +431,36 @@ export default defineComponent({
                 return;
             }
             showBulkEditModal.value = true;
+        };
+
+        const handleMergeRecords = () => {
+            if (selectedCount.value < 2) {
+                showError(t('admin.select_at_least_two'));
+                return;
+            }
+            showMergeRecordsModal.value = true;
+        };
+
+        const executeMergeRecords = async ({ targetId, sourceIds, itemUpdates = [] }) => {
+            try {
+                await mergeRecords(
+                    sourceIds,
+                    targetId,
+                    itemUpdates.map(({ itemId, shelfLocation, callNumber }) => ({
+                        item_id: itemId,
+                        shelf_location: shelfLocation,
+                        call_number: callNumber
+                    }))
+                );
+                showMergeRecordsModal.value = false;
+                clearSelection();
+                await performSearch();
+                success(t('admin.merge_records_success', {
+                    count: sourceIds.length
+                }));
+            } catch (err) {
+                handleError(err);
+            }
         };
 
         /**
@@ -579,6 +620,7 @@ export default defineComponent({
             showCatalogImport,
             handleImportClick,
             handleBulkEdit,
+            handleMergeRecords,
             handleEditSelected,
             handleFilter,
             handleRecordClick,
@@ -593,6 +635,8 @@ export default defineComponent({
             handleToggleSelection,
             handleToggleSelectAll,
             showBulkEditModal,
+            showMergeRecordsModal,
+            executeMergeRecords,
             showRecordEditModal,
             editingRecord,
             handleExecuteBulkOperation,
@@ -632,6 +676,7 @@ export default defineComponent({
                         @export="handleExportCatalog"
                         @bulk-edit="handleBulkEdit"
                         @edit-selected="handleEditSelected"
+                        @merge-records="handleMergeRecords"
                         @print-labels="handlePrintLabels"
                     ></admin-dropdown>
                     <help-panel section="catalog" />
@@ -697,6 +742,15 @@ export default defineComponent({
                 :settings="settings"
                 @close="showBulkEditModal = false"
                 @execute="handleExecuteBulkOperation"
+            />
+
+            <merge-records-modal
+                :show="showMergeRecordsModal"
+                :selected-records="selectedRecords"
+                :settings="settings"
+                :loading="bulkLoading"
+                @close="showMergeRecordsModal = false"
+                @confirm="executeMergeRecords"
             />
 
             <!-- Record Detail / Edit Modal -->

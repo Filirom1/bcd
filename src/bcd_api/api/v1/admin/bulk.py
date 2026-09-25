@@ -19,6 +19,7 @@ from ....schemas.admin import (
     BulkDeleteRequest,
     BulkEditRecordsRequest,
     BulkOperationResult,
+    MergeRecordsRequest,
 )
 from ....schemas.inventory import OrphanDeleteResponse, OrphanRecordsResponse
 
@@ -96,6 +97,30 @@ def bulk_edit_records_endpoint(
     except Exception as exc:
         logger.error("Bulk edit records failed: %s", exc)
         raise HTTPException(status_code=500, detail=f"Bulk edit records failed: {str(exc)}")
+
+
+@router.post("/catalog/merge", response_model=BulkOperationResult)
+def merge_records_endpoint(
+    request: MergeRecordsRequest,
+    db: Session = Depends(get_db),
+):
+    """Merge bibliographic records into one target record."""
+    _, catalog_service, _ = _services()
+    try:
+        result = catalog_service.merge_bibliographic_records(
+            db=db,
+            target_id=request.target_id,
+            source_ids=request.source_ids,
+            item_updates=request.item_updates,
+        )
+        return BulkOperationResult(**result)
+    except Exception:
+        logger.exception(
+            "Catalog record merge failed (target_id=%s, source_ids=%s)",
+            request.target_id,
+            request.source_ids,
+        )
+        raise
 
 
 @router.post("/catalog/bulk-delete", response_model=BulkOperationResult)

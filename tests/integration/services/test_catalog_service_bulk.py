@@ -377,3 +377,82 @@ class TestBulkDeleteRecords:
         # Note: Cannot verify records still exist because service rollback
         # undoes the entire transaction including test setup data.
         # The atomic rollback behavior is the important part being tested.
+
+
+class TestMergeBibliographicRecords:
+    """Tests for transferring record-linked data and per-copy locations."""
+
+    def test_merge_updates_each_copy_independently(self, db_session: Session):
+        target = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Wakou", authors=["Milan"]),
+            isbn_lookup=False,
+        )
+        source = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Wakou 396", authors=["Milan"]),
+            isbn_lookup=False,
+        )
+        source_item = catalog_service.create_item(
+            db_session,
+            ItemCreate(item_id="MERGE001", bibliographic_record_id=source.id, call_number="396"),
+        )
+        source_item_2 = catalog_service.create_item(
+            db_session,
+            ItemCreate(item_id="MERGE002", bibliographic_record_id=source.id, call_number="398"),
+        )
+        target_item = catalog_service.create_item(
+            db_session,
+            ItemCreate(item_id="MERGE003", bibliographic_record_id=target.id, call_number="397"),
+        )
+        db_session.commit()
+
+        result = catalog_service.merge_bibliographic_records(
+            db_session,
+            target_id=target.id,
+            source_ids=[source.id],
+            item_updates=[
+                {"item_id": source_item.id, "shelf_location": "Romans", "call_number": "R WAK"},
+                {"item_id": source_item_2.id, "shelf_location": "Albums", "call_number": "A WAK"},
+            ],
+        )
+
+        assert result["successful_count"] == 1
+        assert result["details"]["items_moved"] == 2
+        assert result["details"]["items_updated"] == 2
+        assert db_session.get(BibliographicRecord, source.id) is None
+
+        merged_source_item = db_session.get(Item, source_item.id)
+        merged_source_item_2 = db_session.get(Item, source_item_2.id)
+        merged_target_item = db_session.get(Item, target_item.id)
+        assert merged_source_item.bibliographic_record_id == target.id
+        assert merged_source_item.shelf_location == "Romans"
+        assert merged_source_item.call_number == "R WAK"
+        assert merged_source_item_2.bibliographic_record_id == target.id
+        assert merged_source_item_2.shelf_location == "Albums"
+        assert merged_source_item_2.call_number == "A WAK"
+        assert merged_target_item.shelf_location is None
+        assert merged_target_item.call_number == "397"
+
+    def test_merge_rejects_copy_outside_selected_records(self, db_session: Session):
+        target = catalog_service.create_bibliographic_record(
+            db_session, BibliographicRecordCreate(title="Target"), isbn_lookup=False
+        )
+        source = catalog_service.create_bibliographic_record(
+            db_session, BibliographicRecordCreate(title="Source"), isbn_lookup=False
+        )
+        unrelated = catalog_service.create_bibliographic_record(
+            db_session, BibliographicRecordCreate(title="Unrelated"), isbn_lookup=False
+        )
+        unrelated_item = catalog_service.create_item(
+            db_session,
+            ItemCreate(item_id="MERGE003", bibliographic_record_id=unrelated.id),
+        )
+
+        with pytest.raises(ValidationError):
+            catalog_service.merge_bibliographic_records(
+                db_session,
+                target_id=target.id,
+                source_ids=[source.id],
+                item_updates=[{"item_id": unrelated_item.id, "call_number": "NOPE"}],
+            )

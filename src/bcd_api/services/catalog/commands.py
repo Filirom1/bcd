@@ -3,7 +3,7 @@
 import logging
 from datetime import date, datetime
 from typing import Any, List, Optional, Set
-from sqlalchemy import and_
+from sqlalchemy import and_, bindparam, inspect, text
 from sqlalchemy.orm import Session, joinedload
 
 from src.bcd_api.core.exceptions import (
@@ -16,6 +16,8 @@ from src.bcd_api.core.exceptions import (
     ItemHasActiveLoanException,
 )
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
+from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.models.hold import Hold
 from src.bcd_api.models.item import Item
 from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
@@ -230,6 +232,152 @@ def bulk_delete_records(db: Session, record_ids: List[int]) -> dict:
             "total_count": len(record_ids),
             "successful_count": deleted_count,
             "failed_count": 0
+        }
+    except Exception:
+        db.rollback()
+        raise
+
+
+def merge_bibliographic_records(
+    db: Session,
+    target_id: int,
+    source_ids: List[int],
+    item_updates: Optional[List[dict]] = None,
+) -> dict:
+    """Merge notices and update rayon/cote independently for each copy."""
+    if not source_ids:
+        raise ValidationError("At least one source record is required")
+
+    normalized_source_ids = list(dict.fromkeys(source_ids))
+    normalized_source_ids = [record_id for record_id in normalized_source_ids if record_id != target_id]
+    if not normalized_source_ids:
+        raise ValidationError("The target record cannot be the only merge source")
+
+    try:
+        target = require_record(db, target_id)
+        source_records = db.query(BibliographicRecord).filter(
+            BibliographicRecord.id.in_(normalized_source_ids)
+        ).all()
+        found_source_ids = {record.id for record in source_records}
+        missing_source_ids = [
+            record_id for record_id in normalized_source_ids
+            if record_id not in found_source_ids
+        ]
+        if missing_source_ids:
+            raise NotFoundError(
+                "Bibliographic record", ", ".join(str(record_id) for record_id in missing_source_ids)
+            )
+
+        updates_by_item_id = {}
+        for item_update in item_updates or []:
+            values = (
+                item_update.model_dump(exclude_unset=True)
+                if hasattr(item_update, "model_dump") else item_update
+            )
+            item_id = values.get("item_id")
+            if item_id in updates_by_item_id:
+                raise ValidationError(f"Copy {item_id} appears more than once")
+            updates_by_item_id[item_id] = values
+
+        # Only copies from source notices may be edited. Copies already on
+        # the notice being kept must remain untouched.
+        selected_record_ids = normalized_source_ids
+        selected_item_ids = {
+            row.id for row in db.query(Item.id).filter(
+                Item.bibliographic_record_id.in_(selected_record_ids)
+            ).all()
+        }
+        unknown_item_ids = set(updates_by_item_id) - selected_item_ids
+        if unknown_item_ids:
+            raise ValidationError(
+                "Copy updates contain IDs outside the records being merged: "
+                + ", ".join(str(item_id) for item_id in sorted(unknown_item_ids))
+            )
+
+        target_waiting_holds = db.query(Hold).filter(
+            Hold.bibliographic_record_id == target_id,
+            Hold.status == "waiting",
+        ).order_by(Hold.queue_position, Hold.created_at, Hold.id).all()
+        source_waiting_holds = db.query(Hold).filter(
+            Hold.bibliographic_record_id.in_(normalized_source_ids),
+            Hold.status == "waiting",
+        ).all()
+        source_order = {
+            record_id: position for position, record_id in enumerate(normalized_source_ids)
+        }
+        source_waiting_holds.sort(key=lambda hold: (
+            source_order[hold.bibliographic_record_id],
+            hold.queue_position,
+            hold.created_at,
+            hold.id,
+        ))
+        waiting_hold_ids = [hold.id for hold in target_waiting_holds + source_waiting_holds]
+
+        items_moved = db.query(Item).filter(
+            Item.bibliographic_record_id.in_(normalized_source_ids)
+        ).update({Item.bibliographic_record_id: target_id}, synchronize_session=False)
+        circulation_moved = db.query(CirculationTransaction).filter(
+            CirculationTransaction.bibliographic_record_id.in_(normalized_source_ids)
+        ).update({CirculationTransaction.bibliographic_record_id: target_id}, synchronize_session=False)
+        holds_moved = db.query(Hold).filter(
+            Hold.bibliographic_record_id.in_(normalized_source_ids)
+        ).update({Hold.bibliographic_record_id: target_id}, synchronize_session=False)
+
+        archive_moved = 0
+        if inspect(db.connection()).has_table("circulation_transaction_archive"):
+            archive_result = db.execute(text(
+                """
+                UPDATE circulation_transaction_archive
+                SET bibliographic_record_id = :target_id
+                WHERE bibliographic_record_id IN :source_ids
+                """
+            ).bindparams(bindparam("source_ids", expanding=True)), {
+                "target_id": target_id,
+                "source_ids": normalized_source_ids,
+            })
+            archive_moved = archive_result.rowcount or 0
+
+        db.flush()
+        for position, hold_id in enumerate(waiting_hold_ids, start=1):
+            db.query(Hold).filter(Hold.id == hold_id).update(
+                {Hold.queue_position: position}, synchronize_session=False
+            )
+
+        items_updated = 0
+        for item_id, values in updates_by_item_id.items():
+            item_fields = {}
+            if "shelf_location" in values:
+                item_fields[Item.shelf_location] = values["shelf_location"]
+            if "call_number" in values:
+                item_fields[Item.call_number] = values["call_number"]
+            if item_fields:
+                items_updated += db.query(Item).filter(Item.id == item_id).update(
+                    item_fields, synchronize_session=False
+                )
+
+        refresh_total_items_in_transaction(db, {target_id})
+        for source_record in source_records:
+            db.delete(source_record)
+        db.flush()
+        db.commit()
+        db.refresh(target)
+
+        return {
+            "operation": "merge_bibliographic_records",
+            "total_count": len(normalized_source_ids),
+            "successful_count": len(normalized_source_ids),
+            "failed_count": 0,
+            "details": {
+                "target_id": target_id,
+                "source_ids": normalized_source_ids,
+                "records_deleted": len(source_records),
+                "items_moved": items_moved,
+                "items_updated": items_updated,
+                "circulation_transactions_moved": circulation_moved,
+                "holds_moved": holds_moved,
+                "archived_transactions_moved": archive_moved,
+                "total_items": target.total_items,
+            },
         }
     except Exception:
         db.rollback()

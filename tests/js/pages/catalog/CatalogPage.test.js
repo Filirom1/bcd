@@ -157,6 +157,40 @@ describe('CatalogPage', () => {
         });
     });
 
+    it('clears the catalog selection when changing page or page size', async () => {
+        const get = vi.spyOn(apiClient, 'get').mockImplementation(async endpoint => {
+            if (endpoint === '/catalog/locations') return { locations: [] };
+            if (endpoint === '/catalog/bibliographic/search') {
+                return { ...searchResponse, total: 30 };
+            }
+            throw new Error(`Unexpected GET request: ${endpoint}`);
+        });
+        const wrapper = mountCatalogPage();
+        await flushPromises();
+
+        wrapper.vm.handleToggleSelection(10);
+        expect(wrapper.vm.selectedCount).toBe(1);
+
+        await wrapper.vm.handlePageChange(2);
+        await flushPromises();
+        expect(wrapper.vm.currentPage).toBe(2);
+        expect(wrapper.vm.selectedCount).toBe(0);
+        expect(get).toHaveBeenLastCalledWith('/catalog/bibliographic/search', {
+            limit: 10,
+            offset: 10
+        });
+
+        wrapper.vm.handleToggleSelection(10);
+        await wrapper.vm.handlePageSizeChange(25);
+        await flushPromises();
+        expect(wrapper.vm.currentPage).toBe(1);
+        expect(wrapper.vm.selectedCount).toBe(0);
+        expect(get).toHaveBeenLastCalledWith('/catalog/bibliographic/search', {
+            limit: 25,
+            offset: 0
+        });
+    });
+
     it('executes catalog bulk edits, clears selection, and refreshes the results', async () => {
         const get = mockCatalogApi();
         const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ modified_count: 1 });
@@ -179,6 +213,36 @@ describe('CatalogPage', () => {
         expect(useNotification().notifications.value).toEqual([
             expect.objectContaining({ type: 'success', message: 'admin.operation_success' })
         ]);
+    });
+
+    it('merges selected records through the catalog API and clears selection', async () => {
+        const get = mockCatalogApi();
+        const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
+            operation: 'merge_bibliographic_records',
+            successful_count: 1
+        });
+        const wrapper = mountCatalogPage();
+        await flushPromises();
+
+        wrapper.vm.results = [
+            ...records,
+            { id: 11, title: 'Duplicate record', total_items: 1 }
+        ];
+        wrapper.vm.handleToggleSelection(10);
+        wrapper.vm.handleToggleSelection(11);
+        wrapper.vm.handleMergeRecords();
+        expect(wrapper.vm.showMergeRecordsModal).toBe(true);
+
+        await wrapper.vm.executeMergeRecords({ targetId: 10, sourceIds: [11] });
+        await flushPromises();
+
+        expect(post).toHaveBeenCalledWith('/admin/catalog/merge', {
+            source_ids: [11],
+            target_id: 10
+        });
+        expect(wrapper.vm.showMergeRecordsModal).toBe(false);
+        expect(wrapper.vm.selectedCount).toBe(0);
+        expect(get).toHaveBeenCalledTimes(3);
     });
 
     it('closes the edit modal safely after a record is deleted', async () => {

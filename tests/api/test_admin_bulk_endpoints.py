@@ -1,7 +1,9 @@
 from src.bcd_api.api.v1 import admin
+from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.schemas.admin import (
     BulkChangeClassRequest, BulkChangeRoleRequest, BulkDeleteRequest,
-    BulkDeleteRecordsRequest, BulkEditRecordsRequest,
+    BulkDeleteRecordsRequest, BulkEditRecordsRequest, MergeItemUpdate,
+    MergeRecordsRequest,
 )
 
 
@@ -28,6 +30,47 @@ def test_bulk_catalog_operations_delegate(monkeypatch):
     assert admin.bulk_delete_records_endpoint(delete, db="db").total_count == 2
     assert calls[0]["language"] == "fr"
     assert calls[1]["record_ids"] == [2]
+
+
+def test_merge_catalog_records_endpoint_delegates(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        admin.catalog_service,
+        "merge_bibliographic_records",
+        lambda **kwargs: calls.append(kwargs) or result(),
+    )
+
+    request = MergeRecordsRequest(
+        target_id=1,
+        source_ids=[2, 3],
+        item_updates=[MergeItemUpdate(item_id=10, shelf_location="Romans", call_number="R DUP")],
+    )
+    response = admin.merge_records_endpoint(request, db="db")
+
+    assert response.successful_count == 2
+    assert calls == [{
+        "db": "db",
+        "target_id": 1,
+        "source_ids": [2, 3],
+        "item_updates": request.item_updates,
+    }]
+
+
+def test_merge_catalog_records_endpoint_runs_real_service(db_session):
+    target = BibliographicRecord(title="Target", medium_type="Livre")
+    source = BibliographicRecord(title="Source", medium_type="Livre")
+    db_session.add_all([target, source])
+    db_session.commit()
+
+    response = admin.merge_records_endpoint(
+        MergeRecordsRequest(target_id=target.id, source_ids=[source.id]),
+        db=db_session,
+    )
+
+    assert response.operation == "merge_bibliographic_records"
+    assert response.successful_count == 1
+    assert db_session.get(BibliographicRecord, source.id) is None
+    assert db_session.get(BibliographicRecord, target.id) is not None
 
 
 def test_orphan_endpoints_delegate(monkeypatch):

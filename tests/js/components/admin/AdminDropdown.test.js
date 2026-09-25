@@ -60,6 +60,20 @@ describe('AdminDropdown', () => {
         expect(wrapper.emitted('bulk-edit')).toHaveLength(1);
     });
 
+    it('enables and emits merge records for multiple catalog selections', async () => {
+        const disabledWrapper = mountDropdown(1, 'catalog');
+        const disabledMerge = disabledWrapper.get('[data-testid="admin-menu-merge-records"]');
+        expect(disabledMerge.classes()).toContain('disabled');
+        await disabledMerge.trigger('click');
+        expect(disabledWrapper.emitted('merge-records')).toBeUndefined();
+
+        const enabledWrapper = mountDropdown(2, 'catalog');
+        const enabledMerge = enabledWrapper.get('[data-testid="admin-menu-merge-records"]');
+        expect(enabledMerge.classes()).not.toContain('disabled');
+        await enabledMerge.trigger('click');
+        expect(enabledWrapper.emitted('merge-records')).toHaveLength(1);
+    });
+
     it('emits import and export actions for the parent page to handle', async () => {
         const wrapper = mountDropdown(0);
 

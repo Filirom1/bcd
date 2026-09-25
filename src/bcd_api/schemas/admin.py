@@ -6,9 +6,10 @@ Provides request/response models for bulk borrower and catalog operations.
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from src.shared.constants import BindingType
+from src.shared.validators import clean_call_number
 
 
 class BulkChangeClassRequest(BaseModel):
@@ -110,4 +111,33 @@ class BulkDeleteRecordsRequest(BaseModel):
         ...,
         min_length=1,
         description="List of bibliographic record IDs to delete"
+    )
+
+
+class MergeItemUpdate(BaseModel):
+    """Location and call-number values for one physical copy."""
+
+    item_id: int = Field(..., description="Physical copy database ID")
+    shelf_location: Optional[str] = Field(None, max_length=100)
+    call_number: Optional[str] = Field(None, max_length=50)
+
+    @field_validator("call_number", mode="before")
+    @classmethod
+    def clean_call_number_field(cls, value):
+        """Normalize an optional call number."""
+        return clean_call_number(value)
+
+
+class MergeRecordsRequest(BaseModel):
+    """Request schema for merging bibliographic records."""
+
+    target_id: int = Field(..., description="Bibliographic record ID to keep")
+    source_ids: List[int] = Field(
+        ...,
+        min_length=1,
+        description="Bibliographic record IDs to merge into the target"
+    )
+    item_updates: List[MergeItemUpdate] = Field(
+        default_factory=list,
+        description="Optional location and call-number values, one entry per copy"
     )
