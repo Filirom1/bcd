@@ -21,13 +21,15 @@ def test_collection_moves_all_e2e_tests_after_regular_tests():
     """Test async-capable regular tests run before Playwright session fixtures."""
     # ARRANGE
     browser_e2e = FakeItem("/project/tests/e2e/test_browser.py")
+    windows_e2e = FakeItem(r"C:\project\tests\e2e\test_production.py")
     regular = FakeItem("/project/tests/unit/test_async.py")
     cli_e2e = FakeItem("/project/tests/cli/test_e2e.py", markers=("e2e",))
-    items = [browser_e2e, regular, cli_e2e]
+    items = [browser_e2e, windows_e2e, regular, cli_e2e]
 
     # ACT
     pytest_collection_modifyitems(config=None, items=items)
 
     # ASSERT
-    assert items == [regular, browser_e2e, cli_e2e]
+    assert items == [regular, browser_e2e, windows_e2e, cli_e2e]
     assert "e2e" in browser_e2e.markers
+    assert "e2e" in windows_e2e.markers

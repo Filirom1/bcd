@@ -25,7 +25,11 @@ def pytest_collection_modifyitems(config, items):
     e2e_items = []
 
     for item in items:
-        if "/tests/e2e/" in str(item.fspath):
+        # ``fspath`` uses backslashes on Windows.  Normalize before checking
+        # so production E2E invocations with ``-m e2e`` are not accidentally
+        # deselected on Windows runners.
+        normalized_path = str(item.fspath).replace("\\", "/")
+        if "/tests/e2e/" in f"/{normalized_path}":
             item.add_marker(e2e)
 
         if item.get_closest_marker("e2e"):
