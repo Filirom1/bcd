@@ -5,7 +5,7 @@
 
 const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
-const { useRoute, useRouter } = VueRouter;
+const { useRoute } = VueRouter;
 import { apiClient } from '../api/client.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
@@ -13,7 +13,6 @@ import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { logger } from '../utils/logger.js';
 import LoadingSpinner from '../components/ui/LoadingSpinner.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
-import AdminDropdown from '../components/admin/AdminDropdown.js';
 import SettingsForm from '../components/settings/SettingsForm.js';
 import BackupSection from '../components/settings/BackupSection.js';
 import CoverSection from '../components/settings/CoverSection.js';
@@ -26,14 +25,13 @@ export default defineComponent({
     name: 'SettingsPage',
 
     components: {
-        LoadingSpinner, HelpPanel, AdminDropdown, SettingsForm,
+        LoadingSpinner, HelpPanel, SettingsForm,
         BackupSection, CoverSection, EnvSection, DataMaintenanceSection
     },
 
     setup() {
         const { t } = useI18n();
         const route = useRoute();
-        const router = useRouter();
         const { saveSettings: saveGlobalSettings } = useAppState();
         const { success } = useNotification();
         const { handleError } = useErrorHandler(t);
@@ -58,10 +56,6 @@ export default defineComponent({
         const activeSection = computed(() => VALID_SECTIONS.includes(route.params.section)
             ? route.params.section : 'general');
         const isSettingsForm = computed(() => ['general', 'catalog'].includes(activeSection.value));
-
-        const navigateTo = (section) => {
-            if (VALID_SECTIONS.includes(section)) router.push(`/settings/${section}`);
-        };
 
         const loadSettings = async () => {
             try {
@@ -130,7 +124,7 @@ export default defineComponent({
         return {
             t, loading, saving, settings, appVersion, activeSection, isSettingsForm,
             shelfSuggestionTraining, shelfSuggestionStatus,
-            navigateTo, saveSettings, resetSettings, trainShelfSuggestion
+            saveSettings, resetSettings, trainShelfSuggestion
         };
     },
 
@@ -139,7 +133,6 @@ export default defineComponent({
             <div class="page-header">
                 <h1 class="page-title"><i class="bi bi-gear me-2"></i>{{ t('navigation.settings') }}</h1>
                 <div class="d-flex gap-2 align-items-center">
-                    <admin-dropdown page="settings" @settings-section="navigateTo" />
                     <help-panel section="settings" />
                 </div>
             </div>

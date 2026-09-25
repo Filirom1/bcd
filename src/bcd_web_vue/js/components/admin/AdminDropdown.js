@@ -1,12 +1,12 @@
 /**
  * AdminDropdown Component
  *
- * Reusable red "Admin" dropdown button for Borrower & Catalog pages.
- * Groups destructive/sensitive operations (import, export, bulk edit, edit selected).
+ * Reusable red "Admin" dropdown button for data-management pages.
+ * Groups contextual operations (import, export, bulk edit, edit selected).
  *
  * Props:
  * - selectedCount (Number): Number of items currently selected
- * - page (String): Current page context ('borrowers' or 'catalog')
+ * - page (String): Current page context ('borrowers', 'catalog', or 'inventory')
  *
  * Emits:
  * - import: User clicked Import menu item
@@ -31,11 +31,11 @@ export default defineComponent({
         page: {
             type: String,
             required: true,
-            validator: (value) => ['borrowers', 'catalog', 'inventory', 'settings'].includes(value)
+            validator: (value) => ['borrowers', 'catalog', 'inventory'].includes(value)
         }
     },
 
-    emits: ['import', 'export', 'bulk-edit', 'edit-selected', 'merge-records', 'print-reference', 'print-cards', 'print-labels', 'cleanup-orphans', 'settings-section'],
+    emits: ['import', 'export', 'bulk-edit', 'edit-selected', 'merge-records', 'print-reference', 'print-cards', 'print-labels', 'cleanup-orphans'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
@@ -93,10 +93,6 @@ export default defineComponent({
             }
         };
 
-        const handleSettingsSection = (section) => {
-            emit('settings-section', section);
-        };
-
         // Print handlers (page-contextual)
         const handlePrint = () => {
             if (props.page === 'borrowers') {
@@ -135,7 +131,6 @@ export default defineComponent({
             handleBulkEdit,
             handleEditSelected,
             handleMergeRecords,
-            handleSettingsSection,
             altHeld
         };
     },
@@ -155,7 +150,7 @@ export default defineComponent({
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
                 <!-- Import / export are page-specific operations. -->
-                <template v-if="page !== 'settings'">
+                <template>
                     <li>
                         <a class="dropdown-item d-flex align-items-center" href="#" data-testid="admin-menu-import" @click.prevent="handleImport">
                             <i class="bi bi-upload me-2"></i><span class="flex-grow-1">{{ importLabel }}</span>
@@ -170,24 +165,8 @@ export default defineComponent({
                     </li>
                 </template>
 
-                <!-- Settings actions use the same AdminDropdown pattern as other pages. -->
-                <template v-else>
-                    <li v-for="action in [
-                        { section: 'backup', icon: 'bi-archive', key: 'settings_action_backup' },
-                        { section: 'covers', icon: 'bi-image', key: 'settings_action_covers' },
-                        { section: 'maintenance', icon: 'bi-tools', key: 'settings_action_maintenance' },
-                        { section: 'env', icon: 'bi-file-earmark-code', key: 'settings_action_env' },
-                        { section: 'external-sources', icon: 'bi-cloud-download', key: 'settings_action_external_sources' }
-                    ]" :key="action.section">
-                        <a class="dropdown-item d-flex align-items-center" href="#" @click.prevent="handleSettingsSection(action.section)">
-                            <i :class="['bi', action.icon, 'me-2']"></i>
-                            <span class="flex-grow-1">{{ t('admin.' + action.key) }}</span>
-                        </a>
-                    </li>
-                </template>
-
                 <!-- Edit/Bulk operations (only for borrowers and catalog) -->
-                <template v-if="page !== 'inventory' && page !== 'settings'">
+                <template v-if="page !== 'inventory'">
                     <!-- Divider -->
                     <li><hr class="dropdown-divider"></li>
 

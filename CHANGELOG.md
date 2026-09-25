@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Reworked Web UI navigation and settings pages with short menu labels and dedicated routes.
 - Added bulk catalog administration and bibliographic-record merging
 - Added catalog filters for copy status, condition, loanability, acquisition date, and publication year.
 - Added notice-first cataloging: librarians can search the local catalog before consulting configured external sources (BnF, Google Books, and SUDOC), then create physical copies from an existing notice.

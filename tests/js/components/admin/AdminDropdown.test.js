@@ -95,16 +95,13 @@ describe('AdminDropdown', () => {
         expect(wrapper.get('[data-testid="admin-menu-export"]').text()).toContain(exportKey);
     });
 
-    it('renders settings actions and emits the selected section', async () => {
-        const wrapper = mountDropdown(0, 'settings', key => key);
-        const actions = wrapper.findAll('a.dropdown-item');
+    it('keeps navigation out of the contextual admin menu', () => {
+        const wrapper = mountDropdown(0, 'catalog', key => key);
 
-        expect(actions).toHaveLength(5);
-        expect(wrapper.find('[data-testid="admin-menu-import"]').exists()).toBe(false);
-
-        await actions[0].trigger('click');
-
-        expect(wrapper.emitted('settings-section')).toEqual([['backup']]);
+        expect(wrapper.find('[data-testid="admin-menu-import"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="admin-menu-export"]').exists()).toBe(true);
+        expect(wrapper.findAll('a.dropdown-item')).not.toHaveLength(5);
+        expect(wrapper.emitted('settings-section')).toBeUndefined();
     });
 
     it('renders the expected borrower menu labels in English', () => {

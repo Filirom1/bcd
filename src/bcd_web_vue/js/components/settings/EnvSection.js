@@ -20,12 +20,6 @@ export default defineComponent({
         const content = ref('');
         const loading = ref(false);
         const saving = ref(false);
-        const isOpen = ref(false);
-
-        const toggleOpen = () => {
-            isOpen.value = !isOpen.value;
-        };
-
         const loadEnv = async () => {
             try {
                 loading.value = true;
@@ -58,8 +52,6 @@ export default defineComponent({
             content,
             loading,
             saving,
-            isOpen,
-            toggleOpen,
             saveEnv,
             t
         };
@@ -67,18 +59,14 @@ export default defineComponent({
 
     template: `
         <div>
-            <!-- Section header -->
-            <div class="col-12 mt-4" style="cursor: pointer;" @click="toggleOpen">
-                <h4 class="border-bottom pb-2 mb-3 d-flex justify-content-between align-items-center">
-                    <span>
-                        <i class="bi bi-file-earmark-code me-2"></i>
-                        {{ t('settings.env_title') }}
-                    </span>
-                    <i :class="['bi fs-5 text-muted', isOpen ? 'bi-chevron-up' : 'bi-chevron-down']"></i>
+            <div class="col-12 mt-4">
+                <h4 class="border-bottom pb-2 mb-3">
+                    <i class="bi bi-file-earmark-code me-2"></i>
+                    {{ t('settings.env_title') }}
                 </h4>
             </div>
 
-            <div v-if="isOpen" class="col-12 mb-3">
+            <div class="col-12 mb-3">
                 <div class="card shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <span class="text-muted small font-monospace">.env</span>

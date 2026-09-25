@@ -762,9 +762,13 @@
   "settings": {
     "title": "Paramètres",
     "tabs": {
-      "general": "Configuration générale",
-      "catalog": "Configuration du catalogue",
-      "external_sources": "Sources de catalogues externes"
+      "general": "Général",
+      "catalog": "Catalogue",
+      "external_sources": "Sources externes",
+      "backup": "Sauvegardes",
+      "covers": "Couvertures",
+      "maintenance": "Maintenance",
+      "env": "Configuration (.env)"
     },
     "library_info": "Informations de la bibliothèque",
     "library_information": "Informations de la bibliothèque",
@@ -1135,11 +1139,6 @@
   },
   "admin": {
     "menu_title": "Admin",
-    "settings_action_backup": "Sauvegardes et restauration",
-    "settings_action_covers": "Images de couverture",
-    "settings_action_maintenance": "Maintenance des données",
-    "settings_action_env": "Fichier de configuration (.env)",
-    "settings_action_external_sources": "Sources de catalogues externes",
     "add_borrower": "Ajouter un emprunteur",
     "import_borrowers": "Importer emprunteurs",
     "export_borrowers": "Exporter emprunteurs",

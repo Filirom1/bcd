@@ -22,10 +22,11 @@ export default defineComponent({
             { to: '/checkout', icon: 'bi-book', label: t('navigation.checkout'), shortcut: 'A' },
             { to: '/return', icon: 'bi-arrow-return-left', label: t('navigation.return'), shortcut: 'R' },
             { to: '/catalog', icon: 'bi-search', label: t('navigation.catalog'), shortcut: 'C' },
+            { to: '/cataloging', icon: 'bi-journal-plus', label: t('navigation.cataloging') },
             { to: '/borrowers', icon: 'bi-people', label: t('navigation.borrowers'), shortcut: 'L' },
             { to: '/classes', icon: 'bi-diagram-3', label: t('navigation.classes'), shortcut: 'S' },
             {
-                to: '/reports/overdue',
+                to: '/reports',
                 icon: 'bi-file-earmark-bar-graph',
                 label: t('navigation.reports'),
                 shortcut: 'B',
@@ -40,14 +41,18 @@ export default defineComponent({
             { to: '/collections', icon: 'bi-diagram-3-fill', label: t('navigation.collections'), shortcut: 'F' },
             { to: '/inventory', icon: 'bi-box-seam', label: t('navigation.inventory'), shortcut: 'I' },
             {
-                to: '/settings/general',
+                to: '/settings',
                 icon: 'bi-gear',
                 label: t('navigation.settings'),
                 shortcut: 'O',
                 submenu: [
                     { to: '/settings/general', icon: 'bi-sliders', label: t('settings.tabs.general') },
                     { to: '/settings/catalog', icon: 'bi-tags', label: t('settings.tabs.catalog') },
-                    { to: '/settings/external-sources', icon: 'bi-cloud-download', label: t('settings.tabs.external_sources') }
+                    { to: '/settings/external-sources', icon: 'bi-cloud-download', label: t('settings.tabs.external_sources') },
+                    { to: '/settings/backup', icon: 'bi-archive', label: t('settings.tabs.backup') },
+                    { to: '/settings/covers', icon: 'bi-image', label: t('settings.tabs.covers') },
+                    { to: '/settings/maintenance', icon: 'bi-tools', label: t('settings.tabs.maintenance') },
+                    { to: '/settings/env', icon: 'bi-file-earmark-code', label: t('settings.tabs.env') }
                 ]
             }
         ]);

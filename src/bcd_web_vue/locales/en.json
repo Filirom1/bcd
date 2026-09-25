@@ -761,9 +761,13 @@
   "settings": {
     "title": "Settings",
     "tabs": {
-      "general": "General configuration",
-      "catalog": "Catalog configuration",
-      "external_sources": "External catalog sources"
+      "general": "General",
+      "catalog": "Catalog",
+      "external_sources": "External sources",
+      "backup": "Backups",
+      "covers": "Covers",
+      "maintenance": "Maintenance",
+      "env": "Configuration (.env)"
     },
     "library_info": "Library Information",
     "library_information": "Library Information",
@@ -1134,11 +1138,6 @@
   },
   "admin": {
     "menu_title": "Admin",
-    "settings_action_backup": "Backup and restore",
-    "settings_action_covers": "Cover images",
-    "settings_action_maintenance": "Data maintenance",
-    "settings_action_env": "Configuration file (.env)",
-    "settings_action_external_sources": "External catalog sources",
     "add_borrower": "Add Borrower",
     "import_borrowers": "Import Borrowers",
     "export_borrowers": "Export Borrowers",

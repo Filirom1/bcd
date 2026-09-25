@@ -2,14 +2,12 @@
 
 const { defineComponent, ref, onMounted } = Vue;
 const { useI18n } = VueI18n;
-const { useRouter } = VueRouter;
 import { apiClient } from '../api/client.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
 import LoadingSpinner from '../components/ui/LoadingSpinner.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
-import AdminDropdown from '../components/admin/AdminDropdown.js';
 import ExternalCatalogSourcesSection from '../components/settings/ExternalCatalogSourcesSection.js';
 
 const SOURCE_FIELDS = [
@@ -24,13 +22,11 @@ export default defineComponent({
     components: {
         LoadingSpinner,
         HelpPanel,
-        AdminDropdown,
         ExternalCatalogSourcesSection
     },
 
     setup() {
         const { t } = useI18n();
-        const router = useRouter();
         const { saveSettings: saveGlobalSettings } = useAppState();
         const { success } = useNotification();
         const { handleError } = useErrorHandler(t);
@@ -46,8 +42,6 @@ export default defineComponent({
             sudoc_timeout: 5
         });
         const originalSettings = ref({});
-
-        const navigateTo = (section) => router.push(`/settings/${section}`);
 
         const loadSettings = async () => {
             try {
@@ -95,7 +89,6 @@ export default defineComponent({
             saving,
             settings,
             appVersion,
-            navigateTo,
             saveSettings,
             resetSettings
         };
@@ -114,7 +107,6 @@ export default defineComponent({
                     </p>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <admin-dropdown page="settings" @settings-section="navigateTo" />
                     <help-panel section="settings" />
                 </div>
             </div>

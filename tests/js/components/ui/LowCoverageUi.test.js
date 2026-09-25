@@ -153,7 +153,10 @@ describe('Navigation components', () => {
     });
 
     it('builds the complete navigation and sidebar health footer', async () => {
-        expect(mount(NavigationMenu, { global: { stubs: { NavLink: true } } }).vm.navItems).toHaveLength(9);
+        const navItems = mount(NavigationMenu, { global: { stubs: { NavLink: true } } }).vm.navItems;
+        expect(navItems).toHaveLength(10);
+        expect(navItems.find(item => item.to === '/cataloging')).toBeTruthy();
+        expect(navItems.find(item => item.to === '/settings').submenu).toHaveLength(7);
         vi.spyOn(apiClient, 'get').mockResolvedValue({ version: '2.0.0' });
         useAppState().saveSettings({ library_code: 'BCD' });
         const wrapper = mount(SidebarNav, { global: { stubs: { NavigationMenu: true, LanguageSwitcher: true } } });

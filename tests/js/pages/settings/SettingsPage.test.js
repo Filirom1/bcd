@@ -188,16 +188,4 @@ describe('SettingsPage', () => {
         ]);
     });
 
-    it('navigates only to valid settings sections', async () => {
-        mockSettingsApi();
-        const push = vi.fn().mockResolvedValue(undefined);
-        globalThis.__testRouter.push = push;
-        const wrapper = mountSettingsPage();
-        await flushPromises();
-
-        wrapper.vm.navigateTo('catalog');
-        wrapper.vm.navigateTo('not-a-section');
-        expect(push).toHaveBeenCalledTimes(1);
-        expect(push).toHaveBeenCalledWith('/settings/catalog');
-    });
 });

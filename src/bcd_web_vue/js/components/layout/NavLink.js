@@ -44,7 +44,9 @@ export default defineComponent({
         const isActive = computed(() => {
             if (props.submenu.length > 0) {
                 // For parent items with submenu, check if any submenu item is active
-                return props.submenu.some(item => route.path.startsWith(item.to));
+                return route.path === props.to
+                    || route.path.startsWith(props.to)
+                    || props.submenu.some(item => route.path.startsWith(item.to));
             }
             return route.path === props.to || route.path.startsWith(props.to);
         });

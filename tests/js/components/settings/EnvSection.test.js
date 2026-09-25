@@ -20,10 +20,7 @@ describe('EnvSection', () => {
         expect(get).toHaveBeenCalledWith('/admin/env');
         expect(wrapper.vm.content).toBe('API_PORT=8888\n');
         expect(wrapper.vm.loading).toBe(false);
-        expect(wrapper.vm.isOpen).toBe(false);
-
-        await wrapper.vm.toggleOpen();
-        expect(wrapper.vm.isOpen).toBe(true);
+        expect(wrapper.find('textarea').exists()).toBe(true);
         wrapper.vm.content = 'API_PORT=9000\n';
         await wrapper.vm.saveEnv();
 
