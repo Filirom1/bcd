@@ -42,6 +42,7 @@ def get_settings(db: Session) -> SystemSettings:
         NotFoundError: If settings not found (should never happen)
     """
     from src.bcd_api.core.exceptions import NotFoundError
+
     settings = db.query(SystemSettings).filter(SystemSettings.id == 1).first()
 
     if not settings:

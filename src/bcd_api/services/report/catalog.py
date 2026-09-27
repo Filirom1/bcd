@@ -4,7 +4,6 @@ Handles reports about unborrowed items, highly circulated titles,
 and other catalog usage patterns.
 """
 
-import json
 import logging
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
@@ -42,13 +41,13 @@ def get_never_borrowed_items(
     """
     borrowed_items = db.query(CirculationTransaction.item_id).distinct()
 
-    query = db.query(
-        BibliographicRecord,
-        Item,
-    ).join(
-        Item, BibliographicRecord.id == Item.bibliographic_record_id
-    ).filter(
-        Item.id.notin_(borrowed_items)
+    query = (
+        db.query(
+            BibliographicRecord,
+            Item,
+        )
+        .join(Item, BibliographicRecord.id == Item.bibliographic_record_id)
+        .filter(Item.id.notin_(borrowed_items))
     )
 
     if academic_year:
@@ -96,27 +95,29 @@ def get_never_borrowed_items(
         if item.acquisition_date:
             age_days = (today - item.acquisition_date).days
 
-        never_borrowed.append({
-            "bibliographic_record_id": biblio.id,
-            "item_id": item.item_id,
-            "item_barcode": item.item_id,
-            "title": biblio.title,
-            "authors": _deserialize_authors(biblio.authors),
-            "publisher": biblio.publisher,
-            "level": biblio.level,
-            "target_audience": biblio.target_audience,
-            "medium_type": biblio.medium_type,
-            "identifier_type": biblio.identifier_type,
-            "language": biblio.language,
-            "publication_year": biblio.publication_year,
-            "acquisition_date": item.acquisition_date,
-            "age_days": age_days,
-            "call_number": item.call_number,
-            "shelf_location": item.shelf_location,
-            "status": item.status,
-            "condition": item.condition,
-            "loanable": item.loanable,
-        })
+        never_borrowed.append(
+            {
+                "bibliographic_record_id": biblio.id,
+                "item_id": item.item_id,
+                "item_barcode": item.item_id,
+                "title": biblio.title,
+                "authors": _deserialize_authors(biblio.authors),
+                "publisher": biblio.publisher,
+                "level": biblio.level,
+                "target_audience": biblio.target_audience,
+                "medium_type": biblio.medium_type,
+                "identifier_type": biblio.identifier_type,
+                "language": biblio.language,
+                "publication_year": biblio.publication_year,
+                "acquisition_date": item.acquisition_date,
+                "age_days": age_days,
+                "call_number": item.call_number,
+                "shelf_location": item.shelf_location,
+                "status": item.status,
+                "condition": item.condition,
+                "loanable": item.loanable,
+            }
+        )
 
     return never_borrowed, total_count
 
@@ -144,19 +145,19 @@ def get_most_borrowed_titles(
     else:
         cutoff_date = None
 
-    query = db.query(
-        BibliographicRecord.id,
-        BibliographicRecord.title,
-        BibliographicRecord.authors,
-        BibliographicRecord.publisher,
-        BibliographicRecord.publication_year,
-        BibliographicRecord.medium_type,
-        BibliographicRecord.target_audience,
-        func.count(CirculationTransaction.id).label("checkout_count"),
-    ).join(
-        Item, BibliographicRecord.id == Item.bibliographic_record_id
-    ).join(
-        CirculationTransaction, Item.id == CirculationTransaction.item_id
+    query = (
+        db.query(
+            BibliographicRecord.id,
+            BibliographicRecord.title,
+            BibliographicRecord.authors,
+            BibliographicRecord.publisher,
+            BibliographicRecord.publication_year,
+            BibliographicRecord.medium_type,
+            BibliographicRecord.target_audience,
+            func.count(CirculationTransaction.id).label("checkout_count"),
+        )
+        .join(Item, BibliographicRecord.id == Item.bibliographic_record_id)
+        .join(CirculationTransaction, Item.id == CirculationTransaction.item_id)
     )
 
     if cutoff_date:
@@ -176,9 +177,7 @@ def get_most_borrowed_titles(
         BibliographicRecord.publication_year,
         BibliographicRecord.medium_type,
         BibliographicRecord.target_audience,
-    ).order_by(
-        desc("checkout_count")
-    )
+    ).order_by(desc("checkout_count"))
 
     total_count = query.count()
 
@@ -191,21 +190,23 @@ def get_most_borrowed_titles(
 
     most_borrowed = []
     for biblio_id, title, authors, publisher, pub_year, med_type, audience_val, count in results:
-        total_copies = db.query(func.count(Item.id)).filter(
-            Item.bibliographic_record_id == biblio_id
-        ).scalar()
+        total_copies = (
+            db.query(func.count(Item.id)).filter(Item.bibliographic_record_id == biblio_id).scalar()
+        )
 
-        most_borrowed.append({
-            "bibliographic_record_id": biblio_id,
-            "title": title,
-            "author": _deserialize_authors(authors),
-            "publisher": publisher,
-            "publication_year": pub_year,
-            "medium_type": med_type,
-            "target_audience": audience_val,
-            "checkout_count": count,
-            "total_copies": total_copies,
-            "rank": len(most_borrowed) + 1,
-        })
+        most_borrowed.append(
+            {
+                "bibliographic_record_id": biblio_id,
+                "title": title,
+                "author": _deserialize_authors(authors),
+                "publisher": publisher,
+                "publication_year": pub_year,
+                "medium_type": med_type,
+                "target_audience": audience_val,
+                "checkout_count": count,
+                "total_copies": total_copies,
+                "rank": len(most_borrowed) + 1,
+            }
+        )
 
     return most_borrowed, total_count

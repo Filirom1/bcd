@@ -1,9 +1,7 @@
 from types import SimpleNamespace
-from unittest.mock import patch
-import pytest
 
+from src.bcd_api.core.exceptions import NotFoundError
 from src.bcd_api.services.borrower.import_ import import_borrowers_from_csv
-from src.bcd_api.core.exceptions import NotFoundError, ValidationError
 
 
 def test_import_borrowers_reports_validation_rows():
@@ -21,11 +19,20 @@ def test_import_borrowers_creates_and_updates(monkeypatch):
 
     # Mock borrower_service functions used inside import_borrowers_from_csv
     from src.bcd_api.services.borrower import import_ as import_module
-    monkeypatch.setattr(import_module, "get_borrower_by_id", lambda db, value: (_ for _ in ()).throw(NotFoundError("Borrower", value)) if value == "NEW" else SimpleNamespace())
+
+    monkeypatch.setattr(
+        import_module,
+        "get_borrower_by_id",
+        lambda db, value: (
+            (_ for _ in ()).throw(NotFoundError("Borrower", value))
+            if value == "NEW"
+            else SimpleNamespace()
+        ),
+    )
     monkeypatch.setattr(import_module, "create_borrower", lambda **kwargs: created.append(kwargs))
     monkeypatch.setattr(import_module, "update_borrower", lambda **kwargs: updated.append(kwargs))
 
-    csv_text = "StudentID,FirstName,LastName,Class,Role,Active\nNEW,Zo\xC3\xAB,Nom,CM1,student,oui\nOLD,Alice,Existing,,teacher,false\n"
+    csv_text = "StudentID,FirstName,LastName,Class,Role,Active\nNEW,Zo\xc3\xab,Nom,CM1,student,oui\nOLD,Alice,Existing,,teacher,false\n"
     result = import_borrowers_from_csv(db=object(), csv_text=csv_text)
     assert result["borrowers_created"] == 1
     assert result["borrowers_updated"] == 1
@@ -37,7 +44,9 @@ def test_import_keeps_optional_fields_unchanged_on_update(monkeypatch):
     from src.bcd_api.services.borrower import import_ as import_module
 
     updated = []
-    monkeypatch.setattr(import_module, "get_borrower_by_id", lambda db, value: SimpleNamespace(borrower_id=value))
+    monkeypatch.setattr(
+        import_module, "get_borrower_by_id", lambda db, value: SimpleNamespace(borrower_id=value)
+    )
     monkeypatch.setattr(import_module, "update_borrower", lambda **kwargs: updated.append(kwargs))
 
     csv_text = "borrower_id,first_name,last_name\n7,Marie,Dupont\n"
@@ -80,7 +89,12 @@ def test_import_preserves_active_value_on_create(monkeypatch):
 
 def test_import_borrowers_accepts_latin1_and_class_creation_failure(monkeypatch):
     from src.bcd_api.services.borrower import import_ as import_module
-    monkeypatch.setattr(import_module, "get_borrower_by_id", lambda *args: (_ for _ in ()).throw(NotFoundError("Borrower", "B1")))
+
+    monkeypatch.setattr(
+        import_module,
+        "get_borrower_by_id",
+        lambda *args: (_ for _ in ()).throw(NotFoundError("Borrower", "B1")),
+    )
     monkeypatch.setattr(import_module, "create_borrower", lambda **kwargs: None)
 
     # Use decoded string from latin-1 for import_borrowers_from_csv

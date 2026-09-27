@@ -13,6 +13,7 @@ from typing import Optional
 @dataclass(frozen=True)
 class CheckoutDecision:
     """Represents the outcome of a checkout limits validation."""
+
     allowed: bool
     reason: Optional[str] = None
     error_code: Optional[str] = None
@@ -21,6 +22,7 @@ class CheckoutDecision:
 @dataclass(frozen=True)
 class RenewalDecision:
     """Represents the outcome of a renewal validation."""
+
     allowed: bool
     reason: Optional[str] = None
     error_code: Optional[str] = None
@@ -29,6 +31,7 @@ class RenewalDecision:
 @dataclass(frozen=True)
 class CirculationPolicy:
     """Pure domain policies for checkout and renewal limits."""
+
     default_loan_limit: int
     teacher_loan_limit: int
     kids_warning_limit: int
@@ -64,7 +67,10 @@ class CirculationPolicy:
 
         # Check kids warning limit first if request is from kids Godot client
         if is_godot_ui and self.kids_warning_limit > 0:
-            if role not in ("teacher", "staff") and current_loans_count + additional_count > self.kids_warning_limit:
+            if (
+                role not in ("teacher", "staff")
+                and current_loans_count + additional_count > self.kids_warning_limit
+            ):
                 return CheckoutDecision(
                     allowed=False,
                     reason="LOAN_LIMIT_WARNING_EXCEEDED",
@@ -109,6 +115,7 @@ class CirculationPolicy:
 
 
 # Pure utility functions
+
 
 def is_overdue(due_date: date, observed_on: date) -> bool:
     """Check if the loan is overdue relative to an observed date."""

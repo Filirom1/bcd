@@ -23,10 +23,12 @@ def _list_converters(package_name: str, suffix: str) -> list[dict]:
         if not module_name.endswith(suffix):
             continue
         name = module_name[: -len(suffix)]
-        converters.append({
-            "name": name,
-            "description": _module_description(package, module_name),
-        })
+        converters.append(
+            {
+                "name": name,
+                "description": _module_description(package, module_name),
+            }
+        )
     return sorted(converters, key=lambda converter: converter["name"])
 
 

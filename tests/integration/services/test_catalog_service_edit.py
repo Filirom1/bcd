@@ -20,26 +20,16 @@ class TestUpdateRecord:
         """Test successful record metadata update."""
         # ARRANGE - Create test record
         record_data = BibliographicRecordCreate(
-            title="Original Title",
-            authors=["Original Author"],
-            level="CM1",
-            language="eng"
+            title="Original Title", authors=["Original Author"], level="CM1", language="eng"
         )
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         # ACT - Update multiple fields
-        update_data = {
-            "title": "Updated Title",
-            "level": "CP"
-        }
+        update_data = {"title": "Updated Title", "level": "CP"}
         updated_record = catalog_service.update_record(
-            db=db_session,
-            record_id=record.id,
-            update_data=update_data
+            db=db_session, record_id=record.id, update_data=update_data
         )
 
         # ASSERT - Fields updated correctly
@@ -51,27 +41,16 @@ class TestUpdateRecord:
         """Test clearing optional fields by setting them to None."""
         # ARRANGE - Create test record with populated optional fields
         record_data = BibliographicRecordCreate(
-            title="Book to Clear",
-            publisher="Original Publisher",
-            level="CM1",
-            dewey_number="123"
+            title="Book to Clear", publisher="Original Publisher", level="CM1", dewey_number="123"
         )
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         # ACT - Clear optional fields
-        update_data = {
-            "publisher": None,
-            "level": None,
-            "dewey_number": None
-        }
+        update_data = {"publisher": None, "level": None, "dewey_number": None}
         updated_record = catalog_service.update_record(
-            db=db_session,
-            record_id=record.id,
-            update_data=update_data
+            db=db_session, record_id=record.id, update_data=update_data
         )
 
         # ASSERT - Fields cleared to None
@@ -83,25 +62,15 @@ class TestUpdateRecord:
     def test_update_record_list_fields(self, db_session: Session):
         """Test updating list fields (authors, illustrators, keywords)."""
         # ARRANGE
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author 1"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author 1"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         # ACT - Update authors list
-        update_data = {
-            "authors": ["Author 1", "Author 2"],
-            "keywords": ["keyword1", "keyword2"]
-        }
+        update_data = {"authors": ["Author 1", "Author 2"], "keywords": ["keyword1", "keyword2"]}
         updated_record = catalog_service.update_record(
-            db=db_session,
-            record_id=record.id,
-            update_data=update_data
+            db=db_session, record_id=record.id, update_data=update_data
         )
 
         # ASSERT - Lists stored as JSON and retrievable
@@ -114,9 +83,7 @@ class TestUpdateRecord:
         # ACT & ASSERT
         with pytest.raises(NotFoundError) as exc:
             catalog_service.update_record(
-                db=db_session,
-                record_id=99999,
-                update_data={"title": "New Title"}
+                db=db_session, record_id=99999, update_data={"title": "New Title"}
             )
 
         assert "not found" in str(exc.value).lower()
@@ -128,20 +95,16 @@ class TestUpdateRecord:
             title="Original Title",
             authors=["Author"],
             publisher="Publisher A",
-            publication_year=2020
+            publication_year=2020,
         )
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         # ACT - Update only publisher
         update_data = {"publisher": "Publisher B"}
         updated_record = catalog_service.update_record(
-            db=db_session,
-            record_id=record.id,
-            update_data=update_data
+            db=db_session, record_id=record.id, update_data=update_data
         )
 
         # ASSERT - Only publisher changed
@@ -156,21 +119,16 @@ class TestUpdateItem:
     def test_update_item_success(self, db_session: Session):
         """Test successful item update."""
         # ARRANGE - Create record and item
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         item_data = ItemCreate(
             item_id="ITEM1",
             bibliographic_record_id=record.id,
             call_number="800.000",
-            shelf_location="A1"
+            shelf_location="A1",
         )
         item = catalog_service.create_item(db=db_session, item_data=item_data)
 
@@ -178,12 +136,12 @@ class TestUpdateItem:
         update_data = {
             "call_number": "900.000",
             "shelf_location": "B2",
-            "condition": "damaged"  # Use valid enum value
+            "condition": "damaged",  # Use valid enum value
         }
         updated_item = catalog_service.update_item(
             db=db_session,
             item_id=item.item_id,  # Use barcode string, not database id
-            update_data=update_data
+            update_data=update_data,
         )
 
         # ASSERT - Fields updated
@@ -195,33 +153,23 @@ class TestUpdateItem:
     def test_update_item_clear_optional_fields(self, db_session: Session):
         """Test clearing optional item fields by setting them to None."""
         # ARRANGE - Create record and item with optional fields
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         item_data = ItemCreate(
             item_id="ITEM1_CLEAR",
             bibliographic_record_id=record.id,
             call_number="800.000",
-            shelf_location="A1"
+            shelf_location="A1",
         )
         item = catalog_service.create_item(db=db_session, item_data=item_data)
 
         # ACT - Clear fields
-        update_data = {
-            "call_number": None,
-            "shelf_location": None
-        }
+        update_data = {"call_number": None, "shelf_location": None}
         updated_item = catalog_service.update_item(
-            db=db_session,
-            item_id=item.item_id,
-            update_data=update_data
+            db=db_session, item_id=item.item_id, update_data=update_data
         )
 
         # ASSERT - Fields cleared
@@ -232,20 +180,12 @@ class TestUpdateItem:
     def test_update_item_barcode_change(self, db_session: Session):
         """Test changing item barcode (item_id field)."""
         # ARRANGE
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
-        item_data = ItemCreate(
-            item_id="ITEM1",
-            bibliographic_record_id=record.id
-        )
+        item_data = ItemCreate(item_id="ITEM1", bibliographic_record_id=record.id)
         item = catalog_service.create_item(db=db_session, item_data=item_data)
 
         # ACT - Change barcode
@@ -253,7 +193,7 @@ class TestUpdateItem:
         updated_item = catalog_service.update_item(
             db=db_session,
             item_id=item.item_id,  # Use barcode string, not database id
-            update_data=update_data
+            update_data=update_data,
         )
 
         # ASSERT - Barcode changed (note: function ignores item_id in update_data)
@@ -262,26 +202,15 @@ class TestUpdateItem:
     def test_update_item_duplicate_barcode_error(self, db_session: Session):
         """Test validation error for duplicate barcode (US6 requirement)."""
         # ARRANGE - Create record and two items
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
-        item1_data = ItemCreate(
-            item_id="ITEM1",
-            bibliographic_record_id=record.id
-        )
+        item1_data = ItemCreate(item_id="ITEM1", bibliographic_record_id=record.id)
         catalog_service.create_item(db=db_session, item_data=item1_data)
 
-        item2_data = ItemCreate(
-            item_id="ITEM2",
-            bibliographic_record_id=record.id
-        )
+        item2_data = ItemCreate(item_id="ITEM2", bibliographic_record_id=record.id)
         item2 = catalog_service.create_item(db=db_session, item_data=item2_data)
 
         # ACT & ASSERT - Try to change item2 barcode to item1's barcode
@@ -292,7 +221,7 @@ class TestUpdateItem:
         updated_item = catalog_service.update_item(
             db=db_session,
             item_id=item2.item_id,  # Use barcode string, not database id
-            update_data={"item_id": "ITEM1"}  # This will be ignored by the function
+            update_data={"item_id": "ITEM1"},  # This will be ignored by the function
         )
         # item_id should remain unchanged since function ignores it
         assert updated_item.item_id == "ITEM2"
@@ -304,7 +233,7 @@ class TestUpdateItem:
             catalog_service.update_item(
                 db=db_session,
                 item_id="NONEXISTENT",  # Use barcode string, not integer
-                update_data={"call_number": "100.000"}
+                update_data={"call_number": "100.000"},
             )
 
         assert "not found" in str(exc.value).lower()
@@ -312,14 +241,9 @@ class TestUpdateItem:
     def test_update_item_partial_update(self, db_session: Session):
         """Test partial update (only some fields changed)."""
         # ARRANGE
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         item_data = ItemCreate(
@@ -327,7 +251,7 @@ class TestUpdateItem:
             bibliographic_record_id=record.id,
             call_number="800.000",
             shelf_location="A1",
-            loanable=True
+            loanable=True,
         )
         item = catalog_service.create_item(db=db_session, item_data=item_data)
 
@@ -336,7 +260,7 @@ class TestUpdateItem:
         updated_item = catalog_service.update_item(
             db=db_session,
             item_id=item.item_id,  # Use barcode string, not database id
-            update_data=update_data
+            update_data=update_data,
         )
 
         # ASSERT - Only shelf_location changed

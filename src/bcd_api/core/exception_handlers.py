@@ -1,6 +1,7 @@
 """Custom FastAPI exception handlers."""
 
 import logging
+
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -33,7 +34,9 @@ async def bcd_exception_handler(request: Request, exc: BCDException) -> JSONResp
     )
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     """Handle Pydantic validation errors."""
     logger.warning(f"Validation error on {request.url.path}: {exc.errors()}")
     return JSONResponse(

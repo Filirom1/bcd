@@ -51,14 +51,40 @@ _SOURCE_DEFAULTS = {
 # searches such as "sorciere"/"Sorcière" and "j magazine"/"J-Magazine"
 # address the same notice on both SQLite and PostgreSQL.
 _ACCENT_REPLACEMENTS = (
-    ("à", "a"), ("À", "a"), ("â", "a"), ("Â", "a"), ("ä", "a"), ("Ä", "a"),
-    ("ç", "c"), ("Ç", "c"),
-    ("é", "e"), ("É", "e"), ("è", "e"), ("È", "e"), ("ê", "e"), ("Ê", "e"),
-    ("ë", "e"), ("Ë", "e"),
-    ("î", "i"), ("Î", "i"), ("ï", "i"), ("Ï", "i"),
-    ("ô", "o"), ("Ô", "o"), ("ö", "o"), ("Ö", "o"),
-    ("ù", "u"), ("Ù", "u"), ("û", "u"), ("Û", "u"), ("ü", "u"), ("Ü", "u"),
-    ("œ", "oe"), ("Œ", "oe"), ("æ", "ae"), ("Æ", "ae"),
+    ("à", "a"),
+    ("À", "a"),
+    ("â", "a"),
+    ("Â", "a"),
+    ("ä", "a"),
+    ("Ä", "a"),
+    ("ç", "c"),
+    ("Ç", "c"),
+    ("é", "e"),
+    ("É", "e"),
+    ("è", "e"),
+    ("È", "e"),
+    ("ê", "e"),
+    ("Ê", "e"),
+    ("ë", "e"),
+    ("Ë", "e"),
+    ("î", "i"),
+    ("Î", "i"),
+    ("ï", "i"),
+    ("Ï", "i"),
+    ("ô", "o"),
+    ("Ô", "o"),
+    ("ö", "o"),
+    ("Ö", "o"),
+    ("ù", "u"),
+    ("Ù", "u"),
+    ("û", "u"),
+    ("Û", "u"),
+    ("ü", "u"),
+    ("Ü", "u"),
+    ("œ", "oe"),
+    ("Œ", "oe"),
+    ("æ", "ae"),
+    ("Æ", "ae"),
 )
 _SEARCH_SEPARATORS = (" ", "-", "–", "—", "'", "’", ".", ",", ":", ";", "/", "_", "(", ")")
 
@@ -117,9 +143,7 @@ def _normalized_column(column, dialect_name: str | None = None):
     return expression
 
 
-def _text_search_expressions(
-    raw_query: str, dialect_name: str | None = None
-) -> dict[str, Any]:
+def _text_search_expressions(raw_query: str, dialect_name: str | None = None) -> dict[str, Any]:
     """Build one normalized set of SQL expressions for local notice search."""
     raw = raw_query.strip()
     raw_normalized = _normalize_search_text(raw)
@@ -129,15 +153,15 @@ def _text_search_expressions(
         "exact_title": title_expression == raw_normalized,
         "exact_title_without_issue": title_expression == title_normalized,
         "title_contains": title_expression.like(f"%{raw_normalized}%"),
-        "author_contains": _normalized_column(
-            BibliographicRecord.authors, dialect_name
-        ).like(f"%{raw_normalized}%"),
-        "subtitle_contains": _normalized_column(
-            BibliographicRecord.subtitle, dialect_name
-        ).like(f"%{raw_normalized}%"),
-        "publisher_contains": _normalized_column(
-            BibliographicRecord.publisher, dialect_name
-        ).like(f"%{raw_normalized}%"),
+        "author_contains": _normalized_column(BibliographicRecord.authors, dialect_name).like(
+            f"%{raw_normalized}%"
+        ),
+        "subtitle_contains": _normalized_column(BibliographicRecord.subtitle, dialect_name).like(
+            f"%{raw_normalized}%"
+        ),
+        "publisher_contains": _normalized_column(BibliographicRecord.publisher, dialect_name).like(
+            f"%{raw_normalized}%"
+        ),
         "collection_contains": _normalized_column(
             BibliographicRecord.collection, dialect_name
         ).like(f"%{raw_normalized}%"),
@@ -270,9 +294,7 @@ def _add_notice_selection_fields(
     summaries_by_id = {summary["id"]: summary for summary in summaries}
     record_ids = [record.id for record in records]
     periodical_record_ids = {
-        record.id
-        for record in records
-        if (record.isbn or "").lower().startswith("issn:")
+        record.id for record in records if (record.isbn or "").lower().startswith("issn:")
     }
     items = (
         db.query(Item)
@@ -284,11 +306,7 @@ def _add_notice_selection_fields(
     for item in items:
         # Periodical issue numbers are stored in the existing call_number
         # column and are shown with an explicit issue-number label in the UI.
-        issue = (
-            item.call_number
-            if item.bibliographic_record_id in periodical_record_ids
-            else None
-        )
+        issue = item.call_number if item.bibliographic_record_id in periodical_record_ids else None
         if issue and issue not in issues_by_record[item.bibliographic_record_id]:
             issues_by_record[item.bibliographic_record_id].append(str(issue))
 
@@ -298,9 +316,7 @@ def _add_notice_selection_fields(
         summary.update(_record_identifier(record))
         summary["notice_id"] = record.id
         summary["copies"] = summary.get("total_items", 0)
-        summary["issues_present"] = sorted(
-            issues_by_record.get(record.id, []), key=_issue_sort_key
-        )
+        summary["issues_present"] = sorted(issues_by_record.get(record.id, []), key=_issue_sort_key)
         summary["authors"] = decode_list(record.authors)
         # Keep the fields needed by the review form even though this is a
         # compact result rather than the full bibliographic response.
@@ -378,12 +394,15 @@ def _call_source(
 ) -> Optional[dict[str, Any]]:
     if source == "bnf":
         from ..external.bnf import search_by_isbn
+
         return search_by_isbn(classified.identifier_value or "", timeout=timeout)
     if source == "google_books":
         from ..external.google_books import search_by_isbn
+
         return search_by_isbn(classified.identifier_value or "", timeout=timeout)
     if source == "sudoc":
         from ..external.sudoc import search_by_issn
+
         return search_by_issn(classified.identifier_value or "", timeout=timeout)
     raise ValidationError(f"Unknown external catalog source: {source}")
 

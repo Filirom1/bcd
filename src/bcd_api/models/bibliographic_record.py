@@ -63,50 +63,58 @@ class BibliographicRecord(Base):
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Constraints
     __table_args__ = (
         # NOTE: medium_type has NO constraint per spec FR-014 (plain text storage without normalization)
         # This allows values like "CD Audio", "DVD Vidéo", "Livre + CD", "Bande dessinée", etc.
         # Do NOT add CHECK constraint here - it violates the spec requirement for flexibility!
-
         CheckConstraint(
             f"target_audience IN ('{TargetAudience.CHILD.value}', '{TargetAudience.YOUTH.value}', "
             f"'{TargetAudience.ADULT.value}') OR target_audience IS NULL",
-            name="check_target_audience"
+            name="check_target_audience",
         ),
         CheckConstraint(
             f"binding_type IN ('{BindingType.HARDCOVER.value}', '{BindingType.PAPERBACK.value}', "
             f"'{BindingType.SPIRAL.value}', '{BindingType.OTHER.value}') OR binding_type IS NULL",
-            name="check_binding_type"
+            name="check_binding_type",
         ),
     )
 
     # Relationships
-    items = relationship("Item", back_populates="bibliographic_record", cascade="all, delete-orphan")
+    items = relationship(
+        "Item", back_populates="bibliographic_record", cascade="all, delete-orphan"
+    )
     circulation_transactions = relationship(
         "CirculationTransaction",
         back_populates="bibliographic_record",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
-    holds = relationship("Hold", back_populates="bibliographic_record", cascade="all, delete-orphan")
+    holds = relationship(
+        "Hold", back_populates="bibliographic_record", cascade="all, delete-orphan"
+    )
 
     @property
     def isbn_value(self) -> Optional[str]:
         """ISBN/ISSN value without prefix (isbn: or issn:)."""
         if self.isbn is None:
             return None
-        if self.isbn.startswith('isbn:') or self.isbn.startswith('issn:'):
+        if self.isbn.startswith("isbn:") or self.isbn.startswith("issn:"):
             return self.isbn[5:]
         return self.isbn
 
     @property
     def identifier_type(self) -> str:
         """Type of identifier: 'issn' for periodicals, 'isbn' otherwise."""
-        if self.isbn and self.isbn.startswith('issn:'):
-            return 'issn'
-        return 'isbn'
+        if self.isbn and self.isbn.startswith("issn:"):
+            return "issn"
+        return "isbn"
 
     def __repr__(self):
         return f"<BibliographicRecord(id={self.id}, isbn={self.isbn}, title={self.title})>"

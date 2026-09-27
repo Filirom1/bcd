@@ -22,10 +22,7 @@ router = APIRouter(prefix="/classes", tags=["classes"])
 
 
 @router.post("", response_model=ClassResponse, status_code=status.HTTP_201_CREATED)
-def create_class(
-    request: ClassCreate,
-    db: Session = Depends(get_db)
-):
+def create_class(request: ClassCreate, db: Session = Depends(get_db)):
     """
     Create a new class.
 
@@ -43,10 +40,7 @@ def create_class(
 
 
 @router.get("/{class_id}", response_model=ClassResponse)
-def get_class(
-    class_id: int,
-    db: Session = Depends(get_db)
-):
+def get_class(class_id: int, db: Session = Depends(get_db)):
     """
     Get class details by ID.
 
@@ -61,7 +55,7 @@ def get_class(
 def list_classes(
     limit: int = Query(100, ge=1, le=500, description="Maximum results"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     List classes with pagination.
@@ -81,11 +75,7 @@ def list_classes(
 
 
 @router.patch("/{class_id}", response_model=ClassResponse)
-def update_class(
-    class_id: int,
-    request: ClassUpdate,
-    db: Session = Depends(get_db)
-):
+def update_class(class_id: int, request: ClassUpdate, db: Session = Depends(get_db)):
     """
     Update class information.
 
@@ -105,10 +95,7 @@ def update_class(
 
 
 @router.delete("/{class_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_class(
-    class_id: int,
-    db: Session = Depends(get_db)
-):
+def delete_class(class_id: int, db: Session = Depends(get_db)):
     """
     Delete a class and unassign all borrowers from it.
 

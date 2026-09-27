@@ -15,39 +15,23 @@ from src.shared.validators import clean_call_number
 class BulkChangeClassRequest(BaseModel):
     """Request schema for bulk class change operation."""
 
-    borrower_ids: List[str] = Field(
-        ...,
-        min_length=1,
-        description="List of borrower IDs to update"
-    )
+    borrower_ids: List[str] = Field(..., min_length=1, description="List of borrower IDs to update")
     target_class_id: Optional[int] = Field(
-        None,
-        description="Target class ID (null to unassign from class)"
+        None, description="Target class ID (null to unassign from class)"
     )
 
 
 class BulkChangeRoleRequest(BaseModel):
     """Request schema for bulk role change operation."""
 
-    borrower_ids: List[str] = Field(
-        ...,
-        min_length=1,
-        description="List of borrower IDs to update"
-    )
-    target_role: str = Field(
-        ...,
-        description="Target role (student, teacher, staff)"
-    )
+    borrower_ids: List[str] = Field(..., min_length=1, description="List of borrower IDs to update")
+    target_role: str = Field(..., description="Target role (student, teacher, staff)")
 
 
 class BulkDeleteRequest(BaseModel):
     """Request schema for bulk delete operation."""
 
-    borrower_ids: List[str] = Field(
-        ...,
-        min_length=1,
-        description="List of borrower IDs to delete"
-    )
+    borrower_ids: List[str] = Field(..., min_length=1, description="List of borrower IDs to delete")
 
 
 class BulkOperationResult(BaseModel):
@@ -70,37 +54,20 @@ class BulkEditRecordsRequest(BaseModel):
     """Request schema for bulk catalog record edit operation."""
 
     record_ids: List[int] = Field(
-        ...,
-        min_length=1,
-        description="List of bibliographic record IDs to update"
+        ..., min_length=1, description="List of bibliographic record IDs to update"
     )
-    level: Optional[str] = Field(
-        None,
-        description="Reading level to set (null = no change)"
-    )
+    level: Optional[str] = Field(None, description="Reading level to set (null = no change)")
     target_audience: Optional[str] = Field(
-        None,
-        description="Target audience to set (null = no change)"
+        None, description="Target audience to set (null = no change)"
     )
-    language: Optional[str] = Field(
-        None,
-        description="Language to set (null = no change)"
-    )
-    medium_type: Optional[str] = Field(
-        None,
-        description="Medium type to set (null = no change)"
-    )
-    publisher: Optional[str] = Field(
-        None,
-        description="Publisher to set (null = no change)"
-    )
+    language: Optional[str] = Field(None, description="Language to set (null = no change)")
+    medium_type: Optional[str] = Field(None, description="Medium type to set (null = no change)")
+    publisher: Optional[str] = Field(None, description="Publisher to set (null = no change)")
     collection: Optional[str] = Field(
-        None,
-        description="Collection/Series to set (null = no change)"
+        None, description="Collection/Series to set (null = no change)"
     )
     binding_type: Optional[BindingType] = Field(
-        None,
-        description="Binding type to set (null = no change)"
+        None, description="Binding type to set (null = no change)"
     )
 
 
@@ -108,9 +75,7 @@ class BulkDeleteRecordsRequest(BaseModel):
     """Request schema for bulk catalog record delete operation."""
 
     record_ids: List[int] = Field(
-        ...,
-        min_length=1,
-        description="List of bibliographic record IDs to delete"
+        ..., min_length=1, description="List of bibliographic record IDs to delete"
     )
 
 
@@ -133,11 +98,9 @@ class MergeRecordsRequest(BaseModel):
 
     target_id: int = Field(..., description="Bibliographic record ID to keep")
     source_ids: List[int] = Field(
-        ...,
-        min_length=1,
-        description="Bibliographic record IDs to merge into the target"
+        ..., min_length=1, description="Bibliographic record IDs to merge into the target"
     )
     item_updates: List[MergeItemUpdate] = Field(
         default_factory=list,
-        description="Optional location and call-number values, one entry per copy"
+        description="Optional location and call-number values, one entry per copy",
     )

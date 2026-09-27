@@ -15,7 +15,6 @@ Test Quality:
 - Clear AAA pattern (Arrange-Act-Assert)
 """
 
-
 import pytest
 from playwright.sync_api import expect
 
@@ -23,10 +22,7 @@ from playwright.sync_api import expect
 class TestUS6BasicSettings:
     """Test basic settings configuration and persistence."""
 
-    def test_us6_ac1_change_loan_duration_and_save(
-        self,
-        settings_page
-    ):
+    def test_us6_ac1_change_loan_duration_and_save(self, settings_page):
         """
         US6-AC1: Change loan duration and save.
 
@@ -38,7 +34,7 @@ class TestUS6BasicSettings:
         settings_page.goto()
 
         # Get current value
-        current_duration = settings_page.get_loan_duration()
+        settings_page.get_loan_duration()
 
         # Change to new value
         new_duration = 21
@@ -51,11 +47,10 @@ class TestUS6BasicSettings:
         assert saved_duration == new_duration, f"Duration should be {new_duration}"
 
 
-
 class TestUS6SettingsValidation:
     """Test settings form validation."""
 
-        # Validation should prevent invalid save
+    # Validation should prevent invalid save
 
 
 class TestUS6SettingsIntegration:
@@ -68,7 +63,7 @@ class TestUS6SettingsIntegration:
         borrower_factory,
         item_factory,
         db_session,
-        server_url
+        server_url,
     ):
         """
         US6-AC2: Changing checkout limit affects future checkouts.
@@ -91,8 +86,7 @@ class TestUS6SettingsIntegration:
         items = []
         for i in range(4):
             item, record = item_factory.create_with_record(
-                title=f"Limit Test Book {i+1}",
-                item_id=f"LIM{i+1:03d}"
+                title=f"Limit Test Book {i+1}", item_id=f"LIM{i+1:03d}"
             )
             items.append(item)
         item_ids = [item.item_id for item in items]
@@ -102,7 +96,7 @@ class TestUS6SettingsIntegration:
         # Act - Try to checkout 4 items
         circulation_page.goto_checkout()
         circulation_page.page.reload()
-        circulation_page.page.wait_for_selector('.filter-input')
+        circulation_page.page.wait_for_selector(".filter-input")
         circulation_page.enter_borrower_id(borrower_id)
 
         # Scan first 3 items (should succeed)
@@ -113,14 +107,10 @@ class TestUS6SettingsIntegration:
         circulation_page.scan_item(item_ids[3])
 
         # Assert - Should show loan limit error or alert/notification
-        error_message = circulation_page.page.locator('.alert-danger, .error, .toast, .alert')
+        error_message = circulation_page.page.locator(".alert-danger, .error, .toast, .alert")
         expect(error_message.first).to_be_visible()
 
-    def test_us6_ac5_academic_year_affects_reports(
-        self,
-        settings_page,
-        db_session
-    ):
+    def test_us6_ac5_academic_year_affects_reports(self, settings_page, db_session):
         """
         US6-AC5: Academic year change affects report date boundaries.
 
@@ -152,11 +142,7 @@ class TestUS6SettingsIntegration:
 class TestUS6SettingsPersistence:
     """Test settings persistence across sessions."""
 
-    def test_settings_persist_after_reload(
-        self,
-        settings_page,
-        db_session
-    ):
+    def test_settings_persist_after_reload(self, settings_page, db_session):
         """
         Test that settings changes persist after page reload.
 

@@ -52,8 +52,7 @@ def generate_nonce() -> str:
 def cleanup_old_nonces() -> None:
     """Remove expired nonces from the store."""
     now = time.time()
-    expired = [nonce for nonce, timestamp in _nonces.items()
-               if now - timestamp > NONCE_LIFETIME]
+    expired = [nonce for nonce, timestamp in _nonces.items() if now - timestamp > NONCE_LIFETIME]
     for nonce in expired:
         del _nonces[nonce]
 
@@ -120,8 +119,14 @@ def compute_ha2(method: str, uri: str) -> str:
     return hashlib.md5(ha2_str.encode()).hexdigest()
 
 
-def compute_response(ha1: str, nonce: str, ha2: str, qop: Optional[str] = None,
-                    nc: Optional[str] = None, cnonce: Optional[str] = None) -> str:
+def compute_response(
+    ha1: str,
+    nonce: str,
+    ha2: str,
+    qop: Optional[str] = None,
+    nc: Optional[str] = None,
+    cnonce: Optional[str] = None,
+) -> str:
     """Compute the response hash for Digest Auth.
 
     Without qop: response = MD5(HA1:nonce:HA2)
@@ -235,17 +240,16 @@ def validate_basic_auth(auth_header: str) -> bool:
         # Decode base64 credentials
         encoded_credentials = auth_header[6:]  # Remove "Basic " prefix
         decoded_bytes = base64.b64decode(encoded_credentials)
-        decoded_credentials = decoded_bytes.decode('utf-8')
+        decoded_credentials = decoded_bytes.decode("utf-8")
 
         # Split username:password
-        if ':' not in decoded_credentials:
+        if ":" not in decoded_credentials:
             return False
 
-        username, password = decoded_credentials.split(':', 1)
+        username, password = decoded_credentials.split(":", 1)
 
         # Validate credentials
-        return (username == settings.auth_username and
-                password == settings.auth_password)
+        return username == settings.auth_username and password == settings.auth_password
 
     except Exception:
         return False
@@ -268,7 +272,7 @@ def create_auth_challenge(stale: bool = False) -> str:
         nonce = create_nonce()
         challenge = f'Digest realm="{REALM}", qop="auth", nonce="{nonce}", algorithm=MD5'
         if stale:
-            challenge += ', stale=true'
+            challenge += ", stale=true"
         return challenge
 
 

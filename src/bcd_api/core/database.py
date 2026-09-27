@@ -18,9 +18,9 @@ if settings.database_url.startswith("sqlite"):
         settings.database_url,
         connect_args=connect_args,
         poolclass=QueuePool,
-        pool_size=1,           # Only 1 connection in the pool
-        max_overflow=0,        # No additional connections allowed
-        pool_pre_ping=True,    # Verify connections before using
+        pool_size=1,  # Only 1 connection in the pool
+        max_overflow=0,  # No additional connections allowed
+        pool_pre_ping=True,  # Verify connections before using
         echo=settings.log_level == "DEBUG",
     )
 
@@ -33,12 +33,13 @@ if settings.database_url.startswith("sqlite"):
         cursor.execute("PRAGMA foreign_keys=ON")
 
         # Performance optimizations (2-3x faster writes, better for legacy hardware)
-        cursor.execute("PRAGMA journal_mode=WAL")       # Write-Ahead Logging for concurrent reads
-        cursor.execute("PRAGMA synchronous=NORMAL")     # Safe with WAL, much faster than FULL
-        cursor.execute("PRAGMA cache_size=-64000")      # 64MB cache (negative = KB)
-        cursor.execute("PRAGMA temp_store=MEMORY")      # Store temp tables in memory
+        cursor.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for concurrent reads
+        cursor.execute("PRAGMA synchronous=NORMAL")  # Safe with WAL, much faster than FULL
+        cursor.execute("PRAGMA cache_size=-64000")  # 64MB cache (negative = KB)
+        cursor.execute("PRAGMA temp_store=MEMORY")  # Store temp tables in memory
 
         cursor.close()
+
 else:
     # PostgreSQL or other database
     engine = create_engine(

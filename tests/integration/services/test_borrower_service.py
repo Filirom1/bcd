@@ -255,7 +255,9 @@ class TestBorrowerWithCirculationIntegration:
         )
 
         # Create item and overdue loan
-        biblio = BibliographicRecord(title="Test Book", authors=json.dumps(["Author"]), medium_type="Livre")
+        biblio = BibliographicRecord(
+            title="Test Book", authors=json.dumps(["Author"]), medium_type="Livre"
+        )
         db_session.add(biblio)
         db_session.commit()
 
@@ -455,10 +457,17 @@ class TestGetNextAvailableId:
         """Non-numeric IDs stored in DB should not affect the sequence."""
         # Insert directly bypassing service validation (edge case: data migration)
         from src.bcd_api.models.borrower import Borrower
-        db_session.add(Borrower(
-            borrower_id="PROF1", first_name="Marie", last_name="Dupont",
-            full_name="Marie Dupont", role="teacher", active=True
-        ))
+
+        db_session.add(
+            Borrower(
+                borrower_id="PROF1",
+                first_name="Marie",
+                last_name="Dupont",
+                full_name="Marie Dupont",
+                role="teacher",
+                active=True,
+            )
+        )
         db_session.commit()
 
         result = borrower_service.get_next_available_id(db_session)
@@ -467,19 +476,24 @@ class TestGetNextAvailableId:
     def test_mixed_numeric_and_non_numeric(self, db_session):
         """With IDs 1, 2, and a non-numeric ID, should return 3."""
         from src.bcd_api.models.borrower import Borrower
+
         borrower_service.create_borrower(
-            db_session, borrower_id="1",
-            first_name="A", last_name="B", role="student"
+            db_session, borrower_id="1", first_name="A", last_name="B", role="student"
         )
         borrower_service.create_borrower(
-            db_session, borrower_id="2",
-            first_name="C", last_name="D", role="student"
+            db_session, borrower_id="2", first_name="C", last_name="D", role="student"
         )
         # Insert non-numeric ID directly (bypasses format validation)
-        db_session.add(Borrower(
-            borrower_id="PROF1", first_name="Marie", last_name="Dupont",
-            full_name="Marie Dupont", role="teacher", active=True
-        ))
+        db_session.add(
+            Borrower(
+                borrower_id="PROF1",
+                first_name="Marie",
+                last_name="Dupont",
+                full_name="Marie Dupont",
+                role="teacher",
+                active=True,
+            )
+        )
         db_session.commit()
 
         result = borrower_service.get_next_available_id(db_session)
@@ -490,14 +504,16 @@ class TestBorrowerSearchAccentInsensitive:
     """Tests for accent-insensitive name search in list_borrowers."""
 
     def _create_student(self, db_session, borrower_id, first_name, last_name):
-        db_session.add(Borrower(
-            borrower_id=borrower_id,
-            first_name=first_name,
-            last_name=last_name,
-            full_name=f"{first_name} {last_name}",
-            role="student",
-            active=True,
-        ))
+        db_session.add(
+            Borrower(
+                borrower_id=borrower_id,
+                first_name=first_name,
+                last_name=last_name,
+                full_name=f"{first_name} {last_name}",
+                role="student",
+                active=True,
+            )
+        )
         db_session.commit()
 
     def test_search_accented_first_name_without_accent(self, db_session):

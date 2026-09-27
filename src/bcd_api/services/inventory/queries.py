@@ -37,20 +37,31 @@ def search_items(
     since_date: Optional[date] = None,
     never_borrowed: Optional[bool] = None,
     no_limit: bool = False,
-    loanable: Optional[bool] = None
+    loanable: Optional[bool] = None,
 ) -> dict:
     """
     Search items matching inventory criteria (rotation, last inventoried, condition, etc.).
     """
     query, period_loan_count_column = build_item_search_query(
-        db, q=q, status=status, condition=condition, loanable=loanable,
-        shelf_location=shelf_location, never_inventoried=never_inventoried,
+        db,
+        q=q,
+        status=status,
+        condition=condition,
+        loanable=loanable,
+        shelf_location=shelf_location,
+        never_inventoried=never_inventoried,
         inventoried_before=inventoried_before,
-        acquired_before=acquired_before, acquired_after=acquired_after,
-        medium_type=medium_type, target_audience=target_audience, level=level,
-        language=language, publication_year_min=publication_year_min,
-        publication_year_max=publication_year_max, max_borrows=max_borrows,
-        since_date=since_date, never_borrowed=never_borrowed
+        acquired_before=acquired_before,
+        acquired_after=acquired_after,
+        medium_type=medium_type,
+        target_audience=target_audience,
+        level=level,
+        language=language,
+        publication_year_min=publication_year_min,
+        publication_year_max=publication_year_max,
+        max_borrows=max_borrows,
+        since_date=since_date,
+        never_borrowed=never_borrowed,
     )
 
     # Get total count before limit
@@ -131,7 +142,7 @@ def search_items(
         "total_count": total_count,
         "displayed_count": len(items),
         "capped": capped,
-        "archive_cutoff_date": archive_cutoff
+        "archive_cutoff_date": archive_cutoff,
     }
 
 
@@ -148,22 +159,16 @@ def get_orphan_records(db: Session) -> dict:
             - records (list): Orphan record details (id, title, isbn)
     """
     # Use real NOT EXISTS query
-    orphans = db.query(BibliographicRecord).filter(
-        ~db.query(Item).filter(Item.bibliographic_record_id == BibliographicRecord.id).exists()
-    ).all()
+    orphans = (
+        db.query(BibliographicRecord)
+        .filter(
+            ~db.query(Item).filter(Item.bibliographic_record_id == BibliographicRecord.id).exists()
+        )
+        .all()
+    )
 
-    records = [
-        {
-            "id": record.id,
-            "title": record.title,
-            "isbn": record.isbn
-        }
-        for record in orphans
-    ]
+    records = [{"id": record.id, "title": record.title, "isbn": record.isbn} for record in orphans]
 
     logger.info(f"Found {len(records)} orphan records")
 
-    return {
-        "count": len(records),
-        "records": records
-    }
+    return {"count": len(records), "records": records}

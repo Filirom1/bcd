@@ -45,6 +45,11 @@ jobs:
         run: |
           playwright install chromium
 
+      - name: Check Python linting and formatting
+        run: |
+          ruff check src/ tests/
+          black --check src/ tests/
+
       - name: Initialize database
         run: |
           alembic upgrade head

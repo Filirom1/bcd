@@ -1,38 +1,26 @@
 """Main FastAPI application entry point."""
 
-import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request, status
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.exc import IntegrityError
 
 from src.bcd_api.api.v1.router import api_router
 from src.bcd_api.core import mdns
-from src.bcd_api.core.auth import DigestAuthMiddleware, is_auth_enabled
 from src.bcd_api.core.config import settings
 from src.bcd_api.core.exception_handlers import register_handlers
+from src.bcd_api.core.logging_config import setup_logging
 from src.bcd_api.core.middleware import register_middlewares
 from src.bcd_api.core.spa import serve_spa
-from src.bcd_api.core.startup import run_startup_tasks, init_database_if_needed
-from src.bcd_api.core.logging_config import setup_logging
-from src.bcd_api.core.web_assets import get_web_assets, render_spa_html
-from src.bcd_api.services.external.bnf import configure as configure_bnf
-from src.bcd_api.services.external.cover import configure as configure_covers
-from src.bcd_api.services.external.cover import migrate_covers_to_isbn13
-from src.bcd_api.services.external.google_books import configure as configure_google_books
-from src.bcd_api.services.external.sudoc import configure as configure_sudoc
+from src.bcd_api.core.startup import run_startup_tasks
+from src.bcd_api.core.web_assets import get_web_assets
 
 # Initialize logging — returns the dict passed to uvicorn so its loggers
 # (uvicorn.access, uvicorn.error) also write to bcd_api.log.
 _log_config = setup_logging()
 logger = logging.getLogger(__name__)
-
 
 
 # Import portable mode helpers
@@ -101,16 +89,8 @@ register_handlers(app)
 register_middlewares(app, web_assets_config)
 
 
-
-
-
-
-
 # Include API router
 app.include_router(api_router)
-
-
-
 
 
 @app.get("/health")
@@ -145,7 +125,7 @@ async def catch_all_spa():
 app.add_api_route("/{full_path:path}", catch_all_spa, methods=["GET"], include_in_schema=False)
 
 
-from src.bcd_api.core.runner import main  # noqa: F401
+from src.bcd_api.core.runner import main  # noqa: E402, F401
 
 if __name__ == "__main__":
     main()

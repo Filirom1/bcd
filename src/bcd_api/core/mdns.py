@@ -22,24 +22,25 @@ logger = logging.getLogger(__name__)
 BCD_SERVICE_TYPE = "_bcd._tcp.local."
 
 # ── Module-level singletons ──────────────────────────────────────────────────
-_zeroconf = None                        # AsyncZeroconf instance
-_service_info = None                    # ServiceInfo for our own advertisement
-_browser = None                         # AsyncServiceBrowser for peer discovery
-_listener = None                        # ServiceListener instance (kept alive)
-_own_service_name: str | None = None   # used to exclude self from peer list
-_peers: dict[str, "PeerInfo"] = {}     # mDNS service name → PeerInfo
+_zeroconf = None  # AsyncZeroconf instance
+_service_info = None  # ServiceInfo for our own advertisement
+_browser = None  # AsyncServiceBrowser for peer discovery
+_listener = None  # ServiceListener instance (kept alive)
+_own_service_name: str | None = None  # used to exclude self from peer list
+_peers: dict[str, "PeerInfo"] = {}  # mDNS service name → PeerInfo
 
 
 # ── Public types ─────────────────────────────────────────────────────────────
 class PeerInfo(TypedDict):
     """Snapshot of a discovered BCD peer."""
-    name: str            # full mDNS service name (internal key)
-    library_code: str    # raw library_code from the peer's TXT record
-    host: str            # mDNS FQDN, e.g. "eph-bcd-001.local."
-    addresses: list[str] # IPv4 addresses
+
+    name: str  # full mDNS service name (internal key)
+    library_code: str  # raw library_code from the peer's TXT record
+    host: str  # mDNS FQDN, e.g. "eph-bcd-001.local."
+    addresses: list[str]  # IPv4 addresses
     port: int
-    url: str             # convenience http://<ip>:<port>
-    local: NotRequired[bool]          # True only for this instance (always first in list)
+    url: str  # convenience http://<ip>:<port>
+    local: NotRequired[bool]  # True only for this instance (always first in list)
 
 
 def normalize_hostname(library_code: str) -> str:
@@ -151,11 +152,7 @@ def get_peers() -> list[PeerInfo]:
     peers = list(_peers.values())
 
     if _service_info is not None and _own_service_name is not None:
-        addresses = [
-            socket.inet_ntoa(addr)
-            for addr in _service_info.addresses
-            if len(addr) == 4
-        ]
+        addresses = [socket.inet_ntoa(addr) for addr in _service_info.addresses if len(addr) == 4]
         if addresses:
             props: dict[str, str] = {
                 (k.decode() if isinstance(k, bytes) else k): (
@@ -219,11 +216,7 @@ class _BCDServiceListener:
             return
 
         # Only IPv4 for now (len==4 bytes); skip link-local / IPv6
-        addresses = [
-            socket.inet_ntoa(addr)
-            for addr in info.addresses
-            if len(addr) == 4
-        ]
+        addresses = [socket.inet_ntoa(addr) for addr in info.addresses if len(addr) == 4]
 
         if not addresses:
             logger.warning("No IPv4 addresses for %s — ignoring.", name)
@@ -361,7 +354,7 @@ async def start_mdns(library_code: str, port: int) -> None:
         addresses=[socket.inet_aton(local_ip)],
         port=port,
         properties={
-            "library_code": library_code,   # ← lets peers identify us w/o HTTP
+            "library_code": library_code,  # ← lets peers identify us w/o HTTP
             "path": "/",
             "description": "BCD Library Management System",
         },

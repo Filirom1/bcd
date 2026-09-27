@@ -46,16 +46,12 @@ class TestExportService:
             publisher="Éditions Gallimard",
             description="Un été magnifique avec des événements extraordinaires",
             keywords=json.dumps(["été", "événement", "français"]),
-            medium_type="Livre"
+            medium_type="Livre",
         )
         db_session.add(record)
         db_session.flush()
 
-        item = Item(
-            item_id="FR001",
-            bibliographic_record_id=record.id,
-            loanable=True
-        )
+        item = Item(item_id="FR001", bibliographic_record_id=record.id, loanable=True)
         db_session.add(item)
         db_session.commit()
 
@@ -92,7 +88,7 @@ class TestExportService:
             authors=None,  # No authors
             publisher=None,
             publication_year=None,
-            medium_type="Livre"  # Required field
+            medium_type="Livre",  # Required field
         )
         db_session.add(record)
         db_session.flush()
@@ -101,7 +97,7 @@ class TestExportService:
         item = Item(
             item_id="MIN001",
             bibliographic_record_id=record.id,
-            loanable=False  # Explicitly not loanable
+            loanable=False,  # Explicitly not loanable
         )
         db_session.add(item)
         db_session.commit()
@@ -153,7 +149,7 @@ class TestExportService:
             description="Les aventures d'une souris extraordinaire",
             page_count=173,
             language="fr",
-            level="CE2-CM1"
+            level="CE2-CM1",
         )
         db_session.add(record)
         db_session.flush()
@@ -166,7 +162,7 @@ class TestExportService:
             call_number="800.000",
             loanable=True,
             acquisition_date=date(2024, 1, 15),
-            funding_source="Budget école"
+            funding_source="Budget école",
         )
         db_session.add(item)
         db_session.commit()
@@ -205,11 +201,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create record with French characters
-        record = BibliographicRecord(
-            title="Noël à Paris",
-            isbn="123456",
-            medium_type="Livre"
-        )
+        record = BibliographicRecord(title="Noël à Paris", isbn="123456", medium_type="Livre")
         db_session.add(record)
         db_session.commit()
 
@@ -233,25 +225,15 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create one record with two items
-        record = BibliographicRecord(
-            title="Stuart Little",
-            isbn="2211056466",
-            medium_type="Livre"
-        )
+        record = BibliographicRecord(title="Stuart Little", isbn="2211056466", medium_type="Livre")
         db_session.add(record)
         db_session.flush()
 
         item1 = Item(
-            item_id="787",
-            bibliographic_record_id=record.id,
-            call_number="800.000",
-            loanable=True
+            item_id="787", bibliographic_record_id=record.id, call_number="800.000", loanable=True
         )
         item2 = Item(
-            item_id="788",
-            bibliographic_record_id=record.id,
-            call_number="800.000",
-            loanable=True
+            item_id="788", bibliographic_record_id=record.id, call_number="800.000", loanable=True
         )
         db_session.add(item1)
         db_session.add(item2)
@@ -285,11 +267,7 @@ class TestExportService:
         service = ExportService(db_session)
 
         # Create record without items
-        record = BibliographicRecord(
-            title="Les Misérables",
-            isbn="123456",
-            medium_type="Livre"
-        )
+        record = BibliographicRecord(title="Les Misérables", isbn="123456", medium_type="Livre")
         db_session.add(record)
         db_session.commit()
 
@@ -320,17 +298,13 @@ class TestExportService:
     def test_export_exceeds_row_limit(self, db_session):
         """Export should raise exception if exceeds MAX_EXPORT_ROWS."""
         # Arrange
-        service = ExportService(db_session)
+        ExportService(db_session)
 
         # Create enough records to exceed limit
         # Note: This is a slow test if MAX_EXPORT_ROWS is large
         # For testing, we'll mock by creating a record with many items
 
-        record = BibliographicRecord(
-            title="Test Record",
-            isbn="123456",
-            medium_type="Livre"
-        )
+        record = BibliographicRecord(title="Test Record", isbn="123456", medium_type="Livre")
         db_session.add(record)
         db_session.flush()
 
@@ -357,7 +331,7 @@ class TestExportService:
             isbn="9782012100367",
             authors=json.dumps(["Goscinny, René", "Uderzo, Albert"]),
             keywords=json.dumps(["Humour", "Histoire", "Bande dessinée"]),
-            medium_type="Livre"  # Can be any string value
+            medium_type="Livre",  # Can be any string value
         )
         db_session.add(record)
         db_session.commit()

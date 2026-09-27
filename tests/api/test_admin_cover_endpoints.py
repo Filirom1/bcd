@@ -4,12 +4,13 @@ Integration Tests for Admin Cover Endpoints
 Tests the background cover downloading endpoints with FastAPI TestClient.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 
+from src.bcd_api.api.v1.admin import _download_lock, _download_status
 from src.bcd_api.main import app
-from src.bcd_api.api.v1.admin import _download_status, _download_lock
 
 
 @pytest.fixture
@@ -52,13 +53,17 @@ class TestAdminCoverEndpoints:
 
     def test_start_download_success(self, client):
         """Test starting the background download task successfully."""
-        with patch("src.bcd_api.api.v1.admin._download_missing_covers_task") as mock_task, \
-             patch("src.bcd_api.services.cover_download_service.cover_download_manager._run_missing_cover_download") as mock_mgr_task:
+        with (
+            patch("src.bcd_api.api.v1.admin._download_missing_covers_task"),
+            patch(
+                "src.bcd_api.services.cover_download_service.cover_download_manager._run_missing_cover_download"
+            ),
+        ):
             response = client.post("/api/v1/admin/covers/download-missing")
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "started"
-            
+
             # Status should be set to running
             with _download_lock:
                 assert _download_status["running"] is True
@@ -84,6 +89,6 @@ class TestAdminCoverEndpoints:
         response2 = client.post("/api/v1/admin/covers/download-missing/cancel")
         assert response2.status_code == 200
         assert response2.json()["status"] == "cancelling"
-        
+
         with _download_lock:
             assert _download_status["running"] is False

@@ -10,10 +10,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
-
 from ...core.deps import get_db
 from ...services import report as report_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -114,7 +114,9 @@ def get_overdue_summary_by_class(
 def get_never_borrowed_report(
     academic_year: Optional[str] = Query(None, description="Filter by acquisition year"),
     level: Optional[str] = Query(None, description="Filter by reading level"),
-    target_audience: Optional[str] = Query(None, description="Filter by target audience (child/youth/adult)"),
+    target_audience: Optional[str] = Query(
+        None, description="Filter by target audience (child/youth/adult)"
+    ),
     medium_type: Optional[str] = Query(None, description="Filter by medium type"),
     min_age_days: Optional[int] = Query(None, description="Minimum days since acquisition"),
     limit: int = Query(default=50, ge=1, le=500, description="Number of items per page"),
@@ -146,7 +148,7 @@ def get_never_borrowed_report(
         medium_type=medium_type,
         min_age_days=min_age_days,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
 
     return {
@@ -180,7 +182,11 @@ def get_most_borrowed_report(
         List of most borrowed titles with circulation counts
     """
     titles, total_count = report_service.get_most_borrowed_titles(
-        db, period=period, limit=limit, offset=offset, medium_type=medium_type,
+        db,
+        period=period,
+        limit=limit,
+        offset=offset,
+        medium_type=medium_type,
         target_audience=target_audience,
     )
 
@@ -233,8 +239,11 @@ def get_borrower_statistics(
 
 @router.get("/holds")
 def get_holds_report(
-    status: Optional[str] = Query(None, pattern="^(waiting|ready|expired|fulfilled|cancelled)$",
-                                   description="Filter by hold status"),
+    status: Optional[str] = Query(
+        None,
+        pattern="^(waiting|ready|expired|fulfilled|cancelled)$",
+        description="Filter by hold status",
+    ),
     class_name: Optional[str] = Query(None, description="Filter by class name"),
     limit: int = Query(default=50, ge=1, le=500, description="Number of items per page"),
     offset: int = Query(default=0, ge=0, description="Number of items to skip"),
@@ -254,13 +263,11 @@ def get_holds_report(
         List of holds with borrower and bibliographic record details
     """
     # Get all matching holds for total count
-    all_holds = report_service.get_holds_report(
-        db, status=status, class_name=class_name
-    )
+    all_holds = report_service.get_holds_report(db, status=status, class_name=class_name)
     total_count = len(all_holds)
 
     # Apply pagination
-    holds = all_holds[offset:offset+limit]
+    holds = all_holds[offset : offset + limit]
 
     return {
         "total_holds": total_count,
@@ -294,7 +301,7 @@ def get_active_loans_report(
     total_count = len(all_loans)
 
     # Apply pagination
-    loans = all_loans[offset:offset+limit]
+    loans = all_loans[offset : offset + limit]
 
     return {
         "total_active_loans": total_count,

@@ -21,7 +21,7 @@ def runner():
 @pytest.fixture
 def mock_client():
     """Mock HTTP client"""
-    with patch('src.bcd_cli.commands.admin.get_client') as mock:
+    with patch("src.bcd_cli.commands.admin.get_client") as mock:
         yield mock
 
 
@@ -40,19 +40,22 @@ class TestBackupCommand:
                 "file_path": "/path/to/backups/bcd_backup_20260205_120000.db",
                 "size_mb": 5.42,
                 "created_at": "2026-02-05T12:00:00",
-                "age_days": 0
+                "age_days": 0,
             },
-            "message": "Backup created successfully"
+            "message": "Backup created successfully",
         }
 
         mock_client_instance = MagicMock()
         mock_client_instance.post.return_value = mock_response
         mock_client.return_value = mock_client_instance
 
-        result = runner.invoke(admin, ['backup'])
+        result = runner.invoke(admin, ["backup"])
 
         assert result.exit_code == 0
-        assert "Sauvegarde créée avec succès" in result.output or "Backup Created Successfully" in result.output
+        assert (
+            "Sauvegarde créée avec succès" in result.output
+            or "Backup Created Successfully" in result.output
+        )
         assert "bcd_backup_20260205_120000.db" in result.output
         assert "5.42 MB" in result.output
 
@@ -66,7 +69,7 @@ class TestBackupCommand:
         mock_client_instance.post.return_value = mock_response
         mock_client.return_value = mock_client_instance
 
-        result = runner.invoke(admin, ['backup'])
+        result = runner.invoke(admin, ["backup"])
 
         assert result.exit_code == 1  # Click.Abort
         assert "Backup failed" in result.output
@@ -82,24 +85,24 @@ class TestBackupCommand:
                 "file_path": "/path/backup.db",
                 "size_mb": 1.0,
                 "created_at": "2026-02-05T12:00:00",
-                "age_days": 0
-            }
+                "age_days": 0,
+            },
         }
 
         mock_client_instance = MagicMock()
         mock_client_instance.post.return_value = mock_response
         mock_client.return_value = mock_client_instance
 
-        result = runner.invoke(admin, ['backup', '--api-url', 'http://custom:9000'])
+        result = runner.invoke(admin, ["backup", "--api-url", "http://custom:9000"])
 
         assert result.exit_code == 0
-        mock_client.assert_called_with(base_url='http://custom:9000')
+        mock_client.assert_called_with(base_url="http://custom:9000")
 
     def test_backup_connection_error(self, runner, mock_client):
         """Test backup when API is unreachable"""
         mock_client.side_effect = Exception("Connection refused")
 
-        result = runner.invoke(admin, ['backup'])
+        result = runner.invoke(admin, ["backup"])
 
         assert result.exit_code == 1
         assert "Error" in result.output or "Erreur" in result.output
@@ -120,25 +123,23 @@ class TestListBackupsCommand:
                     "filename": "bcd_backup_20260205_120000.db",
                     "size_mb": 5.42,
                     "created_at": "2026-02-05T12:00:00",
-                    "age_days": 0
+                    "age_days": 0,
                 },
                 {
                     "filename": "bcd_backup_20260204_090000.db",
                     "size_mb": 5.38,
                     "created_at": "2026-02-04T09:00:00",
-                    "age_days": 1
-                }
+                    "age_days": 1,
+                },
             ],
-            "database_info": {
-                "size_mb": 5.45
-            }
+            "database_info": {"size_mb": 5.45},
         }
 
         mock_client_instance = MagicMock()
         mock_client_instance.get.return_value = mock_response
         mock_client.return_value = mock_client_instance
 
-        result = runner.invoke(admin, ['list-backups'])
+        result = runner.invoke(admin, ["list-backups"])
 
         assert result.exit_code == 0
         # Check for partial filename matches (table may truncate long names)
@@ -155,14 +156,14 @@ class TestListBackupsCommand:
             "success": True,
             "count": 0,
             "backups": [],
-            "database_info": {"size_mb": 5.45}
+            "database_info": {"size_mb": 5.45},
         }
 
         mock_client_instance = MagicMock()
         mock_client_instance.get.return_value = mock_response
         mock_client.return_value = mock_client_instance
 
-        result = runner.invoke(admin, ['list-backups'])
+        result = runner.invoke(admin, ["list-backups"])
 
         assert result.exit_code == 0
         assert "Aucune sauvegarde" in result.output or "No backups found" in result.output
@@ -177,7 +178,7 @@ class TestListBackupsCommand:
         mock_client_instance.get.return_value = mock_response
         mock_client.return_value = mock_client_instance
 
-        result = runner.invoke(admin, ['list-backups'])
+        result = runner.invoke(admin, ["list-backups"])
 
         assert result.exit_code == 1
         assert "Failed to list backups" in result.output
@@ -188,10 +189,7 @@ class TestRestoreBackupCommand:
 
     def test_restore_without_confirm_flag(self, runner, mock_client):
         """Test restore fails without --confirm flag"""
-        result = runner.invoke(
-            admin,
-            ['restore', 'backups/backup.db']
-        )
+        result = runner.invoke(admin, ["restore", "backups/backup.db"])
 
         # Should print warning and exit without calling API
         assert result.exit_code == 0
@@ -204,9 +202,7 @@ class TestRestoreBackupCommand:
     def test_restore_with_confirm_but_decline_prompt(self, runner, mock_client):
         """Test restore with --confirm but user declines at confirmation prompt"""
         result = runner.invoke(
-            admin,
-            ['restore', 'backups/backup.db', '--confirm'],
-            input='n\n'  # User declines
+            admin, ["restore", "backups/backup.db", "--confirm"], input="n\n"  # User declines
         )
 
         assert result.exit_code == 0
@@ -220,7 +216,7 @@ class TestRestoreBackupCommand:
             "success": True,
             "restored_from": "backups/bcd_backup_20260205_120000.db",
             "warning": "A safety backup was created in ./backups/pre_restore/",
-            "message": "Database restored successfully"
+            "message": "Database restored successfully",
         }
 
         mock_client_instance = MagicMock()
@@ -229,8 +225,8 @@ class TestRestoreBackupCommand:
 
         result = runner.invoke(
             admin,
-            ['restore', 'backups/bcd_backup_20260205_120000.db', '--confirm'],
-            input='y\n'  # User confirms
+            ["restore", "backups/bcd_backup_20260205_120000.db", "--confirm"],
+            input="y\n",  # User confirms
         )
 
         assert result.exit_code == 0
@@ -250,9 +246,7 @@ class TestRestoreBackupCommand:
         mock_client.return_value = mock_client_instance
 
         result = runner.invoke(
-            admin,
-            ['restore', 'backups/nonexistent.db', '--confirm'],
-            input='y\n'
+            admin, ["restore", "backups/nonexistent.db", "--confirm"], input="y\n"
         )
 
         assert result.exit_code == 1
@@ -262,19 +256,13 @@ class TestRestoreBackupCommand:
         """Test restore with invalid backup file"""
         mock_response = MagicMock()
         mock_response.status_code = 400  # Fixed: was using == instead of =
-        mock_response.json.return_value = {
-            "detail": "Backup file is not a valid SQLite database"
-        }
+        mock_response.json.return_value = {"detail": "Backup file is not a valid SQLite database"}
 
         mock_client_instance = MagicMock()
         mock_client_instance.post.return_value = mock_response
         mock_client.return_value = mock_client_instance
 
-        result = runner.invoke(
-            admin,
-            ['restore', 'backups/invalid.db', '--confirm'],
-            input='y\n'
-        )
+        result = runner.invoke(admin, ["restore", "backups/invalid.db", "--confirm"], input="y\n")
 
         assert result.exit_code == 1
 
@@ -285,7 +273,7 @@ class TestRestoreBackupCommand:
         mock_response.json.return_value = {
             "success": True,
             "restored_from": "backups/backup.db",
-            "warning": "Safety backup created"
+            "warning": "Safety backup created",
         }
 
         mock_client_instance = MagicMock()
@@ -294,12 +282,12 @@ class TestRestoreBackupCommand:
 
         result = runner.invoke(
             admin,
-            ['restore', 'backups/backup.db', '--confirm', '--api-url', 'http://custom:9000'],
-            input='y\n'
+            ["restore", "backups/backup.db", "--confirm", "--api-url", "http://custom:9000"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
-        mock_client.assert_called_with(base_url='http://custom:9000')
+        mock_client.assert_called_with(base_url="http://custom:9000")
 
 
 class TestBackupCommandsHelp:
@@ -307,7 +295,7 @@ class TestBackupCommandsHelp:
 
     def test_backup_help(self, runner):
         """Test backup command help message"""
-        result = runner.invoke(admin, ['backup', '--help'])
+        result = runner.invoke(admin, ["backup", "--help"])
 
         assert result.exit_code == 0
         assert "Create a database backup" in result.output
@@ -316,14 +304,14 @@ class TestBackupCommandsHelp:
 
     def test_list_backups_help(self, runner):
         """Test list-backups command help message"""
-        result = runner.invoke(admin, ['list-backups', '--help'])
+        result = runner.invoke(admin, ["list-backups", "--help"])
 
         assert result.exit_code == 0
         assert "List all available database backups" in result.output
 
     def test_restore_help(self, runner):
         """Test restore command help message"""
-        result = runner.invoke(admin, ['restore', '--help'])
+        result = runner.invoke(admin, ["restore", "--help"])
 
         assert result.exit_code == 0
         assert "Restore database from a backup file" in result.output
@@ -349,12 +337,12 @@ class TestBackupCommandsIntegration:
                 "file_path": "/path/test_backup.db",
                 "size_mb": 1.0,
                 "created_at": "2026-02-05T12:00:00",
-                "age_days": 0
-            }
+                "age_days": 0,
+            },
         }
         mock_client_instance.post.return_value = backup_response
 
-        backup_result = runner.invoke(admin, ['backup'])
+        backup_result = runner.invoke(admin, ["backup"])
         assert backup_result.exit_code == 0
 
         # Step 2: List backups
@@ -363,17 +351,19 @@ class TestBackupCommandsIntegration:
         list_response.json.return_value = {
             "success": True,
             "count": 1,
-            "backups": [{
-                "filename": "test_backup.db",
-                "size_mb": 1.0,
-                "created_at": "2026-02-05T12:00:00",
-                "age_days": 0
-            }],
-            "database_info": {"size_mb": 1.0}
+            "backups": [
+                {
+                    "filename": "test_backup.db",
+                    "size_mb": 1.0,
+                    "created_at": "2026-02-05T12:00:00",
+                    "age_days": 0,
+                }
+            ],
+            "database_info": {"size_mb": 1.0},
         }
         mock_client_instance.get.return_value = list_response
 
-        list_result = runner.invoke(admin, ['list-backups'])
+        list_result = runner.invoke(admin, ["list-backups"])
         assert list_result.exit_code == 0
         assert "test_backup.db" in list_result.output
 
@@ -383,14 +373,12 @@ class TestBackupCommandsIntegration:
         restore_response.json.return_value = {
             "success": True,
             "restored_from": "/path/test_backup.db",
-            "warning": "Safety backup created"
+            "warning": "Safety backup created",
         }
         mock_client_instance.post.return_value = restore_response
 
         restore_result = runner.invoke(
-            admin,
-            ['restore', '/path/test_backup.db', '--confirm'],
-            input='y\n'
+            admin, ["restore", "/path/test_backup.db", "--confirm"], input="y\n"
         )
         assert restore_result.exit_code == 0
 
@@ -405,8 +393,8 @@ class TestBackupCommandsIntegration:
                 "file_path": "/path/backup.db",
                 "size_mb": 1.0,
                 "created_at": "2026-02-05T12:00:00",
-                "age_days": 0
-            }
+                "age_days": 0,
+            },
         }
 
         mock_client_instance = MagicMock()
@@ -414,12 +402,8 @@ class TestBackupCommandsIntegration:
         mock_client.return_value = mock_client_instance
 
         # Set environment variable
-        result = runner.invoke(
-            admin,
-            ['backup'],
-            env={'BCD_API_URL': 'http://env-api:8888'}
-        )
+        result = runner.invoke(admin, ["backup"], env={"BCD_API_URL": "http://env-api:8888"})
 
         assert result.exit_code == 0
         # Should use env var URL
-        mock_client.assert_called_with(base_url='http://env-api:8888')
+        mock_client.assert_called_with(base_url="http://env-api:8888")

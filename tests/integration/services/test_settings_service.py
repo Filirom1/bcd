@@ -118,8 +118,7 @@ class TestUpdateSettings:
     def test_update_settings_ignores_invalid_fields(self, db_session):
         """Test that invalid fields are ignored."""
         # Get original settings
-        original = settings_service.get_settings(db_session)
-        original_name = original.library_name
+        settings_service.get_settings(db_session)
 
         # Try to update with invalid field
         updates = {

@@ -22,7 +22,6 @@ Test Quality:
 """
 
 
-
 class TestUS1CirculationBasics:
     """Basic circulation workflows - checkout and return."""
 
@@ -36,9 +35,7 @@ class TestUS1CirculationBasics:
         """
         # Arrange
         borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Amira",
-            last_name="BENALI"
+            borrower_id="101", first_name="Amira", last_name="BENALI"
         )
 
         # Act
@@ -50,11 +47,7 @@ class TestUS1CirculationBasics:
         assert "Amira" in borrower_name or "BENALI" in borrower_name
 
     def test_us1_ac2_immediate_item_checkout(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory,
-        performance_monitor
+        self, circulation_page, borrower_factory, item_factory, performance_monitor
     ):
         """
         US1-AC2: Item checked out immediately on barcode scan.
@@ -66,10 +59,7 @@ class TestUS1CirculationBasics:
         """
         # Arrange
         borrower = borrower_factory.create(borrower_id="102")
-        item, record = item_factory.create_with_record(
-            item_id="785",
-            title="Le Petit Prince"
-        )
+        item, record = item_factory.create_with_record(item_id="785", title="Le Petit Prince")
 
         # Act
         circulation_page.goto_checkout()
@@ -86,13 +76,7 @@ class TestUS1CirculationBasics:
         # 2000ms is reasonable for full E2E flow (API target is <200ms)
         performance_monitor.assert_faster_than("checkout", 2000)
 
-
-    def test_us1_ac4_manual_barcode_entry(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory
-    ):
+    def test_us1_ac4_manual_barcode_entry(self, circulation_page, borrower_factory, item_factory):
         """
         US1-AC4: Manual keyboard entry works same as scanning.
 
@@ -114,24 +98,17 @@ class TestUS1CirculationBasics:
         assert scanned_count >= 1
 
 
-
 class TestUS1CirculationErrors:
     """Error handling scenarios."""
 
-        # Note: Specific error message checking depends on UI implementation
-
-
+    # Note: Specific error message checking depends on UI implementation
 
 
 class TestUS1PerformanceTargets:
     """Performance validation tests."""
 
     def test_scanner_feedback_under_200ms(
-        self,
-        circulation_page,
-        borrower_factory,
-        item_factory,
-        performance_monitor
+        self, circulation_page, borrower_factory, item_factory, performance_monitor
     ):
         """
         Performance target: Scanner feedback <200ms (p95).

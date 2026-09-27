@@ -15,12 +15,8 @@ class TestEditBorrowerModalOpening:
     """Test opening the edit borrower modal with improved selectors."""
 
 
-
-
-
 class TestEditBorrowerFormFields:
     """Test form field pre-population and editing."""
-
 
     def test_edit_borrower_name_updates_successfully(
         self, page: Page, server_url: str, borrower_factory, db_session
@@ -33,11 +29,8 @@ class TestEditBorrowerFormFields:
         Assert: Success notification shown, modal closes
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="303",
-            first_name="Pierre",
-            last_name="Dupont",
-            role="student"
+        borrower_factory.create(
+            borrower_id="303", first_name="Pierre", last_name="Dupont", role="student"
         )
 
         page.goto(f"{server_url}/#/borrowers")
@@ -88,8 +81,8 @@ class TestEditBorrowerValidation:
         Assert: Error message displayed on field
         """
         # Arrange - Create two borrowers
-        borrower1 = borrower_factory.create(borrower_id="401", first_name="First", last_name="One")
-        borrower2 = borrower_factory.create(borrower_id="402", first_name="Second", last_name="Two")
+        borrower_factory.create(borrower_id="401", first_name="First", last_name="One")
+        borrower_factory.create(borrower_id="402", first_name="Second", last_name="Two")
 
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)

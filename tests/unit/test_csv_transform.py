@@ -1,6 +1,9 @@
 """Unit tests for CSV transformation service (BCD -> Dublin Core)"""
 
-from src.bcd_api.services.catalog.transform import _map_support_to_dc_type, transform_bcd_to_dublin_core
+from src.bcd_api.services.catalog.transform import (
+    _map_support_to_dc_type,
+    transform_bcd_to_dublin_core,
+)
 
 
 class TestTransformBcdToDublinCore:
@@ -227,7 +230,9 @@ class TestMapSupportToDcType:
     def test_empty_mapping(self):
         """Test that empty support maps to default 'PhysicalObject' (since no value provided)"""
         assert _map_support_to_dc_type("") == "Text"  # Empty defaults to Text
-        assert _map_support_to_dc_type("   ") == "PhysicalObject"  # Whitespace-only returns PhysicalObject
+        assert (
+            _map_support_to_dc_type("   ") == "PhysicalObject"
+        )  # Whitespace-only returns PhysicalObject
 
     def test_unknown_mapping(self):
         """Test that unknown support maps to 'PhysicalObject'"""

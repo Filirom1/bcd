@@ -1,48 +1,61 @@
-import io
 import json
-import pytest
 import sys
-from pathlib import Path
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch
+
 
 # Custom dummy classes to mock tkinter completely and avoid "_tkinter" import errors and MagicMock renaming conflicts
 class DummyTk:
     def __init__(self):
         pass
+
     def withdraw(self):
         pass
+
     def destroy(self):
         pass
+
     def title(self, title):
         pass
+
     def resizable(self, w, h):
         pass
+
     def geometry(self, geom):
         pass
+
     def update_idletasks(self):
         pass
+
     def winfo_screenwidth(self):
         return 1024
+
     def winfo_screenheight(self):
         return 768
+
     def update(self):
         pass
+
     def mainloop(self):
         pass
+
     def after(self, delay, callback):
         callback()
 
     @staticmethod
-    def Tk():
+    def Tk():  # noqa: N802
         return DummyTk()
+
 
 class DummyLabel:
     def __init__(self, parent, text, **kwargs):
         pass
+
     def pack(self):
         pass
 
+
 DummyTk.Label = DummyLabel
+
 
 class DummyMessagebox:
     mock_askyesno = MagicMock(return_value=True)
@@ -51,17 +64,18 @@ class DummyMessagebox:
     @classmethod
     def askyesno(cls, title, message):
         return cls.mock_askyesno(title, message)
-    
+
     @classmethod
     def showinfo(cls, title, message):
         return cls.mock_showinfo(title, message)
+
 
 DummyTk.messagebox = DummyMessagebox
 
 sys.modules["tkinter"] = DummyTk
 sys.modules["tkinter.messagebox"] = DummyMessagebox
 
-from bcd_api.core import updater
+from bcd_api.core import updater  # noqa: E402
 
 
 def test_version_tuple_handles_v_prefix_and_invalid_values():
@@ -109,9 +123,14 @@ def test_check_for_update_ignores_current_or_malformed_release(monkeypatch):
     monkeypatch.setattr(updater, "_is_online", lambda: True)
 
     class Response:
-        def __enter__(self): return self
-        def __exit__(self, *args): return False
-        def read(self): return b'{"tag_name": "v1.0.0"}'
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return b'{"tag_name": "v1.0.0"}'
 
     monkeypatch.setattr(updater.urllib.request, "urlopen", lambda *args, **kwargs: Response())
     assert updater.check_for_update("1.0.0") is None
@@ -165,13 +184,12 @@ def test_apply_update_windows_mocked(tmp_path, monkeypatch):
 
     monkeypatch.setattr(updater.sys, "exit", lambda code: None)
 
-    with patch("zipfile.ZipFile", return_value=mock_zip), \
-         patch("subprocess.Popen", mock_popen):
+    with patch("zipfile.ZipFile", return_value=mock_zip), patch("subprocess.Popen", mock_popen):
         updater._apply_update_windows(archive, "2.0.0", app_dir)
 
         # Zip extracted?
         mock_zip.__enter__.return_value.extractall.assert_called_once()
-        
+
         # update.bat written?
         bat_file = app_dir / "update.bat"
         assert bat_file.exists()
@@ -192,10 +210,12 @@ def test_apply_update_linux_mocked(tmp_path, monkeypatch):
 
     monkeypatch.setattr(updater.sys, "exit", lambda code: None)
 
-    with patch("tarfile.open", return_value=mock_tar), \
-         patch("subprocess.Popen", mock_popen):
+    with patch("tarfile.open", return_value=mock_tar), patch("subprocess.Popen", mock_popen):
         # We can pass an exception on filter parameter to trigger the fallback extraction
-        mock_tar.__enter__.return_value.extractall.side_effect = [TypeError("filter not supported"), None]
+        mock_tar.__enter__.return_value.extractall.side_effect = [
+            TypeError("filter not supported"),
+            None,
+        ]
 
         updater._apply_update_linux(archive, "2.0.0", app_dir)
 
@@ -216,10 +236,14 @@ def test_check_and_apply_update_full_workflow_mocked(tmp_path, monkeypatch):
     app_dir.mkdir()
 
     # Mock all helpers so it runs completely mock-isolated without network or native windows
-    monkeypatch.setattr(updater, "check_for_update", lambda version: ("2.0.0", "https://example/file.zip"))
+    monkeypatch.setattr(
+        updater, "check_for_update", lambda version: ("2.0.0", "https://example/file.zip")
+    )
     monkeypatch.setattr(updater, "_show_yes_no", lambda title, msg: True)
-    monkeypatch.setattr(updater, "_download_with_progress", lambda url, dest: dest.write_text("partial"))
-    
+    monkeypatch.setattr(
+        updater, "_download_with_progress", lambda url, dest: dest.write_text("partial")
+    )
+
     mock_apply = MagicMock()
     monkeypatch.setattr(updater, "_apply_update_linux", mock_apply)
     monkeypatch.setattr(updater.sys, "platform", "linux")

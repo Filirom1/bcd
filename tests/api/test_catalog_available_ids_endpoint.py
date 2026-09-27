@@ -21,6 +21,7 @@ from src.bcd_api.main import app
 # Shared mock response factory
 # ---------------------------------------------------------------------------
 
+
 def _mock_ids(ids, contiguous=True):
     """Build a realistic service return value from a list of ID strings."""
     return {
@@ -45,6 +46,7 @@ def client():
 # ---------------------------------------------------------------------------
 # Response structure
 # ---------------------------------------------------------------------------
+
 
 class TestAvailableIdsResponseStructure:
     """Verify the shape of a successful response."""
@@ -78,6 +80,7 @@ class TestAvailableIdsResponseStructure:
 # ---------------------------------------------------------------------------
 # Default behaviour
 # ---------------------------------------------------------------------------
+
 
 class TestAvailableIdsDefaults:
     """Default parameter handling."""
@@ -117,6 +120,7 @@ class TestAvailableIdsDefaults:
 # count validation (FastAPI enforces ge=1, le=1000 — no service call needed)
 # ---------------------------------------------------------------------------
 
+
 class TestAvailableIdsCountValidation:
     """count must satisfy 1 ≤ count ≤ 1000."""
 
@@ -145,14 +149,13 @@ class TestAvailableIdsCountValidation:
 # start_from parameter
 # ---------------------------------------------------------------------------
 
+
 class TestAvailableIdsStartFrom:
     """start_from handling."""
 
     def test_start_from_forwarded_to_service(self, client):
         with patch(SERVICE_PATH, return_value=_mock_ids(["500", "501", "502"])) as mock:
-            response = client.get(
-                "/api/v1/catalog/items/available-ids?count=3&start_from=500"
-            )
+            response = client.get("/api/v1/catalog/items/available-ids?count=3&start_from=500")
 
         assert response.status_code == 200
         _args, kwargs = mock.call_args
@@ -161,9 +164,7 @@ class TestAvailableIdsStartFrom:
 
     def test_start_from_reflected_in_response(self, client):
         with patch(SERVICE_PATH, return_value=_mock_ids(["500", "501", "502"])):
-            response = client.get(
-                "/api/v1/catalog/items/available-ids?count=3&start_from=500"
-            )
+            response = client.get("/api/v1/catalog/items/available-ids?count=3&start_from=500")
 
         body = response.json()
         assert body["start_id"] == "500"
@@ -172,9 +173,7 @@ class TestAvailableIdsStartFrom:
     def test_start_from_non_numeric_returns_400(self, client):
         """Service raises ValueError for non-numeric start_from; endpoint maps to 400."""
         with patch(SERVICE_PATH, side_effect=ValueError("Invalid start_from value")):
-            response = client.get(
-                "/api/v1/catalog/items/available-ids?count=5&start_from=ABCDE"
-            )
+            response = client.get("/api/v1/catalog/items/available-ids?count=5&start_from=ABCDE")
         assert response.status_code == 400
 
 
@@ -182,14 +181,13 @@ class TestAvailableIdsStartFrom:
 # contiguous parameter
 # ---------------------------------------------------------------------------
 
+
 class TestAvailableIdsContiguous:
     """contiguous query-parameter forwarding and response."""
 
     def test_contiguous_false_forwarded_to_service(self, client):
         with patch(SERVICE_PATH, return_value=_mock_ids(["3", "6", "7"], contiguous=False)) as mock:
-            response = client.get(
-                "/api/v1/catalog/items/available-ids?count=3&contiguous=false"
-            )
+            response = client.get("/api/v1/catalog/items/available-ids?count=3&contiguous=false")
 
         assert response.status_code == 200
         _args, kwargs = mock.call_args
@@ -198,17 +196,13 @@ class TestAvailableIdsContiguous:
 
     def test_contiguous_false_reflected_in_response(self, client):
         with patch(SERVICE_PATH, return_value=_mock_ids(["3", "6", "7"], contiguous=False)):
-            response = client.get(
-                "/api/v1/catalog/items/available-ids?count=3&contiguous=false"
-            )
+            response = client.get("/api/v1/catalog/items/available-ids?count=3&contiguous=false")
 
         assert response.json()["contiguous"] is False
 
     def test_contiguous_true_forwarded_to_service(self, client):
         with patch(SERVICE_PATH, return_value=_mock_ids(["6", "7", "8"], contiguous=True)) as mock:
-            response = client.get(
-                "/api/v1/catalog/items/available-ids?count=3&contiguous=true"
-            )
+            client.get("/api/v1/catalog/items/available-ids?count=3&contiguous=true")
 
         _args, kwargs = mock.call_args
         cont = kwargs.get("contiguous", _args[3] if len(_args) > 3 else None)
@@ -218,9 +212,6 @@ class TestAvailableIdsContiguous:
         """The endpoint passes through whatever the service returns unchanged."""
         expected = ["3", "6", "7"]
         with patch(SERVICE_PATH, return_value=_mock_ids(expected, contiguous=False)):
-            response = client.get(
-                "/api/v1/catalog/items/available-ids?count=3&contiguous=false"
-            )
+            response = client.get("/api/v1/catalog/items/available-ids?count=3&contiguous=false")
 
         assert response.json()["ids"] == expected
-

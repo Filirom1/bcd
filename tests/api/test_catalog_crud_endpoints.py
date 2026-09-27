@@ -1,6 +1,7 @@
 from types import SimpleNamespace
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from src.bcd_api.api.v1 import catalog
 from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
@@ -29,17 +30,14 @@ def test_create_bibliographic_record_endpoint(monkeypatch):
     called_args = {}
 
     def mock_create(db, record_data, isbn_lookup):
-        called_args.update({
-            "record_data": record_data,
-            "isbn_lookup": isbn_lookup
-        })
+        called_args.update({"record_data": record_data, "isbn_lookup": isbn_lookup})
         return SimpleNamespace(
             id=42,
             isbn=record_data.isbn,
             title=record_data.title,
             authors=record_data.authors,
             medium_type=record_data.medium_type,
-            total_items=0
+            total_items=0,
         )
 
     monkeypatch.setattr(catalog.catalog_service, "create_bibliographic_record", mock_create)
@@ -48,7 +46,7 @@ def test_create_bibliographic_record_endpoint(monkeypatch):
         isbn="978-2070408504",
         title="Le Petit Prince",
         authors=["Antoine de Saint-Exupéry"],
-        medium_type="Livre"
+        medium_type="Livre",
     )
 
     result = catalog.create_bibliographic_record(req, isbn_lookup=True, db=object())
@@ -70,16 +68,13 @@ def test_create_item_endpoint(monkeypatch):
             item_id=item.item_id,
             bibliographic_record_id=item.bibliographic_record_id,
             status="available",
-            condition="good"
+            condition="good",
         )
 
     monkeypatch.setattr(catalog.catalog_service, "create_item", mock_create_item)
 
     req = ItemCreate(
-        item_id="0001",
-        bibliographic_record_id=42,
-        status="available",
-        condition="good"
+        item_id="0001", bibliographic_record_id=42, status="available", condition="good"
     )
 
     result = catalog.create_item(req, db=object())
@@ -92,11 +87,11 @@ def test_create_item_endpoint(monkeypatch):
 
 def test_get_item_endpoint(monkeypatch):
     """Test get_item endpoint delegates to catalog_service."""
-    monkeypatch.setattr(catalog.catalog_service, "get_item", lambda db, item_id: SimpleNamespace(
-        id=101,
-        item_id=item_id,
-        status="available"
-    ))
+    monkeypatch.setattr(
+        catalog.catalog_service,
+        "get_item",
+        lambda db, item_id: SimpleNamespace(id=101, item_id=item_id, status="available"),
+    )
 
     result = catalog.get_item("0001", db=object())
     assert result.item_id == "0001"
@@ -125,26 +120,30 @@ def test_search_bibliographic_records_endpoint(monkeypatch):
         binding_type="paperback",
         page_count=96,
         has_illustrations=True,
-        cover_image=None
+        cover_image=None,
     )
 
-    monkeypatch.setattr(catalog.catalog_service, "search_bibliographic_records", lambda **kwargs: ([mock_record], 1))
+    monkeypatch.setattr(
+        catalog.catalog_service, "search_bibliographic_records", lambda **kwargs: ([mock_record], 1)
+    )
 
     # Mock DB query
     mock_db = MagicMock()
-    mock_query = mock_db.query.return_value
-    mock_filter = mock_query.filter.return_value
-    mock_distinct = mock_filter.distinct.return_value
-    mock_order = mock_distinct.order_by.return_value
-    
+
     # Mock database results for counts, holds, and items
     mock_db.query.return_value.filter.return_value.group_by.return_value.all.side_effect = [
         [SimpleNamespace(bibliographic_record_id=42, total=1, available=1)],  # counts_rows
-        [SimpleNamespace(bibliographic_record_id=42, holds=0)]                 # holds_rows
+        [SimpleNamespace(bibliographic_record_id=42, holds=0)],  # holds_rows
     ]
     # For all_items query, return list of items
     mock_db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [
-        SimpleNamespace(bibliographic_record_id=42, item_id="0001", status="available", shelf_location="Shelf A", call_number="C-EXU")
+        SimpleNamespace(
+            bibliographic_record_id=42,
+            item_id="0001",
+            status="available",
+            shelf_location="Shelf A",
+            call_number="C-EXU",
+        )
     ]
 
     result = catalog.search_bibliographic_records(limit=50, offset=0, db=mock_db)
@@ -178,18 +177,20 @@ def test_search_bibliographic_records_with_include_items_endpoint(monkeypatch):
         binding_type="paperback",
         page_count=96,
         has_illustrations=True,
-        cover_image=None
+        cover_image=None,
     )
 
-    monkeypatch.setattr(catalog.catalog_service, "search_bibliographic_records", lambda **kwargs: ([mock_record], 1))
+    monkeypatch.setattr(
+        catalog.catalog_service, "search_bibliographic_records", lambda **kwargs: ([mock_record], 1)
+    )
 
     # Mock DB query
     mock_db = MagicMock()
-    
+
     # Mock database results for counts, holds, and items
     mock_db.query.return_value.filter.return_value.group_by.return_value.all.side_effect = [
         [SimpleNamespace(bibliographic_record_id=42, total=1, available=1)],  # counts_rows
-        [SimpleNamespace(bibliographic_record_id=42, holds=0)]                 # holds_rows
+        [SimpleNamespace(bibliographic_record_id=42, holds=0)],  # holds_rows
     ]
     # For all_items query, return list of items with the required fields
     mock_item = SimpleNamespace(
@@ -202,11 +203,15 @@ def test_search_bibliographic_records_with_include_items_endpoint(monkeypatch):
         condition="good",
         loanable=True,
         acquisition_date=None,
-        funding_source="own"
+        funding_source="own",
     )
-    mock_db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [mock_item]
+    mock_db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [
+        mock_item
+    ]
 
-    result = catalog.search_bibliographic_records(limit=50, offset=0, include_items=True, db=mock_db)
+    result = catalog.search_bibliographic_records(
+        limit=50, offset=0, include_items=True, db=mock_db
+    )
 
     assert result.total == 1
     assert len(result.items) == 1
@@ -219,10 +224,14 @@ def test_search_bibliographic_records_with_include_items_endpoint(monkeypatch):
 
 def test_get_bibliographic_record_endpoint(monkeypatch):
     """Test get_bibliographic_record endpoint."""
-    monkeypatch.setattr(catalog.catalog_service, "get_bibliographic_record_with_counts", lambda db, rid: SimpleNamespace(
-        id=rid, title="Test", authors='["A"]', medium_type="Livre", total_items=3
-    ))
-    
+    monkeypatch.setattr(
+        catalog.catalog_service,
+        "get_bibliographic_record_with_counts",
+        lambda db, rid: SimpleNamespace(
+            id=rid, title="Test", authors='["A"]', medium_type="Livre", total_items=3
+        ),
+    )
+
     mock_db = MagicMock()
 
     result = catalog.get_bibliographic_record(42, db=mock_db)
@@ -234,7 +243,11 @@ def test_export_catalog_endpoint(monkeypatch):
     """Test export_catalog endpoint."""
     # Mock ExportService
     mock_export_service = MagicMock()
-    mock_export_service.export_catalog_to_csv.return_value = ("title,barcode\nLe Petit Prince,0001\n", 1, 1)
+    mock_export_service.export_catalog_to_csv.return_value = (
+        "title,barcode\nLe Petit Prince,0001\n",
+        1,
+        1,
+    )
 
     monkeypatch.setattr(catalog, "ExportService", lambda db: mock_export_service)
 
@@ -248,7 +261,12 @@ def test_export_catalog_endpoint(monkeypatch):
 def test_update_record_endpoint(monkeypatch):
     """Test update_record_endpoint."""
     called = []
-    monkeypatch.setattr(catalog.catalog_service, "update_record", lambda db, record_id, update_data: called.append((record_id, update_data)) or SimpleNamespace(id=record_id, **update_data))
+    monkeypatch.setattr(
+        catalog.catalog_service,
+        "update_record",
+        lambda db, record_id, update_data: called.append((record_id, update_data))
+        or SimpleNamespace(id=record_id, **update_data),
+    )
 
     result = catalog.update_record_endpoint(42, {"title": "New Title"}, db=object())
     assert called == [(42, {"title": "New Title"})]
@@ -258,7 +276,12 @@ def test_update_record_endpoint(monkeypatch):
 def test_update_item_endpoint(monkeypatch):
     """Test update_item_endpoint."""
     called = []
-    monkeypatch.setattr(catalog.catalog_service, "update_item", lambda db, item_id, update_data: called.append((item_id, update_data)) or SimpleNamespace(item_id=item_id, **update_data))
+    monkeypatch.setattr(
+        catalog.catalog_service,
+        "update_item",
+        lambda db, item_id, update_data: called.append((item_id, update_data))
+        or SimpleNamespace(item_id=item_id, **update_data),
+    )
 
     result = catalog.update_item_endpoint("0001", {"condition": "damaged"}, db=object())
     assert called == [("0001", {"condition": "damaged"})]
@@ -268,7 +291,9 @@ def test_update_item_endpoint(monkeypatch):
 def test_delete_item_endpoint(monkeypatch):
     """Test delete_item_endpoint."""
     called = []
-    monkeypatch.setattr(catalog.catalog_service, "delete_item", lambda db, item_id: called.append(item_id))
+    monkeypatch.setattr(
+        catalog.catalog_service, "delete_item", lambda db, item_id: called.append(item_id)
+    )
 
     result = catalog.delete_item_endpoint("0001", db=object())
     assert result.status_code == 204
@@ -278,7 +303,9 @@ def test_delete_item_endpoint(monkeypatch):
 def test_delete_bibliographic_record_endpoint(monkeypatch):
     """Test delete_bibliographic_record endpoint."""
     called = []
-    monkeypatch.setattr(catalog.catalog_service, "bulk_delete_records", lambda db, ids: called.extend(ids))
+    monkeypatch.setattr(
+        catalog.catalog_service, "bulk_delete_records", lambda db, ids: called.extend(ids)
+    )
 
     result = catalog.delete_bibliographic_record(42, db=object())
     assert result is None
@@ -315,4 +342,3 @@ def test_update_item_endpoint_error_handling(monkeypatch):
 
     assert exc_info.value.status_code == 500
     assert "Update item failed" in exc_info.value.detail
-

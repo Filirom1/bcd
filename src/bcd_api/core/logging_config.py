@@ -25,6 +25,7 @@ def _get_log_dir() -> Path:
         return Path(settings.log_dir_path)
     try:
         from .portable import get_app_dir, is_portable
+
         if is_portable():
             return get_app_dir() / "logs"
     except ImportError:

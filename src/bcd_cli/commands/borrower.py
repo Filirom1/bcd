@@ -148,7 +148,9 @@ def list_borrowers(
                 status = "✓ Active" if borrower["active"] else "✗ Blocked"
                 status_style = "green" if borrower["active"] else "red"
 
-                class_id_str = str(borrower.get("class_id", "")) if borrower.get("class_id") else "-"
+                class_id_str = (
+                    str(borrower.get("class_id", "")) if borrower.get("class_id") else "-"
+                )
 
                 table.add_row(
                     borrower["borrower_id"],

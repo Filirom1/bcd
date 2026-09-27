@@ -170,8 +170,7 @@ def search_by_isbn(isbn: str, timeout: int = 10) -> Optional[dict]:
     return _parse_volume(items[0])
 
 
-def search_by_title_author(title: str, author_lastname: str,
-                           timeout: int = 10) -> Optional[dict]:
+def search_by_title_author(title: str, author_lastname: str, timeout: int = 10) -> Optional[dict]:
     """
     Search Google Books by title and author lastname.
 
@@ -225,9 +224,11 @@ def search_by_title_author(title: str, author_lastname: str,
         author_score = _token_overlap(author_lastname, bnf_authors) if author_lastname else 0.5
 
         # Perfect title match → weight title more heavily
-        score = (title_score * 0.85 + author_score * 0.15
-                 if title_score >= 1.0
-                 else title_score * 0.65 + author_score * 0.35)
+        score = (
+            title_score * 0.85 + author_score * 0.15
+            if title_score >= 1.0
+            else title_score * 0.65 + author_score * 0.35
+        )
 
         if score > best_score:
             best_score = score

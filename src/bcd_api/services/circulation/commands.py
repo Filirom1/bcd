@@ -48,10 +48,7 @@ logger = logging.getLogger(__name__)
 
 
 def checkout_items(
-    db: Session,
-    borrower_id: str,
-    item_ids: List[str],
-    checked_out_by: Optional[str] = None
+    db: Session, borrower_id: str, item_ids: List[str], checked_out_by: Optional[str] = None
 ) -> CheckoutResponse:
     """Check out items to a borrower. Fully atomic and batch-loaded."""
     # 1. Validate scanner duplicates
@@ -68,22 +65,25 @@ def checkout_items(
 
     if not borrower.active:
         raise BorrowerBlockedException(
-            borrower_id=borrower_id,
-            reason=borrower.blocked_reason or 'Account inactive'
+            borrower_id=borrower_id, reason=borrower.blocked_reason or "Account inactive"
         )
 
     # 3. Batch load loans count for borrower
-    current_loans = db.query(CirculationTransaction).filter(
-        CirculationTransaction.borrower_id == borrower.id,
-        CirculationTransaction.return_date.is_(None),
-    ).count()
+    current_loans = (
+        db.query(CirculationTransaction)
+        .filter(
+            CirculationTransaction.borrower_id == borrower.id,
+            CirculationTransaction.return_date.is_(None),
+        )
+        .count()
+    )
 
     # Validate limits with policy
     decision = policy.checkout_decision(
         role=borrower.role,
         current_loans_count=current_loans,
         additional_count=len(item_ids),
-        is_godot_ui=(checked_out_by == "godot-ui")
+        is_godot_ui=(checked_out_by == "godot-ui"),
     )
     if not decision.allowed:
         if decision.error_code == "LOAN_LIMIT_WARNING_EXCEEDED":
@@ -91,20 +91,23 @@ def checkout_items(
                 borrower_id=borrower_id,
                 current_count=current_loans,
                 limit=policy.kids_warning_limit,
-                additional=len(item_ids)
+                additional=len(item_ids),
             )
         else:
             raise LoanLimitExceededException(
                 borrower_id=borrower_id,
                 current_count=current_loans,
                 limit=policy.loan_limit_for(borrower.role),
-                additional=len(item_ids)
+                additional=len(item_ids),
             )
 
     # 4. Batch load all requested items with records in ONE query
-    items = db.query(Item).options(
-        joinedload(Item.bibliographic_record)
-    ).filter(Item.item_id.in_(item_ids)).all()
+    items = (
+        db.query(Item)
+        .options(joinedload(Item.bibliographic_record))
+        .filter(Item.item_id.in_(item_ids))
+        .all()
+    )
 
     item_map = {item.item_id: item for item in items}
 
@@ -120,14 +123,14 @@ def checkout_items(
 
     # 5. Batch load all active holds for bibliographic records of these items
     bib_ids = [item.bibliographic_record_id for item in items_to_checkout]
-    active_holds = db.query(Hold).options(
-        joinedload(Hold.borrower)
-    ).filter(
-        and_(
-            Hold.bibliographic_record_id.in_(bib_ids),
-            Hold.status.in_(["waiting", "ready"])
+    active_holds = (
+        db.query(Hold)
+        .options(joinedload(Hold.borrower))
+        .filter(
+            and_(Hold.bibliographic_record_id.in_(bib_ids), Hold.status.in_(["waiting", "ready"]))
         )
-    ).all()
+        .all()
+    )
 
     # Organize holds by record ID
     holds_by_record = {}
@@ -139,14 +142,17 @@ def checkout_items(
     unavailable_item_ids = [item.id for item in items_to_checkout if item.status != "available"]
     active_loans = []
     if unavailable_item_ids:
-        active_loans = db.query(CirculationTransaction).options(
-            joinedload(CirculationTransaction.borrower)
-        ).filter(
-            and_(
-                CirculationTransaction.item_id.in_(unavailable_item_ids),
-                CirculationTransaction.return_date.is_(None)
+        active_loans = (
+            db.query(CirculationTransaction)
+            .options(joinedload(CirculationTransaction.borrower))
+            .filter(
+                and_(
+                    CirculationTransaction.item_id.in_(unavailable_item_ids),
+                    CirculationTransaction.return_date.is_(None),
+                )
             )
-        ).all()
+            .all()
+        )
     loans_map = {loan.item_id: loan for loan in active_loans}
 
     # 7. Core validations
@@ -170,7 +176,7 @@ def checkout_items(
                     raise ItemAlreadyOnLoanException(
                         item_id=item.item_id,
                         borrower_name=active_loan.borrower.full_name,
-                        due_date=active_loan.due_date
+                        due_date=active_loan.due_date,
                     )
             else:
                 raise ItemNotAvailableException(item.item_id, item.status)
@@ -189,7 +195,7 @@ def checkout_items(
                 checkout_date=checkout_date,
                 due_date=due_date,
                 checked_out_by=checked_out_by or "system",
-                status="active"
+                status="active",
             )
             db.add(transaction)
 
@@ -201,9 +207,9 @@ def checkout_items(
             holds = holds_by_record.get(item.bibliographic_record_id, [])
             borrower_own_hold = next(
                 (
-                    h for h in holds
-                    if h.borrower_id == borrower.id
-                    and h.id not in processed_hold_ids
+                    h
+                    for h in holds
+                    if h.borrower_id == borrower.id and h.id not in processed_hold_ids
                 ),
                 None,
             )
@@ -245,14 +251,12 @@ def checkout_items(
                 "cover_image": t.bibliographic_record.cover_image,
             }
             for t in transactions
-        ]
+        ],
     )
 
 
 def return_items(
-    db: Session,
-    item_ids: List[str],
-    returned_by: Optional[str] = None
+    db: Session, item_ids: List[str], returned_by: Optional[str] = None
 ) -> ReturnResponse:
     """Process return of items. Fully atomic and transaction safe."""
     if len(item_ids) != len(set(item_ids)):
@@ -272,15 +276,20 @@ def return_items(
         items_to_return.append(item_map[item_id])
 
     db_item_ids = [item.id for item in items_to_return]
-    active_loans = db.query(CirculationTransaction).options(
-        joinedload(CirculationTransaction.borrower),
-        joinedload(CirculationTransaction.bibliographic_record)
-    ).filter(
-        and_(
-            CirculationTransaction.item_id.in_(db_item_ids),
-            CirculationTransaction.return_date.is_(None)
+    active_loans = (
+        db.query(CirculationTransaction)
+        .options(
+            joinedload(CirculationTransaction.borrower),
+            joinedload(CirculationTransaction.bibliographic_record),
         )
-    ).all()
+        .filter(
+            and_(
+                CirculationTransaction.item_id.in_(db_item_ids),
+                CirculationTransaction.return_date.is_(None),
+            )
+        )
+        .all()
+    )
 
     loans_map = {loan.item_id: loan for loan in active_loans}
 
@@ -288,6 +297,7 @@ def return_items(
     for item in items_to_return:
         if item.id not in loans_map:
             from ...core.exceptions import ItemNotOnLoanException
+
             raise ItemNotOnLoanException(item.item_id)
 
     # Process return mutations in single transaction
@@ -306,21 +316,25 @@ def return_items(
 
             item.status = "available"
 
-            returned_items.append({
-                "item_id": item.item_id,
-                "title": transaction.bibliographic_record.title,
-                "call_number": item.call_number,
-                "shelf_location": item.shelf_location,
-                "display_title": display_title(transaction.bibliographic_record.title, item.shelf_location),
-                "borrower_id": transaction.borrower.borrower_id,
-                "borrower_name": transaction.borrower.full_name,
-                "checkout_date": transaction.checkout_date,
-                "due_date": transaction.due_date,
-                "return_date": return_date,
-                "was_overdue": was_overdue,
-                "days_overdue": days_overdue,
-                "bibliographic_record_id": item.bibliographic_record_id
-            })
+            returned_items.append(
+                {
+                    "item_id": item.item_id,
+                    "title": transaction.bibliographic_record.title,
+                    "call_number": item.call_number,
+                    "shelf_location": item.shelf_location,
+                    "display_title": display_title(
+                        transaction.bibliographic_record.title, item.shelf_location
+                    ),
+                    "borrower_id": transaction.borrower.borrower_id,
+                    "borrower_name": transaction.borrower.full_name,
+                    "checkout_date": transaction.checkout_date,
+                    "due_date": transaction.due_date,
+                    "return_date": return_date,
+                    "was_overdue": was_overdue,
+                    "days_overdue": days_overdue,
+                    "bibliographic_record_id": item.bibliographic_record_id,
+                }
+            )
 
         # Promote waiting holds before the single commit of the return.
         settings = get_settings(db)
@@ -334,7 +348,9 @@ def return_items(
                 returned_item["hold_ready"] = {
                     "borrower_id": ready_hold.borrower.borrower_id,
                     "borrower_name": ready_hold.borrower.full_name,
-                    "class_name": ready_hold.borrower.class_.name if ready_hold.borrower.class_ else None,
+                    "class_name": (
+                        ready_hold.borrower.class_.name if ready_hold.borrower.class_ else None
+                    ),
                     "expiration_date": ready_hold.expiration_date,
                 }
             else:
@@ -354,13 +370,12 @@ def return_items(
 
 
 def renew_items(
-    db: Session,
-    borrower_id: str,
-    item_ids: Optional[List[str]] = None
+    db: Session, borrower_id: str, item_ids: Optional[List[str]] = None
 ) -> RenewResponse:
     """Renew items for a borrower. Successful requests are commited together."""
     if item_ids is None:
         from .queries import get_borrower_current_loans
+
         current_loans = get_borrower_current_loans(db=db, borrower_id=borrower_id)
         item_ids = [loan["item_id"] for loan in current_loans if loan["can_renew"]]
         if not item_ids:
@@ -385,40 +400,42 @@ def renew_items(
     item_map = {item.item_id: item for item in items}
 
     bib_ids = [item.bibliographic_record_id for item in items]
-    active_holds = db.query(Hold).filter(
-        and_(
-            Hold.bibliographic_record_id.in_(bib_ids),
-            Hold.status.in_(["waiting", "ready"])
+    active_holds = (
+        db.query(Hold)
+        .filter(
+            and_(Hold.bibliographic_record_id.in_(bib_ids), Hold.status.in_(["waiting", "ready"]))
         )
-    ).all()
+        .all()
+    )
     holds_by_record = {hold.bibliographic_record_id for hold in active_holds}
 
     transactions_to_renew = []
 
     for item_id_str in item_ids:
         if item_id_str not in item_map:
-            failed.append({
-                "item_id": item_id_str,
-                "reason": "Item not found"
-            })
+            failed.append({"item_id": item_id_str, "reason": "Item not found"})
             continue
 
         item = item_map[item_id_str]
 
         # Find active transaction
-        transaction = db.query(CirculationTransaction).filter(
-            and_(
-                CirculationTransaction.item_id == item.id,
-                CirculationTransaction.borrower_id == borrower.id,
-                CirculationTransaction.return_date.is_(None)
+        transaction = (
+            db.query(CirculationTransaction)
+            .filter(
+                and_(
+                    CirculationTransaction.item_id == item.id,
+                    CirculationTransaction.borrower_id == borrower.id,
+                    CirculationTransaction.return_date.is_(None),
+                )
             )
-        ).options(joinedload(CirculationTransaction.bibliographic_record)).first()
+            .options(joinedload(CirculationTransaction.bibliographic_record))
+            .first()
+        )
 
         if not transaction:
-            failed.append({
-                "item_id": item_id_str,
-                "reason": f"Item not on loan to borrower {borrower_id}"
-            })
+            failed.append(
+                {"item_id": item_id_str, "reason": f"Item not on loan to borrower {borrower_id}"}
+            )
             continue
 
         # Evaluate renewal with policy
@@ -426,10 +443,7 @@ def renew_items(
         decision = policy.renewal_decision(transaction.renewal_count, has_hold)
 
         if not decision.allowed:
-            failed.append({
-                "item_id": item_id_str,
-                "reason": decision.reason
-            })
+            failed.append({"item_id": item_id_str, "reason": decision.reason})
             continue
 
         transactions_to_renew.append((item_id_str, transaction))
@@ -445,14 +459,16 @@ def renew_items(
                 transaction.due_date = new_due_date
                 transaction.status = "active"
 
-                renewed.append({
-                    "item_id": item_id_str,
-                    "title": transaction.bibliographic_record.title,
-                    "old_due_date": old_due_date,
-                    "new_due_date": new_due_date,
-                    "renewals_used": transaction.renewal_count,
-                    "renewals_remaining": policy.renewal_limit - transaction.renewal_count
-                })
+                renewed.append(
+                    {
+                        "item_id": item_id_str,
+                        "title": transaction.bibliographic_record.title,
+                        "old_due_date": old_due_date,
+                        "new_due_date": new_due_date,
+                        "renewals_used": transaction.renewal_count,
+                        "renewals_remaining": policy.renewal_limit - transaction.renewal_count,
+                    }
+                )
 
             db.flush()
             db.commit()
@@ -465,5 +481,5 @@ def renew_items(
         renewed_count=len(renewed),
         failed_count=len(failed),
         renewed=renewed,
-        failed=failed
+        failed=failed,
     )

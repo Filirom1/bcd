@@ -20,7 +20,7 @@ class Item(Base):
         Integer,
         ForeignKey("bibliographic_record.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     # Location and classification.  For periodicals the existing call_number
@@ -45,28 +45,31 @@ class Item(Base):
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Constraints
     __table_args__ = (
         CheckConstraint(
             f"condition IN ('{ItemCondition.GOOD.value}', '{ItemCondition.DAMAGED.value}')",
-            name="check_item_condition"
+            name="check_item_condition",
         ),
         CheckConstraint(
             f"status IN ('{ItemStatus.AVAILABLE.value}', '{ItemStatus.ON_LOAN.value}', "
             f"'{ItemStatus.ON_HOLD.value}', '{ItemStatus.IN_REPAIR.value}', "
             f"'{ItemStatus.LOST.value}', '{ItemStatus.WITHDRAWN.value}')",
-            name="check_item_status"
+            name="check_item_status",
         ),
     )
 
     # Relationships
     bibliographic_record = relationship("BibliographicRecord", back_populates="items")
     circulation_transactions = relationship(
-        "CirculationTransaction",
-        back_populates="item",
-        cascade="all, delete-orphan"
+        "CirculationTransaction", back_populates="item", cascade="all, delete-orphan"
     )
 
     @property

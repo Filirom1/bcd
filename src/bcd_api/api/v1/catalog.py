@@ -7,7 +7,17 @@ import logging
 from datetime import date, datetime
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from ...core.deps import get_db
@@ -16,14 +26,13 @@ from ...core.exceptions import (
     ExportFailedException,
     ExportTooLargeException,
 )
-from ...models.system_settings import SystemSettings
 from ...schemas.bibliographic_record import (
     BibliographicRecordCreate,
     BibliographicRecordResponse,
     BibliographicRecordUpdate,
 )
-from ...schemas.common import PaginatedResponse
 from ...schemas.cataloging import ExternalSourceTestRequest, NoticeLookupRequest
+from ...schemas.common import PaginatedResponse
 from ...schemas.item import (
     AvailableIDsResponse,
     ItemCreate,
@@ -61,7 +70,9 @@ def get_shelf_locations(db: Session = Depends(get_db)):
 
 @router.get("/notices/search")
 def search_cataloging_notices(
-    q: str = Query(..., min_length=1, max_length=200, description="ISBN, ISSN, barcode, title, or author"),
+    q: str = Query(
+        ..., min_length=1, max_length=200, description="ISBN, ISSN, barcode, title, or author"
+    ),
     limit: int = Query(20, ge=1, le=100, description="Maximum notice choices"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     db: Session = Depends(get_db),
@@ -137,7 +148,7 @@ def test_external_catalog_source(
 @router.post("/lookup-isbn")
 def lookup_isbn_endpoint(
     isbn: str = Query(..., description="ISBN-10 or ISBN-13 to lookup"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Lookup ISBN in BNF / Google Books / SUDOC catalog.
@@ -160,10 +171,7 @@ def lookup_isbn_endpoint(
     data = lookup_isbn(db, isbn)
 
     if data is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"ISBN {isbn} not found in any catalog"
-        )
+        raise HTTPException(status_code=404, detail=f"ISBN {isbn} not found in any catalog")
 
     return data
 
@@ -227,14 +235,20 @@ def search_bibliographic_records(
     shelf_location: Optional[str] = Query(None, description="Filter by shelf location"),
     status: Optional[str] = Query(None, description="Filter by physical copy status"),
     condition: Optional[str] = Query(None, description="Filter by physical copy condition"),
-    loanable: Optional[bool] = Query(None, description="Filter by whether a physical copy is loanable"),
+    loanable: Optional[bool] = Query(
+        None, description="Filter by whether a physical copy is loanable"
+    ),
     acquired_before: Optional[date] = Query(None, description="Copies acquired before this date"),
-    acquired_after: Optional[date] = Query(None, description="Copies acquired on or after this date"),
+    acquired_after: Optional[date] = Query(
+        None, description="Copies acquired on or after this date"
+    ),
     publication_year_min: Optional[int] = Query(None, description="Minimum publication year"),
     publication_year_max: Optional[int] = Query(None, description="Maximum publication year"),
     limit: int = Query(50, ge=1, le=500, description="Maximum records per page"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    include_items: bool = Query(False, description="Include physical items for each bibliographic record"),
+    include_items: bool = Query(
+        False, description="Include physical items for each bibliographic record"
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -295,10 +309,7 @@ def search_bibliographic_records(
 
 
 @router.get("/bibliographic/{record_id}", response_model=BibliographicRecordResponse)
-def get_bibliographic_record(
-    record_id: int,
-    db: Session = Depends(get_db)
-):
+def get_bibliographic_record(record_id: int, db: Session = Depends(get_db)):
     """
     Get bibliographic record by ID.
 
@@ -342,13 +353,18 @@ def create_item(item: ItemCreate, db: Session = Depends(get_db)):
 @router.get(
     "/items/available-ids",
     response_model=AvailableIDsResponse,
-    summary="Generate available item IDs for pre-printing barcode labels"
+    summary="Generate available item IDs for pre-printing barcode labels",
 )
 def get_available_item_ids_endpoint(
     count: int = Query(default=30, ge=1, le=1000, description="Number of IDs to generate"),
-    start_from: Optional[str] = Query(default=None, description="Starting ID (optional, auto-detect if omitted)"),
-    contiguous: bool = Query(default=True, description="If true, IDs form a gapless block; if false, scatter (gaps allowed)"),
-    db: Session = Depends(get_db)
+    start_from: Optional[str] = Query(
+        default=None, description="Starting ID (optional, auto-detect if omitted)"
+    ),
+    contiguous: bool = Query(
+        default=True,
+        description="If true, IDs form a gapless block; if false, scatter (gaps allowed)",
+    ),
+    db: Session = Depends(get_db),
 ):
     """
     Generate a list of available item IDs that are not currently assigned to any items.
@@ -429,11 +445,13 @@ def list_importers():
     ]
 
     for conv in list_catalog_converters():
-        importers.append({
-            "name": conv["name"],
-            "description": conv["description"],
-            "filename": None,
-        })
+        importers.append(
+            {
+                "name": conv["name"],
+                "description": conv["description"],
+                "filename": None,
+            }
+        )
 
     return {"importers": importers}
 
@@ -449,21 +467,19 @@ def get_catalog_template():
 
     template_path = get_bundled_resource("data/templates/catalog_dublin_core.csv")
     if not template_path or not template_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Catalog CSV template file not found"
-        )
+        raise HTTPException(status_code=404, detail="Catalog CSV template file not found")
     return FileResponse(
-        path=template_path,
-        media_type="text/csv",
-        filename="catalog_dublin_core_template.csv"
+        path=template_path, media_type="text/csv", filename="catalog_dublin_core_template.csv"
     )
 
 
 @router.post("/import")
 async def import_catalog(
     file: UploadFile = File(..., description="CSV file to import"),
-    format: str = Query("dublin_core", description="Source format name (dublin_core or any importer from /importers)"),
+    format: str = Query(
+        "dublin_core",
+        description="Source format name (dublin_core or any importer from /importers)",
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -600,33 +616,24 @@ def export_catalog(db: Session = Depends(get_db)):
         # Return CSV as download
         # Use UTF-8 encoding (UTF-8-sig for Excel compatibility could be added as query param)
         return Response(
-            content=csv_content.encode('utf-8'),
+            content=csv_content.encode("utf-8"),
             media_type="text/csv; charset=utf-8",
             headers={
                 "Content-Disposition": f"attachment; filename={filename}",
                 "X-Record-Count": str(record_count),
-                "X-Item-Count": str(item_count)
-            }
+                "X-Item-Count": str(item_count),
+            },
         )
 
     except ExportTooLargeException as e:
         logger.warning(f"Export too large: {e.context}")
-        raise HTTPException(
-            status_code=400,
-            detail=e.detail
-        )
+        raise HTTPException(status_code=400, detail=e.detail)
     except ExportFailedException as e:
         logger.exception(f"Export failed: {e.detail}")
-        raise HTTPException(
-            status_code=500,
-            detail=e.detail
-        )
+        raise HTTPException(status_code=500, detail=e.detail)
     except Exception as e:
         logger.exception("Unexpected error during catalog export")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Export failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 
 # === US6: Single Catalog Record/Item Editing ===
@@ -634,9 +641,7 @@ def export_catalog(db: Session = Depends(get_db)):
 
 @router.patch("/records/{record_id}", response_model=BibliographicRecordResponse)
 def update_record_endpoint(
-    record_id: int,
-    request: BibliographicRecordUpdate,
-    db: Session = Depends(get_db)
+    record_id: int, request: BibliographicRecordUpdate, db: Session = Depends(get_db)
 ):
     """
     Update a single bibliographic record (US6).
@@ -655,12 +660,10 @@ def update_record_endpoint(
         404: Record not found
     """
     try:
-        update_dict = request if isinstance(request, dict) else request.model_dump(exclude_unset=True)
-        record = catalog_service.update_record(
-            db=db,
-            record_id=record_id,
-            update_data=update_dict
+        update_dict = (
+            request if isinstance(request, dict) else request.model_dump(exclude_unset=True)
         )
+        record = catalog_service.update_record(db=db, record_id=record_id, update_data=update_dict)
         return record
     except BCDException:
         raise
@@ -670,11 +673,7 @@ def update_record_endpoint(
 
 
 @router.patch("/items/{item_id}", response_model=ItemResponse)
-def update_item_endpoint(
-    item_id: str,
-    request: ItemUpdate,
-    db: Session = Depends(get_db)
-):
+def update_item_endpoint(item_id: str, request: ItemUpdate, db: Session = Depends(get_db)):
     """
     Update a single item (US6).
 
@@ -694,12 +693,10 @@ def update_item_endpoint(
         409: Duplicate barcode
     """
     try:
-        update_dict = request if isinstance(request, dict) else request.model_dump(exclude_unset=True)
-        item = catalog_service.update_item(
-            db=db,
-            item_id=item_id,
-            update_data=update_dict
+        update_dict = (
+            request if isinstance(request, dict) else request.model_dump(exclude_unset=True)
         )
+        item = catalog_service.update_item(db=db, item_id=item_id, update_data=update_dict)
         return item
     except BCDException:
         raise
@@ -709,10 +706,7 @@ def update_item_endpoint(
 
 
 @router.delete("/items/{item_id}", status_code=204)
-def delete_item_endpoint(
-    item_id: str,
-    db: Session = Depends(get_db)
-):
+def delete_item_endpoint(item_id: str, db: Session = Depends(get_db)):
     """
     Delete a single item.
 
@@ -723,10 +717,7 @@ def delete_item_endpoint(
 
 
 @router.delete("/records/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_bibliographic_record(
-    record_id: int,
-    db: Session = Depends(get_db)
-):
+def delete_bibliographic_record(record_id: int, db: Session = Depends(get_db)):
     """
     Delete a bibliographic record and all associated items.
 

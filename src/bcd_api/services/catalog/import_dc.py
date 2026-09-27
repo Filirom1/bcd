@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.shared.constants import MediumType
+
 from .import_ import DublinCoreColumns, ImportResult, _normalize_isbn
 
 logger = logging.getLogger(__name__)
@@ -94,9 +95,17 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
                 continue
 
             # Parse multi-valued fields (pipe-separated)
-            creators = [c.strip() for c in row.get(DublinCoreColumns.CREATOR, "").split("|") if c.strip()]
-            contributors = [c.strip() for c in row.get(DublinCoreColumns.CONTRIBUTOR, "").split("|") if c.strip()]
-            subjects = [s.strip() for s in row.get(DublinCoreColumns.SUBJECT, "").split("|") if s.strip()]
+            creators = [
+                c.strip() for c in row.get(DublinCoreColumns.CREATOR, "").split("|") if c.strip()
+            ]
+            contributors = [
+                c.strip()
+                for c in row.get(DublinCoreColumns.CONTRIBUTOR, "").split("|")
+                if c.strip()
+            ]
+            subjects = [
+                s.strip() for s in row.get(DublinCoreColumns.SUBJECT, "").split("|") if s.strip()
+            ]
 
             # Parse date (year)
             publication_year = None
@@ -122,6 +131,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
             format_str = row.get(DublinCoreColumns.FORMAT, "").strip()
             if format_str:
                 import re
+
                 match = re.search(r"(\d+)\s*(?:p|pages|page)", format_str.lower())
                 if match:
                     page_count = int(match.group(1))
@@ -161,14 +171,14 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
     # Check for existing records by ISBN
     if isbns_to_check:
         existing_by_isbn = (
-            db.query(BibliographicRecord)
-            .filter(BibliographicRecord.isbn.in_(isbns_to_check))
-            .all()
+            db.query(BibliographicRecord).filter(BibliographicRecord.isbn.in_(isbns_to_check)).all()
         )
         for record in existing_by_isbn:
             existing_records[record.isbn] = record
             result.records_skipped += 1
-            logger.info(f"Bibliographic record already exists (ISBN): {record.isbn} (ID: {record.id})")
+            logger.info(
+                f"Bibliographic record already exists (ISBN): {record.isbn} (ID: {record.id})"
+            )
 
     # Check for existing records by TITLE (for records without ISBN)
     if titles_to_check:
@@ -181,7 +191,9 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
         for record in existing_by_title:
             existing_records[record.title] = record
             result.records_skipped += 1
-            logger.info(f"Bibliographic record already exists (Title): {record.title} (ID: {record.id})")
+            logger.info(
+                f"Bibliographic record already exists (Title): {record.title} (ID: {record.id})"
+            )
 
     # Prepare bibliographic records for bulk insert
     new_biblio_objects = []
@@ -221,6 +233,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
     # BULK OPERATION 2: Check for existing items and prepare new ones
     # Retrieve system settings to check for item barcode prefix
     from ..settings_service import get_settings
+
     try:
         sys_settings = get_settings(db)
         prefix = sys_settings.item_barcode_prefix
@@ -238,16 +251,12 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
             if prefix:
                 prefix_strip = prefix.strip()
                 if prefix_strip and item_id.startswith(prefix_strip):
-                    item_id = item_id[len(prefix_strip):]
+                    item_id = item_id[len(prefix_strip) :]
             item_ids_to_check.append(item_id)
 
     existing_items_set = set()
     if item_ids_to_check:
-        existing_items = (
-            db.query(Item.item_id)
-            .filter(Item.item_id.in_(item_ids_to_check))
-            .all()
-        )
+        existing_items = db.query(Item.item_id).filter(Item.item_id.in_(item_ids_to_check)).all()
         existing_items_set = {item.item_id for item in existing_items}
 
     # Prepare items for bulk insert
@@ -269,7 +278,10 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
                 item_id = row.get(DublinCoreColumns.IDENTIFIER, "").strip()
 
             if not item_id:
-                result.add_error(row_num, f"Missing item ID (need {DublinCoreColumns.ITEM_ID} or {DublinCoreColumns.IDENTIFIER})")
+                result.add_error(
+                    row_num,
+                    f"Missing item ID (need {DublinCoreColumns.ITEM_ID} or {DublinCoreColumns.IDENTIFIER})",
+                )
                 result.items_skipped += 1
                 continue
 
@@ -277,7 +289,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
             if prefix:
                 prefix_strip = prefix.strip()
                 if prefix_strip and item_id.startswith(prefix_strip):
-                    item_id = item_id[len(prefix_strip):]
+                    item_id = item_id[len(prefix_strip) :]
 
             # Skip if item already exists in database
             if item_id in existing_items_set:
@@ -334,14 +346,10 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
         # The counter may be stale (set at record creation time before items existed).
         touched_record_ids = {item.bibliographic_record_id for item in new_item_objects}
         for record_id in touched_record_ids:
-            count = (
-                db.query(Item)
-                .filter(Item.bibliographic_record_id == record_id)
-                .count()
+            count = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
+            db.query(BibliographicRecord).filter(BibliographicRecord.id == record_id).update(
+                {"total_items": count}, synchronize_session=False
             )
-            db.query(BibliographicRecord).filter(
-                BibliographicRecord.id == record_id
-            ).update({"total_items": count}, synchronize_session=False)
 
     # SINGLE COMMIT for all operations
     db.commit()
@@ -374,13 +382,24 @@ def _map_dc_type_to_medium_type(dc_type: str) -> str:
 
     # Map DC types to medium type strings (supports both Dublin Core standard values and French labels)
     # Check periodical before text because 'Text;Periodical' contains 'text'
-    if "periodical" in dc_type_lower or "journal" in dc_type_lower or "magazine" in dc_type_lower or "revue" in dc_type_lower or "périodique" in dc_type_lower:
+    if (
+        "periodical" in dc_type_lower
+        or "journal" in dc_type_lower
+        or "magazine" in dc_type_lower
+        or "revue" in dc_type_lower
+        or "périodique" in dc_type_lower
+    ):
         return MediumType.PERIODIQUE.value
     elif "text" in dc_type_lower or "book" in dc_type_lower or "livre" in dc_type_lower:
         return "Livre"
     elif "sound" in dc_type_lower or "audio" in dc_type_lower or "cd" in dc_type_lower:
         return "CD"
-    elif "movingimage" in dc_type_lower or "video" in dc_type_lower or "dvd" in dc_type_lower or "film" in dc_type_lower:
+    elif (
+        "movingimage" in dc_type_lower
+        or "video" in dc_type_lower
+        or "dvd" in dc_type_lower
+        or "film" in dc_type_lower
+    ):
         return "DVD"
     elif "autre" in dc_type_lower or "other" in dc_type_lower:
         return "Autre"

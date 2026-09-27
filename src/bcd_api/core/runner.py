@@ -57,7 +57,7 @@ def _get_startup_library_code() -> str | None:
 
 def _start_server_thread(host: str, port: int) -> tuple:
     """Start uvicorn in a background thread and wait until ready."""
-    from src.bcd_api.main import app, _log_config
+    from src.bcd_api.main import _log_config, app
 
     config = uvicorn.Config(
         app,
@@ -354,7 +354,7 @@ def main() -> None:
         if ui_mode in ("server", "none"):
             if not settings.client_only:
                 init_database_if_needed()
-                from src.bcd_api.main import app, _log_config
+                from src.bcd_api.main import _log_config, app
 
                 config = uvicorn.Config(
                     app,
@@ -396,7 +396,7 @@ def main() -> None:
 
     # When reload is enabled uvicorn needs a module string so it can re-import
     # the app in the reloader subprocess.
-    from src.bcd_api.main import app, _log_config
+    from src.bcd_api.main import _log_config, app
 
     reload_enabled = settings.environment == "development"
     uvicorn.run(

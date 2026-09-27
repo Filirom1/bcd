@@ -33,10 +33,7 @@ router = APIRouter(prefix="/inventory", tags=["inventory"])
 
 
 @router.patch("/items/{item_id}", response_model=ItemInventoryResponse)
-def mark_item_inventoried_endpoint(
-    item_id: str,
-    db: Session = Depends(get_db)
-):
+def mark_item_inventoried_endpoint(item_id: str, db: Session = Depends(get_db)):
     """
     Mark a single item as inventoried (barcode scan).
 
@@ -71,7 +68,7 @@ def mark_item_inventoried_endpoint(
             level=record.level,
             target_audience=record.target_audience,
             language=record.language,
-            medium_type=record.medium_type
+            medium_type=record.medium_type,
         )
 
     except ItemNotFoundException as e:
@@ -85,10 +82,7 @@ def mark_item_inventoried_endpoint(
 
 
 @router.post("/items/bulk-mark", response_model=BulkInventoryResponse)
-def bulk_mark_inventoried_endpoint(
-    request: BulkInventoryRequest,
-    db: Session = Depends(get_db)
-):
+def bulk_mark_inventoried_endpoint(request: BulkInventoryRequest, db: Session = Depends(get_db)):
     """
     Mark multiple items as inventoried (file import, search add).
 
@@ -115,25 +109,38 @@ def bulk_mark_inventoried_endpoint(
 @router.get("/items/search", response_model=InventorySearchResponse)
 def search_items_endpoint(
     db: Session = Depends(get_db),
-    q: Optional[str] = Query(None, description="Free text search (title, author, ISBN, call number)"),
+    q: Optional[str] = Query(
+        None, description="Free text search (title, author, ISBN, call number)"
+    ),
     status: Optional[str] = Query(None, description="Item status filter"),
     condition: Optional[str] = Query(None, description="Item condition filter"),
     shelf_location: Optional[str] = Query(None, description="Partial match on location"),
-    never_inventoried: Optional[bool] = Query(None, description="Only items with NULL last_inventoried_at"),
-    inventoried_before: Optional[date] = Query(None, description="Items not inventoried since this date"),
-    acquired_before: Optional[date] = Query(None, description="Items acquired before this date (for age filtering)"),
+    never_inventoried: Optional[bool] = Query(
+        None, description="Only items with NULL last_inventoried_at"
+    ),
+    inventoried_before: Optional[date] = Query(
+        None, description="Items not inventoried since this date"
+    ),
+    acquired_before: Optional[date] = Query(
+        None, description="Items acquired before this date (for age filtering)"
+    ),
     acquired_after: Optional[date] = Query(None, description="Items acquired after this date"),
     medium_type: Optional[str] = Query(None, description="Bibliographic medium type"),
     target_audience: Optional[str] = Query(None, description="child, youth, adult"),
     level: Optional[str] = Query(None, description="Partial match on reading level"),
-    language: Optional[str] = Query(None, description="Language code filter (ISO 639-1, e.g. 'fr', 'en'); use '__none__' for records with no language set"),
+    language: Optional[str] = Query(
+        None,
+        description="Language code filter (ISO 639-1, e.g. 'fr', 'en'); use '__none__' for records with no language set",
+    ),
     publication_year_min: Optional[int] = Query(None, description="Min publication year"),
     publication_year_max: Optional[int] = Query(None, description="Max publication year"),
     max_borrows: Optional[int] = Query(None, description="Max loans in period (rotation filter)"),
     since_date: Optional[date] = Query(None, description="Start date for rotation filter"),
-    never_borrowed: Optional[bool] = Query(None, description="Only items with last_borrowed_at IS NULL"),
+    never_borrowed: Optional[bool] = Query(
+        None, description="Only items with last_borrowed_at IS NULL"
+    ),
     no_limit: bool = Query(False, description="Skip result limit, return all matching items"),
-    loanable: Optional[bool] = Query(None, description="Whether the item can be loaned")
+    loanable: Optional[bool] = Query(None, description="Whether the item can be loaned"),
 ):
     """
     Search items matching inventory criteria (rotation, last inventoried, condition, etc.).
@@ -175,7 +182,7 @@ def search_items_endpoint(
             max_borrows=max_borrows,
             since_date=since_date,
             never_borrowed=never_borrowed,
-            no_limit=no_limit
+            no_limit=no_limit,
         )
         return InventorySearchResponse(**result)
 
@@ -188,10 +195,7 @@ def search_items_endpoint(
 
 
 @router.post("/items/bulk-update", response_model=BulkUpdateResponse)
-def bulk_update_items_endpoint(
-    request: BulkUpdateRequest,
-    db: Session = Depends(get_db)
-):
+def bulk_update_items_endpoint(request: BulkUpdateRequest, db: Session = Depends(get_db)):
     """
     Apply same changes to multiple items + their parent records (bulk edit).
 
@@ -212,9 +216,12 @@ def bulk_update_items_endpoint(
         # This lets the CLI opt in to clearing an existing call number.
         item_updates_dict = (
             request.item_updates.model_dump(exclude_unset=True, exclude_none=False)
-            if request.item_updates else None
+            if request.item_updates
+            else None
         )
-        record_updates_dict = request.record_updates.model_dump(exclude_none=True) if request.record_updates else None
+        record_updates_dict = (
+            request.record_updates.model_dump(exclude_none=True) if request.record_updates else None
+        )
 
         # Keep the legacy service call shape when automatic call-number generation
         # is not requested.  Besides avoiding an unnecessary argument, this keeps
@@ -241,10 +248,7 @@ def bulk_update_items_endpoint(
 
 
 @router.delete("/items/bulk", response_model=BulkDeleteResponse)
-def delete_items_bulk_endpoint(
-    request: BulkDeleteRequest,
-    db: Session = Depends(get_db)
-):
+def delete_items_bulk_endpoint(request: BulkDeleteRequest, db: Session = Depends(get_db)):
     """
     Permanently delete items from system (on_loan items excluded, holds cancelled).
 
@@ -270,10 +274,7 @@ def delete_items_bulk_endpoint(
 
 
 @router.post("/export-csv")
-def export_csv_endpoint(
-    request: ExportCSVRequest,
-    db: Session = Depends(get_db)
-):
+def export_csv_endpoint(request: ExportCSVRequest, db: Session = Depends(get_db)):
     """
     Export working table to CSV file.
 
@@ -299,9 +300,7 @@ def export_csv_endpoint(
         return Response(
             content=csv_content,
             media_type="text/csv; charset=utf-8",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}"
-            }
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
 
     except Exception as e:

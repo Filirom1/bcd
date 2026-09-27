@@ -1,14 +1,16 @@
 """Projections module for catalog stats, counters, and availability projections."""
 
 import logging
-from typing import Set, List
-from sqlalchemy import func, case
+from typing import List, Set
+
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
-from src.bcd_api.models.item import Item
 from src.bcd_api.models.hold import Hold
+from src.bcd_api.models.item import Item
 from src.shared.constants import ItemStatus
+
 from ._serialization import decode_list
 
 logger = logging.getLogger(__name__)
@@ -57,9 +59,9 @@ def availability_by_record(
         db.query(
             Item.bibliographic_record_id,
             func.count(Item.id).label("total"),
-            func.sum(
-                case((Item.status == ItemStatus.AVAILABLE.value, 1), else_=0)
-            ).label("available"),
+            func.sum(case((Item.status == ItemStatus.AVAILABLE.value, 1), else_=0)).label(
+                "available"
+            ),
         )
         .filter(Item.bibliographic_record_id.in_(record_ids))
         .group_by(Item.bibliographic_record_id)
@@ -69,10 +71,7 @@ def availability_by_record(
 
     holds_rows = (
         db.query(Hold.bibliographic_record_id, func.count(Hold.id).label("holds"))
-        .filter(
-            Hold.bibliographic_record_id.in_(record_ids),
-            Hold.status.in_(["waiting", "ready"])
-        )
+        .filter(Hold.bibliographic_record_id.in_(record_ids), Hold.status.in_(["waiting", "ready"]))
         .group_by(Hold.bibliographic_record_id)
         .all()
     )
@@ -99,20 +98,17 @@ def availability_by_record(
         active_loans_map = {}
         if item_ids:
             from datetime import date
-            from src.bcd_api.models.circulation import CirculationTransaction
-            from src.bcd_api.services.circulation.query_filters import active_loan_predicate
-            from src.bcd_api.services.circulation import policy as circ_policy
+
             from sqlalchemy import and_
             from sqlalchemy.orm import joinedload
 
+            from src.bcd_api.models.circulation import CirculationTransaction
+            from src.bcd_api.services.circulation import policy as circ_policy
+            from src.bcd_api.services.circulation.query_filters import active_loan_predicate
+
             active_loans = (
                 db.query(CirculationTransaction)
-                .filter(
-                    and_(
-                        CirculationTransaction.item_id.in_(item_ids),
-                        active_loan_predicate()
-                    )
-                )
+                .filter(and_(CirculationTransaction.item_id.in_(item_ids), active_loan_predicate()))
                 .options(joinedload(CirculationTransaction.borrower))
                 .all()
             )
@@ -122,9 +118,9 @@ def availability_by_record(
                 active_loans_map[loan.item_id] = {
                     "borrower_id": loan.borrower.borrower_id,
                     "borrower_name": loan.borrower.full_name,
-                    "due_date": loan.due_date.strftime('%d/%m/%Y'),
+                    "due_date": loan.due_date.strftime("%d/%m/%Y"),
                     "is_overdue": is_overdue_val,
-                    "days_overdue": days_overdue_val
+                    "days_overdue": days_overdue_val,
                 }
 
         # Group items by bibliographic_record_id
@@ -139,7 +135,7 @@ def availability_by_record(
                 "loanable": item.loanable,
                 "acquisition_date": item.acquisition_date,
                 "funding_source": item.funding_source,
-                "current_loan": active_loans_map.get(item.id)
+                "current_loan": active_loans_map.get(item.id),
             }
             if item.bibliographic_record_id not in items_by_record:
                 items_by_record[item.bibliographic_record_id] = []

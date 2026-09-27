@@ -12,8 +12,7 @@ _ISBN13_RE = re.compile(r"^(?:978|979)\d{10}$")
 _EAN13_RE = re.compile(r"^\d{13}$")
 _UNSUPPORTED_BARCODE_RE = re.compile(r"^[\d-]{8,20}$")
 _PERIODICAL_ISSUE_SUFFIX_RE = re.compile(
-    r"\s*(?:n[°o]?\s*\d+|num[eé]ro\s*\d+|vol\.\s*\d+|"
-    r"fascicule\s*\d+|\d{4}/\d+).*$",
+    r"\s*(?:n[°o]?\s*\d+|num[eé]ro\s*\d+|vol\.\s*\d+|" r"fascicule\s*\d+|\d{4}/\d+).*$",
     re.IGNORECASE,
 )
 _EAN13_PERIODICAL_RE = re.compile(r"^977(\d{7})\d{3}$")

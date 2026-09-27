@@ -52,7 +52,7 @@ class BackupMetadata:
             "size_mb": self.size_mb,
             "size_bytes": self.size_bytes,
             "created_at": self.created_at.isoformat(),
-            "age_days": self.age_days
+            "age_days": self.age_days,
         }
 
 
@@ -190,7 +190,10 @@ def restore_backup(backup_file: str) -> bool:
         # old WAL next to a newly-copied main database can produce stale or
         # incompatible state after restore. The -shm file is an ephemeral WAL
         # index and should be removed too.
-        for sidecar in (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm")):
+        for sidecar in (
+            db_path.with_name(db_path.name + "-wal"),
+            db_path.with_name(db_path.name + "-shm"),
+        ):
             if sidecar.exists():
                 logger.info(f"Removing SQLite sidecar before restore: {sidecar}")
                 sidecar.unlink()
@@ -210,7 +213,10 @@ def restore_backup(backup_file: str) -> bool:
             # Restore failed, rollback to safety backup
             logger.error(f"Restored database integrity check failed: {result}")
             logger.warning("Rolling back to safety backup")
-            for sidecar in (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm")):
+            for sidecar in (
+                db_path.with_name(db_path.name + "-wal"),
+                db_path.with_name(db_path.name + "-shm"),
+            ):
                 if sidecar.exists():
                     logger.info(f"Removing SQLite sidecar before rollback: {sidecar}")
                     sidecar.unlink()
@@ -248,9 +254,7 @@ def list_backups(backup_dir: Optional[str] = None) -> List[BackupMetadata]:
 
     # Find all .db files in backup directory
     backup_files = sorted(
-        backup_path.glob("*.db"),
-        key=lambda p: p.stat().st_mtime,
-        reverse=True  # Newest first
+        backup_path.glob("*.db"), key=lambda p: p.stat().st_mtime, reverse=True  # Newest first
     )
 
     backups = [BackupMetadata(f) for f in backup_files]
@@ -286,7 +290,9 @@ def cleanup_old_backups(keep_days: int = 30, backup_dir: Optional[str] = None) -
             except Exception as e:
                 logger.error(f"Failed to delete {backup.filename}: {str(e)}")
 
-    logger.info(f"Cleanup complete: deleted {deleted_count} old backups (older than {keep_days} days)")
+    logger.info(
+        f"Cleanup complete: deleted {deleted_count} old backups (older than {keep_days} days)"
+    )
     return deleted_count
 
 
@@ -343,11 +349,7 @@ def get_database_size() -> Dict[str, float]:
         size_bytes = db_path.stat().st_size
         size_mb = round(size_bytes / (1024 * 1024), 2)
 
-        return {
-            "size_bytes": size_bytes,
-            "size_mb": size_mb,
-            "path": str(db_path)
-        }
+        return {"size_bytes": size_bytes, "size_mb": size_mb, "path": str(db_path)}
     except Exception as e:
         logger.error(f"Failed to get database size: {str(e)}")
         return {"size_bytes": 0, "size_mb": 0.0, "path": "unknown"}

@@ -27,11 +27,13 @@ def test_mark_item_inventoried_endpoint(monkeypatch):
             level="easy",
             target_audience="child",
             language="fr",
-            medium_type="Livre"
-        )
+            medium_type="Livre",
+        ),
     )
 
-    monkeypatch.setattr(inventory.inventory_service, "mark_item_inventoried", lambda db, item_id: mock_item)
+    monkeypatch.setattr(
+        inventory.inventory_service, "mark_item_inventoried", lambda db, item_id: mock_item
+    )
 
     result = inventory.mark_item_inventoried_endpoint("0001", db=object())
     assert result.item_id == "0001"
@@ -48,7 +50,7 @@ def test_bulk_mark_inventoried_endpoint(monkeypatch):
         return {
             "items_updated": len(item_ids),
             "items_not_found": [],
-            "timestamp": datetime(2025, 1, 1)
+            "timestamp": datetime(2025, 1, 1),
         }
 
     monkeypatch.setattr(inventory.inventory_service, "bulk_mark_inventoried", mock_bulk)
@@ -70,7 +72,7 @@ def test_bulk_update_items_endpoint(monkeypatch):
             "items_updated": len(item_ids),
             "items_skipped_on_loan": 0,
             "records_updated": 1,
-            "other_copies_affected": 0
+            "other_copies_affected": 0,
         }
 
     monkeypatch.setattr(inventory.inventory_service, "bulk_update_items", mock_update)
@@ -78,7 +80,7 @@ def test_bulk_update_items_endpoint(monkeypatch):
     req = BulkUpdateRequest(
         item_ids=["0001"],
         item_updates=ItemUpdates(status="in_repair", condition="damaged"),
-        record_updates=RecordUpdates(level="easy")
+        record_updates=RecordUpdates(level="easy"),
     )
 
     result = inventory.bulk_update_items_endpoint(req, db=object())
@@ -122,7 +124,7 @@ def test_delete_items_bulk_endpoint(monkeypatch):
             "items_deleted": len(item_ids),
             "items_skipped_on_loan": 0,
             "holds_cancelled": 0,
-            "orphan_records_created": 0
+            "orphan_records_created": 0,
         }
 
     monkeypatch.setattr(inventory.inventory_service, "delete_items_bulk", mock_delete)

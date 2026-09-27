@@ -25,12 +25,8 @@ def test_checkout_scanner_completes_one_real_transaction(
     circulation_page, borrower_factory, item_factory
 ):
     """One real scanner path protects browser/API wiring without duplicating JS tests."""
-    borrower = borrower_factory.create(
-        borrower_id="9001", first_name="Smoke", last_name="Test"
-    )
-    item, _ = item_factory.create_with_record(
-        item_id="9002", title="Smoke test book"
-    )
+    borrower = borrower_factory.create(borrower_id="9001", first_name="Smoke", last_name="Test")
+    item, _ = item_factory.create_with_record(item_id="9002", title="Smoke test book")
 
     circulation_page.goto_checkout()
     circulation_page.enter_borrower_id(borrower.borrower_id)

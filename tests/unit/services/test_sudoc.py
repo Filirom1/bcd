@@ -20,6 +20,7 @@ from src.bcd_api.services.external.sudoc import (
 # Minimal Pica+ XML helpers
 # ---------------------------------------------------------------------------
 
+
 def _pica_xml(fields: list[tuple[str, str, str]]) -> bytes:
     """Build a minimal picaXML record for testing.
 
@@ -27,14 +28,14 @@ def _pica_xml(fields: list[tuple[str, str, str]]) -> bytes:
         fields: list of (tag, code, value) tuples
     """
     ns = 'xmlns="info:srw/schema/5/picaXML-v1.0"'
-    parts = [f'<record {ns}>']
+    parts = [f"<record {ns}>"]
     for tag, code, value in fields:
         parts.append(
             f'  <datafield tag="{tag}">'
             f'<subfield code="{code}">{value}</subfield>'
-            f'</datafield>'
+            f"</datafield>"
         )
-    parts.append('</record>')
+    parts.append("</record>")
     return "\n".join(parts).encode()
 
 
@@ -45,11 +46,7 @@ def _sru_response(records_xml: list[bytes], total: int | None = None) -> bytes:
     body_parts = []
     for rec in records_xml:
         body_parts.append(
-            '<srw:record>'
-            '<srw:recordData>'
-            + rec.decode()
-            + '</srw:recordData>'
-            '</srw:record>'
+            "<srw:record>" "<srw:recordData>" + rec.decode() + "</srw:recordData>" "</srw:record>"
         )
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/"
@@ -70,14 +67,16 @@ def _empty_sru_response() -> bytes:
 </srw:searchRetrieveResponse>"""
 
 
-SAMPLE_RECORD = _pica_xml([
-    ("021A", "a", "L' @imagerie du corps"),
-    ("028A", "8", "Beaumont, Emilie"),
-    ("033A", "n", "Fleurus"),
-    ("011@", "a", "2005"),
-    ("010@", "a", "fre"),
-    ("004A", "A", "9782215065340"),
-])
+SAMPLE_RECORD = _pica_xml(
+    [
+        ("021A", "a", "L' @imagerie du corps"),
+        ("028A", "8", "Beaumont, Emilie"),
+        ("033A", "n", "Fleurus"),
+        ("011@", "a", "2005"),
+        ("010@", "a", "fre"),
+        ("004A", "A", "9782215065340"),
+    ]
+)
 
 
 def _mock_client(content: bytes):
@@ -94,6 +93,7 @@ def _mock_client(content: bytes):
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+
 
 class TestHelpers:
     def test_pica_title_strips_at_prefix(self):
@@ -134,6 +134,7 @@ class TestHelpers:
 # Pica+ record parsing
 # ---------------------------------------------------------------------------
 
+
 class TestParsePicaRecord:
     def test_parse_basic_fields(self):
         result = _parse_pica_record(SAMPLE_RECORD)
@@ -155,27 +156,33 @@ class TestParsePicaRecord:
         assert result is None
 
     def test_parse_iso3_language_normalised(self):
-        rec = _pica_xml([
-            ("021A", "a", "Stuart Little"),
-            ("010@", "a", "eng"),
-        ])
+        rec = _pica_xml(
+            [
+                ("021A", "a", "Stuart Little"),
+                ("010@", "a", "eng"),
+            ]
+        )
         result = _parse_pica_record(rec)
         assert result["language"] == "en"
 
     def test_parse_issn_field(self):
-        rec = _pica_xml([
-            ("021A", "a", "J'aime lire"),
-            ("005A", "0", "1147-3371"),
-        ])
+        rec = _pica_xml(
+            [
+                ("021A", "a", "J'aime lire"),
+                ("005A", "0", "1147-3371"),
+            ]
+        )
         result = _parse_pica_record(rec)
         assert result["issn"] == "1147-3371"
         assert result["medium_type"] == "Périodique"
 
     def test_parse_series(self):
-        rec = _pica_xml([
-            ("021A", "a", "Les petits débrouillards"),
-            ("036C", "a", "@Bibliothèque verte"),
-        ])
+        rec = _pica_xml(
+            [
+                ("021A", "a", "Les petits débrouillards"),
+                ("036C", "a", "@Bibliothèque verte"),
+            ]
+        )
         result = _parse_pica_record(rec)
         assert result["collection"] == "Bibliothèque verte"
 
@@ -183,6 +190,7 @@ class TestParsePicaRecord:
 # ---------------------------------------------------------------------------
 # search_by_isbn
 # ---------------------------------------------------------------------------
+
 
 class TestSearchByISBN:
     @patch("src.bcd_api.services.external.sudoc._rate_limit")
@@ -230,15 +238,18 @@ class TestSearchByISBN:
 # search_by_issn
 # ---------------------------------------------------------------------------
 
+
 class TestSearchByISSN:
     @patch("src.bcd_api.services.external.sudoc._rate_limit")
     @patch("httpx.Client")
     def test_found(self, mock_client_class, mock_rate_limit):
-        rec = _pica_xml([
-            ("021A", "a", "J'aime lire"),
-            ("005A", "0", "1147-3371"),
-            ("010@", "a", "fre"),
-        ])
+        rec = _pica_xml(
+            [
+                ("021A", "a", "J'aime lire"),
+                ("005A", "0", "1147-3371"),
+                ("010@", "a", "fre"),
+            ]
+        )
         content = _sru_response([rec])
         mock_client_class.return_value = _mock_client(content)
         result = search_by_issn("1147-3371")
@@ -270,15 +281,18 @@ class TestSearchByISSN:
 # search_by_title_author
 # ---------------------------------------------------------------------------
 
+
 class TestSearchByTitleAuthor:
     @patch("src.bcd_api.services.external.sudoc._rate_limit")
     @patch("httpx.Client")
     def test_found_confident(self, mock_client_class, mock_rate_limit):
-        rec = _pica_xml([
-            ("021A", "a", "L' @imagerie du corps"),
-            ("028A", "8", "Beaumont, Emilie"),
-            ("010@", "a", "fre"),
-        ])
+        rec = _pica_xml(
+            [
+                ("021A", "a", "L' @imagerie du corps"),
+                ("028A", "8", "Beaumont, Emilie"),
+                ("010@", "a", "fre"),
+            ]
+        )
         content = _sru_response([rec])
         mock_client_class.return_value = _mock_client(content)
         result = search_by_title_author("L'imagerie du corps", "Beaumont")
@@ -300,10 +314,12 @@ class TestSearchByTitleAuthor:
     @patch("httpx.Client")
     def test_low_score_returns_none(self, mock_client_class, mock_rate_limit):
         # Query "Les Misérables" but SUDOC returns "Stuart Little"
-        rec = _pica_xml([
-            ("021A", "a", "Stuart Little"),
-            ("028A", "8", "White, E.B."),
-        ])
+        rec = _pica_xml(
+            [
+                ("021A", "a", "Stuart Little"),
+                ("028A", "8", "White, E.B."),
+            ]
+        )
         content = _sru_response([rec])
         mock_client_class.return_value = _mock_client(content)
         result = search_by_title_author("Les Misérables", "Hugo")
@@ -335,9 +351,11 @@ class TestSearchByTitleAuthor:
 # configure()
 # ---------------------------------------------------------------------------
 
+
 class TestConfigure:
     def test_configure_url(self):
         from src.bcd_api.services.external import sudoc as sudoc_service
+
         configure(url="http://mock-sudoc.example.com/sru/")
         assert sudoc_service._SUDOC_URL == "http://mock-sudoc.example.com/sru/"
         # Restore default
@@ -345,6 +363,7 @@ class TestConfigure:
 
     def test_configure_rate_limit(self):
         from src.bcd_api.services.external import sudoc as sudoc_service
+
         configure(rate_limit=2)
         assert sudoc_service._MIN_REQUEST_INTERVAL == pytest.approx(0.5)
         configure(rate_limit=1)

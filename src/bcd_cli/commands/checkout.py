@@ -58,9 +58,7 @@ def checkout(
             # Direct mode
             if not item_ids:
                 print_error("Au moins un item ID requis / At least one item ID required")
-                print_warning(
-                    "Usage: bcd-cli checkout <borrower-id> <item-id1> [<item-id2> ...]"
-                )
+                print_warning("Usage: bcd-cli checkout <borrower-id> <item-id1> [<item-id2> ...]")
                 raise click.Abort()
 
             _checkout_direct(client, borrower_id, list(item_ids))
@@ -141,9 +139,7 @@ def _checkout_interactive(client):
 
     # Step 5: Call API
     try:
-        result = client.checkout(
-            borrower_id=borrower_id, item_ids=item_ids, checked_out_by="cli"
-        )
+        result = client.checkout(borrower_id=borrower_id, item_ids=item_ids, checked_out_by="cli")
         print_checkout_summary(result)
 
     except Exception as e:
@@ -167,9 +163,7 @@ def _checkout_direct(client, borrower_id: str, item_ids: List[str]):
     console.print()
 
     try:
-        result = client.checkout(
-            borrower_id=borrower_id, item_ids=item_ids, checked_out_by="cli"
-        )
+        result = client.checkout(borrower_id=borrower_id, item_ids=item_ids, checked_out_by="cli")
         print_checkout_summary(result)
 
     except Exception as e:

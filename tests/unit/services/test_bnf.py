@@ -114,7 +114,9 @@ class TestParseUnimarcXML:
       </srw:recordData>
     </srw:record>
   </srw:records>
-</srw:searchRetrieveResponse>""".encode('utf-8')
+</srw:searchRetrieveResponse>""".encode(
+            "utf-8"
+        )
 
     def test_parse_unimarc_success(self, sample_unimarc_xml):
         """Test successful parsing of UNIMARC XML."""
@@ -144,7 +146,9 @@ class TestParseUnimarcXML:
         xml = """<?xml version="1.0" encoding="UTF-8"?>
 <srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/">
   <srw:numberOfRecords>0</srw:numberOfRecords>
-</srw:searchRetrieveResponse>""".encode('utf-8')
+</srw:searchRetrieveResponse>""".encode(
+            "utf-8"
+        )
 
         result = parse_unimarc_xml(xml)
         assert result is None
@@ -178,7 +182,9 @@ class TestSearchByISBN:
       </srw:recordData>
     </srw:record>
   </srw:records>
-</srw:searchRetrieveResponse>""".encode('utf-8')
+</srw:searchRetrieveResponse>""".encode(
+            "utf-8"
+        )
 
         mock_client = Mock()
         mock_client.get.return_value = mock_response
@@ -200,7 +206,9 @@ class TestSearchByISBN:
         mock_response.content = """<?xml version="1.0" encoding="UTF-8"?>
 <srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/">
   <srw:numberOfRecords>0</srw:numberOfRecords>
-</srw:searchRetrieveResponse>""".encode('utf-8')
+</srw:searchRetrieveResponse>""".encode(
+            "utf-8"
+        )
 
         mock_client = Mock()
         mock_client.get.return_value = mock_response

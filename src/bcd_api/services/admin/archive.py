@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def archive_old_transactions(
-    db: Session,
-    older_than_years: int = 5,
-    dry_run: bool = False
+    db: Session, older_than_years: int = 5, dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Archive circulation transactions older than specified years.
@@ -53,7 +51,7 @@ def archive_old_transactions(
             "oldest_date": None,
             "newest_date": None,
             "size_reduction_estimate_mb": 0,
-            "dry_run": dry_run
+            "dry_run": dry_run,
         }
 
     # Get date range of transactions to be archived
@@ -72,14 +70,15 @@ def archive_old_transactions(
             "oldest_date": oldest_date,
             "newest_date": newest_date,
             "size_reduction_estimate_mb": round(size_reduction_mb, 2),
-            "dry_run": True
+            "dry_run": True,
         }
 
     # Perform actual archiving using INSERT ... SELECT
     archived_at = datetime.now(timezone.utc)
 
     # Use raw SQL for efficient bulk insert
-    archive_sql = text("""
+    archive_sql = text(
+        """
         INSERT INTO circulation_transaction_archive (
             id, borrower_id, item_id, bibliographic_record_id,
             checkout_date, due_date, return_date, status, renewal_count,
@@ -91,17 +90,20 @@ def archive_old_transactions(
             checked_out_by, returned_by, notes, created_at, updated_at, :archived_at
         FROM circulation_transaction
         WHERE checkout_date < :cutoff_date
-    """)
+    """
+    )
 
     db.execute(archive_sql, {"archived_at": archived_at, "cutoff_date": cutoff_date})
 
     # Delete archived transactions from main table
-    delete_sql = text("""
+    delete_sql = text(
+        """
         DELETE FROM circulation_transaction
         WHERE checkout_date < :cutoff_date
-    """)
+    """
+    )
 
-    result = db.execute(delete_sql, {"cutoff_date": cutoff_date})
+    db.execute(delete_sql, {"cutoff_date": cutoff_date})
     db.commit()
 
     return {
@@ -109,7 +111,7 @@ def archive_old_transactions(
         "oldest_date": oldest_date,
         "newest_date": newest_date,
         "size_reduction_estimate_mb": round(size_reduction_mb, 2),
-        "dry_run": False
+        "dry_run": False,
     }
 
 
@@ -118,7 +120,7 @@ def get_archived_transactions(
     borrower_id: Optional[int] = None,
     item_id: Optional[int] = None,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
 ) -> List[Dict[str, Any]]:
     """
     Query archived circulation transactions.
@@ -134,21 +136,22 @@ def get_archived_transactions(
         List of archived transaction dictionaries
     """
     # Build query
-    query = text("""
+    query = text(
+        """
         SELECT
             id, borrower_id, item_id, bibliographic_record_id,
             checkout_date, due_date, return_date, status, renewal_count,
             checked_out_by, returned_by, notes, created_at, updated_at, archived_at
         FROM circulation_transaction_archive
         WHERE 1=1
-        """ + (
-            " AND borrower_id = :borrower_id" if borrower_id else ""
-        ) + (
-            " AND item_id = :item_id" if item_id else ""
-        ) + """
+        """
+        + (" AND borrower_id = :borrower_id" if borrower_id else "")
+        + (" AND item_id = :item_id" if item_id else "")
+        + """
         ORDER BY checkout_date DESC
         LIMIT :limit OFFSET :offset
-    """)
+    """
+    )
 
     params = {"limit": limit, "offset": offset}
     if borrower_id:
@@ -171,7 +174,8 @@ def get_archive_stats(db: Session) -> Dict[str, Any]:
     Returns:
         Dict with count, oldest_archived, newest_archived, total_size_mb
     """
-    stats_query = text("""
+    stats_query = text(
+        """
         SELECT
             COUNT(*) as total_count,
             MIN(checkout_date) as oldest_date,
@@ -179,7 +183,8 @@ def get_archive_stats(db: Session) -> Dict[str, Any]:
             MIN(archived_at) as first_archived_at,
             MAX(archived_at) as last_archived_at
         FROM circulation_transaction_archive
-    """)
+    """
+    )
 
     result = db.execute(stats_query).fetchone()
 
@@ -190,7 +195,7 @@ def get_archive_stats(db: Session) -> Dict[str, Any]:
             "newest_transaction_date": None,
             "first_archived_at": None,
             "last_archived_at": None,
-            "estimated_size_mb": 0
+            "estimated_size_mb": 0,
         }
 
     total_count = result[0]
@@ -202,5 +207,5 @@ def get_archive_stats(db: Session) -> Dict[str, Any]:
         "newest_transaction_date": result[2],
         "first_archived_at": result[3],
         "last_archived_at": result[4],
-        "estimated_size_mb": round(estimated_size_mb, 2)
+        "estimated_size_mb": round(estimated_size_mb, 2),
     }

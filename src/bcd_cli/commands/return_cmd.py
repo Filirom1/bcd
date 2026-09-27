@@ -105,9 +105,7 @@ def _return_interactive(client):
                 console.print(
                     f"    Prêté le / Checked out: {format_date(current_loan.get('checkout_date'))}"
                 )
-                console.print(
-                    f"    Dû le / Due: {format_date(current_loan.get('due_date'))}"
-                )
+                console.print(f"    Dû le / Due: {format_date(current_loan.get('due_date'))}")
 
                 # Check if overdue
                 status = current_loan.get("status")
@@ -119,6 +117,7 @@ def _return_interactive(client):
                     if isinstance(due_date_val, str):
                         try:
                             from datetime import date
+
                             due_date_obj = date.fromisoformat(due_date_val)
                             days_overdue = max(0, (date.today() - due_date_obj).days)
                         except ValueError:
@@ -134,14 +133,10 @@ def _return_interactive(client):
                 item_ids.append(item_id)
                 item_details.append(item_info)
             else:
-                console.print(
-                    f"  [yellow]⚠[/yellow] Document {item_id}: Pas en prêt / Not on loan"
-                )
+                console.print(f"  [yellow]⚠[/yellow] Document {item_id}: Pas en prêt / Not on loan")
 
         except Exception as e:
-            console.print(
-                f"  [red]✗[/red] Document {item_id}: Non trouvé / Not found"
-            )
+            console.print(f"  [red]✗[/red] Document {item_id}: Non trouvé / Not found")
             console.print(f"    [dim]{str(e)}[/dim]")
 
         console.print()

@@ -2,8 +2,6 @@
 
 from datetime import date, datetime, timedelta
 
-import pytest
-
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
@@ -464,9 +462,7 @@ class TestHoldsReport:
         db_session.flush()
 
         biblio = BibliographicRecord(
-            title="Reserved Book",
-            authors="Test Author",
-            medium_type="Livre"
+            title="Reserved Book", authors="Test Author", medium_type="Livre"
         )
         db_session.add(biblio)
         db_session.flush()
@@ -666,7 +662,9 @@ class TestActiveLoansReport:
         db_session.flush()
 
         # Create active loan
-        biblio = BibliographicRecord(title="Checked Out Book", authors="Test Author", medium_type="Livre")
+        biblio = BibliographicRecord(
+            title="Checked Out Book", authors="Test Author", medium_type="Livre"
+        )
         db_session.add(biblio)
         db_session.flush()
 
@@ -828,20 +826,34 @@ class TestAdditionalReports:
         """Test getting collection statistics with different filters."""
         # Create records
         rec1 = BibliographicRecord(
-            title="Book A", isbn="111", medium_type="Livre", target_audience="child", publication_year=2020
+            title="Book A",
+            isbn="111",
+            medium_type="Livre",
+            target_audience="child",
+            publication_year=2020,
         )
         rec2 = BibliographicRecord(
-            title="Periodical B", isbn="222", medium_type="Périodique", target_audience="youth", publication_year=2021
+            title="Periodical B",
+            isbn="222",
+            medium_type="Périodique",
+            target_audience="youth",
+            publication_year=2021,
         )
         db_session.add_all([rec1, rec2])
         db_session.flush()
 
         # Create items
         item1 = Item(
-            item_id="1111", bibliographic_record_id=rec1.id, condition="good", acquisition_date=date(2025, 1, 1)
+            item_id="1111",
+            bibliographic_record_id=rec1.id,
+            condition="good",
+            acquisition_date=date(2025, 1, 1),
         )
         item2 = Item(
-            item_id="2222", bibliographic_record_id=rec2.id, condition="damaged", acquisition_date=date(2020, 6, 1)
+            item_id="2222",
+            bibliographic_record_id=rec2.id,
+            condition="damaged",
+            acquisition_date=date(2020, 6, 1),
         )
         db_session.add_all([item1, item2])
         db_session.commit()
@@ -878,7 +890,7 @@ class TestAdditionalReports:
             medium_type="Livre",
             target_audience="child",
             level="easy",
-            publication_year=2022
+            publication_year=2022,
         )
         db_session.add(rec)
         db_session.flush()
@@ -886,7 +898,7 @@ class TestAdditionalReports:
         item = Item(
             item_id="3333",
             bibliographic_record_id=rec.id,
-            acquisition_date=date(2025, 9, 15)  # matches 2025-2026 academic year
+            acquisition_date=date(2025, 9, 15),  # matches 2025-2026 academic year
         )
         db_session.add(item)
         db_session.commit()
@@ -899,7 +911,7 @@ class TestAdditionalReports:
             target_audience="child",
             medium_type="Livre",
             min_age_days=1,
-            limit=5
+            limit=5,
         )
 
         assert len(items) == 1
@@ -927,10 +939,7 @@ class TestAdditionalReports:
         db_session.flush()
 
         rec = BibliographicRecord(
-            title="Popular Book",
-            isbn="444",
-            medium_type="Livre",
-            target_audience="youth"
+            title="Popular Book", isbn="444", medium_type="Livre", target_audience="youth"
         )
         db_session.add(rec)
         db_session.flush()
@@ -945,7 +954,7 @@ class TestAdditionalReports:
             item_id=item.id,
             bibliographic_record_id=rec.id,
             checkout_date=datetime.utcnow() - timedelta(days=3),
-            due_date=date.today() + timedelta(days=10)
+            due_date=date.today() + timedelta(days=10),
         )
         db_session.add(tx)
         db_session.commit()
@@ -973,4 +982,3 @@ class TestAdditionalReports:
 
         stats_all = report_service.get_circulation_statistics(db_session, period="all-time")
         assert stats_all["period"] == "All time"
-

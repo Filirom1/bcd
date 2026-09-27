@@ -19,7 +19,7 @@ class TestI18nFiles:
         en_file = LOCALES_DIR / "en.json"
         assert en_file.exists(), "en.json file not found"
 
-        with open(en_file, 'r', encoding='utf-8') as f:
+        with open(en_file, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         assert isinstance(data, dict), "en.json should contain a JSON object"
@@ -30,7 +30,7 @@ class TestI18nFiles:
         fr_file = LOCALES_DIR / "fr.json"
         assert fr_file.exists(), "fr.json file not found"
 
-        with open(fr_file, 'r', encoding='utf-8') as f:
+        with open(fr_file, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         assert isinstance(data, dict), "fr.json should contain a JSON object"
@@ -41,10 +41,10 @@ class TestI18nFiles:
         en_file = LOCALES_DIR / "en.json"
         fr_file = LOCALES_DIR / "fr.json"
 
-        with open(en_file, 'r', encoding='utf-8') as f:
+        with open(en_file, "r", encoding="utf-8") as f:
             en_data = json.load(f)
 
-        with open(fr_file, 'r', encoding='utf-8') as f:
+        with open(fr_file, "r", encoding="utf-8") as f:
             fr_data = json.load(f)
 
         en_keys = set(en_data.keys())
@@ -58,22 +58,15 @@ class TestI18nFiles:
 
     def test_required_sections_exist(self):
         """Test that required translation sections exist in both files."""
-        required_sections = [
-            "common",
-            "borrower",
-            "borrowers",
-            "catalog",
-            "admin",
-            "errors"
-        ]
+        required_sections = ["common", "borrower", "borrowers", "catalog", "admin", "errors"]
 
         en_file = LOCALES_DIR / "en.json"
         fr_file = LOCALES_DIR / "fr.json"
 
-        with open(en_file, 'r', encoding='utf-8') as f:
+        with open(en_file, "r", encoding="utf-8") as f:
             en_data = json.load(f)
 
-        with open(fr_file, 'r', encoding='utf-8') as f:
+        with open(fr_file, "r", encoding="utf-8") as f:
             fr_data = json.load(f)
 
         for section in required_sections:
@@ -95,29 +88,30 @@ class TestI18nFiles:
                     keys.add(key_name)
             return keys
 
-        with open(en_file, 'r', encoding='utf-8') as f:
+        with open(en_file, "r", encoding="utf-8") as f:
             en_keys = flatten_keys(json.load(f))
-        with open(fr_file, 'r', encoding='utf-8') as f:
+        with open(fr_file, "r", encoding="utf-8") as f:
             fr_keys = flatten_keys(json.load(f))
 
         all_defined_keys = en_keys | fr_keys
 
         # Patterns to find keys in JS/HTML
         import re
+
         patterns = [
             # t('some.key') or t("some.key") or $t(...)
             re.compile(r"\b\$?t\(\s*['\"]([\w\.-]+)['\"]"),
             # titleKey: 'some.key'
             re.compile(r"\btitleKey\s*:\s*['\"]([\w\.-]+)['\"]"),
             # v-t="'some.key'"
-            re.compile(r"v-t\s*=\s*['\"]['\"]([\w\.-]+)['\"]['\"]")
+            re.compile(r"v-t\s*=\s*['\"]['\"]([\w\.-]+)['\"]['\"]"),
         ]
 
         src_dir = LOCALES_DIR.parent
         used_keys = set()
         for file_path in src_dir.rglob("*"):
             if file_path.suffix in (".js", ".html") and "vendor" not in file_path.parts:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 for pattern in patterns:
                     for match in pattern.finditer(content):
@@ -127,11 +121,12 @@ class TestI18nFiles:
                             used_keys.add(key)
 
         missing_keys = used_keys - all_defined_keys
-        
+
         # Filter out dynamically built error keys or edge cases if any
         # e.g., if there are dynamic constructs like errors.${code} (which are not literal keys)
         # We also filter out base prefixes like 'borrower.role_', 'catalog.format_', etc. which are appended with dynamic suffixes.
         missing_keys = {k for k in missing_keys if not k.endswith(".") and not k.endswith("_")}
 
-        assert not missing_keys, f"i18n keys used in code but missing from JSON files: {sorted(list(missing_keys))}"
-
+        assert (
+            not missing_keys
+        ), f"i18n keys used in code but missing from JSON files: {sorted(list(missing_keys))}"

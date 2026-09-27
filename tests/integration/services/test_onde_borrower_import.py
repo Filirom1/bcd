@@ -6,7 +6,6 @@ from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.services.borrower.import_ import import_borrowers_from_csv
 from src.bcd_converters.borrower.onde_to_bcd_borrowers import convert
 
-
 SAMPLE_PATH = Path("data/sample_imports/onde_official_sample.csv")
 
 

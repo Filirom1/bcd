@@ -28,14 +28,10 @@ class TestBulkEditRecords:
         records = []
         for i in range(3):
             record_data = BibliographicRecordCreate(
-                title=f"Test Book {i}",
-                authors=[f"Author {i}"],
-                language="eng"
+                title=f"Test Book {i}", authors=[f"Author {i}"], language="eng"
             )
             record = catalog_service.create_bibliographic_record(
-                db=db_session,
-                record_data=record_data,
-                isbn_lookup=False
+                db=db_session, record_data=record_data, isbn_lookup=False
             )
             records.append(record)
 
@@ -49,7 +45,7 @@ class TestBulkEditRecords:
             language="fr",
             publisher="New Pub",
             collection="Cool Series",
-            binding_type="paperback"
+            binding_type="paperback",
         )
 
         # ASSERT - All records updated
@@ -60,9 +56,11 @@ class TestBulkEditRecords:
 
         # Verify database changes
         for record_id in record_ids:
-            record = db_session.query(BibliographicRecord).filter(
-                BibliographicRecord.id == record_id
-            ).first()
+            record = (
+                db_session.query(BibliographicRecord)
+                .filter(BibliographicRecord.id == record_id)
+                .first()
+            )
             assert record.level == "CP"
             assert record.language == "fr"
             assert record.publisher == "New Pub"
@@ -73,22 +71,15 @@ class TestBulkEditRecords:
         """Test that null values in update mean 'no change'."""
         # ARRANGE
         record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"],
-            language="eng"
+            title="Test Book", authors=["Author"], language="eng"
         )
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         # ACT - Update level only (language = null = no change)
         catalog_service.bulk_edit_records(
-            db=db_session,
-            record_ids=[record.id],
-            level="CM1",
-            language=None  # No change
+            db=db_session, record_ids=[record.id], level="CM1", language=None  # No change
         )
 
         # ASSERT - Only level updated
@@ -99,22 +90,15 @@ class TestBulkEditRecords:
     def test_bulk_edit_records_only_valid_ids(self, db_session: Session):
         """Test that bulk edit only updates valid record IDs."""
         # ARRANGE - Create valid records
-        record1_data = BibliographicRecordCreate(
-            title="Book 1",
-            authors=["Author 1"]
-        )
+        record1_data = BibliographicRecordCreate(title="Book 1", authors=["Author 1"])
         record1 = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record1_data,
-            isbn_lookup=False
+            db=db_session, record_data=record1_data, isbn_lookup=False
         )
 
         # ACT - Try to update with invalid IDs mixed in
         # Only valid IDs should be updated (implementation skips invalid IDs)
         result = catalog_service.bulk_edit_records(
-            db=db_session,
-            record_ids=[record1.id, 99999],  # 99999 doesn't exist
-            level="CM2"
+            db=db_session, record_ids=[record1.id, 99999], level="CM2"  # 99999 doesn't exist
         )
 
         # ASSERT - Only valid record updated
@@ -125,14 +109,9 @@ class TestBulkEditRecords:
     def test_bulk_edit_records_no_fields_error(self, db_session: Session):
         """Test error when no update fields provided."""
         # ARRANGE
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         # ACT & ASSERT - Error when all fields are null
@@ -146,7 +125,7 @@ class TestBulkEditRecords:
                 medium_type=None,
                 publisher=None,
                 collection=None,
-                binding_type=None
+                binding_type=None,
             )
 
         assert "No fields to update" in str(exc.value)
@@ -155,11 +134,7 @@ class TestBulkEditRecords:
         """Test error when empty record ID list provided."""
         # ACT & ASSERT
         with pytest.raises(ValidationError) as exc:
-            catalog_service.bulk_edit_records(
-                db=db_session,
-                record_ids=[],
-                level="CM1"
-            )
+            catalog_service.bulk_edit_records(db=db_session, record_ids=[], level="CM1")
 
         assert "No record IDs provided" in str(exc.value)
 
@@ -172,33 +147,24 @@ class TestBulkDeleteRecords:
         # ARRANGE - Create test records with items
         records = []
         for i in range(3):
-            record_data = BibliographicRecordCreate(
-                title=f"Test Book {i}",
-                authors=[f"Author {i}"]
-            )
+            record_data = BibliographicRecordCreate(title=f"Test Book {i}", authors=[f"Author {i}"])
             record = catalog_service.create_bibliographic_record(
-                db=db_session,
-                record_data=record_data,
-                isbn_lookup=False
+                db=db_session, record_data=record_data, isbn_lookup=False
             )
             records.append(record)
 
             # Create item for each record
             from src.bcd_api.schemas.item import ItemCreate
+
             item_data = ItemCreate(
-                item_id=f"ITEM{i}",
-                bibliographic_record_id=record.id,
-                call_number=f"{i}00.000"
+                item_id=f"ITEM{i}", bibliographic_record_id=record.id, call_number=f"{i}00.000"
             )
             catalog_service.create_item(db=db_session, item_data=item_data)
 
         record_ids = [r.id for r in records]
 
         # ACT - Bulk delete
-        result = catalog_service.bulk_delete_records(
-            db=db_session,
-            record_ids=record_ids
-        )
+        result = catalog_service.bulk_delete_records(db=db_session, record_ids=record_ids)
 
         # ASSERT - All records deleted
         assert result["operation"] == "bulk_delete_records"
@@ -208,9 +174,11 @@ class TestBulkDeleteRecords:
 
         # Verify records deleted
         for record_id in record_ids:
-            record = db_session.query(BibliographicRecord).filter(
-                BibliographicRecord.id == record_id
-            ).first()
+            record = (
+                db_session.query(BibliographicRecord)
+                .filter(BibliographicRecord.id == record_id)
+                .first()
+            )
             assert record is None
 
         # Verify items CASCADE deleted
@@ -220,21 +188,15 @@ class TestBulkDeleteRecords:
     def test_bulk_delete_records_cascade_deletes_items(self, db_session: Session):
         """Test CASCADE delete removes associated items even if on loan."""
         # ARRANGE - Create record with item on loan
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            authors=["Author"]
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", authors=["Author"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         from src.bcd_api.schemas.item import ItemCreate
+
         item_data = ItemCreate(
-            item_id="ITEM1",
-            bibliographic_record_id=record.id,
-            call_number="800.000"
+            item_id="ITEM1", bibliographic_record_id=record.id, call_number="800.000"
         )
         item = catalog_service.create_item(db=db_session, item_data=item_data)
 
@@ -243,58 +205,48 @@ class TestBulkDeleteRecords:
         db_session.commit()
 
         # ACT - Delete record (should delete item even if on loan)
-        result = catalog_service.bulk_delete_records(
-            db=db_session,
-            record_ids=[record.id]
-        )
+        result = catalog_service.bulk_delete_records(db=db_session, record_ids=[record.id])
 
         # ASSERT - Record and item deleted
         assert result["successful_count"] == 1
 
-        record_check = db_session.query(BibliographicRecord).filter(
-            BibliographicRecord.id == record.id
-        ).first()
+        record_check = (
+            db_session.query(BibliographicRecord)
+            .filter(BibliographicRecord.id == record.id)
+            .first()
+        )
         assert record_check is None
 
-        item_check = db_session.query(Item).filter(
-            Item.id == item.id
-        ).first()
+        item_check = db_session.query(Item).filter(Item.id == item.id).first()
         assert item_check is None
 
     def test_bulk_delete_records_only_valid_ids(self, db_session: Session):
         """Test that bulk delete only deletes valid record IDs."""
         # ARRANGE - Create one valid record
-        record_data = BibliographicRecordCreate(
-            title="Book 1",
-            authors=["Author 1"]
-        )
+        record_data = BibliographicRecordCreate(title="Book 1", authors=["Author 1"])
         record = catalog_service.create_bibliographic_record(
-            db=db_session,
-            record_data=record_data,
-            isbn_lookup=False
+            db=db_session, record_data=record_data, isbn_lookup=False
         )
 
         # ACT - Delete with invalid ID mixed in (should delete valid IDs only)
         result = catalog_service.bulk_delete_records(
-            db=db_session,
-            record_ids=[record.id, 99999]  # 99999 doesn't exist
+            db=db_session, record_ids=[record.id, 99999]  # 99999 doesn't exist
         )
 
         # ASSERT - Valid record deleted, invalid ID skipped
         assert result["successful_count"] == 1  # Only 1 record found and deleted
-        record_check = db_session.query(BibliographicRecord).filter(
-            BibliographicRecord.id == record.id
-        ).first()
+        record_check = (
+            db_session.query(BibliographicRecord)
+            .filter(BibliographicRecord.id == record.id)
+            .first()
+        )
         assert record_check is None  # Record was deleted
 
     def test_bulk_delete_records_empty_list_error(self, db_session: Session):
         """Test error when empty record ID list provided."""
         # ACT & ASSERT
         with pytest.raises(ValidationError) as exc:
-            catalog_service.bulk_delete_records(
-                db=db_session,
-                record_ids=[]
-            )
+            catalog_service.bulk_delete_records(db=db_session, record_ids=[])
 
         assert "No record IDs provided" in str(exc.value)
 
@@ -304,37 +256,39 @@ class TestBulkDeleteRecords:
         record1 = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Safe to Delete",
-                isbn="9780123456780",
-                authors=["Author"]
+                title="Safe to Delete", isbn="9780123456780", authors=["Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         record2 = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Has Active Loan",
-                isbn="9780123456781",
-                authors=["Author"]
+                title="Has Active Loan", isbn="9780123456781", authors=["Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Create items
-        catalog_service.create_item(db_session, ItemCreate(
-            item_id="SAFE001",
-            bibliographic_record_id=record1.id,
-            call_number="100.000",
-            status="available"
-        ))
+        catalog_service.create_item(
+            db_session,
+            ItemCreate(
+                item_id="SAFE001",
+                bibliographic_record_id=record1.id,
+                call_number="100.000",
+                status="available",
+            ),
+        )
 
-        item2 = catalog_service.create_item(db_session, ItemCreate(
-            item_id="LOAN001",
-            bibliographic_record_id=record2.id,
-            call_number="100.001",
-            status="on_loan"
-        ))
+        item2 = catalog_service.create_item(
+            db_session,
+            ItemCreate(
+                item_id="LOAN001",
+                bibliographic_record_id=record2.id,
+                call_number="100.001",
+                status="on_loan",
+            ),
+        )
 
         # Create borrower and active loan on item2
         borrower = Borrower(
@@ -342,7 +296,7 @@ class TestBulkDeleteRecords:
             first_name="Active",
             last_name="BORROWER",
             full_name="Active BORROWER",
-            role="student"
+            role="student",
         )
         db_session.add(borrower)
         db_session.commit()
@@ -354,7 +308,7 @@ class TestBulkDeleteRecords:
             checkout_date=datetime.now(),
             due_date=(datetime.now() + timedelta(days=14)).date(),
             status="active",
-            return_date=None
+            return_date=None,
         )
         db_session.add(loan)
         db_session.commit()
@@ -365,10 +319,7 @@ class TestBulkDeleteRecords:
 
         # Act & Assert: Bulk delete should fail with appropriate exception
         with pytest.raises(ItemHasActiveLoanException) as exc_info:
-            catalog_service.bulk_delete_records(
-                db_session,
-                record_ids=[record1_id, record2_id]
-            )
+            catalog_service.bulk_delete_records(db_session, record_ids=[record1_id, record2_id])
 
         # Verify exception details
         assert exc_info.value.error_code == "ITEM_HAS_ACTIVE_LOAN"

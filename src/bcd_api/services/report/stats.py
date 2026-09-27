@@ -11,11 +11,10 @@ from typing import Any, Dict, Optional
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
+from ....shared.constants import MediumType
 from ...models.bibliographic_record import BibliographicRecord
-from ...models.borrower import Borrower
 from ...models.circulation import CirculationTransaction
 from ...models.item import Item
-from ....shared.constants import MediumType
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +37,14 @@ def get_collection_stats(
     """
     today = date.today()
 
-    def _base_query(db, exclude_medium_type=False,
-                    exclude_target_audience=False, exclude_condition=False,
-                    exclude_pub_year=False, exclude_acq_year=False):
+    def _base_query(
+        db,
+        exclude_medium_type=False,
+        exclude_target_audience=False,
+        exclude_condition=False,
+        exclude_pub_year=False,
+        exclude_acq_year=False,
+    ):
         """Build the base filtered query for aggregations."""
         q = db.query(Item, BibliographicRecord).join(
             BibliographicRecord, Item.bibliographic_record_id == BibliographicRecord.id
@@ -108,8 +112,12 @@ def get_collection_stats(
         )
         return [{"value": r[0], "count": r[1], "damaged_count": r[2] or 0} for r in rows]
 
-    medium_rows = _breakdown(_base_query(db, exclude_medium_type=True), BibliographicRecord.medium_type)
-    audience_rows = _breakdown(_base_query(db, exclude_target_audience=True), BibliographicRecord.target_audience)
+    medium_rows = _breakdown(
+        _base_query(db, exclude_medium_type=True), BibliographicRecord.medium_type
+    )
+    audience_rows = _breakdown(
+        _base_query(db, exclude_target_audience=True), BibliographicRecord.target_audience
+    )
     condition_rows = _breakdown(_base_query(db, exclude_condition=True), Item.condition)
 
     pub_q = _base_query(db, exclude_pub_year=True)
@@ -138,7 +146,9 @@ def get_collection_stats(
         .order_by("acq_year")
         .all()
     )
-    acq_histogram = [{"year": int(r[0]), "count": r[1], "damaged_count": r[2] or 0} for r in acq_rows]
+    acq_histogram = [
+        {"year": int(r[0]), "count": r[1], "damaged_count": r[2] or 0} for r in acq_rows
+    ]
 
     total = _base_query(db).count()
 
@@ -180,22 +190,28 @@ def get_circulation_statistics(
 
     total_checkouts = base_query.count()
 
-    items_on_loan = db.query(CirculationTransaction).filter(
-        CirculationTransaction.return_date.is_(None)
-    ).count()
+    items_on_loan = (
+        db.query(CirculationTransaction)
+        .filter(CirculationTransaction.return_date.is_(None))
+        .count()
+    )
 
-    overdue_count = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.return_date.is_(None),
-            CirculationTransaction.due_date < datetime.utcnow().date(),
+    overdue_count = (
+        db.query(CirculationTransaction)
+        .filter(
+            and_(
+                CirculationTransaction.return_date.is_(None),
+                CirculationTransaction.due_date < datetime.utcnow().date(),
+            )
         )
-    ).count()
+        .count()
+    )
 
-    active_borrowers = db.query(
-        func.count(func.distinct(CirculationTransaction.borrower_id))
-    ).filter(
-        CirculationTransaction.return_date.is_(None)
-    ).scalar()
+    active_borrowers = (
+        db.query(func.count(func.distinct(CirculationTransaction.borrower_id)))
+        .filter(CirculationTransaction.return_date.is_(None))
+        .scalar()
+    )
 
     avg_loans_per_day = None
     if cutoff_date:
@@ -249,45 +265,64 @@ def get_borrower_statistics(
     """
     from sqlalchemy import and_
 
-    total_checkouts = db.query(CirculationTransaction).filter(
-        CirculationTransaction.borrower_id == borrower_id
-    ).count()
+    total_checkouts = (
+        db.query(CirculationTransaction)
+        .filter(CirculationTransaction.borrower_id == borrower_id)
+        .count()
+    )
 
-    current_loans = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower_id,
-            CirculationTransaction.return_date.is_(None),
+    current_loans = (
+        db.query(CirculationTransaction)
+        .filter(
+            and_(
+                CirculationTransaction.borrower_id == borrower_id,
+                CirculationTransaction.return_date.is_(None),
+            )
         )
-    ).count()
+        .count()
+    )
 
-    overdue = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower_id,
-            CirculationTransaction.return_date.is_(None),
-            CirculationTransaction.due_date < datetime.utcnow().date(),
+    overdue = (
+        db.query(CirculationTransaction)
+        .filter(
+            and_(
+                CirculationTransaction.borrower_id == borrower_id,
+                CirculationTransaction.return_date.is_(None),
+                CirculationTransaction.due_date < datetime.utcnow().date(),
+            )
         )
-    ).count()
+        .count()
+    )
 
-    total_renewals = db.query(
-        func.sum(CirculationTransaction.renewal_count)
-    ).filter(
-        CirculationTransaction.borrower_id == borrower_id
-    ).scalar() or 0
+    total_renewals = (
+        db.query(func.sum(CirculationTransaction.renewal_count))
+        .filter(CirculationTransaction.borrower_id == borrower_id)
+        .scalar()
+        or 0
+    )
 
-    late_returns = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower_id,
-            CirculationTransaction.return_date.isnot(None),
-            CirculationTransaction.return_date > CirculationTransaction.due_date,
+    late_returns = (
+        db.query(CirculationTransaction)
+        .filter(
+            and_(
+                CirculationTransaction.borrower_id == borrower_id,
+                CirculationTransaction.return_date.isnot(None),
+                CirculationTransaction.return_date > CirculationTransaction.due_date,
+            )
         )
-    ).count()
+        .count()
+    )
 
-    returned = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower_id,
-            CirculationTransaction.return_date.isnot(None),
+    returned = (
+        db.query(CirculationTransaction)
+        .filter(
+            and_(
+                CirculationTransaction.borrower_id == borrower_id,
+                CirculationTransaction.return_date.isnot(None),
+            )
         )
-    ).count()
+        .count()
+    )
 
     late_return_rate = round((late_returns / returned) * 100, 1) if returned > 0 else 0
 

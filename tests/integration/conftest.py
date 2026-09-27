@@ -47,8 +47,8 @@ def db_session(db_engine):
     # commit/rollback boundaries, and db_engine is function-scoped, so the
     # engine itself provides test isolation.
     connection = db_engine.connect()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=connection)
-    session = SessionLocal()
+    session_local = sessionmaker(autocommit=False, autoflush=False, bind=connection)
+    session = session_local()
 
     # Create default system settings
     settings = SystemSettings(
@@ -64,7 +64,7 @@ def db_session(db_engine):
         barcode_type="code39",
         language="fr",
         academic_year_current="2025-2026",
-        library_name="BCD Test Library"
+        library_name="BCD Test Library",
     )
     session.add(settings)
     session.commit()
@@ -84,6 +84,7 @@ def client(db_session):
     limitation. This fixture is kept for potential future use but API tests
     are skipped in favor of service-layer tests.
     """
+
     def get_test_db():
         yield db_session
 
@@ -96,10 +97,7 @@ def client(db_session):
 @pytest.fixture
 def test_class(db_session):
     """Create a test class."""
-    test_class = Class(
-        name="CP-A",
-        homeroom_teacher="Mme Dupont"
-    )
+    test_class = Class(name="CP-A", homeroom_teacher="Mme Dupont")
     db_session.add(test_class)
     db_session.commit()
     db_session.refresh(test_class)
@@ -171,7 +169,7 @@ def test_bibliographic_record(db_session):
         isbn="978-2-08-161739-6",
         language="fr",
         target_audience="child",
-        medium_type="Livre"
+        medium_type="Livre",
     )
     db_session.add(record)
     db_session.commit()
@@ -190,7 +188,7 @@ def test_bibliographic_record_2(db_session):
         isbn="978-0-06-026395-7",
         language="eng",
         target_audience="child",
-        medium_type="Livre"
+        medium_type="Livre",
     )
     db_session.add(record)
     db_session.commit()
@@ -208,7 +206,7 @@ def test_item_available(db_session, test_bibliographic_record):
         status="available",
         condition="good",
         loanable=True,
-        shelf_location="Fiction - Section A - Row 3"
+        shelf_location="Fiction - Section A - Row 3",
     )
     db_session.add(item)
     db_session.commit()
@@ -226,7 +224,7 @@ def test_item_available_2(db_session, test_bibliographic_record_2):
         status="available",
         condition="good",
         loanable=True,
-        shelf_location="Fiction - Section B - Row 1"
+        shelf_location="Fiction - Section B - Row 1",
     )
     db_session.add(item)
     db_session.commit()
@@ -244,7 +242,7 @@ def test_item_not_loanable(db_session, test_bibliographic_record):
         status="available",
         condition="good",
         loanable=False,
-        shelf_location="Reference - Section A"
+        shelf_location="Reference - Section A",
     )
     db_session.add(item)
     db_session.commit()
@@ -288,7 +286,7 @@ def multiple_items(db_session, test_bibliographic_record):
             status="available",
             condition="good",
             loanable=True,
-            shelf_location=f"Fiction - Section A - Row {i+1}"
+            shelf_location=f"Fiction - Section A - Row {i+1}",
         )
         db_session.add(item)
         items.append(item)
@@ -301,6 +299,7 @@ def multiple_items(db_session, test_bibliographic_record):
 
 
 # Factory Fixtures
+
 
 class BorrowerFactory:
     """Factory for creating borrower objects."""
@@ -332,7 +331,6 @@ class BorrowerFactory:
             last_name = f"LastName{self._counter}"
 
         full_name = f"{first_name} {last_name}"
-        barcode = f"BOR{borrower_id}"
 
         borrower = Borrower(
             borrower_id=borrower_id,
@@ -436,12 +434,7 @@ class ItemFactory:
         self.db_session.refresh(item)
         return item
 
-    def create_with_record(
-        self,
-        title="Test Book",
-        authors=None,
-        **item_kwargs
-    ):
+    def create_with_record(self, title="Test Book", authors=None, **item_kwargs):
         """Create a bibliographic record with an item."""
         if authors is None:
             authors = ["Test Author"]

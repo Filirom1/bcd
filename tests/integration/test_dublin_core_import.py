@@ -196,17 +196,12 @@ Book Title,isbn:123456,INV001,800.000,2024-01-15,Budget 2024"""
         """Importing duplicate ISBN should skip the bibliographic record."""
         # Arrange - Create existing record
         existing = BibliographicRecord(
-            title="Existing Book",
-            isbn="isbn:9782070123456",
-            medium_type="Livre"
+            title="Existing Book", isbn="isbn:9782070123456", medium_type="Livre"
         )
         db_session.add(existing)
         db_session.flush()
 
-        existing_item = Item(
-            item_id="OLD001",
-            bibliographic_record_id=existing.id
-        )
+        existing_item = Item(item_id="OLD001", bibliographic_record_id=existing.id)
         db_session.add(existing_item)
         db_session.commit()
 
@@ -269,7 +264,7 @@ Book B,isbn:9782070222222,173 p
 Book C,isbn:9782070333333,Not a page count"""
 
         # Act
-        result = import_dublin_core_csv(db_session, csv_content)
+        import_dublin_core_csv(db_session, csv_content)
 
         # Assert
         book_a = db_session.query(BibliographicRecord).filter_by(isbn="isbn:9782070111111").first()
@@ -309,6 +304,7 @@ Book C,isbn:9782070333333,Not a page count"""
 
         # Act
         import time
+
         start = time.time()
         result = import_dublin_core_csv(db_session, csv_content)
         duration = time.time() - start
@@ -386,6 +382,7 @@ Valid Book 2,isbn:333333
         """Test that importing items automatically strips the item barcode prefix."""
         # Arrange - Get actual prefix from settings
         from src.bcd_api.services.settings_service import get_settings
+
         settings = get_settings(db_session)
         prefix = settings.item_barcode_prefix or "."
 
@@ -405,4 +402,3 @@ Book with Prefixed Item,isbn:9782070611111,{prefixed_id}"""
         db_item = db_session.query(Item).filter_by(item_id="785").first()
         assert db_item is not None
         assert db_session.query(Item).filter_by(item_id=prefixed_id).first() is None
-

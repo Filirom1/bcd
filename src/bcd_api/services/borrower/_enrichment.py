@@ -2,14 +2,18 @@
 
 from datetime import date
 from typing import Dict, List, NamedTuple, Optional
-from sqlalchemy import func, and_
+
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
 from src.bcd_api.models import Class
-from src.bcd_api.models.circulation import CirculationTransaction
-from src.bcd_api.services.circulation.query_filters import active_loan_predicate, overdue_loan_predicate
-from src.bcd_api.services.circulation.policy import CirculationPolicy
 from src.bcd_api.models.borrower import Borrower
+from src.bcd_api.models.circulation import CirculationTransaction
+from src.bcd_api.services.circulation.policy import CirculationPolicy
+from src.bcd_api.services.circulation.query_filters import (
+    active_loan_predicate,
+    overdue_loan_predicate,
+)
 
 
 class Counts(NamedTuple):
@@ -30,12 +34,7 @@ def circulation_counts_by_borrower(db: Session, borrower_ids: List[int]) -> Dict
     # Active loans
     active_rows = (
         db.query(CirculationTransaction.borrower_id, func.count(CirculationTransaction.id))
-        .filter(
-            and_(
-                CirculationTransaction.borrower_id.in_(borrower_ids),
-                active_loan_predicate()
-            )
-        )
+        .filter(and_(CirculationTransaction.borrower_id.in_(borrower_ids), active_loan_predicate()))
         .group_by(CirculationTransaction.borrower_id)
         .all()
     )
@@ -47,7 +46,7 @@ def circulation_counts_by_borrower(db: Session, borrower_ids: List[int]) -> Dict
         .filter(
             and_(
                 CirculationTransaction.borrower_id.in_(borrower_ids),
-                overdue_loan_predicate(date.today())
+                overdue_loan_predicate(date.today()),
             )
         )
         .group_by(CirculationTransaction.borrower_id)
@@ -57,8 +56,7 @@ def circulation_counts_by_borrower(db: Session, borrower_ids: List[int]) -> Dict
 
     return {
         bid: Counts(
-            current_loans_count=active_map.get(bid, 0),
-            overdue_count=overdue_map.get(bid, 0)
+            current_loans_count=active_map.get(bid, 0), overdue_count=overdue_map.get(bid, 0)
         )
         for bid in borrower_ids
     }
@@ -72,8 +70,7 @@ def class_details_by_id(db: Session, class_ids: List[int]) -> Dict[int, ClassDet
 
     classes = db.query(Class).filter(Class.id.in_(unique_class_ids)).all()
     return {
-        c.id: ClassDetails(class_name=c.name, homeroom_teacher=c.homeroom_teacher)
-        for c in classes
+        c.id: ClassDetails(class_name=c.name, homeroom_teacher=c.homeroom_teacher) for c in classes
     }
 
 

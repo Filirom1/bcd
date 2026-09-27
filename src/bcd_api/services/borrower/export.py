@@ -34,28 +34,17 @@ def export_borrowers_to_csv(db: Session) -> Tuple[str, int]:
     """
     try:
         # Query all borrowers with class info
-        borrowers = (
-            db.query(Borrower)
-            .options(joinedload(Borrower.class_))
-            .all()
-        )
+        borrowers = db.query(Borrower).options(joinedload(Borrower.class_)).all()
 
         # Count total borrowers for validation
         total_borrowers = len(borrowers)
 
         if total_borrowers > MAX_BORROWER_ROWS:
-            raise ExportTooLargeException(
-                record_count=total_borrowers,
-                limit=MAX_BORROWER_ROWS
-            )
+            raise ExportTooLargeException(record_count=total_borrowers, limit=MAX_BORROWER_ROWS)
 
         # Generate CSV
         output = StringIO()
-        writer = csv.DictWriter(
-            output,
-            fieldnames=BCD_BORROWER_COLUMNS,
-            quoting=csv.QUOTE_MINIMAL
-        )
+        writer = csv.DictWriter(output, fieldnames=BCD_BORROWER_COLUMNS, quoting=csv.QUOTE_MINIMAL)
 
         writer.writeheader()
 
@@ -72,10 +61,7 @@ def export_borrowers_to_csv(db: Session) -> Tuple[str, int]:
         raise
     except Exception as e:
         logger.exception("Borrower export failed")
-        raise ExportFailedException(
-            reason=str(e),
-            details={"error_type": type(e).__name__}
-        ) from e
+        raise ExportFailedException(reason=str(e), details={"error_type": type(e).__name__}) from e
 
 
 def _borrower_to_dict(borrower: Borrower) -> dict:
@@ -93,13 +79,13 @@ def _borrower_to_dict(borrower: Borrower) -> dict:
         class_name = borrower.class_.name
 
     return {
-        'borrower_id': borrower.borrower_id,
-        'first_name': borrower.first_name,
-        'last_name': borrower.last_name,
-        'role': borrower.role,
-        'class': class_name,
-        'barcode': borrower.barcode,
-        'active': str(borrower.active).lower(),  # "true" or "false"
-        'blocked': str(bool(borrower.blocked_reason)).lower(),  # "true" if blocked_reason exists
-        'blocked_reason': borrower.blocked_reason or '',
+        "borrower_id": borrower.borrower_id,
+        "first_name": borrower.first_name,
+        "last_name": borrower.last_name,
+        "role": borrower.role,
+        "class": class_name,
+        "barcode": borrower.barcode,
+        "active": str(borrower.active).lower(),  # "true" or "false"
+        "blocked": str(bool(borrower.blocked_reason)).lower(),  # "true" if blocked_reason exists
+        "blocked_reason": borrower.blocked_reason or "",
     }

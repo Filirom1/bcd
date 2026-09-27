@@ -2,23 +2,23 @@
 
 import logging
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import (
-    DuplicateError,
+    BorrowerHasActiveLoansException,
     BorrowerNotFoundException,
     ClassNotFoundException,
-    BorrowerHasActiveLoansException,
+    DuplicateError,
 )
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class
 from src.bcd_api.models.system_settings import SystemSettings
-from src.shared.constants import BorrowerRole
-from ._validation import validate_role, validate_borrower_id, require_class, full_name
+
+from ._validation import full_name, require_class, validate_borrower_id, validate_role
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +176,9 @@ def update_borrower(
             if normalized_external_id != borrower.external_id:
                 existing_external_id = (
                     db.query(Borrower)
-                    .filter(Borrower.external_id == normalized_external_id, Borrower.id != borrower.id)
+                    .filter(
+                        Borrower.external_id == normalized_external_id, Borrower.id != borrower.id
+                    )
                     .first()
                 )
                 if existing_external_id:
@@ -282,11 +284,7 @@ def block_borrower(db: Session, borrower_id: str, reason: str) -> Borrower:
         raise
 
 
-def bulk_change_class(
-    db: Session,
-    borrower_ids: List[str],
-    new_class_id: Optional[int]
-) -> dict:
+def bulk_change_class(db: Session, borrower_ids: List[str], new_class_id: Optional[int]) -> dict:
     """
     Change class for multiple borrowers in a single atomic transaction.
 
@@ -318,7 +316,7 @@ def bulk_change_class(
             "total_count": 0,
             "successful_count": 0,
             "failed_count": 0,
-            "operation": "bulk_change_class"
+            "operation": "bulk_change_class",
         }
 
     try:
@@ -347,18 +345,14 @@ def bulk_change_class(
             "total_count": total_count,
             "successful_count": total_count,
             "failed_count": 0,
-            "operation": "bulk_change_class"
+            "operation": "bulk_change_class",
         }
     except Exception:
         db.rollback()
         raise
 
 
-def bulk_change_role(
-    db: Session,
-    borrower_ids: List[str],
-    new_role: str
-) -> dict:
+def bulk_change_role(db: Session, borrower_ids: List[str], new_role: str) -> dict:
     """
     Change role for multiple borrowers in a single atomic transaction.
 
@@ -390,7 +384,7 @@ def bulk_change_role(
             "total_count": 0,
             "successful_count": 0,
             "failed_count": 0,
-            "operation": "bulk_change_role"
+            "operation": "bulk_change_role",
         }
 
     try:
@@ -416,17 +410,14 @@ def bulk_change_role(
             "total_count": total_count,
             "successful_count": total_count,
             "failed_count": 0,
-            "operation": "bulk_change_role"
+            "operation": "bulk_change_role",
         }
     except Exception:
         db.rollback()
         raise
 
 
-def bulk_delete_borrowers(
-    db: Session,
-    borrower_ids: List[str]
-) -> dict:
+def bulk_delete_borrowers(db: Session, borrower_ids: List[str]) -> dict:
     """
     Delete multiple borrowers in a single atomic transaction.
 
@@ -456,45 +447,39 @@ def bulk_delete_borrowers(
             "total_count": 0,
             "successful_count": 0,
             "failed_count": 0,
-            "operation": "bulk_delete_borrowers"
+            "operation": "bulk_delete_borrowers",
         }
 
     try:
         # Fetch all borrowers in ONE query
-        borrowers = db.query(Borrower).filter(
-            Borrower.borrower_id.in_(borrower_ids)
-        ).all()
+        borrowers = db.query(Borrower).filter(Borrower.borrower_id.in_(borrower_ids)).all()
 
         # Verify all borrower_ids were found
         if len(borrowers) != len(borrower_ids):
             found_ids = {b.borrower_id for b in borrowers}
             missing_ids = set(borrower_ids) - found_ids
-            raise BorrowerNotFoundException(
-                borrower_id=', '.join(missing_ids)
-            )
+            raise BorrowerNotFoundException(borrower_id=", ".join(missing_ids))
 
         # Validate: Check for active loans in ONE batch query
         internal_ids = [b.id for b in borrowers]
 
-        borrower_with_loan = db.query(
-            Borrower.borrower_id,
-            Borrower.full_name,
-            func.count(CirculationTransaction.id).label('loan_count')
-        ).join(
-            CirculationTransaction,
-            CirculationTransaction.borrower_id == Borrower.id
-        ).filter(
-            Borrower.id.in_(internal_ids),
-            CirculationTransaction.return_date.is_(None)
-        ).group_by(
-            Borrower.id, Borrower.borrower_id, Borrower.full_name
-        ).first()
+        borrower_with_loan = (
+            db.query(
+                Borrower.borrower_id,
+                Borrower.full_name,
+                func.count(CirculationTransaction.id).label("loan_count"),
+            )
+            .join(CirculationTransaction, CirculationTransaction.borrower_id == Borrower.id)
+            .filter(Borrower.id.in_(internal_ids), CirculationTransaction.return_date.is_(None))
+            .group_by(Borrower.id, Borrower.borrower_id, Borrower.full_name)
+            .first()
+        )
 
         if borrower_with_loan:
             raise BorrowerHasActiveLoansException(
                 borrower_id=borrower_with_loan.borrower_id,
                 borrower_name=borrower_with_loan.full_name,
-                active_loan_count=borrower_with_loan.loan_count
+                active_loan_count=borrower_with_loan.loan_count,
             )
 
         # Delete all borrowers
@@ -509,7 +494,7 @@ def bulk_delete_borrowers(
             "total_count": total_count,
             "successful_count": total_count,
             "failed_count": 0,
-            "operation": "bulk_delete_borrowers"
+            "operation": "bulk_delete_borrowers",
         }
     except Exception:
         db.rollback()

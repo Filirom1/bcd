@@ -28,16 +28,13 @@ class Hold(Base):
 
     # Relationships
     borrower_id = Column(
-        Integer,
-        ForeignKey("borrower.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Integer, ForeignKey("borrower.id", ondelete="CASCADE"), nullable=False, index=True
     )
     bibliographic_record_id = Column(
         Integer,
         ForeignKey("bibliographic_record.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     # Hold information
@@ -60,14 +57,19 @@ class Hold(Base):
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Constraints
     __table_args__ = (
         CheckConstraint(
             f"status IN ('{HoldStatus.WAITING.value}', '{HoldStatus.READY.value}', "
             f"'{HoldStatus.FULFILLED.value}', '{HoldStatus.EXPIRED.value}', '{HoldStatus.CANCELLED.value}')",
-            name="check_hold_status"
+            name="check_hold_status",
         ),
         CheckConstraint("queue_position > 0", name="check_queue_position_positive"),
     )

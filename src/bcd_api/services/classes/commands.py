@@ -10,12 +10,12 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from ...core.exceptions import (
+    ClassNotFoundException,
     DuplicateError,
     NotFoundException,
-    ClassNotFoundException,
 )
-from ...models.class_model import Class
 from ...models.borrower import Borrower
+from ...models.class_model import Class
 
 
 def create_class_in_transaction(
@@ -52,9 +52,7 @@ def create_class(
 ) -> Class:
     """Create a new class (autonomous, handles commit)."""
     try:
-        class_obj = create_class_in_transaction(
-            db, name, homeroom_teacher, notes, average_age
-        )
+        class_obj = create_class_in_transaction(db, name, homeroom_teacher, notes, average_age)
         db.flush()
         db.commit()
         db.refresh(class_obj)
@@ -80,11 +78,7 @@ def update_class_in_transaction(
     # Update fields if provided
     if name is not None:
         # Check for duplicate name
-        existing = (
-            db.query(Class)
-            .filter(Class.name == name, Class.id != class_id)
-            .first()
-        )
+        existing = db.query(Class).filter(Class.name == name, Class.id != class_id).first()
         if existing:
             raise DuplicateError(f"Class '{name}' already exists")
         class_obj.name = name

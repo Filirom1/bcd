@@ -13,7 +13,7 @@ class SettingsPage(BasePage):
     """Page object for settings management."""
 
     # Selectors
-    FORM = 'form, .settings-form'
+    FORM = "form, .settings-form"
     SAVE_BUTTON = 'button[type="submit"], button:has-text("Save"), button:has-text("Enregistrer")'
     TEXT_INPUT = 'input[type="text"]'
     NUMBER_INPUT = 'input[type="number"]'
@@ -23,7 +23,7 @@ class SettingsPage(BasePage):
 
     def goto(self):
         """Navigate to settings page."""
-        self.navigate_to('settings')
+        self.navigate_to("settings")
         self.wait_for_form_load()
 
     def wait_for_form_load(self, timeout=10000):

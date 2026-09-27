@@ -5,6 +5,7 @@ Handles class management operations (CRUD).
 """
 
 from playwright.sync_api import Page
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from tests.e2e.page_objects.base_page import BasePage
 
@@ -14,25 +15,27 @@ class ClassesPage(BasePage):
 
     # Selectors
     CREATE_CLASS_BUTTON = 'button:has-text("Create Class"), button:has-text("Créer une classe")'
-    CLASS_TABLE = 'table tbody tr'
-    CLASS_NAME_INPUT = 'input#class-name'
-    HOMEROOM_TEACHER_INPUT = 'input#homeroom-teacher'
-    NOTES_TEXTAREA = 'textarea#notes'
+    CLASS_TABLE = "table tbody tr"
+    CLASS_NAME_INPUT = "input#class-name"
+    HOMEROOM_TEACHER_INPUT = "input#homeroom-teacher"
+    NOTES_TEXTAREA = "textarea#notes"
     SAVE_BUTTON = 'button:has-text("Save"), button:has-text("Enregistrer"), button.btn-primary:has-text("Save"), button.btn-primary:has-text("Enregistrer")'
     CANCEL_BUTTON = 'button:has-text("Cancel"), button:has-text("Annuler")'
-    EDIT_BUTTON = 'button:has(.bi-pencil), button.btn-outline-primary'
-    DELETE_BUTTON = 'button:has(.bi-trash), button.btn-outline-danger'
-    CONFIRM_DELETE_BUTTON = 'button.btn-danger:has-text("Delete"), button.btn-danger:has-text("Supprimer")'
-    MODAL = '.modal.show'
-    FORM_MODAL = '#classFormModal'
-    DELETE_MODAL = '#classDeleteDialog'
+    EDIT_BUTTON = "button:has(.bi-pencil), button.btn-outline-primary"
+    DELETE_BUTTON = "button:has(.bi-trash), button.btn-outline-danger"
+    CONFIRM_DELETE_BUTTON = (
+        'button.btn-danger:has-text("Delete"), button.btn-danger:has-text("Supprimer")'
+    )
+    MODAL = ".modal.show"
+    FORM_MODAL = "#classFormModal"
+    DELETE_MODAL = "#classDeleteDialog"
 
     def __init__(self, page: Page, server_url: str):
         super().__init__(page, server_url)
 
     def goto(self):
         """Navigate to classes page."""
-        self.navigate_to('classes')
+        self.navigate_to("classes")
         self.wait_for_table_load()
 
     def wait_for_table_load(self, timeout=10000):
@@ -40,7 +43,7 @@ class ClassesPage(BasePage):
         # Wait for either table or empty state
         try:
             self.wait_for_selector(self.CLASS_TABLE, timeout=timeout)
-        except:
+        except PlaywrightTimeoutError:
             # Table might be empty - check for "no data" message
             pass
 
@@ -123,7 +126,9 @@ class ClassesPage(BasePage):
         edit_button.click()
         self.wait_for_modal()
 
-    def edit_class(self, class_name: str, new_name: str = None, new_teacher: str = None, new_notes: str = None):
+    def edit_class(
+        self, class_name: str, new_name: str = None, new_teacher: str = None, new_notes: str = None
+    ):
         """
         Edit an existing class.
 
@@ -137,19 +142,19 @@ class ClassesPage(BasePage):
 
         if new_name:
             name_input = self.page.locator(self.CLASS_NAME_INPUT).first
-            name_input.fill('')  # Clear first
+            name_input.fill("")  # Clear first
             name_input.fill(new_name)
 
         if new_teacher:
             teacher_input = self.page.locator(self.HOMEROOM_TEACHER_INPUT).first
             if teacher_input.count() > 0:
-                teacher_input.fill('')
+                teacher_input.fill("")
                 teacher_input.fill(new_teacher)
 
         if new_notes:
             notes_textarea = self.page.locator(self.NOTES_TEXTAREA).first
             if notes_textarea.count() > 0:
-                notes_textarea.fill('')
+                notes_textarea.fill("")
                 notes_textarea.fill(new_notes)
 
         self.save_form()
@@ -202,7 +207,8 @@ class ClassesPage(BasePage):
         row_text = row.inner_text()
         # Look for number in row (simple approach - may need refinement)
         import re
-        numbers = re.findall(r'\d+', row_text)
+
+        numbers = re.findall(r"\d+", row_text)
         if numbers:
             # Assume last number is student count
             return int(numbers[-1])

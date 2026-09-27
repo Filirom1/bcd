@@ -3,15 +3,17 @@
 import logging
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import and_, or_, case
+
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload
 
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
-from src.bcd_api.models.item import Item
 from src.bcd_api.models.hold import Hold
+from src.bcd_api.models.item import Item
 from src.bcd_api.models.system_settings import SystemSettings
 from src.shared.constants import IDFormat
-from ._validation import item_id_search_values, require_record, require_item
+
+from ._validation import item_id_search_values, require_item, require_record
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,6 @@ def get_bibliographic_record_with_counts(db: Session, record_id: int) -> Bibliog
     record = require_record(db, record_id)
     record.total_items = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
     return record
-
 
 
 def search_bibliographic_records(
@@ -114,33 +115,35 @@ def search_bibliographic_records(
 
     if available_only:
         from sqlalchemy import exists
+
         query = query.filter(
             exists().where(
                 and_(
                     Item.bibliographic_record_id == BibliographicRecord.id,
-                    Item.status == "available"
+                    Item.status == "available",
                 )
             )
         )
 
     if borrowed_only:
         from sqlalchemy import exists
+
         query = query.filter(
             exists().where(
                 and_(
-                    Item.bibliographic_record_id == BibliographicRecord.id,
-                    Item.status == "on_loan"
+                    Item.bibliographic_record_id == BibliographicRecord.id, Item.status == "on_loan"
                 )
             )
         )
 
     if has_holds:
         from sqlalchemy import exists
+
         query = query.filter(
             exists().where(
                 and_(
                     Hold.bibliographic_record_id == BibliographicRecord.id,
-                    Hold.status.in_(["waiting", "ready"])
+                    Hold.status.in_(["waiting", "ready"]),
                 )
             )
         )
@@ -166,6 +169,7 @@ def search_bibliographic_records(
 
     if item_filters:
         from sqlalchemy import exists
+
         query = query.filter(
             exists().where(
                 and_(
@@ -192,15 +196,9 @@ def get_item(db: Session, item_id: str) -> Item:
     return require_item(db, item_id)
 
 
-def get_items_for_bibliographic_record(
-    db: Session, bibliographic_record_id: int
-) -> list[dict]:
+def get_items_for_bibliographic_record(db: Session, bibliographic_record_id: int) -> list[dict]:
     """Get all items for a bibliographic record with optimized circulation details."""
-    items = (
-        db.query(Item)
-        .filter(Item.bibliographic_record_id == bibliographic_record_id)
-        .all()
-    )
+    items = db.query(Item).filter(Item.bibliographic_record_id == bibliographic_record_id).all()
 
     item_ids = [item.id for item in items]
     active_loans_map = {}
@@ -211,12 +209,7 @@ def get_items_for_bibliographic_record(
 
         active_loans = (
             db.query(CirculationTransaction)
-            .filter(
-                and_(
-                    CirculationTransaction.item_id.in_(item_ids),
-                    active_loan_predicate()
-                )
-            )
+            .filter(and_(CirculationTransaction.item_id.in_(item_ids), active_loan_predicate()))
             .options(joinedload(CirculationTransaction.borrower))
             .all()
         )
@@ -234,20 +227,21 @@ def get_items_for_bibliographic_record(
             "loanable": item.loanable,
             "acquisition_date": item.acquisition_date,
             "funding_source": item.funding_source,
-            "current_loan": None
+            "current_loan": None,
         }
 
         if item.status == "on_loan" and item.id in active_loans_map:
             from ..circulation import policy as circ_policy
+
             active_loan = active_loans_map[item.id]
             is_overdue_val = circ_policy.is_overdue(active_loan.due_date, date.today())
             days_overdue_val = circ_policy.overdue_days(active_loan.due_date, date.today())
             item_dict["current_loan"] = {
                 "borrower_id": active_loan.borrower.borrower_id,
                 "borrower_name": active_loan.borrower.full_name,
-                "due_date": active_loan.due_date.strftime('%d/%m/%Y'),
+                "due_date": active_loan.due_date.strftime("%d/%m/%Y"),
                 "is_overdue": is_overdue_val,
-                "days_overdue": days_overdue_val
+                "days_overdue": days_overdue_val,
             }
 
         result.append(item_dict)
@@ -256,10 +250,7 @@ def get_items_for_bibliographic_record(
 
 
 def get_available_item_ids(
-    db: Session,
-    count: int = 30,
-    start_from: Optional[str] = None,
-    contiguous: bool = True
+    db: Session, count: int = 30, start_from: Optional[str] = None, contiguous: bool = True
 ) -> Dict[str, Any]:
     """Generate available sequential/isolated item IDs that are not in use."""
     from ..settings_service import get_settings
@@ -316,7 +307,7 @@ def get_available_item_ids(
             "ids": ids,
             "count": count,
             "id_format": settings.id_format,
-            "contiguous": contiguous
+            "contiguous": contiguous,
         }
 
     else:

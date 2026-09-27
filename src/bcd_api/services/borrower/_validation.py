@@ -1,6 +1,7 @@
 """Private validation helpers for the borrower domain."""
 
 from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import InvalidIDFormatException, NotFoundException

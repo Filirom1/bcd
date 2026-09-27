@@ -16,6 +16,5 @@ def active_loan_predicate():
 def overdue_loan_predicate(today):
     """SQLAlchemy predicate: loan is currently active and overdue."""
     return and_(
-        CirculationTransaction.return_date.is_(None),
-        CirculationTransaction.due_date < today
+        CirculationTransaction.return_date.is_(None), CirculationTransaction.due_date < today
     )

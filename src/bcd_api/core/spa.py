@@ -1,6 +1,7 @@
 """SPA rendering and state."""
 
 from fastapi.responses import HTMLResponse
+
 from src.bcd_api.core.web_assets import WebAssetsConfig, render_spa_html
 
 

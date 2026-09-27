@@ -4,7 +4,6 @@ Item commands
 Commands for viewing item status and circulation history.
 """
 
-
 import click
 from rich.panel import Panel
 from rich.table import Table
@@ -44,16 +43,16 @@ def status(item_id: str, api_url: str):
             item_data = response.json()
 
             # Fetch bibliographic info dynamically from the unmodified API
-            biblio_id = item_data.get('bibliographic_record_id')
-            title = 'N/A'
+            biblio_id = item_data.get("bibliographic_record_id")
+            title = "N/A"
             authors = None
             if biblio_id:
                 try:
                     bib_resp = client.get(f"/api/v1/catalog/bibliographic/{biblio_id}")
                     if bib_resp.status_code == 200:
                         bib_data = bib_resp.json()
-                        title = bib_data.get('title', 'N/A')
-                        authors_list = bib_data.get('authors', [])
+                        title = bib_data.get("title", "N/A")
+                        authors_list = bib_data.get("authors", [])
                         if authors_list:
                             authors = ", ".join(authors_list)
                 except Exception:
@@ -61,10 +60,7 @@ def status(item_id: str, api_url: str):
 
             # Display item header
             console.print(
-                Panel(
-                    f"[bold cyan]Exemplaire / Item: {item_id}[/bold cyan]",
-                    style="cyan"
-                )
+                Panel(f"[bold cyan]Exemplaire / Item: {item_id}[/bold cyan]", style="cyan")
             )
             console.print()
 
@@ -74,10 +70,8 @@ def status(item_id: str, api_url: str):
                 console.print(f"[bold]Auteur / Author:[/bold] {authors}")
             console.print(f"[bold]Cote / Call #:[/bold] {item_data.get('call_number', 'N/A')}")
 
-            if item_data.get('shelf_location'):
-                console.print(
-                    f"[bold]Emplacement / Location:[/bold] {item_data['shelf_location']}"
-                )
+            if item_data.get("shelf_location"):
+                console.print(f"[bold]Emplacement / Location:[/bold] {item_data['shelf_location']}")
             console.print()
 
             # Status
@@ -99,7 +93,9 @@ def status(item_id: str, api_url: str):
                 "withdrawn": "⚫ Retiré / Withdrawn",
             }.get(item_data.get("status", ""), item_data.get("status", "Unknown"))
 
-            console.print(f"[bold]Statut / Status:[/bold] [{status_color}]{status_text}[/{status_color}]")
+            console.print(
+                f"[bold]Statut / Status:[/bold] [{status_color}]{status_text}[/{status_color}]"
+            )
 
             # If on loan, show borrower info from current loan details
             if item_data.get("status") == "on_loan":
@@ -118,22 +114,24 @@ def status(item_id: str, api_url: str):
                                     class_name = borrower_profile.get("class_name", "N/A")
                             except Exception:
                                 pass
-                        
+
                         console.print(
                             f"  [bold]Emprunteur / Borrower:[/bold] {current_loan.get('borrower_name', 'N/A')} "
                             f"({class_name})"
                         )
-                        checkout_date_val = current_loan.get('checkout_date')
+                        checkout_date_val = current_loan.get("checkout_date")
                         if checkout_date_val:
                             # Format date nicely
                             from ..utils.display import format_date
+
                             console.print(
                                 f"  [bold]Prêté le / Checked out:[/bold] {format_date(checkout_date_val)}"
                             )
-                        due_date_val = current_loan.get('due_date')
+                        due_date_val = current_loan.get("due_date")
                         if due_date_val:
                             # Format date nicely
                             from ..utils.display import format_date
+
                             console.print(
                                 f"  [bold]Dû le / Due:[/bold] {format_date(due_date_val)}"
                             )
@@ -165,10 +163,7 @@ def status(item_id: str, api_url: str):
                     f"[bold]Date d'achat / Acquisition date:[/bold] {item_data['acquisition_date']}"
                 )
             if item_data.get("funding_source"):
-                console.print(
-                    f"[bold]Financement / Funding:[/bold] {item_data['funding_source']}"
-                )
-
+                console.print(f"[bold]Financement / Funding:[/bold] {item_data['funding_source']}")
 
         elif response.status_code == 404:
             print_error(f"Item not found / Document non trouvé: {item_id}")
@@ -216,7 +211,7 @@ def history(item_id: str, limit: int, api_url: str):
                 Panel(
                     f"[bold cyan]Historique de circulation / Circulation History[/bold cyan]\n"
                     f"Item {item_id}: {data.get('title', 'N/A')}",
-                    style="cyan"
+                    style="cyan",
                 )
             )
             console.print()
@@ -229,12 +224,8 @@ def history(item_id: str, limit: int, api_url: str):
                     f"   Emprunteur / Borrower: {loan.get('borrower_full_name', 'N/A')} "
                     f"({loan.get('class_name', 'N/A')})"
                 )
-                console.print(
-                    f"   Depuis / Since: {loan.get('checkout_date', 'N/A')}"
-                )
-                console.print(
-                    f"   Retour prévu / Due: {loan.get('due_date', 'N/A')}"
-                )
+                console.print(f"   Depuis / Since: {loan.get('checkout_date', 'N/A')}")
+                console.print(f"   Retour prévu / Due: {loan.get('due_date', 'N/A')}")
                 console.print()
 
             # History
@@ -256,9 +247,11 @@ def history(item_id: str, limit: int, api_url: str):
                     borrower_name = h.get("borrower_full_name", "N/A")
                     class_name = h.get("class_name")
                     if class_name:
-                        borrower_display = f"{borrower_name[:15]}... ({class_name})" if len(
-                            borrower_name
-                        ) > 15 else f"{borrower_name} ({class_name})"
+                        borrower_display = (
+                            f"{borrower_name[:15]}... ({class_name})"
+                            if len(borrower_name) > 15
+                            else f"{borrower_name} ({class_name})"
+                        )
                     else:
                         borrower_display = borrower_name
 

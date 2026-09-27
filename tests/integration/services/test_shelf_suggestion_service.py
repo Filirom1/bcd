@@ -64,15 +64,18 @@ def test_unknown_metadata_returns_no_model_suggestion(db_session, tmp_path, monk
 
     suggestion.train(db_session)
 
-    assert suggestion.suggest(
-        {
-            "title": "Wakou",
-            "subtitle": "",
-            "collection": "Wakou",
-            "authors": [],
-        },
-        suggestion.load_current_model(db_session),
-    ) is None
+    assert (
+        suggestion.suggest(
+            {
+                "title": "Wakou",
+                "subtitle": "",
+                "collection": "Wakou",
+                "authors": [],
+            },
+            suggestion.load_current_model(db_session),
+        )
+        is None
+    )
 
 
 def test_train_ignores_shelves_with_fewer_than_ten_notices(db_session, tmp_path, monkeypatch):

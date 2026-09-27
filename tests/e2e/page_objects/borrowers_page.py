@@ -14,20 +14,20 @@ class BorrowersPage(BasePage):
 
     # Selectors
     SEARCH_INPUT = 'input[type="text"]'
-    CLASS_FILTER = 'select'
-    TABLE = 'table tbody tr:visible'
-    BORROWER_ROW = 'table tbody tr:visible'
+    CLASS_FILTER = "select"
+    TABLE = "table tbody tr:visible"
+    BORROWER_ROW = "table tbody tr:visible"
     BLOCK_BUTTON = 'button:has-text("Block"), button:has-text("Bloquer")'
     UNBLOCK_BUTTON = 'button:has-text("Unblock"), button:has-text("Débloquer")'
-    MODAL = '.modal.show'  # Fixed: Only select active modals
-    BORROWER_DETAIL_MODAL = '#borrowerDetailModal'  # Specific modal
+    MODAL = ".modal.show"  # Fixed: Only select active modals
+    BORROWER_DETAIL_MODAL = "#borrowerDetailModal"  # Specific modal
     RENEW_ALL_BUTTON = 'button:has-text("Renew All"), button:has-text("Renouveler tout")'
 
     # Selection/Bulk Edit selectors
     CHECKBOX_ALL = 'input[type="checkbox"]#selectAll, th input[type="checkbox"]'
     CHECKBOX_ROW = 'input[type="checkbox"][data-borrower-id]'
-    BULK_EDIT_MODAL = '#bulkEditModal'
-    ADMIN_DROPDOWN = 'button.btn-danger.dropdown-toggle'
+    BULK_EDIT_MODAL = "#bulkEditModal"
+    ADMIN_DROPDOWN = "button.btn-danger.dropdown-toggle"
     BULK_EDIT_MENU_ITEM = '[data-testid="admin-menu-bulk-edit"]'
 
     def __init__(self, page: Page, server_url: str):
@@ -35,7 +35,7 @@ class BorrowersPage(BasePage):
 
     def goto(self):
         """Navigate to borrowers page."""
-        self.navigate_to('borrowers')
+        self.navigate_to("borrowers")
         self.page.reload()
         self.wait_for_table_load()
 
@@ -97,10 +97,10 @@ class BorrowersPage(BasePage):
         self.page.wait_for_timeout(1000)
 
         # Find the specific block modal (the last modal shown)
-        block_modal = self.page.locator('.modal.show').last
+        block_modal = self.page.locator(".modal.show").last
 
         # Select from dropdown within the modal, using value instead of label
-        reason_select = block_modal.locator('select').first
+        reason_select = block_modal.locator("select").first
         reason_select.select_option(value=reason)
 
     def enter_block_notes(self, notes: str):
@@ -116,8 +116,10 @@ class BorrowersPage(BasePage):
     def confirm_action(self):
         """Confirm modal action (block/unblock)."""
         # Wait for button to become enabled (after selecting reason)
-        confirm_button = self.page.locator('.modal.show button.btn-danger:not([disabled]), .modal.show button.btn-success:not([disabled]), .modal.show button.btn-primary:not([disabled])').last
-        confirm_button.wait_for(state='visible', timeout=5000)
+        confirm_button = self.page.locator(
+            ".modal.show button.btn-danger:not([disabled]), .modal.show button.btn-success:not([disabled]), .modal.show button.btn-primary:not([disabled])"
+        ).last
+        confirm_button.wait_for(state="visible", timeout=5000)
         confirm_button.click()
         self.page.wait_for_timeout(1000)
 
@@ -192,8 +194,8 @@ class BorrowersPage(BasePage):
 
         # Check if Bulk Edit has 'disabled' class
         bulk_edit_item = self.page.locator(self.BULK_EDIT_MENU_ITEM).first
-        class_attr = bulk_edit_item.get_attribute('class')
-        is_disabled = 'disabled' in (class_attr or '')
+        class_attr = bulk_edit_item.get_attribute("class")
+        is_disabled = "disabled" in (class_attr or "")
 
         # Close dropdown
         admin_dropdown.click()

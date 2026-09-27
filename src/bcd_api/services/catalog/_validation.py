@@ -33,7 +33,7 @@ def normalize_item_id(item_id: str, prefix: Optional[str] = None) -> str:
     if prefix:
         prefix_strip = prefix.strip()
         if prefix_strip and cleaned.startswith(prefix_strip):
-            cleaned = cleaned[len(prefix_strip):]
+            cleaned = cleaned[len(prefix_strip) :]
     return cleaned
 
 
@@ -56,6 +56,7 @@ def validate_item_id_available(db: Session, item_id: str) -> None:
     existing = db.query(Item).filter(Item.item_id == item_id).first()
     if existing:
         from src.bcd_api.core.exceptions import DuplicateItemIDException
+
         raise DuplicateItemIDException(item_id)
 
 
@@ -66,10 +67,12 @@ def normalize_identifier(isbn_or_issn: str) -> str:
     # helper; classification itself remains centralized in catalog_input.py.
     if compact.startswith("977") and len(compact) == 13 and _ean13_to_issn(compact) is None:
         from src.bcd_api.core.exceptions import ValidationError
+
         raise ValidationError(f"Unsupported bibliographic identifier: {isbn_or_issn}")
     classified = classify_catalog_input(isbn_or_issn)
     if not classified.normalized_identifier:
         from src.bcd_api.core.exceptions import ValidationError
+
         raise ValidationError(f"Unsupported bibliographic identifier: {isbn_or_issn}")
     return classified.normalized_identifier
 

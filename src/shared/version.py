@@ -24,9 +24,7 @@ def get_version() -> str:
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         pyproject_path = Path(sys._MEIPASS) / "pyproject.toml"
         if not pyproject_path.exists():
-            raise RuntimeError(
-                f"Could not find pyproject.toml in bundle at {sys._MEIPASS}"
-            )
+            raise RuntimeError(f"Could not find pyproject.toml in bundle at {sys._MEIPASS}")
     else:
         # Development: find pyproject.toml relative to this file
         # src/shared/version.py -> go up 2 levels to project root

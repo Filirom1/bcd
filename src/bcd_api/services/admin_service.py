@@ -4,9 +4,9 @@ Business logic for administrative tasks, health stats, data maintenance, and DB-
 """
 
 import logging
-from pathlib import Path
 from datetime import date
-from sqlalchemy import text
+from pathlib import Path
+
 from sqlalchemy.orm import Session
 
 from ..models.bibliographic_record import BibliographicRecord
@@ -19,11 +19,15 @@ logger = logging.getLogger(__name__)
 
 def get_records_without_covers(db: Session) -> list[BibliographicRecord]:
     """Get all bibliographic records that don't have a cover image but have an ISBN."""
-    return db.query(BibliographicRecord).filter(
-        BibliographicRecord.cover_image == None,
-        BibliographicRecord.isbn != None,
-        BibliographicRecord.isbn != "",
-    ).all()
+    return (
+        db.query(BibliographicRecord)
+        .filter(
+            BibliographicRecord.cover_image is None,
+            BibliographicRecord.isbn is not None,
+            BibliographicRecord.isbn != "",
+        )
+        .all()
+    )
 
 
 def get_health_stats(db: Session) -> dict:
@@ -46,11 +50,15 @@ def backfill_covers_logic(db: Session, covers_dir_path: str) -> dict:
     from .external.cover import find_cached_cover
 
     covers_dir = Path(covers_dir_path) if covers_dir_path else Path("data/covers")
-    records = db.query(BibliographicRecord).filter(
-        BibliographicRecord.cover_image == None,
-        BibliographicRecord.isbn != None,
-        BibliographicRecord.isbn != "",
-    ).all()
+    records = (
+        db.query(BibliographicRecord)
+        .filter(
+            BibliographicRecord.cover_image is None,
+            BibliographicRecord.isbn is not None,
+            BibliographicRecord.isbn != "",
+        )
+        .all()
+    )
 
     updated = 0
     for record in records:
@@ -72,8 +80,8 @@ def set_acquisition_dates_from_publication_year(db: Session) -> dict:
         db.query(Item)
         .join(BibliographicRecord)
         .filter(
-            Item.acquisition_date == None,
-            BibliographicRecord.publication_year != None,
+            Item.acquisition_date is None,
+            BibliographicRecord.publication_year is not None,
         )
         .all()
     )

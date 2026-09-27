@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from click.testing import CliRunner
 
 from bcd_cli.commands.checkout import checkout
-from bcd_cli.commands.return_cmd import return_items
 from bcd_cli.commands.renew import renew
+from bcd_cli.commands.return_cmd import return_items
 
 
 def test_checkout_api_error_is_reported():

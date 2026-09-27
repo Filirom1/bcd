@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from src.bcd_api.core.exceptions import NotFoundError, ValidationError
 from src.bcd_api.models.borrower import Borrower
+
 from ...services import class_service
 from .commands import create_borrower, update_borrower
 from .queries import get_borrower_by_id, get_next_available_id
@@ -71,20 +72,26 @@ def import_borrowers_from_csv(db: Session, csv_text: str) -> dict:
             last_name = (row.get("last_name") or "").strip()
             if not first_name:
                 failed += 1
-                error_details.append({"row_number": row_num, "error": "Missing required field: first_name"})
+                error_details.append(
+                    {"row_number": row_num, "error": "Missing required field: first_name"}
+                )
                 continue
             if not last_name:
                 failed += 1
-                error_details.append({"row_number": row_num, "error": "Missing required field: last_name"})
+                error_details.append(
+                    {"row_number": row_num, "error": "Missing required field: last_name"}
+                )
                 continue
 
             role = (row.get("role") or "student").strip().lower()
             if role not in {"student", "teacher", "staff"}:
                 failed += 1
-                error_details.append({
-                    "row_number": row_num,
-                    "error": f"Invalid role: '{role}' (must be student, teacher, or staff)",
-                })
+                error_details.append(
+                    {
+                        "row_number": row_num,
+                        "error": f"Invalid role: '{role}' (must be student, teacher, or staff)",
+                    }
+                )
                 continue
 
             class_id = None
@@ -110,7 +117,12 @@ def import_borrowers_from_csv(db: Session, csv_text: str) -> dict:
             active = True
             if has_active:
                 active = str(row["active"]).strip().lower() in (
-                    "true", "1", "yes", "oui", "active", "actif"
+                    "true",
+                    "1",
+                    "yes",
+                    "oui",
+                    "active",
+                    "actif",
                 )
 
             blocked_reason = (row.get("blocked_reason") or "").strip() or None
@@ -170,7 +182,9 @@ def import_borrowers_from_csv(db: Session, csv_text: str) -> dict:
             error_details.append({"row_number": row_num, "error": str(exc.detail)})
         except KeyError as exc:
             failed += 1
-            error_details.append({"row_number": row_num, "error": f"Missing required column: {exc}"})
+            error_details.append(
+                {"row_number": row_num, "error": f"Missing required column: {exc}"}
+            )
         except Exception as exc:
             failed += 1
             error_details.append({"row_number": row_num, "error": str(exc)})

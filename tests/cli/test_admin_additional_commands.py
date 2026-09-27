@@ -8,7 +8,12 @@ from bcd_cli.commands.admin import admin
 def test_list_backups_displays_metadata():
     client = MagicMock()
     response = MagicMock(status_code=200)
-    response.json.return_value = {"backups": [{"filename": "bcd.db", "size_mb": 2, "created_at": "2026-01-01T12:00:00", "age_days": 2}], "database_info": {"size_mb": 4}}
+    response.json.return_value = {
+        "backups": [
+            {"filename": "bcd.db", "size_mb": 2, "created_at": "2026-01-01T12:00:00", "age_days": 2}
+        ],
+        "database_info": {"size_mb": 4},
+    }
     client.get.return_value = response
     with patch("bcd_cli.commands.admin.get_client", return_value=client):
         result = CliRunner().invoke(admin, ["list-backups"])

@@ -10,12 +10,14 @@ from src.shared.constants import BarcodeType, IDFormat, Language
 
 class ShelfLocationSchema(BaseModel):
     """Schema for a shelf location."""
+
     label: str
     color: Optional[str] = None
 
 
 class CallNumberRuleSchema(BaseModel):
     """Schema for a call number rule."""
+
     medium_type: Optional[str] = None
     shelf_location: Optional[str] = None
     pattern: str
@@ -118,7 +120,7 @@ class SystemSettingsResponse(BaseModel):
                 "library_name": "BCD École Primaire",
                 "library_code": "EPH-BCD-001",
             }
-        }
+        },
     )
 
 

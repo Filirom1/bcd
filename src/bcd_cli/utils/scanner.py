@@ -71,9 +71,7 @@ def read_multiple_barcodes(
     return barcodes
 
 
-def read_selection_from_list(
-    max_items: int, prompt: str = "Sélectionner / Select"
-) -> List[int]:
+def read_selection_from_list(max_items: int, prompt: str = "Sélectionner / Select") -> List[int]:
     """
     Read item selections from numbered list.
 
@@ -102,9 +100,7 @@ def read_selection_from_list(
                 end_idx = int(end.strip())
                 selected.extend(range(start_idx, end_idx + 1))
             except ValueError:
-                console.print(
-                    f"[yellow]⚠ Format invalide / Invalid format: {part}[/yellow]"
-                )
+                console.print(f"[yellow]⚠ Format invalide / Invalid format: {part}[/yellow]")
         else:
             # Single number
             try:
@@ -112,12 +108,8 @@ def read_selection_from_list(
                 if 1 <= num <= max_items:
                     selected.append(num)
                 else:
-                    console.print(
-                        f"[yellow]⚠ Hors limites / Out of range: {num}[/yellow]"
-                    )
+                    console.print(f"[yellow]⚠ Hors limites / Out of range: {num}[/yellow]")
             except ValueError:
-                console.print(
-                    f"[yellow]⚠ Format invalide / Invalid format: {part}[/yellow]"
-                )
+                console.print(f"[yellow]⚠ Format invalide / Invalid format: {part}[/yellow]")
 
     return list(set(selected))  # Remove duplicates

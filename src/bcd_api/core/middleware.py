@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+
 from src.bcd_api.core.auth import DigestAuthMiddleware
 from src.bcd_api.core.config import settings
 from src.bcd_api.core.web_assets import WebAssetsConfig
@@ -26,6 +27,7 @@ def register_middlewares(app: FastAPI, assets_config: WebAssetsConfig) -> None:
 
 def make_cache_middleware(assets_config: WebAssetsConfig):
     """Factory : retourne le middleware configuré avec assets_config."""
+
     async def add_cache_headers(request: Request, call_next):
         """Add Cache-Control headers for static assets."""
         response = await call_next(request)
@@ -45,10 +47,7 @@ def make_cache_middleware(assets_config: WebAssetsConfig):
                 response.headers["Cache-Control"] = "no-cache, must-revalidate"
             elif path.startswith("/static/favicon."):
                 response.headers["Cache-Control"] = "public, max-age=3600"
-            elif (
-                path.startswith("/static/")
-                or path.startswith("/covers/")
-            ):
+            elif path.startswith("/static/") or path.startswith("/covers/"):
                 response.headers["Cache-Control"] = "public, max-age=3600"
         return response
 

@@ -84,7 +84,7 @@ def _pica_title(raw: str) -> str:
 
     idx = raw.index("@")
     prefix = raw[:idx].rstrip()  # Remove trailing whitespace from prefix
-    rest = raw[idx + 1:].lstrip()  # Remove leading whitespace from rest
+    rest = raw[idx + 1 :].lstrip()  # Remove leading whitespace from rest
 
     # Add space between prefix and rest if prefix doesn't end with punctuation
     if prefix and prefix[-1] not in ("'", "-", " "):
@@ -120,7 +120,9 @@ def _parse_pica_record(record_xml: str) -> Optional[dict]:
 
         def _sub(tag: str, code: str) -> Optional[str]:
             # Try with namespace first (for test mocks), then without (for real API)
-            elem = root.find(f'.//{ns_prefix}datafield[@tag="{tag}"]/{ns_prefix}subfield[@code="{code}"]')
+            elem = root.find(
+                f'.//{ns_prefix}datafield[@tag="{tag}"]/{ns_prefix}subfield[@code="{code}"]'
+            )
             if elem is None and ns_prefix:
                 # Try without namespace (real SUDOC API)
                 elem = root.find(f'.//datafield[@tag="{tag}"]/subfield[@code="{code}"]')
@@ -166,8 +168,16 @@ def _parse_pica_record(record_xml: str) -> Optional[dict]:
         lang = _sub("010@", "a")
         if lang:
             # Normalise 3-letter ISO to 2-letter for consistency with Google/BNF
-            _iso3_to_2 = {"fre": "fr", "eng": "en", "ger": "de", "spa": "es",
-                          "ita": "it", "por": "pt", "ara": "ar", "chi": "zh"}
+            _iso3_to_2 = {
+                "fre": "fr",
+                "eng": "en",
+                "ger": "de",
+                "spa": "es",
+                "ita": "it",
+                "por": "pt",
+                "ara": "ar",
+                "chi": "zh",
+            }
             data["language"] = _iso3_to_2.get(lang, lang)
 
         # ISBN (004A$A or $B — both are stored without hyphens in SUDOC)
@@ -333,8 +343,9 @@ def search_by_issn(issn: str, timeout: int = 10) -> Optional[dict]:
     return result
 
 
-def search_by_title_author(title: str, author_lastname: str = "",
-                           timeout: int = 10) -> Optional[dict]:
+def search_by_title_author(
+    title: str, author_lastname: str = "", timeout: int = 10
+) -> Optional[dict]:
     """
     Search SUDOC by title words and optional author last name.
 
@@ -362,6 +373,7 @@ def search_by_title_author(title: str, author_lastname: str = "",
 
     # Build SRU query: one mti= clause per word, plus optional aut=
     from .._catalog_utils import normalize as _normalize
+
     title_words = [w for w in _normalize(clean_title).split() if len(w) > 1]
     if not title_words:
         return None

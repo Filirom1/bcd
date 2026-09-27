@@ -28,7 +28,7 @@ def escape_like_pattern(pattern: str) -> str:
     if not pattern:
         return pattern
     # Escape backslash first, then % and _
-    return pattern.replace('\\', '\\\\').replace('%', r'\%').replace('_', r'\_')
+    return pattern.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
 
 
 def build_item_search_query(
@@ -65,30 +65,26 @@ def build_item_search_query(
         BibliographicRecord.target_audience,
         BibliographicRecord.language,
         BibliographicRecord.medium_type,
-        BibliographicRecord.publication_year
+        BibliographicRecord.publication_year,
     ).join(BibliographicRecord)
 
     # Always add subquery for all-time circulation count per item
     circ_subquery = (
-        db.query(
-            CirculationTransaction.item_id,
-            func.count().label('circ_count')
-        )
+        db.query(CirculationTransaction.item_id, func.count().label("circ_count"))
         .group_by(CirculationTransaction.item_id)
         .subquery()
     )
     query = query.outerjoin(circ_subquery, circ_subquery.c.item_id == Item.id)
-    query = query.add_columns(func.coalesce(circ_subquery.c.circ_count, 0).label('circulation_count'))
+    query = query.add_columns(
+        func.coalesce(circ_subquery.c.circ_count, 0).label("circulation_count")
+    )
 
     # If rotation filter is active, add LEFT JOIN subquery for loan counts
     period_loan_count_column = None
     if max_borrows is not None and since_date is not None:
         # Subquery: count loans in period per item
         loan_subquery = (
-            db.query(
-                CirculationTransaction.item_id,
-                func.count().label('period_count')
-            )
+            db.query(CirculationTransaction.item_id, func.count().label("period_count"))
             .filter(CirculationTransaction.checkout_date >= since_date)
             .group_by(CirculationTransaction.item_id)
             .subquery()
@@ -96,7 +92,9 @@ def build_item_search_query(
 
         # Add LEFT JOIN to main query
         query = query.outerjoin(loan_subquery, loan_subquery.c.item_id == Item.id)
-        period_loan_count_column = func.coalesce(loan_subquery.c.period_count, 0).label('period_loan_count')
+        period_loan_count_column = func.coalesce(loan_subquery.c.period_count, 0).label(
+            "period_loan_count"
+        )
         query = query.add_columns(period_loan_count_column)
 
         # Apply rotation filter
@@ -107,10 +105,10 @@ def build_item_search_query(
         q_safe = escape_like_pattern(q)
         query = query.filter(
             or_(
-                BibliographicRecord.title.ilike(f'%{q_safe}%', escape='\\'),
-                BibliographicRecord.authors.ilike(f'%{q_safe}%', escape='\\'),
-                BibliographicRecord.isbn.ilike(f'%{q_safe}%', escape='\\'),
-                Item.call_number.ilike(f'%{q_safe}%', escape='\\')
+                BibliographicRecord.title.ilike(f"%{q_safe}%", escape="\\"),
+                BibliographicRecord.authors.ilike(f"%{q_safe}%", escape="\\"),
+                BibliographicRecord.isbn.ilike(f"%{q_safe}%", escape="\\"),
+                Item.call_number.ilike(f"%{q_safe}%", escape="\\"),
             )
         )
 
@@ -122,22 +120,17 @@ def build_item_search_query(
     if loanable is not None:
         query = query.filter(Item.loanable == loanable)
     if shelf_location == "__none__":
-        query = query.filter(
-            or_(Item.shelf_location.is_(None), Item.shelf_location == "")
-        )
+        query = query.filter(or_(Item.shelf_location.is_(None), Item.shelf_location == ""))
     elif shelf_location:
         shelf_safe = escape_like_pattern(shelf_location)
-        query = query.filter(Item.shelf_location.ilike(f'%{shelf_safe}%', escape='\\'))
+        query = query.filter(Item.shelf_location.ilike(f"%{shelf_safe}%", escape="\\"))
 
     # Apply inventory filters
     if never_inventoried:
         query = query.filter(Item.last_inventoried_at.is_(None))
     if inventoried_before:
         query = query.filter(
-            or_(
-                Item.last_inventoried_at.is_(None),
-                Item.last_inventoried_at < inventoried_before
-            )
+            or_(Item.last_inventoried_at.is_(None), Item.last_inventoried_at < inventoried_before)
         )
 
     # Apply acquisition date filter (for age in collection)
@@ -145,16 +138,13 @@ def build_item_search_query(
         query = query.filter(
             and_(
                 Item.acquisition_date.is_not(None),  # Only items WITH acquisition date
-                Item.acquisition_date < acquired_before
+                Item.acquisition_date < acquired_before,
             )
         )
 
     if acquired_after:
         query = query.filter(
-            and_(
-                Item.acquisition_date.is_not(None),
-                Item.acquisition_date >= acquired_after
-            )
+            and_(Item.acquisition_date.is_not(None), Item.acquisition_date >= acquired_after)
         )
 
     # Apply record-level filters
@@ -170,7 +160,7 @@ def build_item_search_query(
         query = query.filter(BibliographicRecord.level.is_(None))
     elif level:
         level_safe = escape_like_pattern(level)
-        query = query.filter(BibliographicRecord.level.ilike(f'%{level_safe}%', escape='\\'))
+        query = query.filter(BibliographicRecord.level.ilike(f"%{level_safe}%", escape="\\"))
     if language == "__none__":
         query = query.filter(BibliographicRecord.language.is_(None))
     elif language:

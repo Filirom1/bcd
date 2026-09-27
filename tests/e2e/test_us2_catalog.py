@@ -27,26 +27,15 @@ class TestUS2CatalogSearch:
     """Test catalog search functionality."""
 
 
-
-
-
 class TestUS2CatalogDetail:
     """Test catalog detail view and cross-navigation."""
-
-
 
 
 class TestUS2CrossNavigation:
     """Test cross-navigation links from catalog to borrowers."""
 
     def test_us2_ac3_item_links_to_borrower_detail(
-        self,
-        page,
-        catalog_page,
-        item_factory,
-        borrower_factory,
-        db_session,
-        server_url
+        self, page, catalog_page, item_factory, borrower_factory, db_session, server_url
     ):
         """
         US2-AC3: On-loan item shows clickable borrower link.
@@ -59,24 +48,20 @@ class TestUS2CrossNavigation:
         from src.bcd_api.models.circulation import CirculationTransaction
 
         borrower = borrower_factory.create(
-            borrower_id="301",
-            first_name="Test",
-            last_name="STUDENT"
+            borrower_id="301", first_name="Test", last_name="STUDENT"
         )
         item, record = item_factory.create_with_record(
-            title="Borrowed Book",
-            item_id="BORROW001",
-            status="on_loan"
+            title="Borrowed Book", item_id="BORROW001", status="on_loan"
         )
 
         # Create active loan
         transaction = CirculationTransaction(
             borrower_id=borrower.id,
             item_id=item.id,
-                bibliographic_record_id=record.id,  # REQUIRED field
+            bibliographic_record_id=record.id,  # REQUIRED field
             checkout_date=date.today(),
             due_date=date.today() + timedelta(days=14),
-            status="active"
+            status="active",
         )
         db_session.add(transaction)
         db_session.commit()
@@ -98,13 +83,7 @@ class TestUS2CrossNavigation:
             assert "borrowers" in current_url, "Should navigate to borrowers page"
 
     def test_us2_ac4_circulation_history_with_clickable_names(
-        self,
-        page,
-        catalog_page,
-        item_factory,
-        borrower_factory,
-        db_session,
-        server_url
+        self, page, catalog_page, item_factory, borrower_factory, db_session, server_url
     ):
         """
         US2-AC4: Circulation history shows clickable borrower names.
@@ -117,25 +96,21 @@ class TestUS2CrossNavigation:
         from src.bcd_api.models.circulation import CirculationTransaction
 
         borrower = borrower_factory.create(
-            borrower_id="401",
-            first_name="Historical",
-            last_name="BORROWER"
+            borrower_id="401", first_name="Historical", last_name="BORROWER"
         )
         item, record = item_factory.create_with_record(
-            title="Historical Book",
-            item_id="HIST001",
-            status="available"
+            title="Historical Book", item_id="HIST001", status="available"
         )
 
         # Create returned transaction (historical)
         transaction = CirculationTransaction(
             borrower_id=borrower.id,
             item_id=item.id,
-                bibliographic_record_id=record.id,  # REQUIRED field
+            bibliographic_record_id=record.id,  # REQUIRED field
             checkout_date=date.today() - timedelta(days=30),
             due_date=date.today() - timedelta(days=16),
             return_date=date.today() - timedelta(days=15),
-            status="returned"
+            status="returned",
         )
         db_session.add(transaction)
         db_session.commit()
@@ -148,19 +123,16 @@ class TestUS2CrossNavigation:
 
         # Assert - Check if circulation history section exists
         # (Implementation may vary, just verify modal opened)
-        assert catalog_page.is_visible(catalog_page.DETAIL_MODAL), "Detail modal should show circulation history"
+        assert catalog_page.is_visible(
+            catalog_page.DETAIL_MODAL
+        ), "Detail modal should show circulation history"
 
 
 class TestUS2QuickActions:
     """Test quick action buttons in catalog detail view."""
 
     def test_us2_ac5_quick_action_return_item(
-        self,
-        page,
-        catalog_page,
-        item_factory,
-        borrower_factory,
-        db_session
+        self, page, catalog_page, item_factory, borrower_factory, db_session
     ):
         """
         US2-AC5: Quick action to return item from detail view.
@@ -174,19 +146,17 @@ class TestUS2QuickActions:
 
         borrower = borrower_factory.create(borrower_id="501")
         item, record = item_factory.create_with_record(
-            title="To Return Book",
-            item_id="RET001",
-            status="on_loan"
+            title="To Return Book", item_id="RET001", status="on_loan"
         )
 
         # Create active loan
         transaction = CirculationTransaction(
             borrower_id=borrower.id,
             item_id=item.id,
-                bibliographic_record_id=record.id,  # REQUIRED field
+            bibliographic_record_id=record.id,  # REQUIRED field
             checkout_date=date.today(),
             due_date=date.today() + timedelta(days=14),
-            status="active"
+            status="active",
         )
         db_session.add(transaction)
         db_session.commit()

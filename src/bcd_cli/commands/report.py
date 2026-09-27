@@ -65,7 +65,7 @@ def overdue_report(class_name: Optional[str], academic_year: Optional[str], api_
                 Panel(
                     f"[bold red]📊 Rapport des retards / Overdue Report[/bold red]\n"
                     f"Total: {total} document(s) en retard / overdue",
-                    style="red"
+                    style="red",
                 )
             )
             console.print()
@@ -77,9 +77,7 @@ def overdue_report(class_name: Optional[str], academic_year: Optional[str], api_
             # Group by class if not filtered
             if not class_name:
                 # Show summary by class first
-                summary_response = client.get(
-                    "/api/v1/reports/overdue/by-class", params=params
-                )
+                summary_response = client.get("/api/v1/reports/overdue/by-class", params=params)
                 if summary_response.status_code == 200:
                     summary_data = summary_response.json()
                     classes = summary_data.get("classes", [])
@@ -177,13 +175,15 @@ def never_borrowed_report(academic_year: Optional[str], limit: int, api_url: str
                 Panel(
                     f"[bold yellow]📊 Documents jamais empruntés / Never Borrowed Report[/bold yellow]\n"
                     f"Total: {total} document(s)",
-                    style="yellow"
+                    style="yellow",
                 )
             )
             console.print()
 
             if not items:
-                console.print("[green]✅ Tous les documents ont été empruntés / All items have been borrowed[/green]")
+                console.print(
+                    "[green]✅ Tous les documents ont été empruntés / All items have been borrowed[/green]"
+                )
                 return
 
             # Table
@@ -268,7 +268,7 @@ def most_borrowed_report(period: str, limit: int, api_url: str):
                 Panel(
                     f"[bold green]📊 Titres les plus empruntés / Most Borrowed Titles[/bold green]\n"
                     f"Période / Period: {period_label}",
-                    style="green"
+                    style="green",
                 )
             )
             console.print()
@@ -338,7 +338,7 @@ def statistics_report(period: str, api_url: str):
                 Panel(
                     f"[bold cyan]📊 Statistiques de circulation / Circulation Statistics[/bold cyan]\n"
                     f"Période / Period: {stats.get('period', period)}",
-                    style="cyan"
+                    style="cyan",
                 )
             )
             console.print()
@@ -359,22 +359,16 @@ def statistics_report(period: str, api_url: str):
             )
 
             if stats.get("average_loans_per_day"):
-                console.print(
-                    f"  Moyenne par jour / Avg per day: {stats['average_loans_per_day']}"
-                )
+                console.print(f"  Moyenne par jour / Avg per day: {stats['average_loans_per_day']}")
 
             console.print()
 
             console.print("[bold]Renouvellements et retours / Renewals & Returns:[/bold]")
-            console.print(
-                f"  Renouvellements / Renewals: {stats.get('renewals', 0)}"
-            )
+            console.print(f"  Renouvellements / Renewals: {stats.get('renewals', 0)}")
             console.print(
                 f"  Documents retournés / Returned items: {stats.get('returned_items', 0)}"
             )
-            console.print(
-                f"  Retours en retard / Late returns: {stats.get('late_returns', 0)}"
-            )
+            console.print(f"  Retours en retard / Late returns: {stats.get('late_returns', 0)}")
             console.print(
                 f"  Taux de retard / Late return rate: {stats.get('late_return_rate', 0)}%"
             )

@@ -8,8 +8,24 @@ import re
 import unicodedata
 
 STOPWORDS = {
-    "le", "la", "les", "un", "une", "des", "de", "du", "et", "en",
-    "au", "aux", "l", "d", "a", "sur", "dans", "j",
+    "le",
+    "la",
+    "les",
+    "un",
+    "une",
+    "des",
+    "de",
+    "du",
+    "et",
+    "en",
+    "au",
+    "aux",
+    "l",
+    "d",
+    "a",
+    "sur",
+    "dans",
+    "j",
 }
 
 
@@ -30,8 +46,7 @@ def token_overlap(a: str, b: str) -> float:
     return len(ta & tb) / len(ta)
 
 
-def score_match(orig_title: str, orig_lastname: str,
-                found_title: str, found_authors: str) -> float:
+def score_match(orig_title: str, orig_lastname: str, found_title: str, found_authors: str) -> float:
     """Combined title + author similarity score (0.0 – 1.0).
 
     Perfect title match (≥1.0) → weight title more (85/15).

@@ -61,14 +61,6 @@ from unittest.mock import patch
 
 import pytest
 
-
-@pytest.fixture(autouse=True)
-def disable_cover_download_for_catalog_tests(monkeypatch):
-    """Keep catalog integration tests local; cover providers are tested separately."""
-    monkeypatch.setattr("src.bcd_api.services.catalog.commands._download_cover", lambda isbn: None)
-    monkeypatch.setattr("src.bcd_api.services.catalog.lookup._download_cover", lambda isbn: None)
-    monkeypatch.setattr("src.bcd_api.services.catalog_service._download_cover", lambda isbn: None)
-
 from src.bcd_api.core.exceptions import (
     BibliographicRecordNotFoundException,
     ConflictError,
@@ -84,6 +76,14 @@ from src.bcd_api.schemas.item import ItemCreate
 from src.bcd_api.services import catalog_service
 
 
+@pytest.fixture(autouse=True)
+def disable_cover_download_for_catalog_tests(monkeypatch):
+    """Keep catalog integration tests local; cover providers are tested separately."""
+    monkeypatch.setattr("src.bcd_api.services.catalog.commands._download_cover", lambda isbn: None)
+    monkeypatch.setattr("src.bcd_api.services.catalog.lookup._download_cover", lambda isbn: None)
+    monkeypatch.setattr("src.bcd_api.services.catalog_service._download_cover", lambda isbn: None)
+
+
 class TestBibliographicRecordCreation:
     """Test creating bibliographic records with various scenarios."""
 
@@ -95,10 +95,7 @@ class TestBibliographicRecordCreation:
         Verifies default values are applied correctly.
         """
         # Arrange
-        record_data = BibliographicRecordCreate(
-            title="The Great Gatsby",
-            isbn="9780743273565"
-        )
+        record_data = BibliographicRecordCreate(title="The Great Gatsby", isbn="9780743273565")
 
         # Act
         result = catalog_service.create_bibliographic_record(
@@ -113,9 +110,7 @@ class TestBibliographicRecordCreation:
         assert result.authors is None or result.authors == "[]"
 
         # Verify it's actually in the database
-        db_record = db_session.query(BibliographicRecord).filter_by(
-            id=result.id
-        ).first()
+        db_record = db_session.query(BibliographicRecord).filter_by(id=result.id).first()
         assert db_record is not None
         assert db_record.title == "The Great Gatsby"
 
@@ -142,7 +137,7 @@ class TestBibliographicRecordCreation:
             page_count=131,
             has_illustrations=True,
             description="The adventures of a mouse in New York City",
-            keywords=["mouse", "adventure", "family"]
+            keywords=["mouse", "adventure", "family"],
         )
 
         # Act
@@ -188,7 +183,7 @@ class TestBibliographicRecordCreation:
             "page_count": 83,
             "has_illustrations": True,
             "medium_type": "Livre",
-            "target_audience": "child"
+            "target_audience": "child",
         }
 
         record_data = BibliographicRecordCreate(
@@ -225,10 +220,7 @@ class TestBibliographicRecordCreation:
         # Arrange - Mock BNF API failure
         mock_search.side_effect = Exception("BNF API unavailable")
 
-        record_data = BibliographicRecordCreate(
-            title="Test Book",
-            isbn="9781234567890"
-        )
+        record_data = BibliographicRecordCreate(title="Test Book", isbn="9781234567890")
 
         # Act - Should not raise exception
         result = catalog_service.create_bibliographic_record(
@@ -346,18 +338,12 @@ class TestBibliographicRecordCreation:
         This prevents accidental duplicate cataloging of the same book.
         """
         # Arrange - Create first record
-        first_record = BibliographicRecordCreate(
-            title="First Book",
-            isbn="9780451524935"
-        )
-        catalog_service.create_bibliographic_record(
-            db_session, first_record, isbn_lookup=False
-        )
+        first_record = BibliographicRecordCreate(title="First Book", isbn="9780451524935")
+        catalog_service.create_bibliographic_record(db_session, first_record, isbn_lookup=False)
 
         # Act & Assert - Try to create duplicate
         duplicate_record = BibliographicRecordCreate(
-            title="Second Book",
-            isbn="9780451524935"  # Same ISBN
+            title="Second Book", isbn="9780451524935"  # Same ISBN
         )
 
         with pytest.raises(ConflictError) as exc_info:
@@ -378,9 +364,7 @@ class TestBibliographicRecordCreation:
         """
         # Arrange
         record_data = BibliographicRecordCreate(
-            title="Ancient Manuscript",
-            publisher="Medieval Publishers",
-            publication_year=1450
+            title="Ancient Manuscript", publisher="Medieval Publishers", publication_year=1450
         )
 
         # Act
@@ -406,9 +390,7 @@ class TestBibliographicRecordRetrieval:
         """
         # Arrange - Create a record
         record_data = BibliographicRecordCreate(
-            title="1984",
-            isbn="9780451524935",
-            authors=["Orwell, George"]
+            title="1984", isbn="9780451524935", authors=["Orwell, George"]
         )
         created = catalog_service.create_bibliographic_record(
             db_session, record_data, isbn_lookup=False
@@ -450,23 +432,21 @@ class TestBibliographicRecordSearch:
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Python Programming", isbn="9781111111111"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Java Programming", isbn="9782222222222"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Python for Data Science", isbn="9783333333333"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act - Search for "Python"
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, title="Python"
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, title="Python")
 
         # Assert
         assert total == 2
@@ -483,26 +463,20 @@ class TestBibliographicRecordSearch:
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Harry Potter",
-                isbn="9784444444444",
-                authors=["Rowling, J.K."]
+                title="Harry Potter", isbn="9784444444444", authors=["Rowling, J.K."]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="The Casual Vacancy",
-                isbn="9785555555555",
-                authors=["Rowling, J.K."]
+                title="The Casual Vacancy", isbn="9785555555555", authors=["Rowling, J.K."]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, author="Rowling"
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, author="Rowling")
 
         # Assert
         assert total == 2
@@ -518,17 +492,13 @@ class TestBibliographicRecordSearch:
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="The Hobbit",
-                isbn="9786666666666",
-                authors=["Tolkien, J.R.R."]
+                title="The Hobbit", isbn="9786666666666", authors=["Tolkien, J.R.R."]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act - Search for author name using general query
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, q="Tolkien"
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, q="Tolkien")
 
         # Assert
         assert total == 1
@@ -544,22 +514,15 @@ class TestBibliographicRecordSearch:
         for i in range(5):
             catalog_service.create_bibliographic_record(
                 db_session,
-                BibliographicRecordCreate(
-                    title=f"Book {i}",
-                    isbn=f"978999999999{i}"
-                ),
-                isbn_lookup=False
+                BibliographicRecordCreate(title=f"Book {i}", isbn=f"978999999999{i}"),
+                isbn_lookup=False,
             )
 
         # Act - Get first page (limit=2)
-        page1, total = catalog_service.search_bibliographic_records(
-            db_session, limit=2, offset=0
-        )
+        page1, total = catalog_service.search_bibliographic_records(db_session, limit=2, offset=0)
 
         # Act - Get second page
-        page2, _ = catalog_service.search_bibliographic_records(
-            db_session, limit=2, offset=2
-        )
+        page2, _ = catalog_service.search_bibliographic_records(db_session, limit=2, offset=2)
 
         # Assert
         assert total == 5
@@ -598,47 +561,37 @@ class TestBibliographicRecordSearch:
                 title="Le Petit Prince",
                 isbn="9788888888888",
                 language="fr",
-                target_audience="child"
+                target_audience="child",
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Les Misérables",
-                isbn="9788888888889",
-                language="fr",
-                target_audience="adult"
+                title="Les Misérables", isbn="9788888888889", language="fr", target_audience="adult"
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act - Search with multiple filters
         results, total = catalog_service.search_bibliographic_records(
-            db_session,
-            language="fr",
-            target_audience="child"
+            db_session, language="fr", target_audience="child"
         )
 
         # Assert - Should only match Le Petit Prince
         assert total == 1
         assert results[0].title == "Le Petit Prince"
 
-
     def test_search_by_copy_filters_and_publication_year_range(self, db_session):
         """Search notices by copy metadata and publication year without duplicates."""
         matching = catalog_service.create_bibliographic_record(
             db_session,
-            BibliographicRecordCreate(
-                title="Matching title", isbn="991", publication_year=2020
-            ),
+            BibliographicRecordCreate(title="Matching title", isbn="991", publication_year=2020),
             isbn_lookup=False,
         )
         outside_range = catalog_service.create_bibliographic_record(
             db_session,
-            BibliographicRecordCreate(
-                title="Outside range", isbn="992", publication_year=2010
-            ),
+            BibliographicRecordCreate(title="Outside range", isbn="992", publication_year=2010),
             isbn_lookup=False,
         )
 
@@ -699,9 +652,7 @@ class TestBibliographicRecordSearch:
             ),
         )
 
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, status="lost"
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, status="lost")
 
         assert total == 1
         assert results[0].id == record.id
@@ -721,7 +672,7 @@ class TestItemManagement:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Test Book", isbn="9787777777777"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act - Create item
@@ -730,7 +681,7 @@ class TestItemManagement:
             bibliographic_record_id=bib_record.id,
             call_number="823.912",
             shelf_location="Fiction - Section A - Shelf 3",
-            loanable=True
+            loanable=True,
         )
         result = catalog_service.create_item(db_session, item_data)
 
@@ -763,14 +714,11 @@ class TestItemManagement:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Minimal Item Test", isbn="9781010101010"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act
-        item_data = ItemCreate(
-            item_id="MIN001",
-            bibliographic_record_id=bib_record.id
-        )
+        item_data = ItemCreate(item_id="MIN001", bibliographic_record_id=bib_record.id)
         result = catalog_service.create_item(db_session, item_data)
 
         # Assert
@@ -785,10 +733,7 @@ class TestItemManagement:
         Should raise BibliographicRecordNotFoundException to prevent orphaned items.
         """
         # Act & Assert
-        item_data = ItemCreate(
-            item_id="ORPHAN001",
-            bibliographic_record_id=99999  # Doesn't exist
-        )
+        item_data = ItemCreate(item_id="ORPHAN001", bibliographic_record_id=99999)  # Doesn't exist
 
         with pytest.raises(BibliographicRecordNotFoundException) as exc_info:
             catalog_service.create_item(db_session, item_data)
@@ -805,7 +750,7 @@ class TestItemManagement:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Duplicate Test", isbn="9781212121212"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         item_data1 = ItemCreate(item_id="DUP001", bibliographic_record_id=bib_record.id)
@@ -826,13 +771,14 @@ class TestItemManagement:
         """
         # Arrange - Get actual prefix from settings, or mock/stub if needed
         from src.bcd_api.services.settings_service import get_settings
+
         settings = get_settings(db_session)
         prefix = settings.item_barcode_prefix or "."
 
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Prefix Strip Test", isbn="9789999999999"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act - Create item with prefixed barcode (e.g. .785)
@@ -855,7 +801,7 @@ class TestItemManagement:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Get Item Test", isbn="9781313131313"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         item_data = ItemCreate(item_id="GET001", bibliographic_record_id=bib_record.id)
         catalog_service.create_item(db_session, item_data)
@@ -884,21 +830,17 @@ class TestItemManagement:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Multi-Copy Book", isbn="9781414141414"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         for i in range(3):
             item_data = ItemCreate(
-                item_id=f"MULTI{i}",
-                bibliographic_record_id=bib_record.id,
-                call_number="823.000"
+                item_id=f"MULTI{i}", bibliographic_record_id=bib_record.id, call_number="823.000"
             )
             catalog_service.create_item(db_session, item_data)
 
         # Act
-        results = catalog_service.get_items_for_bibliographic_record(
-            db_session, bib_record.id
-        )
+        results = catalog_service.get_items_for_bibliographic_record(db_session, bib_record.id)
 
         # Assert
         assert len(results) == 3
@@ -916,13 +858,11 @@ class TestItemManagement:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="No Copies", isbn="9781515151515"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Act
-        results = catalog_service.get_items_for_bibliographic_record(
-            db_session, bib_record.id
-        )
+        results = catalog_service.get_items_for_bibliographic_record(db_session, bib_record.id)
 
         # Assert
         assert len(results) == 0
@@ -950,13 +890,13 @@ class TestCatalogIntegrationScenarios:
                 "isbn": "9780064400558",
                 "language": "eng",
                 "medium_type": "Livre",
-                "target_audience": "child"
+                "target_audience": "child",
             }
 
             bib_record = catalog_service.create_bibliographic_record(
                 db_session,
                 BibliographicRecordCreate(title="Temp", isbn="9780064400558"),
-                isbn_lookup=True
+                isbn_lookup=True,
             )
 
         # Step 2: Add 3 physical copies
@@ -966,8 +906,8 @@ class TestCatalogIntegrationScenarios:
                 item_id="CW001",
                 bibliographic_record_id=bib_record.id,
                 call_number="813.52",
-                shelf_location="Children - Fiction - Shelf 12"
-            )
+                shelf_location="Children - Fiction - Shelf 12",
+            ),
         )
 
         copy2 = catalog_service.create_item(
@@ -976,8 +916,8 @@ class TestCatalogIntegrationScenarios:
                 item_id="CW002",
                 bibliographic_record_id=bib_record.id,
                 call_number="813.52",
-                shelf_location="Children - Fiction - Shelf 12"
-            )
+                shelf_location="Children - Fiction - Shelf 12",
+            ),
         )
 
         copy3 = catalog_service.create_item(
@@ -986,8 +926,8 @@ class TestCatalogIntegrationScenarios:
                 item_id="CW003",
                 bibliographic_record_id=bib_record.id,
                 call_number="813.52",
-                shelf_location="Classroom Set - Room 204"
-            )
+                shelf_location="Classroom Set - Room 204",
+            ),
         )
 
         # Step 3: Verify complete integration
@@ -997,9 +937,7 @@ class TestCatalogIntegrationScenarios:
         assert "White, E.B." in retrieved_bib.authors
 
         # Retrieve all copies
-        all_copies = catalog_service.get_items_for_bibliographic_record(
-            db_session, bib_record.id
-        )
+        all_copies = catalog_service.get_items_for_bibliographic_record(db_session, bib_record.id)
         assert len(all_copies) == 3
 
         # Verify each copy (all_copies contains dictionaries, not Item objects)
@@ -1021,12 +959,9 @@ class TestCatalogIntegrationScenarios:
         catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Animal Farm",
-                isbn="9780451526342",
-                authors=["Orwell, George"],
-                level="CM1"
+                title="Animal Farm", isbn="9780451526342", authors=["Orwell, George"], level="CM1"
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         catalog_service.create_bibliographic_record(
@@ -1035,15 +970,13 @@ class TestCatalogIntegrationScenarios:
                 title="Brave New World",
                 isbn="9780060850524",
                 authors=["Huxley, Aldous"],
-                level="CM1"
+                level="CM1",
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Step 1: Search for novels
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, level="CM1"
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, level="CM1")
 
         assert total == 2
         assert len(results) == 2
@@ -1081,21 +1014,15 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Test Book",
-                isbn="9780123456789",
-                authors=["Test Author"]
+                title="Test Book", isbn="9780123456789", authors=["Test Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         # Create items with IDs 100, 101, 102 (simulating existing books)
         for i in [100, 101, 102]:
             catalog_service.create_item(
-                db_session,
-                ItemCreate(
-                    item_id=str(i),
-                    bibliographic_record_id=bib_record.id
-                )
+                db_session, ItemCreate(item_id=str(i), bibliographic_record_id=bib_record.id)
             )
 
         # Act: Generate 5 new IDs (auto-detect)
@@ -1113,27 +1040,33 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Test Book",
-                isbn="9780123456789",
-                authors=["Test Author"]
+                title="Test Book", isbn="9780123456789", authors=["Test Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         catalog_service.create_item(
-            db_session,
-            ItemCreate(item_id="50", bibliographic_record_id=bib_record.id)
+            db_session, ItemCreate(item_id="50", bibliographic_record_id=bib_record.id)
         )
 
         # Act: Generate IDs starting from custom ID 2000
-        result = catalog_service.get_available_item_ids(
-            db_session, count=10, start_from="2000"
-        )
+        result = catalog_service.get_available_item_ids(db_session, count=10, start_from="2000")
 
         # Assert: Should start from 2000, not 51
         assert result["start_id"] == "2000"
         assert result["end_id"] == "2009"
-        assert result["ids"] == ["2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009"]
+        assert result["ids"] == [
+            "2000",
+            "2001",
+            "2002",
+            "2003",
+            "2004",
+            "2005",
+            "2006",
+            "2007",
+            "2008",
+            "2009",
+        ]
 
     def test_get_available_ids_default_count_is_thirty(self, db_session):
         """Default count should be 30 labels (2.5 Avery sheets)."""
@@ -1168,9 +1101,7 @@ class TestGetAvailableItemIDs:
         """Should reject non-numeric start_from for numeric ID format."""
         # Act & Assert
         with pytest.raises(ValueError, match="Invalid start_from value for numeric format"):
-            catalog_service.get_available_item_ids(
-                db_session, count=10, start_from="ABC123"
-            )
+            catalog_service.get_available_item_ids(db_session, count=10, start_from="ABC123")
 
     def test_get_available_ids_large_batch(self, db_session):
         """Should handle generating 1000 IDs (maximum allowed)."""
@@ -1191,20 +1122,14 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Test Book",
-                isbn="9780123456789",
-                authors=["Test Author"]
+                title="Test Book", isbn="9780123456789", authors=["Test Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         for item_id in ["1", "2", "4", "5"]:
             catalog_service.create_item(
-                db_session,
-                ItemCreate(
-                    item_id=item_id,
-                    bibliographic_record_id=bib_record.id
-                )
+                db_session, ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
             )
 
         # Act: Generate 3 new IDs
@@ -1232,18 +1157,15 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Test Book",
-                isbn="9780123456789",
-                authors=["Test Author"]
+                title="Test Book", isbn="9780123456789", authors=["Test Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         existing_ids = ["1", "2", "4", "5", "6", "9", "10"]
         for item_id in existing_ids:
             catalog_service.create_item(
-                db_session,
-                ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
+                db_session, ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
             )
 
         # Act: Generate 5 labels for new acquisitions
@@ -1259,17 +1181,14 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Test Book",
-                isbn="9780123456789",
-                authors=["Test Author"]
+                title="Test Book", isbn="9780123456789", authors=["Test Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         for item_id in ["1", "2", "4", "5"]:
             catalog_service.create_item(
-                db_session,
-                ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
+                db_session, ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
             )
 
         # Act: Generate from explicit start_from=100
@@ -1289,18 +1208,15 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Test Book", isbn="9780123456789"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         for item_id in ["1", "2", "4", "5"]:
             catalog_service.create_item(
-                db_session,
-                ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
+                db_session, ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
             )
 
         # Act
-        result = catalog_service.get_available_item_ids(
-            db_session, count=3, contiguous=False
-        )
+        result = catalog_service.get_available_item_ids(db_session, count=3, contiguous=False)
 
         # Assert: gap at 3 is used, then continues from 6
         assert result["ids"] == ["3", "6", "7"]
@@ -1317,18 +1233,15 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Test Book 2", isbn="9780123456780"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         for item_id in ["1", "2", "4", "6", "8"]:
             catalog_service.create_item(
-                db_session,
-                ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
+                db_session, ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
             )
 
         # Act
-        result = catalog_service.get_available_item_ids(
-            db_session, count=3, contiguous=False
-        )
+        result = catalog_service.get_available_item_ids(db_session, count=3, contiguous=False)
 
         # Assert: picks up each free slot one by one across gaps
         assert result["ids"] == ["3", "5", "7"]
@@ -1344,12 +1257,11 @@ class TestGetAvailableItemIDs:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="Test Book 3", isbn="9780123456781"),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
         for item_id in ["101", "103"]:
             catalog_service.create_item(
-                db_session,
-                ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
+                db_session, ItemCreate(item_id=item_id, bibliographic_record_id=bib_record.id)
             )
 
         # Act
@@ -1371,12 +1283,8 @@ class TestGetAvailableItemIDs:
 
         With no existing items there are no gaps, so scatter ≡ contiguous.
         """
-        result_cont = catalog_service.get_available_item_ids(
-            db_session, count=5, contiguous=True
-        )
-        result_scat = catalog_service.get_available_item_ids(
-            db_session, count=5, contiguous=False
-        )
+        result_cont = catalog_service.get_available_item_ids(db_session, count=5, contiguous=True)
+        result_scat = catalog_service.get_available_item_ids(db_session, count=5, contiguous=False)
         assert result_cont["ids"] == result_scat["ids"]
 
 
@@ -1389,11 +1297,9 @@ class TestDeleteItemValidation:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="On Loan Book",
-                isbn="9780123456789",
-                authors=["Test Author"]
+                title="On Loan Book", isbn="9780123456789", authors=["Test Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         item = catalog_service.create_item(
@@ -1403,8 +1309,8 @@ class TestDeleteItemValidation:
                 bibliographic_record_id=bib_record.id,
                 call_number="100.000",
                 status="on_loan",
-                loanable=True
-            )
+                loanable=True,
+            ),
         )
 
         # Create borrower
@@ -1413,7 +1319,7 @@ class TestDeleteItemValidation:
             first_name="Test",
             last_name="BORROWER",
             full_name="Test BORROWER",
-            role="student"
+            role="student",
         )
         db_session.add(borrower)
         db_session.commit()
@@ -1426,7 +1332,7 @@ class TestDeleteItemValidation:
             checkout_date=datetime.now(),
             due_date=(datetime.now() + timedelta(days=14)).date(),
             status="active",
-            return_date=None  # Active!
+            return_date=None,  # Active!
         )
         db_session.add(loan)
         db_session.commit()
@@ -1450,11 +1356,9 @@ class TestDeleteItemValidation:
         bib_record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(
-                title="Returned Book",
-                isbn="9780123456788",
-                authors=["Test Author"]
+                title="Returned Book", isbn="9780123456788", authors=["Test Author"]
             ),
-            isbn_lookup=False
+            isbn_lookup=False,
         )
 
         item = catalog_service.create_item(
@@ -1464,8 +1368,8 @@ class TestDeleteItemValidation:
                 bibliographic_record_id=bib_record.id,
                 call_number="100.001",
                 status="available",
-                loanable=True
-            )
+                loanable=True,
+            ),
         )
 
         borrower = Borrower(
@@ -1473,7 +1377,7 @@ class TestDeleteItemValidation:
             first_name="Test",
             last_name="HISTORY",
             full_name="Test HISTORY",
-            role="student"
+            role="student",
         )
         db_session.add(borrower)
         db_session.commit()
@@ -1486,7 +1390,7 @@ class TestDeleteItemValidation:
             checkout_date=datetime.now() - timedelta(days=30),
             due_date=(datetime.now() - timedelta(days=16)).date(),
             return_date=datetime.now() - timedelta(days=14),  # Returned!
-            status="returned"
+            status="returned",
         )
         db_session.add(loan)
         db_session.commit()
@@ -1504,9 +1408,9 @@ class TestDeleteItemValidation:
         assert item_check is None
 
         # Verify both denormalized counters are decremented correctly
-        #db_session.refresh(bib_record)
-        #assert bib_record.total_items == 0
-        #assert bib_record.total_circulations == 0
+        # db_session.refresh(bib_record)
+        # assert bib_record.total_items == 0
+        # assert bib_record.total_circulations == 0
 
         # Historical loan CASCADE deleted
         assert db_session.query(CirculationTransaction).filter_by(id=loan_id).first() is None
@@ -1517,6 +1421,7 @@ class TestEan13ToIssn:
 
     def test_wakou_ean13_returns_correct_issn(self):
         from src.bcd_api.services.catalog_service import _ean13_to_issn
+
         # 9771163770025 is Wakou magazine kiosk EAN-13
         result = _ean13_to_issn("9771163770025")
         assert result is not None
@@ -1526,23 +1431,28 @@ class TestEan13ToIssn:
 
     def test_book_ean13_returns_none(self):
         from src.bcd_api.services.catalog_service import _ean13_to_issn
+
         # 978 prefix = book barcode, not periodical
         assert _ean13_to_issn("9780306406157") is None
 
     def test_wrong_length_returns_none(self):
         from src.bcd_api.services.catalog_service import _ean13_to_issn
+
         assert _ean13_to_issn("977116377002") is None  # 12 digits
 
     def test_non_digits_returns_none(self):
         from src.bcd_api.services.catalog_service import _ean13_to_issn
+
         assert _ean13_to_issn("NOT_A_BARCODE") is None
 
     def test_result_format_is_nnnn_dash_nnnx(self):
         from src.bcd_api.services.catalog_service import _ean13_to_issn
+
         result = _ean13_to_issn("9771163770025")
         assert result is not None
         # Format: NNNN-NNNX
         import re
+
         assert re.match(r"^\d{4}-\d{3}[\dX]$", result)
 
 
@@ -1551,6 +1461,7 @@ class TestFormatIsbn:
 
     def setup_method(self):
         from src.bcd_api.services.export_service import ExportService
+
         self.svc = ExportService.__new__(ExportService)
 
     def test_already_prefixed_isbn_returned_as_is(self):
@@ -1574,11 +1485,13 @@ class TestDownloadCoverWithPrefix:
 
     def test_issn_identifier_returns_none(self):
         from src.bcd_api.services.catalog_service import _download_cover
+
         result = _download_cover("issn:1163-7706")
         assert result is None
 
     def test_none_returns_none(self):
         from src.bcd_api.services.catalog_service import _download_cover
+
         result = _download_cover(None)
         assert result is None
 
@@ -1588,12 +1501,20 @@ class TestSearchBibliographicRecordsFilterByShelfLocation:
 
     def test_filter_by_shelf_location_returns_matching_records(self, db_session):
         # Arrange
-        record1 = BibliographicRecord(title="Romans du rayon", authors='["Auteur A"]', medium_type="Livre")
-        record2 = BibliographicRecord(title="Documentaires", authors='["Auteur B"]', medium_type="Livre")
+        record1 = BibliographicRecord(
+            title="Romans du rayon", authors='["Auteur A"]', medium_type="Livre"
+        )
+        record2 = BibliographicRecord(
+            title="Documentaires", authors='["Auteur B"]', medium_type="Livre"
+        )
         db_session.add_all([record1, record2])
         db_session.flush()
-        item1 = Item(item_id="SHL001", bibliographic_record_id=record1.id, shelf_location="Romans ado")
-        item2 = Item(item_id="SHL002", bibliographic_record_id=record2.id, shelf_location="Documentaires")
+        item1 = Item(
+            item_id="SHL001", bibliographic_record_id=record1.id, shelf_location="Romans ado"
+        )
+        item2 = Item(
+            item_id="SHL002", bibliographic_record_id=record2.id, shelf_location="Documentaires"
+        )
         db_session.add_all([item1, item2])
         db_session.flush()
 
@@ -1631,7 +1552,9 @@ class TestSearchBibliographicRecordsFilterByShelfLocation:
 
         # Act
         _, total_without_filter = catalog_service.search_bibliographic_records(db_session)
-        _, total_with_none = catalog_service.search_bibliographic_records(db_session, shelf_location=None)
+        _, total_with_none = catalog_service.search_bibliographic_records(
+            db_session, shelf_location=None
+        )
 
         # Assert
         assert total_without_filter == total_with_none

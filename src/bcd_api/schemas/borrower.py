@@ -26,7 +26,7 @@ class BorrowerBase(BaseModel):
 class BorrowerCreate(BorrowerBase):
     """Schema for creating a new borrower."""
 
-    @field_validator('role', mode='before')
+    @field_validator("role", mode="before")
     @classmethod
     def validate_role(cls, v):
         """Validate and convert role to enum."""
@@ -51,7 +51,9 @@ class BorrowerCreate(BorrowerBase):
 class BorrowerUpdate(BaseModel):
     """Schema for updating a borrower."""
 
-    borrower_id: Optional[str] = Field(None, min_length=1, max_length=20, description="New borrower ID")
+    borrower_id: Optional[str] = Field(
+        None, min_length=1, max_length=20, description="New borrower ID"
+    )
     external_id: Optional[str] = Field(None, max_length=100, description="External reference")
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
@@ -64,7 +66,7 @@ class BorrowerUpdate(BaseModel):
     active: Optional[bool] = None
     blocked_reason: Optional[str] = Field(None, max_length=200)
 
-    @field_validator('role', mode='before')
+    @field_validator("role", mode="before")
     @classmethod
     def validate_role(cls, v):
         """Validate and convert role to enum."""
@@ -102,7 +104,7 @@ class BorrowerResponse(BorrowerBase, TimestampMixin):
                 "created_at": "2026-01-30T10:00:00",
                 "updated_at": "2026-01-30T10:00:00",
             }
-        }
+        },
     )
 
 

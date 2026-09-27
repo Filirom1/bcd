@@ -11,8 +11,8 @@ from src.shared.constants import (
     DEFAULT_HOLD_EXPIRATION_DAYS,
     DEFAULT_LOAN_DURATION_DAYS,
     DEFAULT_LOAN_LIMIT,
-    DEFAULT_LOAN_LIMIT_WARNING,
     DEFAULT_LOAN_LIMIT_TEACHER,
+    DEFAULT_LOAN_LIMIT_WARNING,
     DEFAULT_RENEWAL_LIMIT,
     BarcodeType,
     IDFormat,
@@ -62,13 +62,19 @@ class SystemSettings(Base):
     academic_year_current = Column(String(9), nullable=False, default="2025-2026")
 
     # System information
-    library_name = Column(String(200), nullable=False, default="Bibliothèque que Claude a Développée")
+    library_name = Column(
+        String(200), nullable=False, default="Bibliothèque que Claude a Développée"
+    )
     library_code = Column(String(50), nullable=True)
 
     # Catalog vocabulary lists (CSV strings)
-    catalog_medium_types = Column(Text, nullable=True, default="Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre")
+    catalog_medium_types = Column(
+        Text, nullable=True, default="Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
+    )
     catalog_languages = Column(Text, nullable=True, default="fr, en, es, de, ar")
-    catalog_levels = Column(Text, nullable=True, default="CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, Lycée, Adulte")
+    catalog_levels = Column(
+        Text, nullable=True, default="CP, CE1, CE2, CM1, CM2, 6e, 5e, 4e, 3e, Lycée, Adulte"
+    )
 
     # External catalog sources used by the Find a notice workflow.  These are
     # per-school settings rather than environment-only switches so a librarian
@@ -82,48 +88,64 @@ class SystemSettings(Base):
 
     # Dewey classification colors (JSON array of 10 hex strings or null, index = class 0–9)
     dewey_colors_enabled = Column(Boolean, nullable=False, default=True)
-    dewey_colors = Column(Text, nullable=True, default='["#000000","#9e6633","#f20000","#ff9813","#ffee00","#409d42","#0fafe9","#98238b","#d3d5d4","#ffffff"]')
+    dewey_colors = Column(
+        Text,
+        nullable=True,
+        default='["#000000","#9e6633","#f20000","#ff9813","#ffee00","#409d42","#0fafe9","#98238b","#d3d5d4","#ffffff"]',
+    )
 
     # Shelf locations (JSON array of {label, color|null})
-    catalog_shelf_locations = Column(Text, nullable=True, default='[{"label":"Romans","color":"#c0392b"},{"label":"Albums","color":"#e67e22"},{"label":"Bandes dessinées","color":"#2980b9"},{"label":"Documentaires","color":"#27ae60"},{"label":"Périodiques","color":"#16a085"},{"label":"Contes","color":"#f39c12"},{"label":"Poésie","color":"#8e44ad"}]')
+    catalog_shelf_locations = Column(
+        Text,
+        nullable=True,
+        default='[{"label":"Romans","color":"#c0392b"},{"label":"Albums","color":"#e67e22"},{"label":"Bandes dessinées","color":"#2980b9"},{"label":"Documentaires","color":"#27ae60"},{"label":"Périodiques","color":"#16a085"},{"label":"Contes","color":"#f39c12"},{"label":"Poésie","color":"#8e44ad"}]',
+    )
 
     # Call number rules (JSON array of {medium_type|null, shelf_location|null, pattern})
-    catalog_call_number_rules = Column(Text, nullable=True, default='[{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires*","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]')
+    catalog_call_number_rules = Column(
+        Text,
+        nullable=True,
+        default='[{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires*","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]',
+    )
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Constraints
     __table_args__ = (
         CheckConstraint("id = 1", name="singleton_settings"),
         CheckConstraint(
             f"id_format IN ('{IDFormat.NUMERIC.value}', '{IDFormat.ALPHANUMERIC.value}')",
-            name="check_id_format"
+            name="check_id_format",
         ),
         CheckConstraint(
             f"barcode_type IN ('{BarcodeType.CODE39.value}', '{BarcodeType.CODE128.value}')",
-            name="check_barcode_type"
+            name="check_barcode_type",
         ),
         CheckConstraint(
             f"language IN ('{Language.FRENCH.value}', '{Language.ENGLISH.value}')",
-            name="check_language"
+            name="check_language",
         ),
         CheckConstraint(
             "loan_limit_default > 0 AND loan_limit_default <= 10",
-            name="check_loan_limit_default_range"
+            name="check_loan_limit_default_range",
         ),
         CheckConstraint(
             "loan_limit_warning >= 0 AND loan_limit_warning <= 10",
-            name="check_loan_limit_warning_range"
+            name="check_loan_limit_warning_range",
         ),
         CheckConstraint(
-            "loan_duration_days > 0 AND loan_duration_days <= 365",
-            name="check_loan_duration_range"
+            "loan_duration_days > 0 AND loan_duration_days <= 365", name="check_loan_duration_range"
         ),
         CheckConstraint(
             "academic_year_start_month >= 1 AND academic_year_start_month <= 12",
-            name="check_academic_year_start_month"
+            name="check_academic_year_start_month",
         ),
         CheckConstraint(
             "bnf_timeout >= 1 AND bnf_timeout <= 60 AND "
@@ -133,7 +155,7 @@ class SystemSettings(Base):
         ),
     )
 
-    @validates('id')
+    @validates("id")
     def validate_singleton_id(self, key, value):
         """Ensure only one row exists with id=1."""
         if value != 1:

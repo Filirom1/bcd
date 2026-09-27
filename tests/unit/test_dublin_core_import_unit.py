@@ -61,6 +61,7 @@ Test Book,123456,Author One|Author Two,Illustrator One|Illustrator Two,Subject A
 
         # Authors should be stored as JSON
         import json
+
         authors = json.loads(biblio.authors)
         assert len(authors) == 2
         assert "Author One" in authors
@@ -82,7 +83,7 @@ Test Book,123456,Author One|Author Two,Illustrator One|Illustrator Two,Subject A
         csv_content1 = """dc.title,dc.identifier,dc.date,item.id
 Book 2020,123,2020,B001"""
 
-        result1 = import_dublin_core_csv(db_session, csv_content1)
+        import_dublin_core_csv(db_session, csv_content1)
         biblio1 = db_session.query(BibliographicRecord).first()
         assert biblio1.publication_year == 2020
 
@@ -95,7 +96,7 @@ Book 2020,123,2020,B001"""
         csv_content2 = """dc.title,dc.identifier,dc.date,item.id
 Book 2021,456,2021-06-15,B002"""
 
-        result2 = import_dublin_core_csv(db_session, csv_content2)
+        import_dublin_core_csv(db_session, csv_content2)
         biblio2 = db_session.query(BibliographicRecord).first()
         assert biblio2.publication_year == 2021
 
@@ -105,7 +106,7 @@ Book 2021,456,2021-06-15,B002"""
         csv_content1 = """dc.title,dc.identifier,dc.format,item.id
 Book One,123,300 pages,B001"""
 
-        result1 = import_dublin_core_csv(db_session, csv_content1)
+        import_dublin_core_csv(db_session, csv_content1)
         biblio1 = db_session.query(BibliographicRecord).first()
         assert biblio1.page_count == 300
 
@@ -118,7 +119,7 @@ Book One,123,300 pages,B001"""
         csv_content2 = """dc.title,dc.identifier,dc.format,item.id
 Book Two,456,173 p,B002"""
 
-        result2 = import_dublin_core_csv(db_session, csv_content2)
+        import_dublin_core_csv(db_session, csv_content2)
         biblio2 = db_session.query(BibliographicRecord).first()
         assert biblio2.page_count == 173
 
@@ -128,7 +129,7 @@ Book Two,456,173 p,B002"""
         csv_text = """dc.title,dc.identifier,dc.type,item.id
 Text Book,123,Text,T001"""
 
-        result = import_dublin_core_csv(db_session, csv_text)
+        import_dublin_core_csv(db_session, csv_text)
         biblio = db_session.query(BibliographicRecord).first()
         assert biblio.medium_type == "Livre"
 
@@ -140,7 +141,7 @@ Text Book,123,Text,T001"""
         csv_sound = """dc.title,dc.identifier,dc.type,item.id
 Music Album,456,Sound,S001"""
 
-        result = import_dublin_core_csv(db_session, csv_sound)
+        import_dublin_core_csv(db_session, csv_sound)
         biblio = db_session.query(BibliographicRecord).first()
         assert biblio.medium_type == "CD"
 
@@ -150,7 +151,7 @@ Music Album,456,Sound,S001"""
         csv_loanable = """dc.title,dc.identifier,dc.rights,item.id
 Book One,123,Loanable,B001"""
 
-        result = import_dublin_core_csv(db_session, csv_loanable)
+        import_dublin_core_csv(db_session, csv_loanable)
         item = db_session.query(Item).first()
         assert item.loanable is True
 
@@ -162,7 +163,7 @@ Book One,123,Loanable,B001"""
         csv_not_loanable = """dc.title,dc.identifier,dc.rights,item.id
 Book Two,456,Not loanable,B002"""
 
-        result = import_dublin_core_csv(db_session, csv_not_loanable)
+        import_dublin_core_csv(db_session, csv_not_loanable)
         item = db_session.query(Item).first()
         assert item.loanable is False
 
@@ -171,7 +172,7 @@ Book Two,456,Not loanable,B002"""
         csv_content = """dc.title,dc.identifier,item.id,item.acquisitionDate
 Test Book,123,T001,2024-09-15"""
 
-        result = import_dublin_core_csv(db_session, csv_content)
+        import_dublin_core_csv(db_session, csv_content)
         item = db_session.query(Item).first()
 
         assert item.acquisition_date == date(2024, 9, 15)

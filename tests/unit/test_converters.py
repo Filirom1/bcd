@@ -19,10 +19,62 @@ def test_parse_acquisition_date():
 
 
 def test_bibliopuce_conversion_maps_periodical_and_skips_empty_title():
-    source = ";".join(["Inventaire", "Cote", "Rubrique", "Genre", "Titre", "SousTitre", "ISBN", "Auteur", "Illustrateur", "Annee", "Editeur", "Collection", "Numero", "Support", "Mots-clefs", "Niveau", "Description", "Taille", "Date achat", "Financement", "Empruntable"])
-    row = ";".join(["B1", "A-1", "Romans", "", "J'aime lire", "", "1234-567X", "Auteur", "", "2025", "Ed", "", "4", "Magazine", "aventure", "CE2", "", "", "12/03/2025", "Mairie", "Oui"])
-    empty = ";".join(["B2", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""])
-    rows = list(csv.DictReader(io.StringIO(convert((source + "\n" + row + "\n" + empty).encode("utf-8")))))
+    source = ";".join(
+        [
+            "Inventaire",
+            "Cote",
+            "Rubrique",
+            "Genre",
+            "Titre",
+            "SousTitre",
+            "ISBN",
+            "Auteur",
+            "Illustrateur",
+            "Annee",
+            "Editeur",
+            "Collection",
+            "Numero",
+            "Support",
+            "Mots-clefs",
+            "Niveau",
+            "Description",
+            "Taille",
+            "Date achat",
+            "Financement",
+            "Empruntable",
+        ]
+    )
+    row = ";".join(
+        [
+            "B1",
+            "A-1",
+            "Romans",
+            "",
+            "J'aime lire",
+            "",
+            "1234-567X",
+            "Auteur",
+            "",
+            "2025",
+            "Ed",
+            "",
+            "4",
+            "Magazine",
+            "aventure",
+            "CE2",
+            "",
+            "",
+            "12/03/2025",
+            "Mairie",
+            "Oui",
+        ]
+    )
+    empty = ";".join(
+        ["B2", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    )
+    rows = list(
+        csv.DictReader(io.StringIO(convert((source + "\n" + row + "\n" + empty).encode("utf-8"))))
+    )
     assert len(rows) == 1
     assert rows[0]["dc.type"] == "Text;Periodical"
     assert rows[0]["dc.rights"] == "Loanable"

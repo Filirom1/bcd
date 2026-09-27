@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 from click.testing import CliRunner
 
 from bcd_cli.commands.checkout import checkout
-from bcd_cli.commands.return_cmd import return_items
 from bcd_cli.commands.renew import renew
+from bcd_cli.commands.return_cmd import return_items
 
 
 def test_checkout_direct_calls_client():
@@ -13,7 +13,9 @@ def test_checkout_direct_calls_client():
     with patch("bcd_cli.commands.checkout.get_client", return_value=client):
         result = CliRunner().invoke(checkout, ["B1", "I1", "I2"])
     assert result.exit_code == 0
-    client.checkout.assert_called_once_with(borrower_id="B1", item_ids=["I1", "I2"], checked_out_by="cli")
+    client.checkout.assert_called_once_with(
+        borrower_id="B1", item_ids=["I1", "I2"], checked_out_by="cli"
+    )
 
 
 def test_checkout_without_items_is_rejected():

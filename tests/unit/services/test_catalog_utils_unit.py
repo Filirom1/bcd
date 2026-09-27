@@ -1,7 +1,7 @@
 from src.bcd_api.services._catalog_utils import (
     normalize,
-    token_overlap,
     score_match,
+    token_overlap,
 )
 
 
@@ -19,8 +19,13 @@ def test_token_overlap():
 
 def test_score_match():
     # perfect title match
-    assert score_match("Le Petit Prince", "Saint-Exupery", "Le Petit Prince", "Saint-Exupéry") > 0.85
+    assert (
+        score_match("Le Petit Prince", "Saint-Exupery", "Le Petit Prince", "Saint-Exupéry") > 0.85
+    )
     # partial title match
     assert score_match("Le Petit Prince", "Saint-Exupery", "Le Petit", "Saint-Exupéry") > 0.5
     # no author lastname provided
-    assert score_match("Le Petit Prince", "", "Le Petit Prince", "Saint-Exupéry") == 0.85 * 1.0 + 0.15 * 0.5
+    assert (
+        score_match("Le Petit Prince", "", "Le Petit Prince", "Saint-Exupéry")
+        == 0.85 * 1.0 + 0.15 * 0.5
+    )

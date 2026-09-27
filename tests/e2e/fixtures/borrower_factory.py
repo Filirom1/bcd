@@ -32,24 +32,24 @@ class BorrowerFactory:
         Returns:
             Borrower: Created borrower instance
         """
-        borrower_id = kwargs.get('borrower_id', str(self._counter))
+        borrower_id = kwargs.get("borrower_id", str(self._counter))
         self._counter += 1
 
-        first_name = kwargs.get('first_name', 'Test')
-        last_name = kwargs.get('last_name', 'Student')
+        first_name = kwargs.get("first_name", "Test")
+        last_name = kwargs.get("last_name", "Student")
 
         borrower = Borrower(
             borrower_id=borrower_id,
             first_name=first_name,
             last_name=last_name,
             full_name=f"{first_name} {last_name}",
-            role=kwargs.get('role', BorrowerRole.STUDENT.value),
-            active=kwargs.get('active', True),
-            blocked_reason=kwargs.get('blocked_reason'),
-            class_id=kwargs.get('class_id'),
-            grade_level=kwargs.get('grade_level'),
-            email=kwargs.get('email'),
-            phone=kwargs.get('phone'),
+            role=kwargs.get("role", BorrowerRole.STUDENT.value),
+            active=kwargs.get("active", True),
+            blocked_reason=kwargs.get("blocked_reason"),
+            class_id=kwargs.get("class_id"),
+            grade_level=kwargs.get("grade_level"),
+            email=kwargs.get("email"),
+            phone=kwargs.get("phone"),
         )
 
         self.db.add(borrower)
@@ -60,8 +60,8 @@ class BorrowerFactory:
 
     def create_blocked(self, reason="Test block", **kwargs):
         """Create a blocked borrower."""
-        kwargs['active'] = False
-        kwargs['blocked_reason'] = reason
+        kwargs["active"] = False
+        kwargs["blocked_reason"] = reason
         return self.create(**kwargs)
 
     def create_batch(self, count=5, **kwargs):

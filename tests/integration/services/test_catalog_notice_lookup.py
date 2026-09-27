@@ -44,10 +44,12 @@ def test_search_local_notice_does_not_call_external_sources(db_session, monkeypa
         medium_type="Périodique",
         publisher="Milan",
     )
-    db_session.add_all([
-        Item(item_id="W-1", bibliographic_record_id=record.id, call_number="414"),
-        Item(item_id="W-2", bibliographic_record_id=record.id, call_number="440"),
-    ])
+    db_session.add_all(
+        [
+            Item(item_id="W-1", bibliographic_record_id=record.id, call_number="414"),
+            Item(item_id="W-2", bibliographic_record_id=record.id, call_number="440"),
+        ]
+    )
     db_session.commit()
     external = Mock(side_effect=AssertionError("local lookup must not call a provider"))
     monkeypatch.setattr("src.bcd_api.services.external.bnf.search_by_isbn", external)
@@ -208,7 +210,9 @@ def test_settings_test_button_calls_configured_source(db_session, monkeypatch):
 
 
 def test_periodical_item_requires_and_stores_explicit_issue_in_call_number(db_session):
-    record = make_record(db_session, title="Wapiti", isbn="issn:0984-2314", medium_type="Périodique")
+    record = make_record(
+        db_session, title="Wapiti", isbn="issn:0984-2314", medium_type="Périodique"
+    )
 
     with pytest.raises(ValidationError):
         create_item(db_session, ItemCreate(item_id="BCD-1", bibliographic_record_id=record.id))

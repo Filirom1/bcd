@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from bcd_api.schemas.export import ExportResponse, ExportStats, ExportFormat, ImportResponse
+from bcd_api.schemas.export import ExportFormat, ExportResponse, ExportStats, ImportResponse
 
 
 def test_export_response_defaults_and_counts():
@@ -16,7 +16,9 @@ def test_export_response_rejects_negative_counts():
 
 
 def test_export_stats_and_import_defaults():
-    stats = ExportStats(total_records=3, total_items=4, records_with_items=2, records_without_items=1)
+    stats = ExportStats(
+        total_records=3, total_items=4, records_with_items=2, records_without_items=1
+    )
     result = ImportResponse(total_rows=1, successful_rows=1, failed_rows=0)
     assert stats.execution_time_ms is None
     assert result.errors == []

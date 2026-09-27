@@ -1,8 +1,8 @@
 """Backward-compatible facade for the export service."""
 
 from .catalog.export import (
-    ExportService,
     MAX_EXPORT_ROWS,
+    ExportService,
 )
 
 __all__ = [

@@ -1,8 +1,5 @@
-from types import SimpleNamespace
-import pytest
-import sys
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from types import SimpleNamespace
 
 from src.bcd_api.api.v1 import borrowers
 from src.bcd_api.schemas.borrower import BorrowerCreate, BorrowerUpdate
@@ -47,7 +44,7 @@ class MockBorrower:
             "blocked": self.blocked,
             "blocked_reason": self.blocked_reason,
             "created_at": self.created_at,
-            "updated_at": self.updated_at
+            "updated_at": self.updated_at,
         }
 
 
@@ -56,13 +53,15 @@ def test_create_borrower_endpoint_delegation(monkeypatch):
     called_args = {}
 
     def mock_create_borrower(db, borrower_id, first_name, last_name, role, **kwargs):
-        called_args.update({
-            "borrower_id": borrower_id,
-            "first_name": first_name,
-            "last_name": last_name,
-            "role": role,
-            **kwargs
-        })
+        called_args.update(
+            {
+                "borrower_id": borrower_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "role": role,
+                **kwargs,
+            }
+        )
         # Return a mock borrower model
         return SimpleNamespace(
             id=123,
@@ -80,7 +79,7 @@ def test_create_borrower_endpoint_delegation(monkeypatch):
             blocked=False,
             blocked_reason=None,
             created_at="2025-01-01T00:00:00",
-            updated_at="2025-01-01T00:00:00"
+            updated_at="2025-01-01T00:00:00",
         )
 
     monkeypatch.setattr(borrowers.borrower_service, "create_borrower", mock_create_borrower)
@@ -94,7 +93,7 @@ def test_create_borrower_endpoint_delegation(monkeypatch):
         class_id=2,
         email="alice@school.com",
         phone="0123456789",
-        notes="Some notes"
+        notes="Some notes",
     )
 
     result = borrowers.create_borrower(request, db=object())
@@ -117,7 +116,7 @@ def test_create_borrower_endpoint_delegation(monkeypatch):
 def test_get_next_available_id_endpoint_delegation(monkeypatch):
     """Test that get_next_available_id route handler delegates to borrower_service."""
     monkeypatch.setattr(borrowers.borrower_service, "get_next_available_id", lambda db: "42")
-    
+
     result = borrowers.get_next_available_id(db=object())
     assert result == {"next_id": "42"}
 
@@ -142,7 +141,11 @@ def test_get_borrower_endpoint(monkeypatch):
         "class_name": "CP",
         "homeroom_teacher": "M. Dupont",
     }
-    monkeypatch.setattr(borrowers.borrower_service, "get_detailed_borrower", lambda db, b_id, include_loans=False: mock_data)
+    monkeypatch.setattr(
+        borrowers.borrower_service,
+        "get_detailed_borrower",
+        lambda db, b_id, include_loans=False: mock_data,
+    )
 
     result = borrowers.get_borrower("1001", detail=False, db=object())
     assert result["borrower_id"] == "1001"
@@ -153,6 +156,7 @@ def test_get_borrower_endpoint(monkeypatch):
 def test_update_borrower_endpoint(monkeypatch):
     """Test update_borrower route handler."""
     called = []
+
     def mock_update(db, borrower_id, **kwargs):
         called.append((borrower_id, kwargs))
         return SimpleNamespace(id=123, borrower_id=borrower_id, **kwargs)
@@ -169,7 +173,7 @@ def test_update_borrower_endpoint(monkeypatch):
         phone="0987654321",
         notes="Updated notes",
         active=True,
-        blocked_reason="Reason"
+        blocked_reason="Reason",
     )
 
     result = borrowers.update_borrower("1001", update_data, db=object())
@@ -184,8 +188,18 @@ def test_block_and_unblock_borrower_endpoints(monkeypatch):
     block_called = []
     unblock_called = []
 
-    monkeypatch.setattr(borrowers.borrower_service, "block_borrower", lambda db, b_id, reason: block_called.append((b_id, reason)) or SimpleNamespace(id=123, borrower_id=b_id, blocked_reason=reason))
-    monkeypatch.setattr(borrowers.borrower_service, "unblock_borrower", lambda db, b_id: unblock_called.append(b_id) or SimpleNamespace(id=123, borrower_id=b_id, blocked_reason=None))
+    monkeypatch.setattr(
+        borrowers.borrower_service,
+        "block_borrower",
+        lambda db, b_id, reason: block_called.append((b_id, reason))
+        or SimpleNamespace(id=123, borrower_id=b_id, blocked_reason=reason),
+    )
+    monkeypatch.setattr(
+        borrowers.borrower_service,
+        "unblock_borrower",
+        lambda db, b_id: unblock_called.append(b_id)
+        or SimpleNamespace(id=123, borrower_id=b_id, blocked_reason=None),
+    )
 
     res_block = borrowers.block_borrower("1001", reason="No return", db=object())
     assert block_called == [("1001", "No return")]
@@ -199,7 +213,9 @@ def test_block_and_unblock_borrower_endpoints(monkeypatch):
 def test_delete_borrower_endpoint(monkeypatch):
     """Test delete_borrower route handler."""
     deleted = []
-    monkeypatch.setattr(borrowers.borrower_service, "bulk_delete_borrowers", lambda db, ids: deleted.extend(ids))
+    monkeypatch.setattr(
+        borrowers.borrower_service, "bulk_delete_borrowers", lambda db, ids: deleted.extend(ids)
+    )
 
     result = borrowers.delete_borrower("1001", db=object())
     assert result is None

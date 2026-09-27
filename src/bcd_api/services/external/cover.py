@@ -47,13 +47,15 @@ def configure(google_api_key: Optional[str] = None) -> None:
 def _get_covers_dir() -> Path:
     """Return the covers directory, configurable from settings/env."""
     from src.bcd_api.core.config import settings
+
     if settings.covers_dir_path:
         return Path(settings.covers_dir_path)
     return Path("data/covers")
 
 
-def migrate_covers_to_isbn13(covers_dir: Optional[Path] = None,
-                              db: Optional[Session] = None) -> None:
+def migrate_covers_to_isbn13(
+    covers_dir: Optional[Path] = None, db: Optional[Session] = None
+) -> None:
     """Rename any ISBN-10 cover files to their ISBN-13 equivalent.
 
     Runs only once: a sentinel file ``covers_dir/.isbn13`` is written after
@@ -84,8 +86,11 @@ def migrate_covers_to_isbn13(covers_dir: Optional[Path] = None,
             renamed += 1
             if db is not None:
                 from sqlalchemy import text
+
                 db.execute(
-                    text("UPDATE bibliographic_record SET cover_image = :new WHERE cover_image = :old"),
+                    text(
+                        "UPDATE bibliographic_record SET cover_image = :new WHERE cover_image = :old"
+                    ),
                     {"new": dest.name, "old": path.name},
                 )
         except Exception:
@@ -101,6 +106,7 @@ def migrate_covers_to_isbn13(covers_dir: Optional[Path] = None,
 # ---------------------------------------------------------------------------
 # ISBN helpers
 # ---------------------------------------------------------------------------
+
 
 def _isbn10_to_isbn13(isbn10: str) -> str:
     if len(isbn10) != 10:
@@ -137,6 +143,7 @@ def _both_forms(isbn: str) -> tuple[Optional[str], Optional[str]]:
 # Generic image fetch via httpx
 # ---------------------------------------------------------------------------
 
+
 def _fetch(url: str, client: httpx.Client) -> Optional[bytes]:
     try:
         r = client.get(url, timeout=10, follow_redirects=True)
@@ -153,6 +160,7 @@ def _fetch(url: str, client: httpx.Client) -> Optional[bytes]:
 # Per-provider functions
 # ---------------------------------------------------------------------------
 
+
 def _try_amazon(isbn10: Optional[str], client: httpx.Client) -> Optional[bytes]:
     if not isbn10:
         return None
@@ -165,8 +173,9 @@ def _try_amazon(isbn10: Optional[str], client: httpx.Client) -> Optional[bytes]:
     return None
 
 
-def _try_openlibrary(isbn10: Optional[str], isbn13: Optional[str],
-                     client: httpx.Client) -> Optional[bytes]:
+def _try_openlibrary(
+    isbn10: Optional[str], isbn13: Optional[str], client: httpx.Client
+) -> Optional[bytes]:
     for isbn in filter(None, [isbn13, isbn10]):
         url = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false"
         data = _fetch(url, client)
@@ -182,8 +191,7 @@ def _try_google_api(isbn13: Optional[str], client: httpx.Client) -> Optional[byt
     if _google_api_key:
         params["key"] = _google_api_key
     try:
-        r = client.get("https://www.googleapis.com/books/v1/volumes",
-                        params=params, timeout=10)
+        r = client.get("https://www.googleapis.com/books/v1/volumes", params=params, timeout=10)
         r.raise_for_status()
         data = r.json()
         if not data.get("items"):
@@ -208,6 +216,7 @@ def _try_geobib(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def find_cached_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str]:
     """Return the canonical cover filename if it already exists on disk, else None.
@@ -273,10 +282,10 @@ def download_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str
         return dest.name
 
     providers = [
-        ("amazon",      lambda c: _try_amazon(isbn10, c)),
+        ("amazon", lambda c: _try_amazon(isbn10, c)),
         ("openlibrary", lambda c: _try_openlibrary(isbn10, isbn13, c)),
-        ("google_api",  lambda c: _try_google_api(isbn13, c)),
-        ("geobib",      lambda c: _try_geobib(isbn13, c)),
+        ("google_api", lambda c: _try_google_api(isbn13, c)),
+        ("geobib", lambda c: _try_geobib(isbn13, c)),
     ]
 
     with httpx.Client(headers=_HEADERS) as client:

@@ -25,20 +25,20 @@ _GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
 
 _STRINGS: dict[str, dict[str, str]] = {
     "en": {
-        "dialog_title":    "Update available",
-        "dialog_body":     "BCD v{version} is available.\n\nDo you want to update now?\nThe application will restart automatically.",
-        "download_title":  "BCD – Update",
-        "download_body":   "Downloading update, please wait…",
-        "error_title":     "Update error",
-        "error_body":      "The update failed:\n{error}\n\nThe application will start normally.",
+        "dialog_title": "Update available",
+        "dialog_body": "BCD v{version} is available.\n\nDo you want to update now?\nThe application will restart automatically.",
+        "download_title": "BCD – Update",
+        "download_body": "Downloading update, please wait…",
+        "error_title": "Update error",
+        "error_body": "The update failed:\n{error}\n\nThe application will start normally.",
     },
     "fr": {
-        "dialog_title":    "Mise à jour disponible",
-        "dialog_body":     "BCD v{version} est disponible.\n\nVoulez-vous mettre à jour maintenant ?\nL'application redémarrera automatiquement.",
-        "download_title":  "BCD – Mise à jour",
-        "download_body":   "Téléchargement en cours, veuillez patienter…",
-        "error_title":     "Erreur de mise à jour",
-        "error_body":      "La mise à jour a échoué :\n{error}\n\nL'application démarre normalement.",
+        "dialog_title": "Mise à jour disponible",
+        "dialog_body": "BCD v{version} est disponible.\n\nVoulez-vous mettre à jour maintenant ?\nL'application redémarrera automatiquement.",
+        "download_title": "BCD – Mise à jour",
+        "download_body": "Téléchargement en cours, veuillez patienter…",
+        "error_title": "Erreur de mise à jour",
+        "error_body": "La mise à jour a échoué :\n{error}\n\nL'application démarre normalement.",
     },
 }
 
@@ -66,6 +66,7 @@ def _t(key: str, **kwargs: str) -> str:
 # Version comparison
 # ---------------------------------------------------------------------------
 
+
 def _version_tuple(v: str) -> tuple[int, ...]:
     """Convert a version string to a comparable int tuple. Strips leading 'v'."""
     try:
@@ -77,6 +78,7 @@ def _version_tuple(v: str) -> tuple[int, ...]:
 # ---------------------------------------------------------------------------
 # GitHub release check
 # ---------------------------------------------------------------------------
+
 
 def _is_online() -> bool:
     """Return True if we can reach api.github.com on port 443.
@@ -135,6 +137,7 @@ def check_for_update(current_version: str) -> tuple[str, str] | None:
 # ---------------------------------------------------------------------------
 # Dialogs (tkinter — stdlib, no extra deps)
 # ---------------------------------------------------------------------------
+
 
 def _show_yes_no(title: str, message: str) -> bool:
     """Display a native yes/no dialog. Returns True when the user clicks Yes."""
@@ -206,6 +209,7 @@ def _download_with_progress(url: str, dest_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # Windows update script
 # ---------------------------------------------------------------------------
+
 
 def _apply_update_windows(archive_path: Path, new_version: str, app_dir: Path) -> None:
     """Extract the ZIP, write update.bat, launch it fully detached, then exit.
@@ -287,6 +291,7 @@ def _apply_update_windows(archive_path: Path, new_version: str, app_dir: Path) -
 # Linux update script
 # ---------------------------------------------------------------------------
 
+
 def _apply_update_linux(archive_path: Path, new_version: str, app_dir: Path) -> None:
     """Extract the tar.gz, write update.sh, launch it in a new session, then exit.
 
@@ -327,11 +332,11 @@ def _apply_update_linux(archive_path: Path, new_version: str, app_dir: Path) -> 
         'if [ -f "$SRC/BCD-Kids.x86_64" ]; then',
         '    rm -f "$APP/BCD-Kids.x86_64"',
         '    cp "$SRC/BCD-Kids.x86_64" "$APP/BCD-Kids.x86_64"',
-        'fi',
+        "fi",
         'if [ -f "$SRC/BCD-Kids.pck" ]; then',
         '    rm -f "$APP/BCD-Kids.pck"',
         '    cp "$SRC/BCD-Kids.pck" "$APP/BCD-Kids.pck"',
-        'fi',
+        "fi",
         'chmod +x "$APP/bcd"',
         'if [ -f "$APP/BCD-Kids.x86_64" ]; then chmod +x "$APP/BCD-Kids.x86_64"; fi',
         'rm -rf "$APP/update"',
@@ -359,6 +364,7 @@ def _apply_update_linux(archive_path: Path, new_version: str, app_dir: Path) -> 
 # Startup cleanup
 # ---------------------------------------------------------------------------
 
+
 def _cleanup_stale_update(app_dir: Path) -> None:
     """Remove leftover files from a previously interrupted or completed update.
 
@@ -384,6 +390,7 @@ def _cleanup_stale_update(app_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
+
 
 def check_and_apply_update(current_version: str, app_dir: Path) -> None:
     """Check GitHub for an update and apply it if the user consents.

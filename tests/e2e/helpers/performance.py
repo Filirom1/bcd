@@ -47,8 +47,7 @@ class PerformanceMonitor:
             AssertionError: If operation exceeded threshold
         """
         duration = self.get_duration(operation_name)
-        assert duration <= max_ms, \
-            f"{operation_name} took {duration:.2f}ms, expected <{max_ms}ms"
+        assert duration <= max_ms, f"{operation_name} took {duration:.2f}ms, expected <{max_ms}ms"
 
     def print_summary(self):
         """Print summary of all measurements."""

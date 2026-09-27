@@ -58,7 +58,7 @@ def manage_settings(settings: tuple, api_url: str):
                 console.print(
                     Panel(
                         "[bold cyan]⚙️ Paramètres système / System Settings[/bold cyan]",
-                        style="cyan"
+                        style="cyan",
                     )
                 )
                 console.print()
@@ -67,23 +67,39 @@ def manage_settings(settings: tuple, api_url: str):
                 console.print("[bold]Bibliothèque / Library:[/bold]")
                 console.print(f"  Nom / Name: {data.get('library_name', 'N/A')}")
                 console.print(f"  Langue / Language: {data.get('language', 'N/A')}")
-                console.print(f"  Année scolaire / Academic year: {data.get('academic_year', 'N/A')}")
+                console.print(
+                    f"  Année scolaire / Academic year: {data.get('academic_year', 'N/A')}"
+                )
                 console.print()
 
                 console.print("[bold]Prêts / Loans:[/bold]")
-                console.print(f"  Durée de prêt / Loan duration: {data.get('loan_duration_days', 'N/A')} jours/days")
-                console.print(f"  Limite élèves / Student limit: {data.get('loan_limit_student', 'N/A')}")
-                console.print(f"  Limite enseignants / Teacher limit: {data.get('loan_limit_teacher', 'N/A')}")
-                console.print(f"  Limite personnel / Staff limit: {data.get('loan_limit_staff', 'N/A')}")
-                console.print(f"  Renouvellements max / Max renewals: {data.get('max_renewals', 'N/A')}")
+                console.print(
+                    f"  Durée de prêt / Loan duration: {data.get('loan_duration_days', 'N/A')} jours/days"
+                )
+                console.print(
+                    f"  Limite élèves / Student limit: {data.get('loan_limit_student', 'N/A')}"
+                )
+                console.print(
+                    f"  Limite enseignants / Teacher limit: {data.get('loan_limit_teacher', 'N/A')}"
+                )
+                console.print(
+                    f"  Limite personnel / Staff limit: {data.get('loan_limit_staff', 'N/A')}"
+                )
+                console.print(
+                    f"  Renouvellements max / Max renewals: {data.get('max_renewals', 'N/A')}"
+                )
                 console.print()
 
                 console.print("[bold]Retards / Overdue:[/bold]")
-                console.print(f"  Délai de grâce / Grace period: {data.get('overdue_grace_period_days', 'N/A')} jours/days")
+                console.print(
+                    f"  Délai de grâce / Grace period: {data.get('overdue_grace_period_days', 'N/A')} jours/days"
+                )
                 console.print()
 
                 console.print("[bold]Réservations / Holds:[/bold]")
-                console.print(f"  Expiration réservation / Hold expiration: {data.get('hold_expiration_days', 'N/A')} jours/days")
+                console.print(
+                    f"  Expiration réservation / Hold expiration: {data.get('hold_expiration_days', 'N/A')} jours/days"
+                )
                 console.print()
 
                 console.print("[bold]Format / Format:[/bold]")
@@ -123,10 +139,7 @@ def manage_settings(settings: tuple, api_url: str):
 
             if updates:
                 # Send update request
-                response = client.put(
-                    "/api/v1/admin/settings",
-                    json={"updates": updates}
-                )
+                response = client.put("/api/v1/admin/settings", json={"updates": updates})
 
                 if response.status_code == 200:
                     console.print("[green]Settings updated successfully[/green]")
@@ -183,7 +196,7 @@ def create_backup(output: Optional[str], api_url: str):
             console.print(
                 Panel(
                     "[bold green]Sauvegarde créée avec succès / Backup Created Successfully[/bold green]",
-                    style="green"
+                    style="green",
                 )
             )
             console.print()
@@ -235,7 +248,7 @@ def list_backups(api_url: str):
             console.print(
                 Panel(
                     f"[bold cyan]Sauvegardes disponibles / Available Backups ({len(backups)})[/bold cyan]",
-                    style="cyan"
+                    style="cyan",
                 )
             )
             console.print()
@@ -261,14 +274,16 @@ def list_backups(api_url: str):
                     backup.get("filename", "N/A"),
                     f"{backup.get('size_mb', 0)} MB",
                     backup.get("created_at", "N/A")[:19],  # Trim microseconds
-                    f"[{age_color}]{age_days} jours/days[/{age_color}]"
+                    f"[{age_color}]{age_days} jours/days[/{age_color}]",
                 )
 
             console.print(table)
             console.print()
 
             # Show current database size
-            console.print(f"[dim]Base de données actuelle / Current database: {db_info.get('size_mb', 0)} MB[/dim]")
+            console.print(
+                f"[dim]Base de données actuelle / Current database: {db_info.get('size_mb', 0)} MB[/dim]"
+            )
 
         else:
             print_error(f"Failed to list backups: {response.text}")
@@ -316,7 +331,9 @@ def restore_backup(backup_file: str, confirm: bool, api_url: str):
             console.print("Cette opération va écraser la base de données actuelle!")
             console.print("This operation will overwrite the current database!")
             console.print()
-            console.print("[yellow]Utilisez --confirm pour confirmer / Use --confirm to proceed[/yellow]")
+            console.print(
+                "[yellow]Utilisez --confirm pour confirmer / Use --confirm to proceed[/yellow]"
+            )
             return
 
         client = get_client(base_url=api_url)
@@ -339,8 +356,7 @@ def restore_backup(backup_file: str, confirm: bool, api_url: str):
         console.print("[yellow]Restauration en cours / Restoring database...[/yellow]")
 
         response = client.post(
-            "/api/v1/admin/restore",
-            params={"backup_file": backup_file, "confirm": True}
+            "/api/v1/admin/restore", params={"backup_file": backup_file, "confirm": True}
         )
 
         if response.status_code == 200:
@@ -350,12 +366,14 @@ def restore_backup(backup_file: str, confirm: bool, api_url: str):
             console.print(
                 Panel(
                     "[bold green]Restauration réussie / Restore Successful[/bold green]",
-                    style="green"
+                    style="green",
                 )
             )
             console.print()
 
-            console.print(f"[bold]Restauré depuis / Restored from:[/bold] {data.get('restored_from', 'N/A')}")
+            console.print(
+                f"[bold]Restauré depuis / Restored from:[/bold] {data.get('restored_from', 'N/A')}"
+            )
             console.print()
             console.print(f"[yellow]{data.get('warning', '')}[/yellow]")
             console.print()
@@ -429,22 +447,36 @@ def archive_transactions(older_than: int, dry_run: bool, stats: bool, api_url: s
                 console.print(
                     Panel(
                         "[bold cyan]Statistiques d'archivage / Archive Statistics[/bold cyan]",
-                        style="cyan"
+                        style="cyan",
                     )
                 )
                 console.print()
 
                 if data.get("total_archived", 0) == 0:
-                    console.print("[yellow]Aucune transaction archivée / No archived transactions[/yellow]")
+                    console.print(
+                        "[yellow]Aucune transaction archivée / No archived transactions[/yellow]"
+                    )
                 else:
-                    console.print(f"[bold]Total archivé / Total archived:[/bold] {data.get('total_archived', 0)} transactions")
-                    console.print(f"[bold]Taille estimée / Estimated size:[/bold] {data.get('estimated_size_mb', 0)} MB")
+                    console.print(
+                        f"[bold]Total archivé / Total archived:[/bold] {data.get('total_archived', 0)} transactions"
+                    )
+                    console.print(
+                        f"[bold]Taille estimée / Estimated size:[/bold] {data.get('estimated_size_mb', 0)} MB"
+                    )
                     console.print()
-                    console.print(f"[dim]Première transaction / Oldest transaction: {data.get('oldest_transaction_date', 'N/A')}[/dim]")
-                    console.print(f"[dim]Dernière transaction / Newest transaction: {data.get('newest_transaction_date', 'N/A')}[/dim]")
+                    console.print(
+                        f"[dim]Première transaction / Oldest transaction: {data.get('oldest_transaction_date', 'N/A')}[/dim]"
+                    )
+                    console.print(
+                        f"[dim]Dernière transaction / Newest transaction: {data.get('newest_transaction_date', 'N/A')}[/dim]"
+                    )
                     console.print()
-                    console.print(f"[dim]Premier archivage / First archived: {data.get('first_archived_at', 'N/A')}[/dim]")
-                    console.print(f"[dim]Dernier archivage / Last archived: {data.get('last_archived_at', 'N/A')}[/dim]")
+                    console.print(
+                        f"[dim]Premier archivage / First archived: {data.get('first_archived_at', 'N/A')}[/dim]"
+                    )
+                    console.print(
+                        f"[dim]Dernier archivage / Last archived: {data.get('last_archived_at', 'N/A')}[/dim]"
+                    )
 
                 console.print()
             else:
@@ -453,20 +485,28 @@ def archive_transactions(older_than: int, dry_run: bool, stats: bool, api_url: s
             return
 
         # Archive transactions
-        mode_label = "[yellow]MODE SIMULATION / DRY RUN MODE[/yellow]" if dry_run else "[green]MODE ARCHIVAGE / ARCHIVE MODE[/green]"
+        mode_label = (
+            "[yellow]MODE SIMULATION / DRY RUN MODE[/yellow]"
+            if dry_run
+            else "[green]MODE ARCHIVAGE / ARCHIVE MODE[/green]"
+        )
 
         console.print()
         console.print(
             Panel(
                 f"[bold]Archivage des transactions / Archive Transactions[/bold]\n{mode_label}",
-                style="cyan" if dry_run else "green"
+                style="cyan" if dry_run else "green",
             )
         )
         console.print()
 
         if not dry_run:
-            console.print(f"[yellow]Ceci va archiver les transactions de plus de {older_than} ans.[/yellow]")
-            console.print(f"[yellow]This will archive transactions older than {older_than} years.[/yellow]")
+            console.print(
+                f"[yellow]Ceci va archiver les transactions de plus de {older_than} ans.[/yellow]"
+            )
+            console.print(
+                f"[yellow]This will archive transactions older than {older_than} years.[/yellow]"
+            )
             console.print()
 
             if not click.confirm("Continuer / Continue?"):
@@ -482,20 +522,30 @@ def archive_transactions(older_than: int, dry_run: bool, stats: bool, api_url: s
             data = response.json()
 
             if data.get("archived_count", 0) == 0:
-                console.print("[green]Aucune transaction à archiver / No transactions to archive[/green]")
+                console.print(
+                    "[green]Aucune transaction à archiver / No transactions to archive[/green]"
+                )
                 console.print()
-                console.print(f"[dim]Toutes les transactions sont récentes (< {older_than} ans).[/dim]")
+                console.print(
+                    f"[dim]Toutes les transactions sont récentes (< {older_than} ans).[/dim]"
+                )
                 console.print(f"[dim]All transactions are recent (< {older_than} years).[/dim]")
             else:
                 console.print()
                 if dry_run:
-                    console.print("[bold yellow]Aperçu de l'archivage / Archive Preview:[/bold yellow]")
+                    console.print(
+                        "[bold yellow]Aperçu de l'archivage / Archive Preview:[/bold yellow]"
+                    )
                 else:
                     console.print("[bold green]Archivage terminé / Archive Completed:[/bold green]")
                 console.print()
 
-                console.print(f"[bold]Transactions archivées / Archived:[/bold] {data.get('archived_count', 0)}")
-                console.print(f"[bold]Réduction de taille / Size reduction:[/bold] ~{data.get('size_reduction_estimate_mb', 0)} MB")
+                console.print(
+                    f"[bold]Transactions archivées / Archived:[/bold] {data.get('archived_count', 0)}"
+                )
+                console.print(
+                    f"[bold]Réduction de taille / Size reduction:[/bold] ~{data.get('size_reduction_estimate_mb', 0)} MB"
+                )
                 console.print()
                 console.print("[dim]Plage de dates / Date range:[/dim]")
                 console.print(f"[dim]  De / From: {data.get('oldest_date', 'N/A')}[/dim]")
@@ -503,7 +553,9 @@ def archive_transactions(older_than: int, dry_run: bool, stats: bool, api_url: s
 
                 if dry_run:
                     console.print()
-                    console.print("[yellow]Exécutez sans --dry-run pour archiver réellement.[/yellow]")
+                    console.print(
+                        "[yellow]Exécutez sans --dry-run pour archiver réellement.[/yellow]"
+                    )
                     console.print("[yellow]Run without --dry-run to actually archive.[/yellow]")
 
             console.print()
@@ -539,15 +591,14 @@ def health_check(api_url: str):
 
             console.print()
             console.print(
-                Panel(
-                    "[bold green]Santé du système / System Health[/bold green]",
-                    style="green"
-                )
+                Panel("[bold green]Santé du système / System Health[/bold green]", style="green")
             )
             console.print()
 
             status_color = "green" if data.get("status") == "healthy" else "red"
-            console.print(f"[bold]Statut / Status:[/bold] [{status_color}]{data.get('status', 'unknown')}[/{status_color}]")
+            console.print(
+                f"[bold]Statut / Status:[/bold] [{status_color}]{data.get('status', 'unknown')}[/{status_color}]"
+            )
             console.print(f"[bold]Base de données / Database:[/bold] {data.get('database', 'N/A')}")
 
             counts = data.get("counts", {})
@@ -555,7 +606,9 @@ def health_check(api_url: str):
                 console.print()
                 console.print("[bold]Statistiques / Statistics:[/bold]")
                 console.print(f"  Emprunteurs / Borrowers: {counts.get('borrowers', 0)}")
-                console.print(f"  Notices bibliographiques / Bibliographic records: {counts.get('bibliographic_records', 0)}")
+                console.print(
+                    f"  Notices bibliographiques / Bibliographic records: {counts.get('bibliographic_records', 0)}"
+                )
                 console.print(f"  Exemplaires / Items: {counts.get('items', 0)}")
                 console.print(f"  Transactions / Circulations: {counts.get('circulations', 0)}")
 

@@ -23,6 +23,7 @@ from src.bcd_api.services import circulation_service
 # Shared test helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_class(db):
     cls = Class(name="CP-A", homeroom_teacher="Mme Dupont")
     db.add(cls)
@@ -71,8 +72,9 @@ def _make_item(db, item_id, biblio_id):
     return item
 
 
-def _make_completed_transaction(db, borrower_id_int, item_id_int, biblio_id_int,
-                                 checkout_date, due_date, return_date):
+def _make_completed_transaction(
+    db, borrower_id_int, item_id_int, biblio_id_int, checkout_date, due_date, return_date
+):
     """Create a completed (returned) transaction."""
     tx = CirculationTransaction(
         borrower_id=borrower_id_int,
@@ -87,8 +89,9 @@ def _make_completed_transaction(db, borrower_id_int, item_id_int, biblio_id_int,
     return tx
 
 
-def _make_active_transaction(db, borrower_id_int, item_id_int, biblio_id_int,
-                              checkout_date, due_date):
+def _make_active_transaction(
+    db, borrower_id_int, item_id_int, biblio_id_int, checkout_date, due_date
+):
     """Create an active (not returned) transaction."""
     tx = CirculationTransaction(
         borrower_id=borrower_id_int,
@@ -123,8 +126,12 @@ def _build_borrower_with_history(db, count, prefix="BH", biblio=None):
         due = (co_date + timedelta(days=14)).date()
         _make_completed_transaction(
             db,
-            borrower.id, item.id, biblio.id,
-            co_date, due, ret_date,
+            borrower.id,
+            item.id,
+            biblio.id,
+            co_date,
+            due,
+            ret_date,
         )
 
     db.commit()
@@ -149,8 +156,12 @@ def _build_item_with_history(db, count, prefix="IH", borrower=None):
         due = (co_date + timedelta(days=14)).date()
         _make_completed_transaction(
             db,
-            borrower.id, item.id, biblio.id,
-            co_date, due, ret_date,
+            borrower.id,
+            item.id,
+            biblio.id,
+            co_date,
+            due,
+            ret_date,
         )
 
     db.commit()
@@ -160,6 +171,7 @@ def _build_item_with_history(db, count, prefix="IH", borrower=None):
 # ---------------------------------------------------------------------------
 # US1: Borrower history pagination (T005)
 # ---------------------------------------------------------------------------
+
 
 class TestBorrowerHistoryPagination:
     """US1: Borrower can see complete paginated history."""
@@ -197,13 +209,21 @@ class TestBorrowerHistoryPagination:
         # One completed, one active
         co = datetime.now() - timedelta(days=20)
         _make_completed_transaction(
-            db_session, borrower.id, item.id, biblio.id,
-            co, (co + timedelta(days=14)).date(), co + timedelta(days=10)
+            db_session,
+            borrower.id,
+            item.id,
+            biblio.id,
+            co,
+            (co + timedelta(days=14)).date(),
+            co + timedelta(days=10),
         )
 
         item2 = _make_item(db_session, "BH3_ITEM2", biblio.id)
         _make_active_transaction(
-            db_session, borrower.id, item2.id, biblio.id,
+            db_session,
+            borrower.id,
+            item2.id,
+            biblio.id,
             datetime.now() - timedelta(days=2),
             date.today() + timedelta(days=12),
         )
@@ -255,6 +275,7 @@ class TestBorrowerHistoryPagination:
 # US2: Item history pagination (T010)
 # ---------------------------------------------------------------------------
 
+
 class TestItemHistoryPagination:
     """US2: Item circulation history is fully paginated."""
 
@@ -275,7 +296,10 @@ class TestItemHistoryPagination:
 
         # Add an active loan
         _make_active_transaction(
-            db_session, borrower.id, item.id, biblio.id,
+            db_session,
+            borrower.id,
+            item.id,
+            biblio.id,
             datetime.now() - timedelta(days=1),
             date.today() + timedelta(days=13),
         )
@@ -333,6 +357,7 @@ class TestItemHistoryPagination:
 # US3: Date range filtering (T015)
 # ---------------------------------------------------------------------------
 
+
 class TestHistoryDateFilters:
     """US3: Date filters narrow results on both history endpoints."""
 
@@ -357,8 +382,10 @@ class TestHistoryDateFilters:
         borrower, _, _ = self._make_dated_history(db_session, "BDF1")
 
         result = circulation_service.get_borrower_circulation_history(
-            db_session, borrower.borrower_id,
-            page=1, page_size=20,
+            db_session,
+            borrower.borrower_id,
+            page=1,
+            page_size=20,
             date_from=date(2024, 1, 1),
         )
 
@@ -371,8 +398,10 @@ class TestHistoryDateFilters:
         borrower, _, _ = self._make_dated_history(db_session, "BDF2")
 
         result = circulation_service.get_borrower_circulation_history(
-            db_session, borrower.borrower_id,
-            page=1, page_size=20,
+            db_session,
+            borrower.borrower_id,
+            page=1,
+            page_size=20,
             date_to=date(2024, 12, 31),
         )
 
@@ -385,8 +414,10 @@ class TestHistoryDateFilters:
         borrower, _, _ = self._make_dated_history(db_session, "BDF3")
 
         result = circulation_service.get_borrower_circulation_history(
-            db_session, borrower.borrower_id,
-            page=1, page_size=20,
+            db_session,
+            borrower.borrower_id,
+            page=1,
+            page_size=20,
             date_from=date(2024, 1, 1),
             date_to=date(2024, 12, 31),
         )
@@ -399,8 +430,10 @@ class TestHistoryDateFilters:
         borrower, _, _ = self._make_dated_history(db_session, "BDF4")
 
         result = circulation_service.get_borrower_circulation_history(
-            db_session, borrower.borrower_id,
-            page=1, page_size=20,
+            db_session,
+            borrower.borrower_id,
+            page=1,
+            page_size=20,
             date_from=date(2020, 1, 1),
             date_to=date(2020, 12, 31),
         )
@@ -420,13 +453,21 @@ class TestHistoryDateFilters:
             co = datetime(2023, 3 + i, 1, 10, 0)
             ret = co + timedelta(days=10)
             _make_completed_transaction(
-                db_session, borrower.id, item.id, biblio.id,
-                co, (co + timedelta(days=14)).date(), ret
+                db_session,
+                borrower.id,
+                item.id,
+                biblio.id,
+                co,
+                (co + timedelta(days=14)).date(),
+                ret,
             )
 
         # One recent active loan (today) — must not be filtered
         _make_active_transaction(
-            db_session, borrower.id, item.id, biblio.id,
+            db_session,
+            borrower.id,
+            item.id,
+            biblio.id,
             datetime.now() - timedelta(days=1),
             date.today() + timedelta(days=13),
         )
@@ -434,8 +475,10 @@ class TestHistoryDateFilters:
         db_session.commit()
 
         result = circulation_service.get_item_circulation_history(
-            db_session, item.item_id,
-            page=1, page_size=20,
+            db_session,
+            item.item_id,
+            page=1,
+            page_size=20,
             date_from=date(2025, 1, 1),
         )
 

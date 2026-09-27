@@ -1,6 +1,5 @@
 """Integration tests for class service."""
 
-
 from src.bcd_api.services import borrower_service, class_service
 
 
@@ -154,7 +153,7 @@ class TestClassWithBorrowersIntegration:
         )
 
         # Create borrower in class
-        borrower = borrower_service.create_borrower(
+        borrower_service.create_borrower(
             db=db_session,
             borrower_id="101",
             first_name="Amira",
@@ -274,11 +273,11 @@ class TestClassCompleteScenarios:
 
         # Create complete school structure
         grades = {
-            "CP": 3,      # 3 CP classes
-            "CE1": 3,     # 3 CE1 classes
-            "CE2": 2,     # 2 CE2 classes
-            "CM1": 2,     # 2 CM1 classes
-            "CM2": 2,     # 2 CM2 classes
+            "CP": 3,  # 3 CP classes
+            "CE1": 3,  # 3 CE1 classes
+            "CE2": 2,  # 2 CE2 classes
+            "CM1": 2,  # 2 CM1 classes
+            "CM2": 2,  # 2 CM2 classes
         }
 
         all_classes = []

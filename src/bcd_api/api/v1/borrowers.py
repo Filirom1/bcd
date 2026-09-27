@@ -5,26 +5,22 @@ Provides REST API endpoints for borrower management.
 """
 
 import logging
+from datetime import datetime
 from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
-
-from datetime import datetime
-
-from fastapi.responses import Response
-
 from ...core.deps import get_db
-from ...core.exceptions import NotFoundError, ValidationError
 from ...schemas.borrower import (
     BorrowerCreate,
-    BorrowerDetailed,
     BorrowerResponse,
     BorrowerUpdate,
 )
 from ...services import borrower_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/borrowers", tags=["borrowers"])
 
@@ -37,10 +33,7 @@ def _get_borrower_class_info(db: Session, borrower) -> Tuple[Optional[str], Opti
 
 
 @router.post("", response_model=BorrowerResponse, status_code=status.HTTP_201_CREATED)
-def create_borrower(
-    request: BorrowerCreate,
-    db: Session = Depends(get_db)
-):
+def create_borrower(request: BorrowerCreate, db: Session = Depends(get_db)):
     """
     Create a new borrower (student, teacher, or staff).
 
@@ -72,16 +65,21 @@ def list_borrower_importers():
     """List supported borrower import formats."""
     from bcd_converters import list_borrower_converters
 
-    importers = [{
-        "name": "bcd",
-        "description": "BCD CSV — native borrower format",
-        "filename": None,
-    }]
-    importers.extend({
-        "name": converter["name"],
-        "description": converter["description"],
-        "filename": None,
-    } for converter in list_borrower_converters())
+    importers = [
+        {
+            "name": "bcd",
+            "description": "BCD CSV — native borrower format",
+            "filename": None,
+        }
+    ]
+    importers.extend(
+        {
+            "name": converter["name"],
+            "description": converter["description"],
+            "filename": None,
+        }
+        for converter in list_borrower_converters()
+    )
     return {"importers": importers}
 
 
@@ -91,18 +89,14 @@ def get_borrowers_template():
     Download the CSV template for borrower import.
     """
     from fastapi.responses import FileResponse
+
     from ...core.portable import get_bundled_resource
 
     template_path = get_bundled_resource("data/templates/borrowers_bcd.csv")
     if not template_path or not template_path.exists():
-        raise HTTPException(
-            status_code=404,
-            detail="Borrowers CSV template file not found"
-        )
+        raise HTTPException(status_code=404, detail="Borrowers CSV template file not found")
     return FileResponse(
-        path=template_path,
-        media_type="text/csv",
-        filename="borrowers_template.csv"
+        path=template_path, media_type="text/csv", filename="borrowers_template.csv"
     )
 
 
@@ -110,7 +104,7 @@ def get_borrowers_template():
 async def import_borrowers_csv(
     file: UploadFile = File(..., description="CSV file with borrower data"),
     format: str = Query("bcd", description="Source format (bcd or a supported borrower converter)"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Import borrowers from CSV file with upsert behavior.
@@ -136,9 +130,9 @@ async def import_borrowers_csv(
 
         if format == "bcd":
             try:
-                csv_text = contents.decode('utf-8-sig')
+                csv_text = contents.decode("utf-8-sig")
             except UnicodeDecodeError:
-                csv_text = contents.decode('cp1252')
+                csv_text = contents.decode("cp1252")
         else:
             from bcd_converters import get_borrower_converter
 
@@ -161,7 +155,6 @@ async def import_borrowers_csv(
     except Exception as e:
         logger.exception("Borrower import failed")
         raise HTTPException(status_code=400, detail=f"Failed to import CSV: {str(e)}")
-
 
 
 @router.get("/export", response_class=Response)
@@ -194,21 +187,19 @@ def export_borrowers(db: Session = Depends(get_db)):
         csv_content, borrower_count = borrower_service.export_borrowers_to_csv(db)
 
         # Add UTF-8 BOM for Excel compatibility
-        csv_with_bom = '\ufeff' + csv_content
+        csv_with_bom = "\ufeff" + csv_content
 
         # Generate filename with timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f'borrowers_export_{timestamp}.csv'
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"borrowers_export_{timestamp}.csv"
 
         logger.info(f"Borrower export successful: {borrower_count} borrowers exported")
 
         # Return as downloadable file
         return Response(
-            content=csv_with_bom.encode('utf-8'),
-            media_type='text/csv; charset=utf-8',
-            headers={
-                'Content-Disposition': f'attachment; filename="{filename}"'
-            }
+            content=csv_with_bom.encode("utf-8"),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
 
     except HTTPException:
@@ -220,10 +211,7 @@ def export_borrowers(db: Session = Depends(get_db)):
     except Exception as e:
         # Database or other errors
         logger.exception("Unexpected error during borrower export")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Export failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
 
 
 @router.get("/next-available-id")
@@ -242,7 +230,7 @@ def get_next_available_id(db: Session = Depends(get_db)):
 def get_borrower(
     borrower_id: str,
     detail: bool = Query(False, description="Return detailed view with circulation history"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get detailed information about a borrower.
@@ -266,13 +254,19 @@ def list_borrowers(
     role: Optional[str] = Query(None, description="Filter by role (student/teacher/staff)"),
     active: Optional[bool] = Query(None, description="Filter by active status"),
     blocked: Optional[bool] = Query(None, description="Filter by blocked status (True = blocked)"),
-    has_overdue: Optional[bool] = Query(None, description="Filter by overdue status (True = has overdue items)"),
+    has_overdue: Optional[bool] = Query(
+        None, description="Filter by overdue status (True = has overdue items)"
+    ),
     # Support both parameter styles for pagination
     page: Optional[int] = Query(None, ge=1, description="Page number (1-indexed)"),
     page_size: Optional[int] = Query(None, ge=1, le=500, description="Items per page"),
-    limit: Optional[int] = Query(None, ge=1, le=500, description="Maximum results (alternative to page_size)"),
-    offset: Optional[int] = Query(None, ge=0, description="Pagination offset (alternative to page)"),
-    db: Session = Depends(get_db)
+    limit: Optional[int] = Query(
+        None, ge=1, le=500, description="Maximum results (alternative to page_size)"
+    ),
+    offset: Optional[int] = Query(
+        None, ge=0, description="Pagination offset (alternative to page)"
+    ),
+    db: Session = Depends(get_db),
 ):
     """
     List borrowers with optional filters.
@@ -292,11 +286,7 @@ def list_borrowers(
     - limit: Maximum number of results (alternative to page_size, 1-500, default 10)
     - offset: Pagination offset (alternative to page, default 0)
     """
-    from datetime import date
 
-    from sqlalchemy import and_
-
-    from ...models.circulation import CirculationTransaction
     from ...services.admin import settings as settings_service
 
     # Convert page/page_size to limit/offset if provided
@@ -337,15 +327,12 @@ def list_borrowers(
         "page": calculated_page,
         "page_size": actual_limit,
         "limit": actual_limit,
-        "offset": actual_offset
+        "offset": actual_offset,
     }
 
 
 @router.get("/{borrower_id}/edit")
-def get_borrower_edit_form(
-    borrower_id: str,
-    db: Session = Depends(get_db)
-):
+def get_borrower_edit_form(borrower_id: str, db: Session = Depends(get_db)):
     """
     Get borrower data for editing.
 
@@ -366,11 +353,7 @@ def get_borrower_edit_form(
 
 
 @router.patch("/{borrower_id}")
-def update_borrower(
-    borrower_id: str,
-    update_data: BorrowerUpdate,
-    db: Session = Depends(get_db)
-):
+def update_borrower(borrower_id: str, update_data: BorrowerUpdate, db: Session = Depends(get_db)):
     """
     Update borrower information.
 
@@ -401,10 +384,7 @@ def update_borrower(
 
 
 @router.post("/{borrower_id}/unblock", response_model=BorrowerResponse)
-def unblock_borrower(
-    borrower_id: str,
-    db: Session = Depends(get_db)
-):
+def unblock_borrower(borrower_id: str, db: Session = Depends(get_db)):
     """
     Unblock a borrower by setting active=True and clearing blocked_reason.
 
@@ -419,7 +399,7 @@ def unblock_borrower(
 def block_borrower(
     borrower_id: str,
     reason: str = Query(..., description="Reason for blocking"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Block a borrower by setting active=False and setting blocked_reason.
@@ -435,10 +415,7 @@ def block_borrower(
 
 
 @router.delete("/{borrower_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_borrower(
-    borrower_id: str,
-    db: Session = Depends(get_db)
-):
+def delete_borrower(borrower_id: str, db: Session = Depends(get_db)):
     """
     Delete a borrower and their circulation history.
 
@@ -451,5 +428,3 @@ def delete_borrower(
     # Reuse bulk delete with single ID
     borrower_service.bulk_delete_borrowers(db, [borrower_id])
     return None
-
-

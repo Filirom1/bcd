@@ -54,9 +54,7 @@ def renew(
 
         # Borrower ID is required
         if borrower_id is None:
-            console.print(
-                "[bold cyan]Scannez l'ID de l'emprunteur / Scan borrower ID[/bold cyan]"
-            )
+            console.print("[bold cyan]Scannez l'ID de l'emprunteur / Scan borrower ID[/bold cyan]")
             borrower_id = read_barcode_input("> ")
 
             if not borrower_id:
@@ -112,9 +110,7 @@ def _renew_interactive(client, borrower_id: str):
 
     # Select items to renew
     console.print()
-    console.print(
-        "[bold]Sélectionner les documents à renouveler / Select items to renew[/bold]"
-    )
+    console.print("[bold]Sélectionner les documents à renouveler / Select items to renew[/bold]")
     console.print("[dim](Entrez les numéros séparés par des virgules: 1,2,3)[/dim]")
     console.print("[dim](Enter numbers separated by commas: 1,2,3)[/dim]")
 
@@ -136,9 +132,7 @@ def _renew_interactive(client, borrower_id: str):
                 selected_item_ids.append(item_id)
 
     console.print()
-    console.print(
-        f"[bold]Documents sélectionnés / Selected items: {len(selected_item_ids)}[/bold]"
-    )
+    console.print(f"[bold]Documents sélectionnés / Selected items: {len(selected_item_ids)}[/bold]")
     console.print()
 
     if not confirm("Confirmer le renouvellement ? / Confirm renewal?", default=True):
@@ -166,9 +160,7 @@ def _renew_all(client, borrower_id: str):
     print_header("📖 BCD Library - Renouvellement / Renewal")
 
     console.print(f"Emprunteur / Borrower: {borrower_id}")
-    console.print(
-        "[bold]Renouveler tous les documents éligibles / Renew all eligible items[/bold]"
-    )
+    console.print("[bold]Renouveler tous les documents éligibles / Renew all eligible items[/bold]")
     console.print()
 
     # Call API with no item_ids = renew all eligible

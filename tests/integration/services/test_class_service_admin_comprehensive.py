@@ -160,7 +160,7 @@ class TestClassCRUDOperations:
     def test_update_class_duplicate_name(self, db_session):
         """Test that updating to duplicate name fails."""
         # Arrange
-        class_a = class_service.create_class(db=db_session, name="CP-A")
+        class_service.create_class(db=db_session, name="CP-A")
         class_b = class_service.create_class(db=db_session, name="CP-B")
 
         # Act & Assert

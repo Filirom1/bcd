@@ -4,6 +4,7 @@ import csv
 import logging
 from io import StringIO
 from typing import Optional
+
 from sqlalchemy.orm import Session, joinedload
 
 from ...models.item import Item
@@ -37,7 +38,11 @@ def get_items_csv(db: Session, item_ids: list[str], barcode_prefix: Optional[str
     # Determine prefix
     if barcode_prefix is None:
         settings = db.query(SystemSettings).first()
-        if settings and hasattr(settings, "item_barcode_prefix") and isinstance(settings.item_barcode_prefix, str):
+        if (
+            settings
+            and hasattr(settings, "item_barcode_prefix")
+            and isinstance(settings.item_barcode_prefix, str)
+        ):
             barcode_prefix = settings.item_barcode_prefix
         else:
             barcode_prefix = "."
@@ -47,17 +52,19 @@ def get_items_csv(db: Session, item_ids: list[str], barcode_prefix: Optional[str
     writer = csv.writer(output)
 
     # Write header (FR-036 columns)
-    writer.writerow([
-        'barcode',
-        'title',
-        'author',
-        'call_number',
-        'location',
-        'status',
-        'condition',
-        'last_loan_date',
-        'last_inventory_date'
-    ])
+    writer.writerow(
+        [
+            "barcode",
+            "title",
+            "author",
+            "call_number",
+            "location",
+            "status",
+            "condition",
+            "last_loan_date",
+            "last_inventory_date",
+        ]
+    )
 
     # Write rows
     for item in items:

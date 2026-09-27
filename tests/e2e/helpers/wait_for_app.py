@@ -3,6 +3,7 @@ Helper functions for waiting for Vue app to be ready in E2E tests.
 
 Uses window.__BCD_APP__ global state for reliable app initialization detection.
 """
+
 from playwright.sync_api import Page
 
 
@@ -21,15 +22,11 @@ def wait_for_vue_app(page: Page, timeout: int = 10000):
         TimeoutError: If app doesn't initialize within timeout
     """
     # Wait for global app state to exist
-    page.wait_for_function(
-        "window.__BCD_APP__ !== undefined",
-        timeout=timeout
-    )
+    page.wait_for_function("window.__BCD_APP__ !== undefined", timeout=timeout)
 
     # Wait for app to be ready OR error to occur
     page.wait_for_function(
-        "window.__BCD_APP__.ready === true || window.__BCD_APP__.error !== null",
-        timeout=timeout
+        "window.__BCD_APP__.ready === true || window.__BCD_APP__.error !== null", timeout=timeout
     )
 
     # Check if initialization failed

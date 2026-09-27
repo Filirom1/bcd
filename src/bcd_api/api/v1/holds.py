@@ -128,9 +128,7 @@ def get_holds_for_title(
     Returns:
         List of holds ordered by queue position
     """
-    holds = hold_queries.get_holds_for_bibliographic_record(
-        db, biblio_id, active_only=active_only
-    )
+    holds = hold_queries.get_holds_for_bibliographic_record(db, biblio_id, active_only=active_only)
     return holds
 
 

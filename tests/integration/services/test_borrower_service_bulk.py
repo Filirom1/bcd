@@ -57,9 +57,7 @@ class TestBulkChangeClass:
 
         # Act: Bulk change class from CP-A to CE1-A
         result = borrower_service.bulk_change_class(
-            db=db_session,
-            borrower_ids=borrower_ids,
-            new_class_id=ce1_a.id
+            db=db_session, borrower_ids=borrower_ids, new_class_id=ce1_a.id
         )
 
         # Assert: Verify all borrowers moved
@@ -95,9 +93,7 @@ class TestBulkChangeClass:
 
         # Act: Unassign all from class (set to None)
         result = borrower_service.bulk_change_class(
-            db=db_session,
-            borrower_ids=borrower_ids,
-            new_class_id=None
+            db=db_session, borrower_ids=borrower_ids, new_class_id=None
         )
 
         # Assert: All borrowers unassigned
@@ -128,14 +124,14 @@ class TestBulkChangeClass:
         # Act & Assert: Try to change to non-existent class
         with pytest.raises(ClassNotFoundException):
             borrower_service.bulk_change_class(
-                db=db_session,
-                borrower_ids=borrower_ids,
-                new_class_id=99999  # Non-existent class
+                db=db_session, borrower_ids=borrower_ids, new_class_id=99999  # Non-existent class
             )
 
         # Verify NO changes were made (transaction rolled back)
         for borrower_id in borrower_ids:
-            borrower = db_session.query(Borrower).filter(Borrower.borrower_id == borrower_id).first()
+            borrower = (
+                db_session.query(Borrower).filter(Borrower.borrower_id == borrower_id).first()
+            )
             assert borrower is not None
             assert borrower.class_id == cp_a.id  # Still in original class
 
@@ -160,11 +156,13 @@ class TestBulkChangeClass:
             borrower_service.bulk_change_class(
                 db=db_session,
                 borrower_ids=["101", "999"],  # 999 doesn't exist
-                new_class_id=ce1_a.id
+                new_class_id=ce1_a.id,
             )
 
         # Verify NO changes were made (re-fetch from db)
-        borrower_refreshed = db_session.query(Borrower).filter(Borrower.borrower_id == "101").first()
+        borrower_refreshed = (
+            db_session.query(Borrower).filter(Borrower.borrower_id == "101").first()
+        )
         assert borrower_refreshed is not None
         assert borrower_refreshed.class_id == original_class_id  # Unchanged
 
@@ -195,9 +193,7 @@ class TestBulkChangeClass:
 
         # Act: Bulk change class for both
         result = borrower_service.bulk_change_class(
-            db=db_session,
-            borrower_ids=["101", "201"],
-            new_class_id=cp_a.id
+            db=db_session, borrower_ids=["101", "201"], new_class_id=cp_a.id
         )
 
         # Assert: Both assigned but only student affects count
@@ -227,9 +223,7 @@ class TestBulkChangeRole:
 
         # Act: Change all to staff
         result = borrower_service.bulk_change_role(
-            db=db_session,
-            borrower_ids=borrower_ids,
-            new_role="staff"
+            db=db_session, borrower_ids=borrower_ids, new_role="staff"
         )
 
         # Assert: All roles changed
@@ -244,7 +238,7 @@ class TestBulkChangeRole:
     def test_bulk_change_role_invalid_role_raises_error(self, db_session):
         """Test that invalid role value raises ValidationError."""
         # Arrange
-        borrower = borrower_service.create_borrower(
+        borrower_service.create_borrower(
             db=db_session,
             borrower_id="101",
             first_name="Student",
@@ -255,13 +249,13 @@ class TestBulkChangeRole:
         # Act & Assert: Invalid role
         with pytest.raises(ValidationError):
             borrower_service.bulk_change_role(
-                db=db_session,
-                borrower_ids=["101"],
-                new_role="invalid_role"
+                db=db_session, borrower_ids=["101"], new_role="invalid_role"
             )
 
         # Verify no changes (re-fetch from db)
-        borrower_refreshed = db_session.query(Borrower).filter(Borrower.borrower_id == "101").first()
+        borrower_refreshed = (
+            db_session.query(Borrower).filter(Borrower.borrower_id == "101").first()
+        )
         assert borrower_refreshed is not None
         assert borrower_refreshed.role == "student"
 
@@ -285,9 +279,7 @@ class TestBulkChangeRole:
 
         # Act: Change to teacher
         result = borrower_service.bulk_change_role(
-            db=db_session,
-            borrower_ids=["101"],
-            new_role="teacher"
+            db=db_session, borrower_ids=["101"], new_role="teacher"
         )
 
         # Assert: Role changed, class maintained, count updated
@@ -299,7 +291,7 @@ class TestBulkChangeRole:
     def test_bulk_change_role_invalid_borrower_rolls_back(self, db_session):
         """Test that one invalid borrower causes rollback of entire operation."""
         # Arrange
-        borrower = borrower_service.create_borrower(
+        borrower_service.create_borrower(
             db=db_session,
             borrower_id="101",
             first_name="Student",
@@ -310,13 +302,13 @@ class TestBulkChangeRole:
         # Act & Assert
         with pytest.raises(BorrowerNotFoundException):
             borrower_service.bulk_change_role(
-                db=db_session,
-                borrower_ids=["101", "999"],  # 999 doesn't exist
-                new_role="staff"
+                db=db_session, borrower_ids=["101", "999"], new_role="staff"  # 999 doesn't exist
             )
 
         # Verify no changes (re-fetch from db)
-        borrower_refreshed = db_session.query(Borrower).filter(Borrower.borrower_id == "101").first()
+        borrower_refreshed = (
+            db_session.query(Borrower).filter(Borrower.borrower_id == "101").first()
+        )
         assert borrower_refreshed is not None
         assert borrower_refreshed.role == "student"
 
@@ -339,10 +331,7 @@ class TestBulkDeleteBorrowers:
             borrower_ids.append(borrower.borrower_id)
 
         # Act: Delete all
-        result = borrower_service.bulk_delete_borrowers(
-            db=db_session,
-            borrower_ids=borrower_ids
-        )
+        result = borrower_service.bulk_delete_borrowers(db=db_session, borrower_ids=borrower_ids)
 
         # Assert: All deleted
         assert result["total_count"] == 3
@@ -403,10 +392,7 @@ class TestBulkDeleteBorrowers:
         assert db_session.query(CirculationTransaction).filter_by(id=loan_id).first() is not None
 
         # Act: Delete borrower (allowed because no active loans)
-        result = borrower_service.bulk_delete_borrowers(
-            db=db_session,
-            borrower_ids=["101"]
-        )
+        result = borrower_service.bulk_delete_borrowers(db=db_session, borrower_ids=["101"])
 
         # Assert: Borrower deleted
         assert result["successful_count"] == 1
@@ -438,10 +424,7 @@ class TestBulkDeleteBorrowers:
         db_session.refresh(cp_a)
 
         # Act: Delete students
-        result = borrower_service.bulk_delete_borrowers(
-            db=db_session,
-            borrower_ids=borrower_ids
-        )
+        result = borrower_service.bulk_delete_borrowers(db=db_session, borrower_ids=borrower_ids)
 
         # Assert: All deleted
         assert result["successful_count"] == 3
@@ -466,34 +449,35 @@ class TestBulkDeleteBorrowers:
         # Act & Assert: Include invalid ID
         with pytest.raises(BorrowerNotFoundException):
             borrower_service.bulk_delete_borrowers(
-                db=db_session,
-                borrower_ids=borrower_ids + ["999"]  # 999 doesn't exist
+                db=db_session, borrower_ids=borrower_ids + ["999"]  # 999 doesn't exist
             )
 
         # Verify NO deletions occurred (rollback)
         # After exception, all borrowers should still exist
         for borrower_id in borrower_ids:
-            borrower = db_session.query(Borrower).filter(Borrower.borrower_id == borrower_id).first()
+            borrower = (
+                db_session.query(Borrower).filter(Borrower.borrower_id == borrower_id).first()
+            )
             assert borrower is not None  # Still exists
 
     def test_bulk_delete_borrowers_mixed_roles(self, db_session):
         """Test bulk delete with mixed borrower roles."""
         # Arrange: Create borrowers with different roles
-        student = borrower_service.create_borrower(
+        borrower_service.create_borrower(
             db=db_session,
             borrower_id="101",
             first_name="Student",
             last_name="ONE",
             role="student",
         )
-        teacher = borrower_service.create_borrower(
+        borrower_service.create_borrower(
             db=db_session,
             borrower_id="201",
             first_name="Teacher",
             last_name="ONE",
             role="teacher",
         )
-        staff = borrower_service.create_borrower(
+        borrower_service.create_borrower(
             db=db_session,
             borrower_id="301",
             first_name="Staff",
@@ -503,8 +487,7 @@ class TestBulkDeleteBorrowers:
 
         # Act: Delete all
         result = borrower_service.bulk_delete_borrowers(
-            db=db_session,
-            borrower_ids=["101", "201", "301"]
+            db=db_session, borrower_ids=["101", "201", "301"]
         )
 
         # Assert: All deleted
@@ -516,10 +499,7 @@ class TestBulkDeleteBorrowers:
     def test_bulk_delete_empty_list(self, db_session):
         """Test that empty borrower ID list returns zero successful."""
         # Act
-        result = borrower_service.bulk_delete_borrowers(
-            db=db_session,
-            borrower_ids=[]
-        )
+        result = borrower_service.bulk_delete_borrowers(db=db_session, borrower_ids=[])
 
         # Assert
         assert result["total_count"] == 0
@@ -555,15 +535,17 @@ class TestBulkOperationsAtomicity:
         # Act & Assert: Operation fails
         with pytest.raises(BorrowerNotFoundException):
             borrower_service.bulk_change_class(
-                db=db_session,
-                borrower_ids=borrower_ids,
-                new_class_id=None  # Try to unassign all
+                db=db_session, borrower_ids=borrower_ids, new_class_id=None  # Try to unassign all
             )
 
         # Verify ALL borrowers still in original class (nothing changed)
         # Re-fetch all borrowers from db
         for borrower in borrowers:
-            borrower_refreshed = db_session.query(Borrower).filter(Borrower.borrower_id == borrower.borrower_id).first()
+            borrower_refreshed = (
+                db_session.query(Borrower)
+                .filter(Borrower.borrower_id == borrower.borrower_id)
+                .first()
+            )
             assert borrower_refreshed is not None
             assert borrower_refreshed.class_id == cp_a.id
 
@@ -591,14 +573,16 @@ class TestBulkOperationsAtomicity:
         # Act & Assert
         with pytest.raises(BorrowerNotFoundException):
             borrower_service.bulk_change_role(
-                db=db_session,
-                borrower_ids=borrower_ids,
-                new_role="staff"
+                db=db_session, borrower_ids=borrower_ids, new_role="staff"
             )
 
         # Verify ALL still students (nothing changed)
         for borrower in borrowers:
-            borrower_refreshed = db_session.query(Borrower).filter(Borrower.borrower_id == borrower.borrower_id).first()
+            borrower_refreshed = (
+                db_session.query(Borrower)
+                .filter(Borrower.borrower_id == borrower.borrower_id)
+                .first()
+            )
             assert borrower_refreshed is not None
             assert borrower_refreshed.role == "student"
 
@@ -621,15 +605,16 @@ class TestBulkOperationsAtomicity:
 
         # Act & Assert
         with pytest.raises(BorrowerNotFoundException):
-            borrower_service.bulk_delete_borrowers(
-                db=db_session,
-                borrower_ids=borrower_ids
-            )
+            borrower_service.bulk_delete_borrowers(db=db_session, borrower_ids=borrower_ids)
 
         # Verify ALL still exist (nothing deleted)
         for borrower in borrowers:
             # Verify can still be retrieved
-            retrieved = db_session.query(Borrower).filter(Borrower.borrower_id == borrower.borrower_id).first()
+            retrieved = (
+                db_session.query(Borrower)
+                .filter(Borrower.borrower_id == borrower.borrower_id)
+                .first()
+            )
             assert retrieved is not None
             assert retrieved.id == borrower.id
 
@@ -672,17 +657,14 @@ class TestBulkOperationsAtomicity:
             checkout_date=datetime.now(),
             due_date=(datetime.now() + timedelta(days=14)).date(),
             status="active",
-            return_date=None  # Active loan!
+            return_date=None,  # Active loan!
         )
         db_session.add(loan)
         db_session.commit()
 
         # Act & Assert: Deletion should raise exception
         with pytest.raises(BorrowerHasActiveLoansException) as exc_info:
-            borrower_service.bulk_delete_borrowers(
-                db=db_session,
-                borrower_ids=["101"]
-            )
+            borrower_service.bulk_delete_borrowers(db=db_session, borrower_ids=["101"])
 
         # Verify exception details
         assert exc_info.value.error_code == "BORROWER_HAS_ACTIVE_LOANS"
@@ -731,17 +713,14 @@ class TestBulkOperationsAtomicity:
             checkout_date=datetime.now() - timedelta(days=30),
             due_date=(datetime.now() - timedelta(days=16)).date(),
             return_date=datetime.now() - timedelta(days=14),  # Already returned!
-            status="returned"
+            status="returned",
         )
         db_session.add(loan)
         db_session.commit()
         loan_id = loan.id
 
         # Act: Delete borrower
-        result = borrower_service.bulk_delete_borrowers(
-            db=db_session,
-            borrower_ids=["102"]
-        )
+        result = borrower_service.bulk_delete_borrowers(db=db_session, borrower_ids=["102"])
 
         # Assert: Deletion successful
         assert result["successful_count"] == 1

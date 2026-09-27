@@ -49,14 +49,17 @@ try:
     from stopwordsiso import languages as _stopword_languages
     from stopwordsiso import stopwords as _language_stopwords
 except ImportError:  # Keep source checkouts usable before optional dependencies install.
-    _stopword_languages = lambda: ()
-    _language_stopwords = lambda _language: ()
+
+    def _stopword_languages():
+        return ()
+
+    def _language_stopwords(_language):
+        return ()
+
 
 STOP_WORDS = {
     "".join(
-        char
-        for char in unicodedata.normalize("NFD", word)
-        if unicodedata.category(char) != "Mn"
+        char for char in unicodedata.normalize("NFD", word) if unicodedata.category(char) != "Mn"
     ).casefold()
     for language in _stopword_languages()
     for word in _language_stopwords(language)
@@ -125,9 +128,7 @@ def _feature_counts(
 
     for field in FIELDS:
         value = _strip_accents(values[field])
-        tokens = [
-            token for token in _WORD_SPLIT.split(value) if token and token not in STOP_WORDS
-        ]
+        tokens = [token for token in _WORD_SPLIT.split(value) if token and token not in STOP_WORDS]
 
         for index, token in enumerate(tokens):
             add(f"{field}:w:{token}")

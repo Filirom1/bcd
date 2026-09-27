@@ -1,7 +1,7 @@
 """Queries module for the borrower domain."""
 
 import unicodedata
-from datetime import date, datetime
+from datetime import date
 from typing import Any, List, Optional, Tuple
 
 from sqlalchemy import and_, func
@@ -11,11 +11,12 @@ from src.bcd_api.core.exceptions import BorrowerNotFoundException
 from src.bcd_api.models.borrower import Borrower
 from src.bcd_api.models.circulation import CirculationTransaction
 from src.bcd_api.models.class_model import Class as ClassModel
+
 from ._enrichment import (
     Counts,
+    apply_borrower_enrichment,
     circulation_counts_by_borrower,
     class_details_by_id,
-    apply_borrower_enrichment,
 )
 
 
@@ -114,11 +115,13 @@ def list_borrowers(
     # Filter by overdue status
     if has_overdue is not None and has_overdue:
         # Join with CirculationTransaction to find borrowers with overdue items
-        query = query.join(CirculationTransaction, Borrower.id == CirculationTransaction.borrower_id)
+        query = query.join(
+            CirculationTransaction, Borrower.id == CirculationTransaction.borrower_id
+        )
         query = query.filter(
             and_(
                 CirculationTransaction.return_date.is_(None),
-                CirculationTransaction.due_date < date.today()
+                CirculationTransaction.due_date < date.today(),
             )
         ).distinct()
 
@@ -130,14 +133,15 @@ def list_borrowers(
     if search:
         normalized_search = _normalize(search)
         results = [
-            b for b in query.all()
+            b
+            for b in query.all()
             if normalized_search in _normalize(b.first_name)
             or normalized_search in _normalize(b.last_name)
             or normalized_search in _normalize(b.full_name)
             or normalized_search in b.borrower_id.lower()
         ]
         total = len(results)
-        return results[offset:offset + limit], total
+        return results[offset : offset + limit], total
 
     # Get total count before pagination
     total = query.count()
@@ -210,10 +214,12 @@ def enrich_borrowers(
         return borrowers
 
     from src.bcd_api.services import settings_service
+
     if settings is None:
         settings = settings_service.get_settings(db)
 
     from src.bcd_api.services.circulation.policy import CirculationPolicy
+
     policy = CirculationPolicy.from_settings(settings)
     settings_warning = settings.loan_limit_warning
 
@@ -248,9 +254,8 @@ def get_detailed_borrower(
     """
     Get highly detailed borrower representation, completely enriched and mapped.
     """
-    from src.bcd_api.services import settings_service
     from src.bcd_api.schemas.borrower import BorrowerDetailed
-    from src.bcd_api.services import circulation_service
+    from src.bcd_api.services import circulation_service, settings_service
 
     details = get_borrower_details(db, borrower_id)
     borrower = details["borrower"]
@@ -260,23 +265,24 @@ def get_detailed_borrower(
     enrich_borrower(db, borrower, settings)
 
     borrower_dict = borrower.__dict__.copy()
-    borrower_dict.update({
-        "barcode": borrower.barcode,  # Computed property not in __dict__
-        "current_loans_count": details["current_loans_count"],
-        "total_checkouts": details["total_checkouts"],
-        "overdue_count": details["overdue_count"],
-        "loan_limit": borrower.loan_limit,
-        "loan_limit_warning": borrower.loan_limit_warning,
-        "class_name": borrower.class_name,
-        "homeroom_teacher": borrower.homeroom_teacher,
-    })
+    borrower_dict.update(
+        {
+            "barcode": borrower.barcode,  # Computed property not in __dict__
+            "current_loans_count": details["current_loans_count"],
+            "total_checkouts": details["total_checkouts"],
+            "overdue_count": details["overdue_count"],
+            "loan_limit": borrower.loan_limit,
+            "loan_limit_warning": borrower.loan_limit_warning,
+            "class_name": borrower.class_name,
+            "homeroom_teacher": borrower.homeroom_teacher,
+        }
+    )
 
     borrower_detailed = BorrowerDetailed(**borrower_dict)
-    res = borrower_detailed.model_dump(mode='json')
+    res = borrower_detailed.model_dump(mode="json")
 
     if include_loans:
         current_loans = circulation_service.get_borrower_current_loans(db, borrower_id)
         res["current_loans"] = current_loans
 
     return res
-

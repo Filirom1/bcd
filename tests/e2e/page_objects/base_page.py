@@ -6,7 +6,6 @@ Provides common functionality for all page objects.
 
 from playwright.sync_api import Page
 
-
 APP_READY_TIMEOUT = 30_000
 
 
@@ -28,9 +27,7 @@ def wait_for_app_ready(page: Page, timeout: int = APP_READY_TIMEOUT):
     )
     if state and state.get("error"):
         error = state["error"]
-        raise AssertionError(
-            f"Vue application failed to initialize: {error.get('message', error)}"
-        )
+        raise AssertionError(f"Vue application failed to initialize: {error.get('message', error)}")
 
     page.locator(".sidebar").wait_for(state="visible", timeout=timeout)
 
@@ -70,7 +67,7 @@ class BasePage:
 
     def wait_for_selector(self, selector: str, timeout=5000):
         """Wait for element to be visible."""
-        self.page.wait_for_selector(selector, state='visible', timeout=timeout)
+        self.page.wait_for_selector(selector, state="visible", timeout=timeout)
 
     def click(self, selector: str):
         """Click an element."""
@@ -90,11 +87,11 @@ class BasePage:
 
     def wait_for_notification(self, timeout=5000):
         """Wait for notification toast to appear."""
-        self.page.wait_for_selector('.toast, .alert', timeout=timeout)
+        self.page.wait_for_selector(".toast, .alert", timeout=timeout)
 
     def get_notification_text(self) -> str:
         """Get notification message text."""
-        return self.page.locator('.toast, .alert').first.inner_text()
+        return self.page.locator(".toast, .alert").first.inner_text()
 
     def switch_language(self, lang: str):
         """Switch language (FR or EN)."""

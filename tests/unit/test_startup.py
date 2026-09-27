@@ -1,8 +1,8 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
 import pytest
 
 from src.bcd_api.core import startup
-from src.bcd_api import main
 
 
 @pytest.mark.asyncio
@@ -10,10 +10,15 @@ async def test_init_system_settings_caches_library_code(monkeypatch):
     db_mock = MagicMock()
     monkeypatch.setattr("src.bcd_api.core.database.SessionLocal", lambda: db_mock)
     settings_mock = MagicMock(library_code="STARTUP_TEST")
-    monkeypatch.setattr("src.bcd_api.services.settings_service.get_settings", lambda db: settings_mock)
-    monkeypatch.setattr("src.bcd_api.services.settings_service.initialize_default_settings", lambda db: None)
+    monkeypatch.setattr(
+        "src.bcd_api.services.settings_service.get_settings", lambda db: settings_mock
+    )
+    monkeypatch.setattr(
+        "src.bcd_api.services.settings_service.initialize_default_settings", lambda db: None
+    )
 
     from src.bcd_api.core.spa import get_library_code
+
     code = await startup.init_system_settings()
     assert code == "STARTUP_TEST"
     assert get_library_code() == "STARTUP_TEST"
@@ -58,10 +63,10 @@ async def test_auto_backup_created_when_old(monkeypatch):
 def test_expire_ready_holds_non_fatal_on_error(monkeypatch):
     db_mock = MagicMock()
     monkeypatch.setattr("src.bcd_api.core.database.SessionLocal", lambda: db_mock)
-    
+
     def raise_err(*args, **kwargs):
         raise Exception("Database down")
-        
+
     monkeypatch.setattr("src.bcd_api.services.holds.commands.expire_ready_holds", raise_err)
 
     # Should not raise an exception

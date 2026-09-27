@@ -1,7 +1,8 @@
 from pathlib import Path
+
 import pytest
 
-from src.bcd_api.core.spa import update_library_code, serve_spa, _state
+from src.bcd_api.core.spa import _state, serve_spa, update_library_code
 from src.bcd_api.core.web_assets import WebAssetsConfig
 
 

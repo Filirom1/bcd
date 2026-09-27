@@ -4,8 +4,8 @@ Tests for collection inventory operations (récolement/weeding).
 All tests use AAA pattern: Arrange-Act-Assert.
 """
 
-from datetime import datetime, timedelta, timezone
 import json
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy.orm import Session
@@ -28,7 +28,7 @@ def test_mark_item_inventoried_success(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
@@ -39,7 +39,7 @@ def test_mark_item_inventoried_success(db_session: Session):
         status="available",
         condition="good",
         loanable=True,
-        last_inventoried_at=None
+        last_inventoried_at=None,
     )
     db_session.add(item)
     db_session.commit()
@@ -100,7 +100,7 @@ def test_search_with_never_inventoried_filter(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
@@ -112,7 +112,7 @@ def test_search_with_never_inventoried_filter(db_session: Session):
         status="available",
         condition="good",
         loanable=True,
-        last_inventoried_at=None
+        last_inventoried_at=None,
     )
     item2 = Item(
         item_id="0002",
@@ -120,7 +120,7 @@ def test_search_with_never_inventoried_filter(db_session: Session):
         status="available",
         condition="good",
         loanable=True,
-        last_inventoried_at=None
+        last_inventoried_at=None,
     )
     item3 = Item(
         item_id="0003",
@@ -128,7 +128,7 @@ def test_search_with_never_inventoried_filter(db_session: Session):
         status="available",
         condition="good",
         loanable=True,
-        last_inventoried_at=datetime.now(timezone.utc)
+        last_inventoried_at=datetime.now(timezone.utc),
     )
     db_session.add_all([item1, item2, item3])
     db_session.commit()
@@ -154,7 +154,7 @@ def test_search_with_loanable_filter(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
@@ -201,15 +201,33 @@ def test_search_with_rotation_filter(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
 
     # Create 3 items
-    item1 = Item(item_id="0001", bibliographic_record_id=record.id, status="available", condition="good", loanable=True)
-    item2 = Item(item_id="0002", bibliographic_record_id=record.id, status="available", condition="good", loanable=True)
-    item3 = Item(item_id="0003", bibliographic_record_id=record.id, status="available", condition="good", loanable=True)
+    item1 = Item(
+        item_id="0001",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=True,
+    )
+    item2 = Item(
+        item_id="0002",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=True,
+    )
+    item3 = Item(
+        item_id="0003",
+        bibliographic_record_id=record.id,
+        status="available",
+        condition="good",
+        loanable=True,
+    )
     db_session.add_all([item1, item2, item3])
     db_session.flush()
 
@@ -220,7 +238,7 @@ def test_search_with_rotation_filter(db_session: Session):
         last_name="Student",
         full_name="Test Student",
         role="student",
-        active=True
+        active=True,
     )
     db_session.add(borrower)
     db_session.flush()
@@ -235,7 +253,7 @@ def test_search_with_rotation_filter(db_session: Session):
         item_id=item2.id,
         bibliographic_record_id=record.id,
         checkout_date=since_date + timedelta(days=30),
-        due_date=since_date + timedelta(days=44)
+        due_date=since_date + timedelta(days=44),
     )
     # Item 3: 3 borrows (high circulation)
     tx2 = CirculationTransaction(
@@ -243,31 +261,27 @@ def test_search_with_rotation_filter(db_session: Session):
         item_id=item3.id,
         bibliographic_record_id=record.id,
         checkout_date=since_date + timedelta(days=10),
-        due_date=since_date + timedelta(days=24)
+        due_date=since_date + timedelta(days=24),
     )
     tx3 = CirculationTransaction(
         borrower_id=borrower.id,
         item_id=item3.id,
         bibliographic_record_id=record.id,
         checkout_date=since_date + timedelta(days=60),
-        due_date=since_date + timedelta(days=74)
+        due_date=since_date + timedelta(days=74),
     )
     tx4 = CirculationTransaction(
         borrower_id=borrower.id,
         item_id=item3.id,
         bibliographic_record_id=record.id,
         checkout_date=since_date + timedelta(days=90),
-        due_date=since_date + timedelta(days=104)
+        due_date=since_date + timedelta(days=104),
     )
     db_session.add_all([tx1, tx2, tx3, tx4])
     db_session.commit()
 
     # ACT - search for items with max_borrows <= 1 in the period
-    result = inventory_service.search_items(
-        db_session,
-        max_borrows=1,
-        since_date=since_date.date()
-    )
+    result = inventory_service.search_items(db_session, max_borrows=1, since_date=since_date.date())
 
     # ASSERT
     assert result["total_count"] == 2
@@ -304,7 +318,7 @@ def test_search_results_capped_at_200(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
@@ -316,7 +330,7 @@ def test_search_results_capped_at_200(db_session: Session):
             bibliographic_record_id=record.id,
             status="available",
             condition="good",
-            loanable=True
+            loanable=True,
         )
         for i in range(1, 251)
     ]
@@ -353,7 +367,7 @@ def test_search_with_no_limit_bypasses_cap(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
@@ -365,7 +379,7 @@ def test_search_with_no_limit_bypasses_cap(db_session: Session):
             bibliographic_record_id=record.id,
             status="available",
             condition="good",
-            loanable=True
+            loanable=True,
         )
         for i in range(1, 251)
     ]
@@ -389,10 +403,12 @@ def test_bulk_auto_generates_call_numbers_per_selected_copy(db_session: Session)
     if settings is None:
         settings = SystemSettings(id=1)
         db_session.add(settings)
-    settings.catalog_call_number_rules = json.dumps([
-        {"shelf_location": "Romans", "pattern": "R {AUT3}"},
-        {"pattern": "{AUT3}"},
-    ])
+    settings.catalog_call_number_rules = json.dumps(
+        [
+            {"shelf_location": "Romans", "pattern": "R {AUT3}"},
+            {"pattern": "{AUT3}"},
+        ]
+    )
     record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
@@ -436,7 +452,7 @@ def test_bulk_mark_inventoried(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
@@ -448,7 +464,7 @@ def test_bulk_mark_inventoried(db_session: Session):
         status="available",
         condition="good",
         loanable=True,
-        last_inventoried_at=None
+        last_inventoried_at=None,
     )
     item2 = Item(
         item_id="0002",
@@ -456,7 +472,7 @@ def test_bulk_mark_inventoried(db_session: Session):
         status="available",
         condition="good",
         loanable=True,
-        last_inventoried_at=None
+        last_inventoried_at=None,
     )
     item3 = Item(
         item_id="0003",
@@ -464,7 +480,7 @@ def test_bulk_mark_inventoried(db_session: Session):
         status="available",
         condition="good",
         loanable=True,
-        last_inventoried_at=None
+        last_inventoried_at=None,
     )
     db_session.add_all([item1, item2, item3])
     db_session.commit()
@@ -492,8 +508,8 @@ def test_bulk_mark_inventoried(db_session: Session):
 
 def test_bulk_update_items(db_session: Session):
     """Test bulk update of items and their records."""
-    from src.bcd_api.models.circulation import CirculationTransaction
     from src.bcd_api.models.borrower import Borrower
+    from src.bcd_api.models.circulation import CirculationTransaction
 
     # ARRANGE
     record = BibliographicRecord(
@@ -502,7 +518,7 @@ def test_bulk_update_items(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        target_audience="child"
+        target_audience="child",
     )
     db_session.add(record)
     db_session.flush()
@@ -530,7 +546,7 @@ def test_bulk_update_items(db_session: Session):
         last_name="Martin",
         full_name="Bob Martin",
         role="student",
-        active=True
+        active=True,
     )
     db_session.add(borrower)
     db_session.flush()
@@ -541,7 +557,7 @@ def test_bulk_update_items(db_session: Session):
         bibliographic_record_id=record.id,
         checkout_date=datetime.now(timezone.utc),
         due_date=datetime.now(timezone.utc) + timedelta(days=14),
-        return_date=None
+        return_date=None,
     )
     db_session.add(loan)
     db_session.commit()
@@ -551,14 +567,14 @@ def test_bulk_update_items(db_session: Session):
         db_session,
         item_ids=["0001", "0002"],
         item_updates={"status": "in_repair", "condition": "damaged"},
-        record_updates={"target_audience": "youth", "medium_type": "Livre"}
+        record_updates={"target_audience": "youth", "medium_type": "Livre"},
     )
 
     # ASSERT
     assert result["items_updated"] == 2
     assert result["items_skipped_on_loan"] == 1
     assert result["records_updated"] == 1
-    
+
     db_session.refresh(item1)
     db_session.refresh(item2)
     db_session.refresh(record)
@@ -578,9 +594,9 @@ def test_bulk_update_items(db_session: Session):
 
 def test_delete_items_bulk_and_orphans(db_session: Session):
     """Test bulk deletion of items, skipping on_loan, cancelling holds, and orphan cleanup."""
-    from src.bcd_api.models.hold import Hold
     from src.bcd_api.models.borrower import Borrower
     from src.bcd_api.models.circulation import CirculationTransaction
+    from src.bcd_api.models.hold import Hold
 
     # ARRANGE
     record1 = BibliographicRecord(
@@ -589,7 +605,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
-        total_items=2
+        total_items=2,
     )
     record2 = BibliographicRecord(
         isbn="978-2203301160",
@@ -597,7 +613,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
         authors='["Hergé"]',
         publication_year=1960,
         medium_type="Livre",
-        total_items=1
+        total_items=1,
     )
     db_session.add_all([record1, record2])
     db_session.flush()
@@ -626,7 +642,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
         last_name="Dupont",
         full_name="Alice Dupont",
         role="student",
-        active=True
+        active=True,
     )
     db_session.add(borrower)
     db_session.flush()
@@ -637,7 +653,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
         bibliographic_record_id=record1.id,
         checkout_date=datetime.now(timezone.utc),
         due_date=datetime.now(timezone.utc) + timedelta(days=14),
-        return_date=None
+        return_date=None,
     )
     db_session.add(loan)
     db_session.flush()
@@ -647,7 +663,7 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
         borrower_id=borrower.id,
         bibliographic_record_id=record2.id,
         hold_date=datetime.now(timezone.utc),
-        queue_position=1
+        queue_position=1,
     )
     db_session.add(hold)
     db_session.commit()
@@ -677,7 +693,9 @@ def test_delete_items_bulk_and_orphans(db_session: Session):
     assert cleanup_result["records_deleted"] == 1
 
     # Record 2 should be gone
-    deleted_rec = db_session.query(BibliographicRecord).filter(BibliographicRecord.id == record2.id).first()
+    deleted_rec = (
+        db_session.query(BibliographicRecord).filter(BibliographicRecord.id == record2.id).first()
+    )
     assert deleted_rec is None
 
 
@@ -717,6 +735,7 @@ def test_get_items_csv(db_session: Session):
 
 
 # ==================== User Story B.6: New Policy-driven Integration Tests ====================
+
 
 def test_on_loan_status_without_active_transaction_is_accepted(db_session: Session):
     """Un item avec status=on_loan mais sans transaction active suit la décision item_update_decision."""
@@ -785,7 +804,7 @@ def test_item_with_active_transaction_ignored_in_deletion(db_session: Session):
         last_name="Dupont",
         full_name="Alice Dupont",
         role="student",
-        active=True
+        active=True,
     )
     db_session.add(borrower)
     db_session.flush()
@@ -796,7 +815,7 @@ def test_item_with_active_transaction_ignored_in_deletion(db_session: Session):
         bibliographic_record_id=record.id,
         checkout_date=datetime.now(timezone.utc),
         due_date=datetime.now(timezone.utc) + timedelta(days=14),
-        return_date=None
+        return_date=None,
     )
     db_session.add(loan)
     db_session.commit()
@@ -833,18 +852,17 @@ def test_technical_rollback_reverts_batch_mutations(db_session: Session):
 
     # Let's mock or cause an exception during bulk_update_items to trigger traceback and rollback
     import unittest.mock as mock
-    from src.bcd_api.services.inventory.commands import normalize_field_value
 
-    with mock.patch("src.bcd_api.services.inventory.commands.normalize_field_value", side_effect=ValueError("Simulated Error")):
+    with mock.patch(
+        "src.bcd_api.services.inventory.commands.normalize_field_value",
+        side_effect=ValueError("Simulated Error"),
+    ):
         with pytest.raises(ValueError):
             inventory_service.bulk_update_items(
-                db_session,
-                item_ids=["0097"],
-                item_updates={"condition": "damaged"}
+                db_session, item_ids=["0097"], item_updates={"condition": "damaged"}
             )
 
     # ASSERT - should be rolled back to good
     db_session.rollback()  # make sure session is clean
     db_session.refresh(item)
     assert item.condition == "good"
-

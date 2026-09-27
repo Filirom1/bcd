@@ -40,7 +40,18 @@ def test_list_holds_displays_empty_and_ready_holds():
     client = MagicMock()
     client.get.side_effect = [
         resp(200, {"id": 7, "full_name": "Alice"}),
-        resp(200, [{"id": 8, "title": "Book", "queue_position": 1, "status": "waiting", "hold_date": "2026-01-01"}]),
+        resp(
+            200,
+            [
+                {
+                    "id": 8,
+                    "title": "Book",
+                    "queue_position": 1,
+                    "status": "waiting",
+                    "hold_date": "2026-01-01",
+                }
+            ],
+        ),
     ]
     with patch("bcd_cli.commands.hold.get_client", return_value=client):
         result = CliRunner().invoke(hold, ["list", "B7"])
@@ -51,7 +62,9 @@ def test_list_holds_displays_empty_and_ready_holds():
 
 def test_cancel_hold_confirmed():
     client = MagicMock()
-    client.get.return_value = resp(200, {"borrower_name": "Alice", "title": "Book", "status": "waiting"})
+    client.get.return_value = resp(
+        200, {"borrower_name": "Alice", "title": "Book", "status": "waiting"}
+    )
     client.delete.return_value = resp(204)
     with patch("bcd_cli.commands.hold.get_client", return_value=client):
         result = CliRunner().invoke(hold, ["cancel", "8"], input="y\n")

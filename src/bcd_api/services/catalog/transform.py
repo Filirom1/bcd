@@ -108,6 +108,7 @@ def transform_bcd_to_dublin_core(bcd_csv_content: str) -> str:
             format_str = ""
             if taille:
                 import re
+
                 match = re.search(r"(\d+)\s*(?:p|pages|page)", taille.lower())
                 if match:
                     format_str = f"{match.group(1)} pages"
@@ -116,7 +117,9 @@ def transform_bcd_to_dublin_core(bcd_csv_content: str) -> str:
 
             # Map Empruntable (Oui/Non) to dc.rights
             empruntable = (row.get(CSVColumns.EMPRUNTABLE) or "").strip().lower()
-            rights = "Loanable" if empruntable in ["oui", "yes", "1", "true", ""] else "Not loanable"
+            rights = (
+                "Loanable" if empruntable in ["oui", "yes", "1", "true", ""] else "Not loanable"
+            )
 
             # Map Support to Dublin Core type
             support = (row.get(CSVColumns.SUPPORT) or "").strip()

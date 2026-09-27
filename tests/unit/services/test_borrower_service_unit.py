@@ -1,6 +1,5 @@
 """Unit tests for borrower_service.py"""
 
-
 import pytest
 
 from src.bcd_api.core.exceptions import (
@@ -231,25 +230,29 @@ class TestListBorrowers:
         """Test filtering borrowers by role."""
         # Create students
         for i in range(1, 4):
-            db_session.add(Borrower(
-                borrower_id=f"10{i}",
-                first_name=f"Student{i}",
-                last_name=f"LAST{i}",
-                full_name=f"Student{i} LAST{i}",
-                role="student",
-                active=True,
-            ))
+            db_session.add(
+                Borrower(
+                    borrower_id=f"10{i}",
+                    first_name=f"Student{i}",
+                    last_name=f"LAST{i}",
+                    full_name=f"Student{i} LAST{i}",
+                    role="student",
+                    active=True,
+                )
+            )
 
         # Create teachers
         for i in range(1, 3):
-            db_session.add(Borrower(
-                borrower_id=f"T00{i}",
-                first_name=f"Teacher{i}",
-                last_name=f"TEACH{i}",
-                full_name=f"Teacher{i} TEACH{i}",
-                role="teacher",
-                active=True,
-            ))
+            db_session.add(
+                Borrower(
+                    borrower_id=f"T00{i}",
+                    first_name=f"Teacher{i}",
+                    last_name=f"TEACH{i}",
+                    full_name=f"Teacher{i} TEACH{i}",
+                    role="teacher",
+                    active=True,
+                )
+            )
         db_session.commit()
 
         students, student_total = borrower_service.list_borrowers(db_session, role="student")
@@ -269,25 +272,29 @@ class TestListBorrowers:
 
         # Create borrowers in class
         for i in range(1, 4):
-            db_session.add(Borrower(
-                borrower_id=f"10{i}",
-                first_name=f"Student{i}",
-                last_name=f"LAST{i}",
-                full_name=f"Student{i} LAST{i}",
-                role="student",
-                active=True,
-                class_id=class_obj.id,
-            ))
+            db_session.add(
+                Borrower(
+                    borrower_id=f"10{i}",
+                    first_name=f"Student{i}",
+                    last_name=f"LAST{i}",
+                    full_name=f"Student{i} LAST{i}",
+                    role="student",
+                    active=True,
+                    class_id=class_obj.id,
+                )
+            )
 
         # Create borrowers without class
-        db_session.add(Borrower(
-            borrower_id="104",
-            first_name="Student4",
-            last_name="LAST4",
-            full_name="Student4 LAST4",
-            role="student",
-            active=True,
-        ))
+        db_session.add(
+            Borrower(
+                borrower_id="104",
+                first_name="Student4",
+                last_name="LAST4",
+                full_name="Student4 LAST4",
+                role="student",
+                active=True,
+            )
+        )
         db_session.commit()
 
         result, total = borrower_service.list_borrowers(db_session, class_id=class_obj.id)
@@ -299,25 +306,29 @@ class TestListBorrowers:
         """Test filtering by active status."""
         # Create active borrowers
         for i in range(1, 4):
-            db_session.add(Borrower(
-                borrower_id=f"10{i}",
-                first_name=f"Student{i}",
-                last_name=f"LAST{i}",
-                full_name=f"Student{i} LAST{i}",
-                role="student",
-                active=True,
-            ))
+            db_session.add(
+                Borrower(
+                    borrower_id=f"10{i}",
+                    first_name=f"Student{i}",
+                    last_name=f"LAST{i}",
+                    full_name=f"Student{i} LAST{i}",
+                    role="student",
+                    active=True,
+                )
+            )
 
         # Create blocked borrower
-        db_session.add(Borrower(
-            borrower_id="104",
-            first_name="Blocked",
-            last_name="STUDENT",
-            full_name="Blocked STUDENT",
-            role="student",
-            active=False,
-            blocked_reason="Overdue items",
-        ))
+        db_session.add(
+            Borrower(
+                borrower_id="104",
+                first_name="Blocked",
+                last_name="STUDENT",
+                full_name="Blocked STUDENT",
+                role="student",
+                active=False,
+                blocked_reason="Overdue items",
+            )
+        )
         db_session.commit()
 
         active, active_total = borrower_service.list_borrowers(db_session, active=True)
@@ -332,14 +343,16 @@ class TestListBorrowers:
         """Test pagination."""
         # Create 25 borrowers
         for i in range(1, 26):
-            db_session.add(Borrower(
-                borrower_id=f"{i:03d}",
-                first_name=f"Student{i}",
-                last_name=f"LAST{i}",
-                full_name=f"Student{i} LAST{i}",
-                role="student",
-                active=True,
-            ))
+            db_session.add(
+                Borrower(
+                    borrower_id=f"{i:03d}",
+                    first_name=f"Student{i}",
+                    last_name=f"LAST{i}",
+                    full_name=f"Student{i} LAST{i}",
+                    role="student",
+                    active=True,
+                )
+            )
         db_session.commit()
 
         # First page

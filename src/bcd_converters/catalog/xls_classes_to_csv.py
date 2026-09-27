@@ -16,8 +16,7 @@ try:
     import xlrd
 except ImportError as e:
     raise ImportError(
-        "xlrd is required to convert XLS files. "
-        "Install it with: pip install -e '.[converters]'"
+        "xlrd is required to convert XLS files. " "Install it with: pip install -e '.[converters]'"
     ) from e
 
 
@@ -51,13 +50,15 @@ def convert(input_path: Path, output_path: Path) -> int:
             row = sheet.row_values(i)
             if not is_data_row(row):
                 continue
-            rows.append({
-                "StudentID": student_id,
-                "FirstName": str(row[1]).strip(),
-                "LastName": str(row[0]).strip(),
-                "Class": class_name,
-                "BlockReason": "",
-            })
+            rows.append(
+                {
+                    "StudentID": student_id,
+                    "FirstName": str(row[1]).strip(),
+                    "LastName": str(row[0]).strip(),
+                    "Class": class_name,
+                    "BlockReason": "",
+                }
+            )
             student_id += 1
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:

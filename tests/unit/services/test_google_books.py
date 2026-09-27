@@ -20,6 +20,7 @@ from src.bcd_api.services.external.google_books import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def sample_volume():
     """Minimal Google Books volume dict."""
@@ -73,6 +74,7 @@ def _mock_client(json_data):
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+
 
 class TestHelpers:
     def test_normalize_strips_accents(self):
@@ -130,6 +132,7 @@ class TestHelpers:
 # Volume parsing
 # ---------------------------------------------------------------------------
 
+
 class TestParseVolume:
     def test_parse_basic_fields(self, sample_volume):
         result = _parse_volume(sample_volume)
@@ -176,6 +179,7 @@ class TestParseVolume:
 # search_by_isbn
 # ---------------------------------------------------------------------------
 
+
 class TestSearchByISBN:
     @patch("src.bcd_api.services.external.google_books._rate_limit")
     @patch("httpx.Client")
@@ -212,8 +216,9 @@ class TestSearchByISBN:
 
     @patch("src.bcd_api.services.external.google_books._rate_limit")
     @patch("httpx.Client")
-    def test_api_key_included_when_configured(self, mock_client_class, mock_rate_limit,
-                                               api_response_one):
+    def test_api_key_included_when_configured(
+        self, mock_client_class, mock_rate_limit, api_response_one
+    ):
         configure(api_key="TEST_KEY_123")
         try:
             mock_client_class.return_value = _mock_client(api_response_one)
@@ -238,11 +243,13 @@ class TestSearchByISBN:
 # search_by_title_author
 # ---------------------------------------------------------------------------
 
+
 class TestSearchByTitleAuthor:
     @patch("src.bcd_api.services.external.google_books._rate_limit")
     @patch("httpx.Client")
-    def test_french_language_restriction(self, mock_client_class, mock_rate_limit,
-                                          api_response_empty):
+    def test_french_language_restriction(
+        self, mock_client_class, mock_rate_limit, api_response_empty
+    ):
         mock_client_class.return_value = _mock_client(api_response_empty)
         search_by_title_author("Stuart Little", "White")
         call_kwargs = mock_client_class.return_value.get.call_args
@@ -250,8 +257,7 @@ class TestSearchByTitleAuthor:
 
     @patch("src.bcd_api.services.external.google_books._rate_limit")
     @patch("httpx.Client")
-    def test_found_high_confidence(self, mock_client_class, mock_rate_limit,
-                                    api_response_one):
+    def test_found_high_confidence(self, mock_client_class, mock_rate_limit, api_response_one):
         mock_client_class.return_value = _mock_client(api_response_one)
         result = search_by_title_author("Stuart Little", "White")
         assert result is not None
@@ -260,8 +266,7 @@ class TestSearchByTitleAuthor:
 
     @patch("src.bcd_api.services.external.google_books._rate_limit")
     @patch("httpx.Client")
-    def test_no_results_returns_none(self, mock_client_class, mock_rate_limit,
-                                      api_response_empty):
+    def test_no_results_returns_none(self, mock_client_class, mock_rate_limit, api_response_empty):
         mock_client_class.return_value = _mock_client(api_response_empty)
         result = search_by_title_author("Livre inexistant", "Auteur inconnu")
         assert result is None
@@ -272,14 +277,16 @@ class TestSearchByTitleAuthor:
         # Mismatch: searching for "Les Misérables" but API returns "Stuart Little"
         bad_response = {
             "totalItems": 1,
-            "items": [{
-                "volumeInfo": {
-                    "title": "Stuart Little",
-                    "authors": ["E.B. White"],
-                    "language": "fr",
-                    "industryIdentifiers": [{"type": "ISBN_13", "identifier": "9782211056465"}],
+            "items": [
+                {
+                    "volumeInfo": {
+                        "title": "Stuart Little",
+                        "authors": ["E.B. White"],
+                        "language": "fr",
+                        "industryIdentifiers": [{"type": "ISBN_13", "identifier": "9782211056465"}],
+                    }
                 }
-            }]
+            ],
         }
         mock_client_class.return_value = _mock_client(bad_response)
         result = search_by_title_author("Les Misérables", "Hugo")
@@ -287,8 +294,9 @@ class TestSearchByTitleAuthor:
 
     @patch("src.bcd_api.services.external.google_books._rate_limit")
     @patch("httpx.Client")
-    def test_query_uses_intitle_inauthor(self, mock_client_class, mock_rate_limit,
-                                          api_response_empty):
+    def test_query_uses_intitle_inauthor(
+        self, mock_client_class, mock_rate_limit, api_response_empty
+    ):
         mock_client_class.return_value = _mock_client(api_response_empty)
         search_by_title_author("Stuart Little", "White")
         call_kwargs = mock_client_class.return_value.get.call_args

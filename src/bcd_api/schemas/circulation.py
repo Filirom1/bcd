@@ -14,7 +14,9 @@ class CheckoutRequest(BaseModel):
 
     borrower_id: str = Field(..., description="Borrower ID")
     item_ids: list[str] = Field(..., min_length=1, description="List of item IDs to checkout")
-    checked_out_by: Optional[str] = Field(None, max_length=100, description="Librarian who performed checkout")
+    checked_out_by: Optional[str] = Field(
+        None, max_length=100, description="Librarian who performed checkout"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -46,8 +48,18 @@ class CheckoutResponse(BaseModel):
                 "due_date": "2026-02-13",
                 "items_checked_out": 2,
                 "transactions": [
-                    {"transaction_id": 1, "item_id": "785", "title": "Ils ont arrêté mon père", "due_date": "2026-02-13"},
-                    {"transaction_id": 2, "item_id": "787", "title": "Stuart Little", "due_date": "2026-02-13"},
+                    {
+                        "transaction_id": 1,
+                        "item_id": "785",
+                        "title": "Ils ont arrêté mon père",
+                        "due_date": "2026-02-13",
+                    },
+                    {
+                        "transaction_id": 2,
+                        "item_id": "787",
+                        "title": "Stuart Little",
+                        "due_date": "2026-02-13",
+                    },
                 ],
             }
         }
@@ -58,7 +70,9 @@ class ReturnRequest(BaseModel):
     """Schema for return request."""
 
     item_ids: list[str] = Field(..., min_length=1, description="List of item IDs to return")
-    returned_by: Optional[str] = Field(None, max_length=100, description="Librarian who processed return")
+    returned_by: Optional[str] = Field(
+        None, max_length=100, description="Librarian who processed return"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -97,8 +111,8 @@ class ReturnResponse(BaseModel):
                             "borrower_id": "205",
                             "borrower_name": "Sophie MARTIN",
                             "class_name": "CE2-A",
-                            "expiration_date": "2026-02-02"
-                        }
+                            "expiration_date": "2026-02-02",
+                        },
                     },
                     {
                         "item_id": "787",
@@ -110,9 +124,9 @@ class ReturnResponse(BaseModel):
                         "return_date": "2026-01-30T15:30:00",
                         "was_overdue": True,
                         "days_overdue": 3,
-                        "hold_ready": None
-                    }
-                ]
+                        "hold_ready": None,
+                    },
+                ],
             }
         }
     )
@@ -122,7 +136,9 @@ class RenewRequest(BaseModel):
     """Schema for renew request."""
 
     borrower_id: str = Field(..., description="Borrower ID")
-    item_ids: Optional[list[str]] = Field(None, description="Item IDs to renew (if None, renew all eligible)")
+    item_ids: Optional[list[str]] = Field(
+        None, description="Item IDs to renew (if None, renew all eligible)"
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -156,15 +172,10 @@ class RenewResponse(BaseModel):
                         "old_due_date": "2026-02-13",
                         "new_due_date": "2026-02-27",
                         "renewals_used": 1,
-                        "renewals_remaining": 1
+                        "renewals_remaining": 1,
                     }
                 ],
-                "failed": [
-                    {
-                        "item_id": "787",
-                        "reason": "Hold pending"
-                    }
-                ],
+                "failed": [{"item_id": "787", "reason": "Hold pending"}],
             }
         }
     )

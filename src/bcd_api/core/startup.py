@@ -2,14 +2,17 @@
 
 import asyncio
 import logging
+
 from src.bcd_api.core import mdns
 from src.bcd_api.core.auth import is_auth_enabled
 from src.bcd_api.services.external.bnf import configure as configure_bnf
-from src.bcd_api.services.external.google_books import configure as configure_google_books
 from src.bcd_api.services.external.cover import (
     configure as configure_covers,
+)
+from src.bcd_api.services.external.cover import (
     migrate_covers_to_isbn13,
 )
+from src.bcd_api.services.external.google_books import configure as configure_google_books
 from src.bcd_api.services.external.sudoc import configure as configure_sudoc
 
 logger = logging.getLogger(__name__)
@@ -20,7 +23,7 @@ async def run_startup_tasks(config_settings, is_portable_fn) -> None:
     _log_startup_info(config_settings, is_portable_fn)
     init_database_if_needed(config_settings)
     _configure_external_services(config_settings)
-    library_code = await init_system_settings()
+    await init_system_settings()
     expire_ready_holds_on_startup()
     _migrate_covers()
     asyncio.create_task(auto_backup_if_needed())
@@ -75,6 +78,7 @@ async def init_system_settings() -> str:
 
             # Update cache in spa state
             from src.bcd_api.core.spa import update_library_code
+
             update_library_code(library_code)
 
             return library_code
@@ -165,6 +169,7 @@ def init_database_if_needed(config_settings=None) -> None:
     """Run Alembic migrations synchronously to ensure the schema is up to date."""
     if config_settings is None:
         from src.bcd_api.core.config import settings as default_settings
+
         config_settings = default_settings
     try:
         from alembic.command import upgrade

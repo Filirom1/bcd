@@ -20,9 +20,7 @@ def catalog_client(db_session):
 
 
 def test_local_notice_search_endpoint_is_database_only(catalog_client, db_session, monkeypatch):
-    record = BibliographicRecord(
-        title="Wapiti", isbn="issn:0984-2314", medium_type="Périodique"
-    )
+    record = BibliographicRecord(title="Wapiti", isbn="issn:0984-2314", medium_type="Périodique")
     db_session.add(record)
     db_session.commit()
     monkeypatch.setattr(
@@ -42,9 +40,7 @@ def test_local_notice_search_endpoint_is_database_only(catalog_client, db_sessio
 def test_lookup_endpoint_accepts_one_explicit_source(catalog_client, monkeypatch):
     monkeypatch.setattr(
         "src.bcd_api.api.v1.catalog.catalog_service.lookup_notice_source",
-        lambda db, query, source: {
-            "status": "found", "source": source, "data": {"title": "Book"}
-        },
+        lambda db, query, source: {"status": "found", "source": source, "data": {"title": "Book"}},
     )
 
     response = catalog_client.post(
@@ -61,6 +57,8 @@ def test_external_source_configuration_endpoint_returns_all_fixed_sources(catalo
 
     assert response.status_code == 200
     assert [source["source"] for source in response.json()["sources"]] == [
-        "bnf", "google_books", "sudoc"
+        "bnf",
+        "google_books",
+        "sudoc",
     ]
     assert response.json()["sources"][0]["timeout"] == 4

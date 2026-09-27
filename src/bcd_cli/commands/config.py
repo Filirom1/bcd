@@ -98,7 +98,9 @@ def set_config(key: str, value: str):
         cfg[key] = typed_value
         save_config(cfg)
 
-        console.print(f"[green]✅ Configuration updated:[/green] {key} = [cyan]{typed_value}[/cyan]")
+        console.print(
+            f"[green]✅ Configuration updated:[/green] {key} = [cyan]{typed_value}[/cyan]"
+        )
 
     except Exception as e:
         print_error(f"Error setting config: {str(e)}")

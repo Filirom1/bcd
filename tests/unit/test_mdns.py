@@ -1,8 +1,7 @@
-import sys
-import os
 import socket
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 
 from src.bcd_api.core import mdns
 
@@ -15,7 +14,16 @@ def test_normalize_hostname():
 
 def test_get_local_ip_uses_socket_address():
     socket_mod = __import__("socket")
-    fake = type("Socket", (), {"connect": lambda self, address: None, "getsockname": lambda self: ("192.0.2.1", 0), "__enter__": lambda self: self, "__exit__": lambda *args: None})()
+    fake = type(
+        "Socket",
+        (),
+        {
+            "connect": lambda self, address: None,
+            "getsockname": lambda self: ("192.0.2.1", 0),
+            "__enter__": lambda self: self,
+            "__exit__": lambda *args: None,
+        },
+    )()
     with patch.object(socket_mod, "socket", return_value=fake):
         assert mdns.get_local_ip() == "192.0.2.1"
 
@@ -27,17 +35,19 @@ def test_get_server_port_falls_back_on_non_linux():
 
 def test_get_server_port_linux_success():
     # Mock OS functions and /proc filesystem on Linux
-    with patch("sys.platform", "linux"), \
-         patch("os.getpid", return_value=123), \
-         patch("os.listdir", return_value=["3", "4"]), \
-         patch("os.readlink", side_effect=lambda path: "socket:[12345]" if "3" in path else "other"), \
-         patch("builtins.open") as mock_open:
+    with (
+        patch("sys.platform", "linux"),
+        patch("os.getpid", return_value=123),
+        patch("os.listdir", return_value=["3", "4"]),
+        patch("os.readlink", side_effect=lambda path: "socket:[12345]" if "3" in path else "other"),
+        patch("builtins.open") as mock_open,
+    ):
 
         # Mock reading /proc/net/tcp
         mock_file = MagicMock()
         mock_file.readlines.return_value = [
             "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode",
-            "   0: 0100007F:22B8 00000000:0000 0A 00000000:00000000 00:00000000     0        0        0 12345"
+            "   0: 0100007F:22B8 00000000:0000 0A 00000000:00000000 00:00000000     0        0        0 12345",
         ]
         # local_address contains port 22B8 in hex, which is 8888 in decimal
         mock_open.return_value.__enter__.return_value = mock_file
@@ -116,7 +126,7 @@ async def test_listener_and_async_add_service():
     mock_info_instance.server = "peer.local."
     mock_info_instance.properties = {b"library_code": b"peer_code"}
 
-    with patch("zeroconf.asyncio.AsyncServiceInfo", return_value=mock_info_instance) as mock_async_info:
+    with patch("zeroconf.asyncio.AsyncServiceInfo", return_value=mock_info_instance):
         # Mock request to complete immediately
         mock_info_instance.async_request = AsyncMock()
 
@@ -150,9 +160,11 @@ async def test_mdns_lifecycle():
     mock_async_zc.async_unregister_service = AsyncMock()
     mock_async_zc.async_close = AsyncMock()
 
-    with patch("src.bcd_api.core.mdns.get_local_ip", return_value="192.168.1.100"), \
-         patch("zeroconf.asyncio.AsyncZeroconf", return_value=mock_async_zc), \
-         patch("zeroconf.asyncio.AsyncServiceBrowser") as mock_browser_class:
+    with (
+        patch("src.bcd_api.core.mdns.get_local_ip", return_value="192.168.1.100"),
+        patch("zeroconf.asyncio.AsyncZeroconf", return_value=mock_async_zc),
+        patch("zeroconf.asyncio.AsyncServiceBrowser") as mock_browser_class,
+    ):
 
         await mdns.start_mdns("my-lib", 8888)
 
@@ -181,4 +193,3 @@ async def test_mdns_lifecycle():
         assert mdns._browser is None
         assert mdns._listener is None
         assert mdns._own_service_name is None
-

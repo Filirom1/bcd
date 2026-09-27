@@ -25,7 +25,21 @@ def test_overdue_report_empty():
 def test_overdue_report_shows_summary_and_details():
     client = MagicMock()
     client.get.side_effect = [
-        resp({"total_overdue": 1, "items": [{"borrower_name": "Alice", "class_name": "CP", "item_id": "I1", "title": "Book", "due_date": "2025-01-01", "days_overdue": 3}]}),
+        resp(
+            {
+                "total_overdue": 1,
+                "items": [
+                    {
+                        "borrower_name": "Alice",
+                        "class_name": "CP",
+                        "item_id": "I1",
+                        "title": "Book",
+                        "due_date": "2025-01-01",
+                        "days_overdue": 3,
+                    }
+                ],
+            }
+        ),
         resp({"classes": [{"class_name": "CP", "overdue_count": 1}]}),
     ]
     with patch("src.bcd_cli.commands.report.get_client", return_value=client):
@@ -38,7 +52,19 @@ def test_overdue_report_shows_summary_and_details():
 
 def test_most_borrowed_displays_titles():
     client = MagicMock()
-    client.get.return_value = resp({"titles": [{"rank": 1, "title": "Book", "authors": "Author", "publication_year": 2024, "checkout_count": 8}]})
+    client.get.return_value = resp(
+        {
+            "titles": [
+                {
+                    "rank": 1,
+                    "title": "Book",
+                    "authors": "Author",
+                    "publication_year": 2024,
+                    "checkout_count": 8,
+                }
+            ]
+        }
+    )
     with patch("src.bcd_cli.commands.report.get_client", return_value=client):
         result = CliRunner().invoke(report, ["most-borrowed", "--period", "month", "--limit", "5"])
     assert result.exit_code == 0
@@ -48,7 +74,16 @@ def test_most_borrowed_displays_titles():
 
 def test_statistics_displays_counts():
     client = MagicMock()
-    client.get.return_value = resp({"period": "year", "total_checkouts": 10, "items_on_loan": 2, "overdue_items": 1, "active_borrowers": 5, "average_loans_per_day": 0.5})
+    client.get.return_value = resp(
+        {
+            "period": "year",
+            "total_checkouts": 10,
+            "items_on_loan": 2,
+            "overdue_items": 1,
+            "active_borrowers": 5,
+            "average_loans_per_day": 0.5,
+        }
+    )
     with patch("src.bcd_cli.commands.report.get_client", return_value=client):
         result = CliRunner().invoke(report, ["statistics"])
     assert result.exit_code == 0

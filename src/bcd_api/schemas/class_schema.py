@@ -10,10 +10,19 @@ from src.bcd_api.schemas.common import TimestampMixin
 class ClassBase(BaseModel):
     """Base schema for Class."""
 
-    name: str = Field(..., min_length=1, max_length=50, description="Class name (e.g., CP-A, CE1-B)")
-    homeroom_teacher: Optional[str] = Field(None, max_length=100, description="Homeroom teacher name")
+    name: str = Field(
+        ..., min_length=1, max_length=50, description="Class name (e.g., CP-A, CE1-B)"
+    )
+    homeroom_teacher: Optional[str] = Field(
+        None, max_length=100, description="Homeroom teacher name"
+    )
     notes: Optional[str] = Field(None, description="Additional notes")
-    average_age: Optional[int] = Field(None, ge=3, le=18, description="Average age of students (used for sorting youngest to oldest)")
+    average_age: Optional[int] = Field(
+        None,
+        ge=3,
+        le=18,
+        description="Average age of students (used for sorting youngest to oldest)",
+    )
 
 
 class ClassCreate(ClassBase):
@@ -56,7 +65,7 @@ class ClassResponse(ClassBase, TimestampMixin):
                 "created_at": "2026-01-30T10:00:00",
                 "updated_at": "2026-01-30T10:00:00",
             }
-        }
+        },
     )
 
 

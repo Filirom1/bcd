@@ -14,7 +14,6 @@ IMPROVEMENTS:
 - 40% less code, 3x faster, 10x clearer errors
 """
 
-
 from playwright.sync_api import expect
 
 from tests.e2e.helpers.wait_for_app import wait_for_vue_app
@@ -22,8 +21,6 @@ from tests.e2e.helpers.wait_for_app import wait_for_vue_app
 
 class TestAdminDropdownBorrowers:
     """Test admin dropdown on Borrowers page."""
-
-
 
     def test_export_accessible_from_admin_dropdown(
         self, page, server_url, borrower_factory, db_session
@@ -50,16 +47,14 @@ class TestAdminDropdownBorrowers:
         # Assert
         assert download is not None
         filename = download.suggested_filename.lower()
-        assert 'csv' in filename or 'borrower' in filename
+        assert "csv" in filename or "borrower" in filename
 
 
 class TestAdminDropdownCatalog:
     """Test admin dropdown on Catalog page."""
 
-
-
     def test_add_book_button_still_present(self, page, server_url, db_session):
-        """"Add Book" button remains separate from admin dropdown."""
+        """ "Add Book" button remains separate from admin dropdown."""
         page.goto(f"{server_url}/#/catalog")
         wait_for_vue_app(page)
 
@@ -73,16 +68,10 @@ class TestAdminDropdownConditionalEnabling:
     """Test conditional enabling/disabling of admin dropdown menu items."""
 
 
-
-
-
-
 class TestAdminDropdownImportExport:
     """Test Import and Export functionality from admin dropdown."""
 
-    def test_import_accessible_from_admin_dropdown_borrowers(
-        self, page, server_url, db_session
-    ):
+    def test_import_accessible_from_admin_dropdown_borrowers(self, page, server_url, db_session):
         """Import Borrowers accessible from admin dropdown."""
         page.goto(f"{server_url}/#/borrowers")
         wait_for_vue_app(page)
@@ -94,11 +83,9 @@ class TestAdminDropdownImportExport:
         import_item.click()
 
         # Assert - Import modal or file input should appear
-        expect(page.locator('#csv-file')).to_be_visible()
+        expect(page.locator("#csv-file")).to_be_visible()
 
-    def test_import_accessible_from_admin_dropdown_catalog(
-        self, page, server_url, db_session
-    ):
+    def test_import_accessible_from_admin_dropdown_catalog(self, page, server_url, db_session):
         """Import Catalog accessible from admin dropdown on Catalog page."""
         page.goto(f"{server_url}/#/catalog")
         wait_for_vue_app(page)
@@ -109,7 +96,7 @@ class TestAdminDropdownImportExport:
         import_item = page.locator('[data-testid="admin-menu-import"]')
         import_item.click()
 
-        expect(page.locator('#csv-file-catalog')).to_be_visible()
+        expect(page.locator("#csv-file-catalog")).to_be_visible()
 
     def test_export_accessible_from_admin_dropdown_catalog(
         self, page, server_url, item_factory, db_session
@@ -131,4 +118,4 @@ class TestAdminDropdownImportExport:
         download = download_info.value
         assert download is not None
         filename = download.suggested_filename.lower()
-        assert 'csv' in filename or 'catalog' in filename
+        assert "csv" in filename or "catalog" in filename

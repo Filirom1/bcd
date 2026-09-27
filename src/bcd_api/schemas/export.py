@@ -15,36 +15,27 @@ class ExportResponse(BaseModel):
     filename: str = Field(
         ...,
         description="Suggested filename for the export",
-        example="catalog_export_2026-02-06.csv"
+        example="catalog_export_2026-02-06.csv",
     )
     content_type: str = Field(
-        default="text/csv; charset=utf-8",
-        description="MIME type of the exported file"
+        default="text/csv; charset=utf-8", description="MIME type of the exported file"
     )
     record_count: int = Field(
-        ...,
-        description="Total number of bibliographic records exported",
-        ge=0
+        ..., description="Total number of bibliographic records exported", ge=0
     )
-    item_count: int = Field(
-        ...,
-        description="Total number of physical items (rows) exported",
-        ge=0
-    )
-    encoding: str = Field(
-        default="utf-8",
-        description="Character encoding of the CSV file"
-    )
+    item_count: int = Field(..., description="Total number of physical items (rows) exported", ge=0)
+    encoding: str = Field(default="utf-8", description="Character encoding of the CSV file")
 
     class Config:
         """Pydantic config."""
+
         json_schema_extra = {
             "example": {
                 "filename": "catalog_export_2026-02-06.csv",
                 "content_type": "text/csv; charset=utf-8",
                 "record_count": 150,
                 "item_count": 180,
-                "encoding": "utf-8"
+                "encoding": "utf-8",
             }
         }
 
@@ -60,13 +51,14 @@ class ExportStats(BaseModel):
 
     class Config:
         """Pydantic config."""
+
         json_schema_extra = {
             "example": {
                 "total_records": 150,
                 "total_items": 180,
                 "records_with_items": 145,
                 "records_without_items": 5,
-                "execution_time_ms": 1250
+                "execution_time_ms": 1250,
             }
         }
 
@@ -91,7 +83,7 @@ class ImportError(BaseModel):
             "example": {
                 "row_number": 42,
                 "error": "Missing required field: dc.title",
-                "raw_data": {"dc.identifier": "isbn:123", "dc.creator": "Smith"}
+                "raw_data": {"dc.identifier": "isbn:123", "dc.creator": "Smith"},
             }
         }
 
@@ -104,7 +96,9 @@ class ImportResponse(BaseModel):
     failed_rows: int = Field(..., description="Number of rows that failed")
     records_created: int = Field(default=0, description="Number of bibliographic records created")
     items_created: int = Field(default=0, description="Number of items created")
-    records_updated: int = Field(default=0, description="Number of records updated (for upsert operations)")
+    records_updated: int = Field(
+        default=0, description="Number of records updated (for upsert operations)"
+    )
     errors: List[ImportError] = Field(default_factory=list, description="List of import errors")
 
     class Config:
@@ -117,15 +111,9 @@ class ImportResponse(BaseModel):
                 "items_created": 245,
                 "records_updated": 0,
                 "errors": [
-                    {
-                        "row_number": 42,
-                        "error": "Missing required field: dc.title"
-                    },
-                    {
-                        "row_number": 87,
-                        "error": "Duplicate item ID: BK123"
-                    }
-                ]
+                    {"row_number": 42, "error": "Missing required field: dc.title"},
+                    {"row_number": 87, "error": "Duplicate item ID: BK123"},
+                ],
             }
         }
 
@@ -151,8 +139,8 @@ class BorrowerImportResponse(BaseModel):
                 "errors": [
                     {
                         "row_number": 12,
-                        "error": "Invalid role: 'parent' (must be student, teacher, or staff)"
+                        "error": "Invalid role: 'parent' (must be student, teacher, or staff)",
                     }
-                ]
+                ],
             }
         }

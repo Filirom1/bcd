@@ -106,9 +106,7 @@ def print_item_added(item_data: Dict[str, Any]):
         item_data: Item data from API
     """
     console.print()
-    console.print(
-        f"[green]✓[/green] Ajouté / Added: [bold]{item_data.get('title', 'N/A')}[/bold]"
-    )
+    console.print(f"[green]✓[/green] Ajouté / Added: [bold]{item_data.get('title', 'N/A')}[/bold]")
 
     if item_data.get("authors"):
         authors = item_data["authors"]
@@ -195,9 +193,7 @@ def print_return_summary(return_data: Dict[str, Any]):
     count = return_data.get("items_returned", 0)
     overdue_count = return_data.get("overdue_count", 0)
 
-    console.print(
-        f"[green]✅ {count} document(s) retourné(s)[/green]", style="bold green"
-    )
+    console.print(f"[green]✅ {count} document(s) retourné(s)[/green]", style="bold green")
     console.print(f"   {count} item(s) returned", style="green")
 
     if overdue_count > 0:
@@ -209,9 +205,7 @@ def print_return_summary(return_data: Dict[str, Any]):
 
         # Check if borrower was blocked
         if return_data.get("borrower_blocked"):
-            console.print(
-                "   [red]→ L'emprunteur a été bloqué / Borrower has been blocked[/red]"
-            )
+            console.print("   [red]→ L'emprunteur a été bloqué / Borrower has been blocked[/red]")
 
 
 def print_renewal_summary(renewal_data: Dict[str, Any]):

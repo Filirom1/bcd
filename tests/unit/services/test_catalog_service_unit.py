@@ -157,9 +157,7 @@ class TestSearchBibliographicRecords:
         )
 
         # Search
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, title="Potter"
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, title="Potter")
 
         assert total == 1
         assert results[0].title == "Harry Potter"
@@ -168,22 +166,16 @@ class TestSearchBibliographicRecords:
         """Test searching by author."""
         catalog_service.create_bibliographic_record(
             db_session,
-            BibliographicRecordCreate(
-                title="Book 1", authors=["Rowling, J.K."], isbn="111"
-            ),
+            BibliographicRecordCreate(title="Book 1", authors=["Rowling, J.K."], isbn="111"),
             isbn_lookup=False,
         )
         catalog_service.create_bibliographic_record(
             db_session,
-            BibliographicRecordCreate(
-                title="Book 2", authors=["Tolkien, J.R.R."], isbn="222"
-            ),
+            BibliographicRecordCreate(title="Book 2", authors=["Tolkien, J.R.R."], isbn="222"),
             isbn_lookup=False,
         )
 
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, author="Rowling"
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, author="Rowling")
 
         assert total == 1
         assert "Rowling" in results[0].authors
@@ -232,16 +224,12 @@ class TestSearchBibliographicRecords:
             )
 
         # Get first page
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, limit=2, offset=0
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, limit=2, offset=0)
         assert len(results) == 2
         assert total == 5
 
         # Get second page
-        results, total = catalog_service.search_bibliographic_records(
-            db_session, limit=2, offset=2
-        )
+        results, total = catalog_service.search_bibliographic_records(db_session, limit=2, offset=2)
         assert len(results) == 2
         assert total == 5
 

@@ -15,6 +15,7 @@ from src.bcd_api.services.external.cover import configure, download_cover
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
 def reset_config():
     """Ensure cover_service global state is clean between tests."""
@@ -38,6 +39,7 @@ def _mock_httpx_client(responses: dict[str, bytes | None]):
     Build a mock httpx.Client. responses maps URL substrings to bytes (hit)
     or None (miss / error). Unmatched URLs return None.
     """
+
     def get_side_effect(url, **kwargs):
         for key, data in responses.items():
             if key in url:
@@ -64,6 +66,7 @@ def _mock_httpx_client(responses: dict[str, bytes | None]):
 # Full cascade — happy paths
 # ---------------------------------------------------------------------------
 
+
 class TestCascadeHappyPaths:
     def test_amazon_found_first_no_other_providers_called(self, covers_dir):
         """When Amazon returns a cover, Open Library is never contacted."""
@@ -76,19 +79,18 @@ class TestCascadeHappyPaths:
         assert result == "9782211056465.jpg"
         assert (covers_dir / "9782211056465.jpg").read_bytes() == data
         # Open Library URL should never have been requested
-        openlibrary_calls = [
-            c for c in client.get.call_args_list
-            if "openlibrary" in str(c)
-        ]
+        openlibrary_calls = [c for c in client.get.call_args_list if "openlibrary" in str(c)]
         assert openlibrary_calls == []
 
     def test_openlibrary_used_when_amazon_misses(self, covers_dir):
         data = _image()
-        client = _mock_httpx_client({
-            "ssl-images-amazon.com": None,
-            "m.media-amazon.com": None,
-            "openlibrary.org": data,
-        })
+        client = _mock_httpx_client(
+            {
+                "ssl-images-amazon.com": None,
+                "m.media-amazon.com": None,
+                "openlibrary.org": data,
+            }
+        )
         with patch("httpx.Client", return_value=client):
             result = download_cover("9782211056465", covers_dir=covers_dir)
 
@@ -99,16 +101,22 @@ class TestCascadeHappyPaths:
         data = _image()
         google_api_response = {
             "totalItems": 1,
-            "items": [{"volumeInfo": {"imageLinks": {
-                "thumbnail": "https://books.google.com/books/thumb.jpg"
-            }}}]
+            "items": [
+                {
+                    "volumeInfo": {
+                        "imageLinks": {"thumbnail": "https://books.google.com/books/thumb.jpg"}
+                    }
+                }
+            ],
         }
-        client = _mock_httpx_client({
-            "ssl-images-amazon.com": None,
-            "m.media-amazon.com": None,
-            "openlibrary.org": None,
-            "books/thumb.jpg": data,
-        })
+        client = _mock_httpx_client(
+            {
+                "ssl-images-amazon.com": None,
+                "m.media-amazon.com": None,
+                "openlibrary.org": None,
+                "books/thumb.jpg": data,
+            }
+        )
         client.get.side_effect = None  # override side_effect for JSON responses
 
         def get_side_effect(url, **kwargs):
@@ -140,13 +148,16 @@ class TestCascadeHappyPaths:
 
     def test_geobib_used_as_last_resort(self, covers_dir):
         data = _image()
-        client = _mock_httpx_client({
-            "ssl-images-amazon.com": None,
-            "m.media-amazon.com": None,
-            "openlibrary.org": None,
-            "googleapis.com": None,
-            "geobib.fr": data,
-        })
+        client = _mock_httpx_client(
+            {
+                "ssl-images-amazon.com": None,
+                "m.media-amazon.com": None,
+                "openlibrary.org": None,
+                "googleapis.com": None,
+                "geobib.fr": data,
+            }
+        )
+
         # Override for geobib since it checks content-type
         def get_side_effect(url, **kwargs):
             if "geobib.fr" in url:
@@ -160,6 +171,7 @@ class TestCascadeHappyPaths:
             r.content = b""
             r.headers = {"content-type": "text/plain"}
             return r
+
         client.get.side_effect = get_side_effect
 
         with patch("httpx.Client", return_value=client):
@@ -179,6 +191,7 @@ class TestCascadeHappyPaths:
 # ---------------------------------------------------------------------------
 # Idempotency
 # ---------------------------------------------------------------------------
+
 
 class TestIdempotency:
     def test_returns_cached_filename_without_http_call(self, covers_dir):
@@ -207,6 +220,7 @@ class TestIdempotency:
 # ---------------------------------------------------------------------------
 # ISBN normalisation
 # ---------------------------------------------------------------------------
+
 
 class TestIsbnNormalisation:
     def test_isbn10_and_isbn13_both_resolve(self, covers_dir):
@@ -245,6 +259,7 @@ class TestIsbnNormalisation:
 # Amazon — LZZZZZZZ preferred over TZZZZZZZ
 # ---------------------------------------------------------------------------
 
+
 class TestAmazonSizePreference:
     def test_lzzzzzzz_used_before_tzzzzzzz(self, covers_dir):
         data = _image()
@@ -268,12 +283,15 @@ class TestAmazonSizePreference:
 
         amazon_urls = [u for u in url_order if "amazon" in u]
         assert amazon_urls, "No Amazon URLs requested"
-        assert "LZZZZZZZ" in amazon_urls[0], f"First Amazon URL should be LZZZZZZZ, got {amazon_urls[0]}"
+        assert (
+            "LZZZZZZZ" in amazon_urls[0]
+        ), f"First Amazon URL should be LZZZZZZZ, got {amazon_urls[0]}"
 
 
 # ---------------------------------------------------------------------------
 # Open Library — ISBN-13 preferred
 # ---------------------------------------------------------------------------
+
 
 class TestOpenLibraryIsbnPreference:
     def test_isbn13_tried_before_isbn10(self, covers_dir):
@@ -311,6 +329,7 @@ class TestOpenLibraryIsbnPreference:
 # configure() affects google_api provider
 # ---------------------------------------------------------------------------
 
+
 class TestConfigureIntegration:
     def test_api_key_passed_to_google_provider(self, covers_dir):
         configure(google_api_key="SECRET_KEY")
@@ -332,8 +351,10 @@ class TestConfigureIntegration:
 
         with patch("httpx.Client", return_value=client):
             # Amazon and OL miss → hits Google API
-            with patch("src.bcd_api.services.external.cover._try_amazon", return_value=None), \
-                 patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None):
+            with (
+                patch("src.bcd_api.services.external.cover._try_amazon", return_value=None),
+                patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None),
+            ):
                 download_cover("9782211056465", covers_dir=covers_dir)
 
         assert params_used.get("key") == "SECRET_KEY"
@@ -342,6 +363,7 @@ class TestConfigureIntegration:
 # ---------------------------------------------------------------------------
 # Integration with catalog_service._download_cover
 # ---------------------------------------------------------------------------
+
 
 class TestCatalogServiceIntegration:
     """Verify that catalog_service._download_cover delegates to cover_service."""
@@ -358,16 +380,19 @@ class TestCatalogServiceIntegration:
 
     def test_issn_skipped_by_cover_service(self):
         from src.bcd_api.services.catalog_service import _download_cover
+
         # The issn: guard lives inside cover_service.download_cover.
         # catalog_service._download_cover delegates unconditionally and
         # returns whatever cover_service returns (None for ISSNs).
-        with patch("src.bcd_api.services.external.cover.download_cover",
-                   return_value=None) as mock_dl:
+        with patch(
+            "src.bcd_api.services.external.cover.download_cover", return_value=None
+        ) as mock_dl:
             result = _download_cover("issn:0295-7736")
         assert result is None
         mock_dl.assert_called_once()
 
     def test_none_isbn_returns_none(self):
         from src.bcd_api.services.catalog_service import _download_cover
+
         result = _download_cover(None)
         assert result is None

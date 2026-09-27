@@ -1,19 +1,25 @@
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from src.bcd_api.core.exceptions import ExportTooLargeException
 from src.bcd_api.services.borrower.export import (
-    export_borrowers_to_csv,
     _borrower_to_dict,
+    export_borrowers_to_csv,
 )
 
 
 def test_borrower_to_dict_with_class_and_blocked_reason():
     borrower = SimpleNamespace(
-        borrower_id="B1", first_name="Alice", last_name="Doe", role="student",
-        class_=SimpleNamespace(name="CM1"), barcode="BC1", active=True, blocked_reason="late",
+        borrower_id="B1",
+        first_name="Alice",
+        last_name="Doe",
+        role="student",
+        class_=SimpleNamespace(name="CM1"),
+        barcode="BC1",
+        active=True,
+        blocked_reason="late",
     )
     row = _borrower_to_dict(borrower)
     assert row["class"] == "CM1"

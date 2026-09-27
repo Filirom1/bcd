@@ -4,13 +4,13 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from fastapi import BackgroundTasks
 
 from ..core.database import SessionLocal
 from ..models.bibliographic_record import BibliographicRecord
-from .admin_service import get_records_without_covers, backfill_covers_logic
+from .admin_service import get_records_without_covers
 from .external.cover import download_cover, find_cached_cover
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,10 @@ class CoverDownloadManager:
         """Start a background task to download covers for records with an ISBN but no cover."""
         with self._lock:
             if self._status["running"]:
-                return {"status": "already_running", "message": "Cover download is already running."}
+                return {
+                    "status": "already_running",
+                    "message": "Cover download is already running.",
+                }
             self._status["running"] = True
             self._status["processed"] = 0
             self._status["total"] = 0
@@ -94,7 +97,11 @@ class CoverDownloadManager:
                     if fname:
                         db_update = SessionLocal()
                         try:
-                            rec = db_update.query(BibliographicRecord).filter(BibliographicRecord.id == rec_id).first()
+                            rec = (
+                                db_update.query(BibliographicRecord)
+                                .filter(BibliographicRecord.id == rec_id)
+                                .first()
+                            )
                             if rec:
                                 rec.cover_image = fname
                                 db_update.commit()

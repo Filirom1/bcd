@@ -9,7 +9,10 @@ from src.bcd_api.api.v1 import catalog
 def test_get_shelf_locations_returns_sorted_query_values():
     db = MagicMock()
     query = db.query.return_value
-    query.filter.return_value.distinct.return_value.order_by.return_value.all.return_value = [("A",), ("B",)]
+    query.filter.return_value.distinct.return_value.order_by.return_value.all.return_value = [
+        ("A",),
+        ("B",),
+    ]
     assert catalog.get_shelf_locations(db) == {"locations": ["A", "B"]}
 
 
@@ -31,7 +34,11 @@ def test_lookup_isbn_raises_404_when_not_found(monkeypatch):
 def test_create_bibliographic_record_delegates(monkeypatch):
     expected = SimpleNamespace(id=1, title="Book")
     calls = []
-    monkeypatch.setattr(catalog.catalog_service, "create_bibliographic_record", lambda **kwargs: calls.append(kwargs) or expected)
+    monkeypatch.setattr(
+        catalog.catalog_service,
+        "create_bibliographic_record",
+        lambda **kwargs: calls.append(kwargs) or expected,
+    )
     request = SimpleNamespace(title="Book", isbn="123")
     assert catalog.create_bibliographic_record(request, db="db", isbn_lookup=True) is expected
     assert calls[0]["db"] == "db"

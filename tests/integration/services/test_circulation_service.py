@@ -25,7 +25,9 @@ from src.bcd_api.services import circulation_service
 class TestCheckoutScenarios:
     """Test checkout scenarios from User Story 1."""
 
-    def test_checkout_success_single_item(self, db_session, test_borrower_student, test_item_available):
+    def test_checkout_success_single_item(
+        self, db_session, test_borrower_student, test_item_available
+    ):
         """
         Acceptance Scenario 1: Checkout items successfully
         Given: Borrower exists and item is available
@@ -41,7 +43,7 @@ class TestCheckoutScenarios:
             db=db_session,
             borrower_id=borrower_id,
             item_ids=[item_id],
-            checked_out_by="librarian@test.fr"
+            checked_out_by="librarian@test.fr",
         )
 
         # Assert
@@ -60,16 +62,19 @@ class TestCheckoutScenarios:
         assert test_item_available.status == "on_loan"
 
         # Verify transaction created in database
-        transaction = db_session.query(CirculationTransaction).filter(
-            CirculationTransaction.item_id == test_item_available.id
-        ).first()
+        transaction = (
+            db_session.query(CirculationTransaction)
+            .filter(CirculationTransaction.item_id == test_item_available.id)
+            .first()
+        )
         assert transaction is not None
         assert transaction.borrower_id == test_borrower_student.id
         assert transaction.return_date is None
         assert transaction.status == "active"
 
-    def test_checkout_success_multiple_items(self, db_session, test_borrower_student,
-                                            test_item_available, test_item_available_2):
+    def test_checkout_success_multiple_items(
+        self, db_session, test_borrower_student, test_item_available, test_item_available_2
+    ):
         """
         Acceptance Scenario 1 (extended): Checkout multiple items
         Given: Borrower exists and 2 items are available
@@ -82,9 +87,7 @@ class TestCheckoutScenarios:
 
         # Act
         response = circulation_service.checkout_items(
-            db=db_session,
-            borrower_id=borrower_id,
-            item_ids=item_ids
+            db=db_session, borrower_id=borrower_id, item_ids=item_ids
         )
 
         # Assert
@@ -97,8 +100,9 @@ class TestCheckoutScenarios:
         assert test_item_available.status == "on_loan"
         assert test_item_available_2.status == "on_loan"
 
-    def test_checkout_item_already_on_loan(self, db_session, test_borrower_student,
-                                          test_item_available, multiple_borrowers):
+    def test_checkout_item_already_on_loan(
+        self, db_session, test_borrower_student, test_item_available, multiple_borrowers
+    ):
         """
         Acceptance Scenario 3: Item already on loan to another borrower
         Given: Item is on loan to borrower A
@@ -109,7 +113,7 @@ class TestCheckoutScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Act & Assert - Try to checkout same item to second borrower
@@ -117,7 +121,7 @@ class TestCheckoutScenarios:
             circulation_service.checkout_items(
                 db=db_session,
                 borrower_id=multiple_borrowers[0].borrower_id,
-                item_ids=[test_item_available.item_id]
+                item_ids=[test_item_available.item_id],
             )
 
         # Verify error message contains borrower info
@@ -126,8 +130,9 @@ class TestCheckoutScenarios:
         assert "Amira BENALI" in error_detail
         assert test_item_available.item_id in error_detail
 
-    def test_checkout_borrower_blocked_with_overdue(self, db_session, test_borrower_blocked,
-                                                     test_item_available):
+    def test_checkout_borrower_blocked_with_overdue(
+        self, db_session, test_borrower_blocked, test_item_available
+    ):
         """
         Acceptance Scenario 4: Borrower has overdue items
         Given: Borrower has overdue items (blocked)
@@ -139,14 +144,16 @@ class TestCheckoutScenarios:
             circulation_service.checkout_items(
                 db=db_session,
                 borrower_id=test_borrower_blocked.borrower_id,
-                item_ids=[test_item_available.item_id]
+                item_ids=[test_item_available.item_id],
             )
 
         # Verify error message indicates blocked status
         error_detail = str(exc_info.value.detail)
         assert "blocked" in error_detail.lower() or "inactive" in error_detail.lower()
 
-    def test_checkout_exceeds_limit_student(self, db_session, test_borrower_student, multiple_items):
+    def test_checkout_exceeds_limit_student(
+        self, db_session, test_borrower_student, multiple_items
+    ):
         """
         Acceptance Scenario 5: Borrower reaches maximum allowed checkouts
         Given: Borrower has 2 items checked out (student limit = 2)
@@ -157,7 +164,7 @@ class TestCheckoutScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[multiple_items[0].item_id, multiple_items[1].item_id]
+            item_ids=[multiple_items[0].item_id, multiple_items[1].item_id],
         )
 
         # Act & Assert - Try to checkout 3rd item
@@ -165,7 +172,7 @@ class TestCheckoutScenarios:
             circulation_service.checkout_items(
                 db=db_session,
                 borrower_id=test_borrower_student.borrower_id,
-                item_ids=[multiple_items[2].item_id]
+                item_ids=[multiple_items[2].item_id],
             )
 
         # Verify error message mentions limit
@@ -181,13 +188,14 @@ class TestCheckoutScenarios:
         extra_items = []
         for i in range(3, 6):
             from src.bcd_api.models.item import Item
+
             item = Item(
                 item_id=f"80{i}",
                 bibliographic_record_id=multiple_items[0].bibliographic_record_id,
                 call_number="800.000",
                 status="available",
                 condition="good",
-                loanable=True
+                loanable=True,
             )
             db_session.add(item)
             extra_items.append(item)
@@ -198,15 +206,15 @@ class TestCheckoutScenarios:
 
         # Act - Checkout 5 items (should succeed for teacher)
         response = circulation_service.checkout_items(
-            db=db_session,
-            borrower_id=test_borrower_teacher.borrower_id,
-            item_ids=item_ids
+            db=db_session, borrower_id=test_borrower_teacher.borrower_id, item_ids=item_ids
         )
 
         # Assert
         assert response.items_checked_out == 5
 
-    def test_checkout_item_not_loanable(self, db_session, test_borrower_student, test_item_not_loanable):
+    def test_checkout_item_not_loanable(
+        self, db_session, test_borrower_student, test_item_not_loanable
+    ):
         """
         Edge Case: Attempt to checkout reference-only item
         Given: Item is marked as not loanable
@@ -218,7 +226,7 @@ class TestCheckoutScenarios:
             circulation_service.checkout_items(
                 db=db_session,
                 borrower_id=test_borrower_student.borrower_id,
-                item_ids=[test_item_not_loanable.item_id]
+                item_ids=[test_item_not_loanable.item_id],
             )
 
         error_detail = str(exc_info.value.detail)
@@ -234,16 +242,17 @@ class TestCheckoutScenarios:
         # Act & Assert
         with pytest.raises(NotFoundException):
             circulation_service.checkout_items(
-                db=db_session,
-                borrower_id="INVALID999",
-                item_ids=[test_item_available.item_id]
+                db=db_session, borrower_id="INVALID999", item_ids=[test_item_available.item_id]
             )
 
-    def test_checkout_soft_limit_warning_godot_blocked(self, db_session, test_borrower_student, multiple_items):
+    def test_checkout_soft_limit_warning_godot_blocked(
+        self, db_session, test_borrower_student, multiple_items
+    ):
         """
         Test that checking out past the soft warning limit blocks in the Godot kids client
         """
         from src.bcd_api.models.system_settings import SystemSettings
+
         settings = db_session.query(SystemSettings).filter(SystemSettings.id == 1).first()
         settings.loan_limit_warning = 1
         db_session.commit()
@@ -253,7 +262,7 @@ class TestCheckoutScenarios:
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
             item_ids=[multiple_items[0].item_id],
-            checked_out_by="godot-ui"
+            checked_out_by="godot-ui",
         )
 
         # Act & Assert - Try to checkout 2nd item from Godot client (should block)
@@ -262,7 +271,7 @@ class TestCheckoutScenarios:
                 db=db_session,
                 borrower_id=test_borrower_student.borrower_id,
                 item_ids=[multiple_items[1].item_id],
-                checked_out_by="godot-ui"
+                checked_out_by="godot-ui",
             )
 
         # Verify exception details
@@ -270,11 +279,14 @@ class TestCheckoutScenarios:
         assert exc_info.value.context["current"] == 1
         assert exc_info.value.context["limit"] == 1
 
-    def test_checkout_soft_limit_warning_web_ui_allowed(self, db_session, test_borrower_student, multiple_items):
+    def test_checkout_soft_limit_warning_web_ui_allowed(
+        self, db_session, test_borrower_student, multiple_items
+    ):
         """
         Test that checking out past the soft warning limit is allowed in the Web UI / VueJS client
         """
         from src.bcd_api.models.system_settings import SystemSettings
+
         settings = db_session.query(SystemSettings).filter(SystemSettings.id == 1).first()
         settings.loan_limit_warning = 1
         db_session.commit()
@@ -284,7 +296,7 @@ class TestCheckoutScenarios:
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
             item_ids=[multiple_items[0].item_id],
-            checked_out_by="web-ui"
+            checked_out_by="web-ui",
         )
 
         # Act - Try to checkout 2nd item from Web UI (should succeed)
@@ -292,7 +304,7 @@ class TestCheckoutScenarios:
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
             item_ids=[multiple_items[1].item_id],
-            checked_out_by="web-ui"
+            checked_out_by="web-ui",
         )
 
         # Assert
@@ -310,7 +322,7 @@ class TestCheckoutScenarios:
             circulation_service.checkout_items(
                 db=db_session,
                 borrower_id=test_borrower_student.borrower_id,
-                item_ids=["INVALID999"]
+                item_ids=["INVALID999"],
             )
 
 
@@ -328,14 +340,12 @@ class TestReturnScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Act - Return item
         response = circulation_service.return_items(
-            db=db_session,
-            item_ids=[test_item_available.item_id],
-            returned_by="librarian@test.fr"
+            db=db_session, item_ids=[test_item_available.item_id], returned_by="librarian@test.fr"
         )
 
         # Assert
@@ -352,13 +362,17 @@ class TestReturnScenarios:
         assert test_item_available.status == "available"
 
         # Verify transaction has return date
-        transaction = db_session.query(CirculationTransaction).filter(
-            CirculationTransaction.item_id == test_item_available.id
-        ).first()
+        transaction = (
+            db_session.query(CirculationTransaction)
+            .filter(CirculationTransaction.item_id == test_item_available.id)
+            .first()
+        )
         assert transaction.return_date is not None
         assert transaction.status == "returned"
 
-    def test_return_overdue_auto_block(self, db_session, test_borrower_student, test_item_available):
+    def test_return_overdue_auto_block(
+        self, db_session, test_borrower_student, test_item_available
+    ):
         """
         Test that returning all overdue items does NOT block borrower
         (Blocking happens during checkout attempt, not during return)
@@ -370,21 +384,24 @@ class TestReturnScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Manually set due date to past to simulate overdue
-        transaction = db_session.query(CirculationTransaction).filter(
-            CirculationTransaction.item_id == test_item_available.id,
-            CirculationTransaction.return_date.is_(None)
-        ).first()
+        transaction = (
+            db_session.query(CirculationTransaction)
+            .filter(
+                CirculationTransaction.item_id == test_item_available.id,
+                CirculationTransaction.return_date.is_(None),
+            )
+            .first()
+        )
         transaction.due_date = date.today() - timedelta(days=5)  # 5 days overdue
         db_session.commit()
 
         # Act - Return overdue item
         response = circulation_service.return_items(
-            db=db_session,
-            item_ids=[test_item_available.item_id]
+            db=db_session, item_ids=[test_item_available.item_id]
         )
 
         # Assert
@@ -398,10 +415,7 @@ class TestReturnScenarios:
         """
         # Act & Assert
         with pytest.raises(ItemNotOnLoanException) as exc_info:
-            circulation_service.return_items(
-                db=db_session,
-                item_ids=[test_item_available.item_id]
-            )
+            circulation_service.return_items(db=db_session, item_ids=[test_item_available.item_id])
 
         error_detail = str(exc_info.value.detail)
         assert "not currently on loan" in error_detail.lower()
@@ -418,7 +432,7 @@ class TestRenewalScenarios:
         checkout_response = circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
         original_due_date = checkout_response.due_date
 
@@ -426,7 +440,7 @@ class TestRenewalScenarios:
         response = circulation_service.renew_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Assert
@@ -451,28 +465,28 @@ class TestRenewalScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # First renewal
         circulation_service.renew_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Second renewal
         circulation_service.renew_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Act - Try third renewal (should fail)
         response = circulation_service.renew_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Assert
@@ -481,8 +495,9 @@ class TestRenewalScenarios:
         assert len(response.failed) == 1
         assert "limit" in response.failed[0]["reason"].lower()
 
-    def test_renew_item_not_on_loan_to_borrower(self, db_session, test_borrower_student,
-                                                 multiple_borrowers, test_item_available):
+    def test_renew_item_not_on_loan_to_borrower(
+        self, db_session, test_borrower_student, multiple_borrowers, test_item_available
+    ):
         """
         Test renewal fails if item not on loan to requesting borrower
         """
@@ -490,14 +505,14 @@ class TestRenewalScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=multiple_borrowers[0].borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Act - Try to renew as different borrower
         response = circulation_service.renew_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Assert
@@ -508,8 +523,9 @@ class TestRenewalScenarios:
 class TestBorrowerLoansQuery:
     """Test querying borrower's current loans and history."""
 
-    def test_get_current_loans(self, db_session, test_borrower_student,
-                               test_item_available, test_item_available_2):
+    def test_get_current_loans(
+        self, db_session, test_borrower_student, test_item_available, test_item_available_2
+    ):
         """
         Test retrieving borrower's current loans
         """
@@ -517,13 +533,12 @@ class TestBorrowerLoansQuery:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id, test_item_available_2.item_id]
+            item_ids=[test_item_available.item_id, test_item_available_2.item_id],
         )
 
         # Act
         loans = circulation_service.get_borrower_current_loans(
-            db=db_session,
-            borrower_id=test_borrower_student.borrower_id
+            db=db_session, borrower_id=test_borrower_student.borrower_id
         )
 
         # Assert
@@ -544,18 +559,14 @@ class TestBorrowerLoansQuery:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
-        circulation_service.return_items(
-            db=db_session,
-            item_ids=[test_item_available.item_id]
-        )
+        circulation_service.return_items(db=db_session, item_ids=[test_item_available.item_id])
 
         # Act
         history = circulation_service.get_borrower_circulation_history(
-            db=db_session,
-            borrower_id=test_borrower_student.borrower_id
+            db=db_session, borrower_id=test_borrower_student.borrower_id
         )
 
         # Assert — response is now a BorrowerHistoryResponse Pydantic model
@@ -575,25 +586,21 @@ class TestItemCirculationHistory:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
-        circulation_service.return_items(
-            db=db_session,
-            item_ids=[test_item_available.item_id]
-        )
+        circulation_service.return_items(db=db_session, item_ids=[test_item_available.item_id])
 
         # Checkout again
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Act
         history = circulation_service.get_item_circulation_history(
-            db=db_session,
-            item_id=test_item_available.item_id
+            db=db_session, item_id=test_item_available.item_id
         )
 
         # Assert — response is now an ItemHistoryResponse Pydantic model
@@ -668,9 +675,7 @@ class TestReturnWithHold:
 
         # Checkout item to first borrower
         circulation_service.checkout_items(
-            db=db_session,
-            borrower_id=borrower1.borrower_id,
-            item_ids=[item.item_id]
+            db=db_session, borrower_id=borrower1.borrower_id, item_ids=[item.item_id]
         )
 
         # Second borrower places hold
@@ -688,9 +693,7 @@ class TestReturnWithHold:
 
         # Return the item
         response = circulation_service.return_items(
-            db=db_session,
-            item_ids=[item.item_id],
-            returned_by="librarian@test.fr"
+            db=db_session, item_ids=[item.item_id], returned_by="librarian@test.fr"
         )
 
         # Assert return was successful
@@ -713,7 +716,9 @@ class TestReturnWithHold:
         db_session.refresh(hold)
         assert hold.status == "ready"
 
-    def test_return_without_hold_shows_no_hold_info(self, db_session, test_borrower_student, test_item_available):
+    def test_return_without_hold_shows_no_hold_info(
+        self, db_session, test_borrower_student, test_item_available
+    ):
         """
         Test that returning an item without holds shows hold_ready as None.
         """
@@ -721,13 +726,12 @@ class TestReturnWithHold:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Return item (no holds exist)
         response = circulation_service.return_items(
-            db=db_session,
-            item_ids=[test_item_available.item_id]
+            db=db_session, item_ids=[test_item_available.item_id]
         )
 
         # Assert hold_ready is None
@@ -798,9 +802,7 @@ class TestReturnWithHold:
 
         # Checkout to first borrower
         circulation_service.checkout_items(
-            db=db_session,
-            borrower_id=borrower1.borrower_id,
-            item_ids=[item.item_id]
+            db=db_session, borrower_id=borrower1.borrower_id, item_ids=[item.item_id]
         )
 
         # Second borrower places hold
@@ -813,10 +815,7 @@ class TestReturnWithHold:
 
         # Return the item
         today = date.today()
-        response = circulation_service.return_items(
-            db=db_session,
-            item_ids=[item.item_id]
-        )
+        response = circulation_service.return_items(db=db_session, item_ids=[item.item_id])
 
         # Verify hold expiration is today + 7 days (from settings)
         returned_item = response.items[0]
@@ -853,19 +852,24 @@ class TestReturnItemsIncludesShelfLocation:
         assert "shelf_location" in returned
         assert returned["shelf_location"] == "Fiction - Section A - Row 3"
 
-    def test_return_items_shelf_location_none_when_not_set(
-        self, db_session, test_borrower_student
-    ):
+    def test_return_items_shelf_location_none_when_not_set(self, db_session, test_borrower_student):
         import json
 
         from src.bcd_api.models.bibliographic_record import BibliographicRecord
         from src.bcd_api.models.item import Item
 
         # Arrange: item without shelf_location
-        record = BibliographicRecord(title="Sans emplacement", authors=json.dumps(["A"]), medium_type="Livre")
+        record = BibliographicRecord(
+            title="Sans emplacement", authors=json.dumps(["A"]), medium_type="Livre"
+        )
         db_session.add(record)
         db_session.flush()
-        item = Item(item_id="NO_LOC_99", bibliographic_record_id=record.id, status="available", loanable=True)
+        item = Item(
+            item_id="NO_LOC_99",
+            bibliographic_record_id=record.id,
+            status="available",
+            loanable=True,
+        )
         db_session.add(item)
         db_session.flush()
 
@@ -891,7 +895,12 @@ class TestPhase0CharacterizationScenarios:
     """Phase 0: Characterization and robustness tests for circulation."""
 
     def test_checkout_items_atomic_rollback(
-        self, db_session, test_borrower_student, test_item_available, test_item_available_2, multiple_borrowers
+        self,
+        db_session,
+        test_borrower_student,
+        test_item_available,
+        test_item_available_2,
+        multiple_borrowers,
     ):
         """
         GIVEN: Borrower exists, and two items (one available, one already checked out to someone else)
@@ -902,7 +911,7 @@ class TestPhase0CharacterizationScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=multiple_borrowers[0].borrower_id,
-            item_ids=[test_item_available_2.item_id]
+            item_ids=[test_item_available_2.item_id],
         )
         assert test_item_available_2.status == "on_loan"
         assert test_item_available.status == "available"
@@ -912,7 +921,7 @@ class TestPhase0CharacterizationScenarios:
             circulation_service.checkout_items(
                 db=db_session,
                 borrower_id=test_borrower_student.borrower_id,
-                item_ids=[test_item_available.item_id, test_item_available_2.item_id]
+                item_ids=[test_item_available.item_id, test_item_available_2.item_id],
             )
 
         # Verify that the available item is still available (atomic rollback check)
@@ -929,11 +938,12 @@ class TestPhase0CharacterizationScenarios:
         """
         # Act & Assert
         from src.bcd_api.core.exceptions import ConflictError, ValidationError
+
         with pytest.raises((ConflictError, ValidationError)):
             circulation_service.checkout_items(
                 db=db_session,
                 borrower_id=test_borrower_student.borrower_id,
-                item_ids=[test_item_available.item_id, test_item_available.item_id]
+                item_ids=[test_item_available.item_id, test_item_available.item_id],
             )
 
     def test_renew_blocked_by_active_hold_waiting(
@@ -950,7 +960,7 @@ class TestPhase0CharacterizationScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Place a waiting hold on this bibliographic record by another borrower
@@ -958,21 +968,23 @@ class TestPhase0CharacterizationScenarios:
             db=db_session,
             borrower_id=multiple_borrowers[0].id,
             bibliographic_record_id=test_item_available.bibliographic_record_id,
-            created_by="librarian"
+            created_by="librarian",
         )
 
         # Act
         response = circulation_service.renew_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Assert: The renewal must fail
         assert response.failed_count == 1
         assert response.renewed_count == 0
         reason_lower = response.failed[0]["reason"].lower()
-        assert "hold" in reason_lower or "reservation" in reason_lower or "réservation" in reason_lower
+        assert (
+            "hold" in reason_lower or "reservation" in reason_lower or "réservation" in reason_lower
+        )
 
     def test_renew_blocked_by_active_hold_ready(
         self, db_session, test_borrower_student, test_item_available, multiple_borrowers
@@ -988,7 +1000,7 @@ class TestPhase0CharacterizationScenarios:
         circulation_service.checkout_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Create a ready hold for another borrower
@@ -996,7 +1008,7 @@ class TestPhase0CharacterizationScenarios:
             db=db_session,
             borrower_id=multiple_borrowers[0].id,
             bibliographic_record_id=test_item_available.bibliographic_record_id,
-            created_by="librarian"
+            created_by="librarian",
         )
         # Mark hold as ready
         hold_service.mark_hold_ready(db=db_session, hold_id=hold.id)
@@ -1005,34 +1017,40 @@ class TestPhase0CharacterizationScenarios:
         response = circulation_service.renew_items(
             db=db_session,
             borrower_id=test_borrower_student.borrower_id,
-            item_ids=[test_item_available.item_id]
+            item_ids=[test_item_available.item_id],
         )
 
         # Assert: The renewal must fail
         assert response.failed_count == 1
         assert response.renewed_count == 0
         reason_lower = response.failed[0]["reason"].lower()
-        assert "hold" in reason_lower or "reservation" in reason_lower or "réservation" in reason_lower
+        assert (
+            "hold" in reason_lower or "reservation" in reason_lower or "réservation" in reason_lower
+        )
 
 
 class TestRefactoredCirculationSafety:
     """Regression tests for transaction and policy boundaries."""
 
     def test_return_hold_promotion_failure_rolls_back(
-        self, db_session, test_borrower_student, test_item_available,
-        multiple_borrowers, monkeypatch,
+        self,
+        db_session,
+        test_borrower_student,
+        test_item_available,
+        multiple_borrowers,
+        monkeypatch,
     ):
         from src.bcd_api.models.circulation import CirculationTransaction
         from src.bcd_api.services import hold_service
         from src.bcd_api.services.holds import commands as hold_commands
 
         item_id = test_item_available.item_id
-        circulation_service.checkout_items(
-            db_session, test_borrower_student.borrower_id, [item_id]
-        )
+        circulation_service.checkout_items(db_session, test_borrower_student.borrower_id, [item_id])
         hold_service.create_hold(
-            db_session, multiple_borrowers[0].id,
-            test_item_available.bibliographic_record_id, "librarian",
+            db_session,
+            multiple_borrowers[0].id,
+            test_item_available.bibliographic_record_id,
+            "librarian",
         )
 
         def fail_promotion(*args, **kwargs):
@@ -1045,12 +1063,18 @@ class TestRefactoredCirculationSafety:
             circulation_service.return_items(db_session, [item_id])
 
         from src.bcd_api.models.item import Item
+
         item = db_session.query(Item).filter(Item.item_id == item_id).one()
         assert item.status == "on_loan"
-        assert db_session.query(CirculationTransaction).filter(
-            CirculationTransaction.item_id == item.id,
-            CirculationTransaction.return_date.is_(None),
-        ).count() == 1
+        assert (
+            db_session.query(CirculationTransaction)
+            .filter(
+                CirculationTransaction.item_id == item.id,
+                CirculationTransaction.return_date.is_(None),
+            )
+            .count()
+            == 1
+        )
 
     def test_renew_unknown_borrower_raises_not_found(self, db_session, test_item_available):
         from src.bcd_api.core.exceptions import NotFoundException
@@ -1061,18 +1085,24 @@ class TestRefactoredCirculationSafety:
             )
 
     def test_renew_technical_failure_rolls_back(
-        self, db_session, test_borrower_student, test_item_available, monkeypatch,
+        self,
+        db_session,
+        test_borrower_student,
+        test_item_available,
+        monkeypatch,
     ):
         from src.bcd_api.models.circulation import CirculationTransaction
 
         item_id = test_item_available.item_id
-        circulation_service.checkout_items(
-            db_session, test_borrower_student.borrower_id, [item_id]
+        circulation_service.checkout_items(db_session, test_borrower_student.borrower_id, [item_id])
+        transaction = (
+            db_session.query(CirculationTransaction)
+            .filter(
+                CirculationTransaction.item_id == test_item_available.id,
+                CirculationTransaction.return_date.is_(None),
+            )
+            .one()
         )
-        transaction = db_session.query(CirculationTransaction).filter(
-            CirculationTransaction.item_id == test_item_available.id,
-            CirculationTransaction.return_date.is_(None),
-        ).one()
         old_due_date = transaction.due_date
         old_count = transaction.renewal_count
         original_flush = db_session.flush
@@ -1087,15 +1117,25 @@ class TestRefactoredCirculationSafety:
             )
         monkeypatch.setattr(db_session, "flush", original_flush)
         from src.bcd_api.models.item import Item
-        transaction = db_session.query(CirculationTransaction).join(Item).filter(
-            Item.item_id == item_id,
-            CirculationTransaction.return_date.is_(None),
-        ).one()
+
+        transaction = (
+            db_session.query(CirculationTransaction)
+            .join(Item)
+            .filter(
+                Item.item_id == item_id,
+                CirculationTransaction.return_date.is_(None),
+            )
+            .one()
+        )
         assert transaction.due_date == old_due_date
         assert transaction.renewal_count == old_count
 
     def test_checkout_two_copies_consumes_hold_once(
-        self, db_session, test_borrower_student, test_item_available, test_item_available_2,
+        self,
+        db_session,
+        test_borrower_student,
+        test_item_available,
+        test_item_available_2,
     ):
         from src.bcd_api.models.hold import Hold
         from src.bcd_api.services import hold_service
@@ -1103,21 +1143,33 @@ class TestRefactoredCirculationSafety:
         test_item_available_2.bibliographic_record_id = test_item_available.bibliographic_record_id
         db_session.commit()
         hold_service.create_hold(
-            db_session, test_borrower_student.id,
-            test_item_available.bibliographic_record_id, "librarian",
+            db_session,
+            test_borrower_student.id,
+            test_item_available.bibliographic_record_id,
+            "librarian",
         )
         circulation_service.checkout_items(
-            db_session, test_borrower_student.borrower_id,
+            db_session,
+            test_borrower_student.borrower_id,
             [test_item_available.item_id, test_item_available_2.item_id],
         )
-        assert db_session.query(Hold).filter(
-            Hold.borrower_id == test_borrower_student.id,
-            Hold.bibliographic_record_id == test_item_available.bibliographic_record_id,
-            Hold.status.in_(["waiting", "ready"]),
-        ).count() == 0
+        assert (
+            db_session.query(Hold)
+            .filter(
+                Hold.borrower_id == test_borrower_student.id,
+                Hold.bibliographic_record_id == test_item_available.bibliographic_record_id,
+                Hold.status.in_(["waiting", "ready"]),
+            )
+            .count()
+            == 0
+        )
 
     def test_current_loans_can_renew_false_when_title_has_hold(
-        self, db_session, test_borrower_student, test_item_available, multiple_borrowers,
+        self,
+        db_session,
+        test_borrower_student,
+        test_item_available,
+        multiple_borrowers,
     ):
         from src.bcd_api.services import hold_service
 
@@ -1125,8 +1177,10 @@ class TestRefactoredCirculationSafety:
             db_session, test_borrower_student.borrower_id, [test_item_available.item_id]
         )
         hold_service.create_hold(
-            db_session, multiple_borrowers[0].id,
-            test_item_available.bibliographic_record_id, "librarian",
+            db_session,
+            multiple_borrowers[0].id,
+            test_item_available.bibliographic_record_id,
+            "librarian",
         )
         loans = circulation_service.get_borrower_current_loans(
             db_session, test_borrower_student.borrower_id

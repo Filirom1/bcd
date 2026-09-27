@@ -11,8 +11,6 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
-
 from ...core.deps import get_db
 from ...schemas.circulation import (
     BorrowerHistoryResponse,
@@ -24,14 +22,13 @@ from ...schemas.circulation import (
 )
 from ...services import circulation_service
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/circulation", tags=["circulation"])
 
 
 @router.post("/checkout", status_code=status.HTTP_201_CREATED)
-def checkout_items(
-    checkout_request: CheckoutRequest,
-    db: Session = Depends(get_db)
-):
+def checkout_items(checkout_request: CheckoutRequest, db: Session = Depends(get_db)):
     """
     Check out items to a borrower
 
@@ -49,16 +46,13 @@ def checkout_items(
         db=db,
         borrower_id=checkout_request.borrower_id,
         item_ids=checkout_request.item_ids,
-        checked_out_by=checkout_request.checked_out_by
+        checked_out_by=checkout_request.checked_out_by,
     )
     return response
 
 
 @router.post("/return")
-def return_items(
-    return_request: ReturnRequest,
-    db: Session = Depends(get_db)
-):
+def return_items(return_request: ReturnRequest, db: Session = Depends(get_db)):
     """
     Process return of items
 
@@ -72,19 +66,13 @@ def return_items(
     - 400: Item not currently on loan
     """
     response = circulation_service.return_items(
-        db=db,
-        item_ids=return_request.item_ids,
-        returned_by=return_request.returned_by
+        db=db, item_ids=return_request.item_ids, returned_by=return_request.returned_by
     )
     return response
 
 
-
 @router.post("/renew", response_model=RenewResponse)
-def renew_items(
-    renew_request: RenewRequest,
-    db: Session = Depends(get_db)
-):
+def renew_items(renew_request: RenewRequest, db: Session = Depends(get_db)):
     """
     Renew items for a borrower
 
@@ -101,19 +89,13 @@ def renew_items(
     - 400: Item not on loan to borrower or renewal limit exceeded
     """
     response = circulation_service.renew_items(
-        db=db,
-        borrower_id=renew_request.borrower_id,
-        item_ids=renew_request.item_ids
+        db=db, borrower_id=renew_request.borrower_id, item_ids=renew_request.item_ids
     )
     return response
 
 
-
 @router.get("/borrower/{borrower_id}/items")
-def get_borrower_current_loans(
-    borrower_id: str,
-    db: Session = Depends(get_db)
-):
+def get_borrower_current_loans(borrower_id: str, db: Session = Depends(get_db)):
     """
     Get all active loans for a borrower
 
@@ -128,15 +110,8 @@ def get_borrower_current_loans(
     **Errors**:
     - 404: Borrower not found
     """
-    loans = circulation_service.get_borrower_current_loans(
-        db=db,
-        borrower_id=borrower_id
-    )
-    return {
-        "borrower_id": borrower_id,
-        "loans_count": len(loans),
-        "loans": loans
-    }
+    loans = circulation_service.get_borrower_current_loans(db=db, borrower_id=borrower_id)
+    return {"borrower_id": borrower_id, "loans_count": len(loans), "loans": loans}
 
 
 @router.get("/item/{item_id}/history", response_model=ItemHistoryResponse)

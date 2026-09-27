@@ -36,21 +36,11 @@ class TestUS3BorrowerList:
     """Test borrower list, search, and filtering."""
 
 
-
-
-
 class TestUS3BorrowerDetail:
     """Test borrower detail view and cross-navigation."""
 
-
     def test_us3_ac4_current_loans_clickable_items(
-        self,
-        page,
-        borrowers_page,
-        borrower_factory,
-        item_factory,
-        db_session,
-        server_url
+        self, page, borrowers_page, borrower_factory, item_factory, db_session, server_url
     ):
         """
         US3-AC4: Current loans show clickable item titles.
@@ -63,18 +53,16 @@ class TestUS3BorrowerDetail:
         from src.bcd_api.models.circulation import CirculationTransaction
 
         borrower = borrower_factory.create(borrower_id="5001")
-        item, record = item_factory.create_with_record(
-            title="Clickable Item Book"
-        )
+        item, record = item_factory.create_with_record(title="Clickable Item Book")
 
         # Checkout item
         transaction = CirculationTransaction(
             borrower_id=borrower.id,
             item_id=item.id,
-                bibliographic_record_id=record.id,  # REQUIRED field
+            bibliographic_record_id=record.id,  # REQUIRED field
             checkout_date=date.today(),
             due_date=date.today() + timedelta(days=14),
-            status="active"
+            status="active",
         )
         db_session.add(transaction)
         db_session.commit()
@@ -94,14 +82,10 @@ class TestUS3BorrowerDetail:
 class TestUS3BorrowerBlocking:
     """Test borrower blocking/unblocking functionality."""
 
-            # Modal should have blocking form
+    # Modal should have blocking form
 
     def test_us3_ac11_block_borrower_confirmation(
-        self,
-        page,
-        borrowers_page,
-        borrower_factory,
-        db_session
+        self, page, borrowers_page, borrower_factory, db_session
     ):
         """
         US3-AC11: Blocking borrower with reason updates status.
@@ -111,10 +95,7 @@ class TestUS3BorrowerBlocking:
         Assert: Borrower blocked, shows "Bloqué" badge with reason
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="7001",
-            active=True
-        )
+        borrower_factory.create(borrower_id="7001", active=True)
 
         # Act
         borrowers_page.goto()
@@ -131,14 +112,11 @@ class TestUS3BorrowerBlocking:
         borrowers_page.confirm_action()
 
         # Assert - borrower is now blocked
-        expect(page.locator('.badge:has-text("Bloqué"), .badge:has-text("Blocked")').first).to_be_visible()
+        expect(
+            page.locator('.badge:has-text("Bloqué"), .badge:has-text("Blocked")').first
+        ).to_be_visible()
 
-    def test_us3_ac12_unblock_borrower(
-        self,
-        page,
-        borrowers_page,
-        borrower_factory
-    ):
+    def test_us3_ac12_unblock_borrower(self, page, borrowers_page, borrower_factory):
         """
         US3-AC12: Unblocking borrower restores active status.
 
@@ -147,10 +125,7 @@ class TestUS3BorrowerBlocking:
         Assert: Shows "Actif" badge, borrower can borrow again
         """
         # Arrange - Create blocked borrower
-        borrower = borrower_factory.create_blocked(
-            borrower_id="8001",
-            reason="Test block"
-        )
+        borrower_factory.create_blocked(borrower_id="8001", reason="Test block")
 
         # Act
         borrowers_page.goto()
@@ -173,24 +148,17 @@ class TestUS3BorrowerBlocking:
 class TestUS3RenewAll:
     """Test Renew All functionality from borrower detail page."""
 
-            # Should show "Renewed 3 item(s) successfully"
+    # Should show "Renewed 3 item(s) successfully"
 
-
-            # Assert - Should show mixed results
-            # Green: "Successfully renewed (2)"
-            # Orange: "Could not renew (1) - Renewal limit reached"
+    # Assert - Should show mixed results
+    # Green: "Successfully renewed (2)"
+    # Orange: "Could not renew (1) - Renewal limit reached"
 
 
 class TestUS3BorrowerImport:
     """Test borrower CSV import functionality."""
 
-    def test_us3_ac9_import_borrowers_from_csv(
-        self,
-        page,
-        server_url,
-        tmp_path,
-        db_session
-    ):
+    def test_us3_ac9_import_borrowers_from_csv(self, page, server_url, tmp_path, db_session):
         """
         US3-AC9: Import borrowers from CSV file.
 
@@ -200,18 +168,31 @@ class TestUS3BorrowerImport:
         """
         # Arrange - Create test CSV
         import csv
+
         csv_file = tmp_path / "test_borrowers.csv"
-        with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=['borrower_id', 'first_name', 'last_name', 'class_name', 'role', 'active'])
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=[
+                    "borrower_id",
+                    "first_name",
+                    "last_name",
+                    "class_name",
+                    "role",
+                    "active",
+                ],
+            )
             writer.writeheader()
-            writer.writerow({
-                'borrower_id': '555',
-                'first_name': 'Amira',
-                'last_name': 'BENALI',
-                'class_name': 'CP-A',
-                'role': 'student',
-                'active': 'true'
-            })
+            writer.writerow(
+                {
+                    "borrower_id": "555",
+                    "first_name": "Amira",
+                    "last_name": "BENALI",
+                    "class_name": "CP-A",
+                    "role": "student",
+                    "active": "true",
+                }
+            )
 
         # Act - Navigate to borrowers page
         page.goto(f"{server_url}/#/borrowers")
@@ -226,13 +207,15 @@ class TestUS3BorrowerImport:
         import_item.click()
 
         # Wait for file input
-        page.wait_for_selector('#csv-file')
+        page.wait_for_selector("#csv-file")
 
         # Upload CSV file
-        page.locator('#csv-file').set_input_files(str(csv_file))
+        page.locator("#csv-file").set_input_files(str(csv_file))
 
         # Click the Import button on the modal
-        import_btn = page.locator('button.btn-primary:has-text("Import"), button.btn-primary:has-text("Importer")')
+        import_btn = page.locator(
+            'button.btn-primary:has-text("Import"), button.btn-primary:has-text("Importer")'
+        )
         import_btn.click()
 
         # Expect success message or summary
@@ -240,10 +223,11 @@ class TestUS3BorrowerImport:
         expect(success_msg).to_be_visible(timeout=5000)
 
         # Click the Close button
-        close_btn = page.locator('button.btn-success:has-text("Fermer"), button.btn-success:has-text("Close")')
+        close_btn = page.locator(
+            'button.btn-success:has-text("Fermer"), button.btn-success:has-text("Close")'
+        )
         close_btn.click()
         page.wait_for_timeout(500)
-
 
 
 if __name__ == "__main__":

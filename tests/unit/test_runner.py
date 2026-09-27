@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
-from src.bcd_api.core.runner import _parse_args, _get_startup_library_code
 from src.bcd_api.core.config import settings
+from src.bcd_api.core.runner import _get_startup_library_code, _parse_args
 
 
 def test_parse_args_defaults():
@@ -23,6 +23,9 @@ def test_parse_args_host_port():
 def test_startup_library_code_reads_database_settings(monkeypatch):
     db = MagicMock()
     monkeypatch.setattr("src.bcd_api.core.database.SessionLocal", lambda: db)
-    monkeypatch.setattr("src.bcd_api.services.settings_service.get_settings", lambda session: MagicMock(library_code="BCD"))
+    monkeypatch.setattr(
+        "src.bcd_api.services.settings_service.get_settings",
+        lambda session: MagicMock(library_code="BCD"),
+    )
     assert _get_startup_library_code() == "BCD"
     db.close.assert_called_once()

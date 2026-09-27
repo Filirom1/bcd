@@ -12,15 +12,17 @@ from sqlalchemy.orm import Session
 from ...core.exceptions import NotFoundError
 from ...models.system_settings import SystemSettings
 
-DEFAULT_SHELF_LOCATIONS = json.dumps([
-    {"label": "Romans",           "color": "#c0392b"},
-    {"label": "Albums",           "color": "#e67e22"},
-    {"label": "Bandes dessinées", "color": "#2980b9"},
-    {"label": "Documentaires",    "color": "#27ae60"},
-    {"label": "Périodiques",      "color": "#16a085"},
-    {"label": "Contes",           "color": "#f39c12"},
-    {"label": "Poésie",           "color": "#8e44ad"},
-])
+DEFAULT_SHELF_LOCATIONS = json.dumps(
+    [
+        {"label": "Romans", "color": "#c0392b"},
+        {"label": "Albums", "color": "#e67e22"},
+        {"label": "Bandes dessinées", "color": "#2980b9"},
+        {"label": "Documentaires", "color": "#27ae60"},
+        {"label": "Périodiques", "color": "#16a085"},
+        {"label": "Contes", "color": "#f39c12"},
+        {"label": "Poésie", "color": "#8e44ad"},
+    ]
+)
 
 DEFAULT_CALL_NUMBER_RULES = '[{"medium_type":null,"shelf_location":"Albums","pattern":"A {AUT1}"},{"medium_type":null,"shelf_location":"Romans","pattern":"R {AUT3}"},{"medium_type":null,"shelf_location":"Contes","pattern":"C {AUT1}"},{"medium_type":null,"shelf_location":"Poésie","pattern":"P {AUT1}"},{"medium_type":null,"shelf_location":"Bandes dessinées","pattern":"BD {SER1}"},{"medium_type":null,"shelf_location":"Documentaires*","pattern":"{DEWEY} {AUT3}"},{"medium_type":null,"shelf_location":null,"pattern":"{AUT3}"}]'
 
@@ -153,7 +155,9 @@ def update_settings(
 
     for key, value in updates.items():
         if key in allowed_fields and hasattr(settings, key):
-            if key in ("dewey_colors", "catalog_shelf_locations", "catalog_call_number_rules") and (isinstance(value, list) or isinstance(value, dict)):
+            if key in ("dewey_colors", "catalog_shelf_locations", "catalog_call_number_rules") and (
+                isinstance(value, list) or isinstance(value, dict)
+            ):
                 value = json.dumps(value)
             setattr(settings, key, value)
 

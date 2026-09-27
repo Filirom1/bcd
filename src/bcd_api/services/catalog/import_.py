@@ -12,6 +12,7 @@ _ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$", re.IGNORECASE)
 # CSV Column Names (BCD export format)
 class CSVColumns:
     """Column names for BCD CSV export format."""
+
     INVENTAIRE = "Inventaire"
     COTE = "Cote"
     RUBRIQUE = "Rubrique"
@@ -38,6 +39,7 @@ class CSVColumns:
 # Dublin Core CSV Column Names (standard format)
 class DublinCoreColumns:
     """Dublin Core metadata element set (15 core elements)."""
+
     # Required
     TITLE = "dc.title"
     IDENTIFIER = "dc.identifier"  # ISBN or item ID

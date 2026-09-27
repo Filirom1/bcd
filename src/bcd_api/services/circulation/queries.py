@@ -15,7 +15,6 @@ from ...models.borrower import Borrower
 from ...models.circulation import CirculationTransaction
 from ...models.hold import Hold
 from ...models.item import Item
-from ...utils.serialization import deserialize_json_list
 from ...schemas.circulation import (
     BorrowerHistoryItem,
     BorrowerHistoryResponse,
@@ -23,6 +22,7 @@ from ...schemas.circulation import (
     ItemHistoryResponse,
     PaginationMeta,
 )
+from ...utils.serialization import deserialize_json_list
 from ._presentation import display_title
 from .policy import is_overdue, overdue_days, was_returned_late
 from .query_filters import active_loan_predicate
@@ -30,32 +30,29 @@ from .query_filters import active_loan_predicate
 
 def get_active_loan_for_item(db: Session, item_db_id: int) -> Optional[CirculationTransaction]:
     """Get the active loan (if any) for an item by its primary key ID."""
-    return db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.item_id == item_db_id,
-            active_loan_predicate()
-        )
-    ).first()
+    return (
+        db.query(CirculationTransaction)
+        .filter(and_(CirculationTransaction.item_id == item_db_id, active_loan_predicate()))
+        .first()
+    )
 
 
 def get_active_loans_for_items(db: Session, item_db_ids: List[int]) -> List[CirculationTransaction]:
     """Get all active loans for a list of item primary key IDs."""
-    return db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.item_id.in_(item_db_ids),
-            active_loan_predicate()
-        )
-    ).all()
+    return (
+        db.query(CirculationTransaction)
+        .filter(and_(CirculationTransaction.item_id.in_(item_db_ids), active_loan_predicate()))
+        .all()
+    )
 
 
 def count_active_loans_for_borrower(db: Session, borrower_db_id: int) -> int:
     """Count the number of active loans for a borrower by their primary key ID."""
-    return db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower_db_id,
-            active_loan_predicate()
-        )
-    ).count()
+    return (
+        db.query(CirculationTransaction)
+        .filter(and_(CirculationTransaction.borrower_id == borrower_db_id, active_loan_predicate()))
+        .count()
+    )
 
 
 def get_borrower_current_loans(db: Session, borrower_id: str) -> List[dict]:
@@ -66,15 +63,16 @@ def get_borrower_current_loans(db: Session, borrower_id: str) -> List[dict]:
     if not borrower:
         raise NotFoundException("Borrower", borrower_id)
 
-    transactions = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.borrower_id == borrower.id,
-            active_loan_predicate()
+    transactions = (
+        db.query(CirculationTransaction)
+        .filter(and_(CirculationTransaction.borrower_id == borrower.id, active_loan_predicate()))
+        .options(
+            joinedload(CirculationTransaction.item),
+            joinedload(CirculationTransaction.bibliographic_record),
         )
-    ).options(
-        joinedload(CirculationTransaction.item),
-        joinedload(CirculationTransaction.bibliographic_record)
-    ).order_by(CirculationTransaction.due_date).all()
+        .order_by(CirculationTransaction.due_date)
+        .all()
+    )
 
     settings = get_settings(db)
     record_ids = {t.bibliographic_record_id for t in transactions}
@@ -82,10 +80,13 @@ def get_borrower_current_loans(db: Session, borrower_id: str) -> List[dict]:
     if record_ids:
         active_hold_record_ids = {
             record_id
-            for (record_id,) in db.query(Hold.bibliographic_record_id).filter(
+            for (record_id,) in db.query(Hold.bibliographic_record_id)
+            .filter(
                 Hold.bibliographic_record_id.in_(record_ids),
                 Hold.status.in_(["waiting", "ready"]),
-            ).distinct().all()
+            )
+            .distinct()
+            .all()
         }
 
     return [
@@ -128,12 +129,12 @@ def get_item_circulation_history(
         raise ItemNotFoundException(item_id)
 
     # Fetch current active loan separately
-    current_transaction = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.item_id == item.id,
-            active_loan_predicate()
-        )
-    ).options(joinedload(CirculationTransaction.borrower)).first()
+    current_transaction = (
+        db.query(CirculationTransaction)
+        .filter(and_(CirculationTransaction.item_id == item.id, active_loan_predicate()))
+        .options(joinedload(CirculationTransaction.borrower))
+        .first()
+    )
 
     current_loan = None
     if current_transaction:
@@ -152,7 +153,7 @@ def get_item_circulation_history(
     base_query = db.query(CirculationTransaction).filter(
         and_(
             CirculationTransaction.item_id == item.id,
-            CirculationTransaction.return_date.isnot(None)
+            CirculationTransaction.return_date.isnot(None),
         )
     )
 
@@ -169,26 +170,28 @@ def get_item_circulation_history(
     total_items = base_query.count()
     total_pages = max(1, math.ceil(total_items / page_size))
 
-    history_transactions = base_query.options(
-        joinedload(CirculationTransaction.borrower)
-    ).order_by(
-        CirculationTransaction.checkout_date.desc()
-    ).offset((page - 1) * page_size).limit(page_size).all()
+    history_transactions = (
+        base_query.options(joinedload(CirculationTransaction.borrower))
+        .order_by(CirculationTransaction.checkout_date.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     history = []
     for t in history_transactions:
-        was_overdue_val = bool(
-            t.return_date and was_returned_late(t.due_date, t.return_date)
+        was_overdue_val = bool(t.return_date and was_returned_late(t.due_date, t.return_date))
+        history.append(
+            ItemHistoryItem(
+                borrower_id=t.borrower.borrower_id,
+                borrower_name=t.borrower.full_name,
+                checkout_date=t.checkout_date,
+                due_date=t.due_date,
+                return_date=t.return_date,
+                was_overdue=was_overdue_val,
+                status="returned_late" if was_overdue_val else "returned_on_time",
+            )
         )
-        history.append(ItemHistoryItem(
-            borrower_id=t.borrower.borrower_id,
-            borrower_name=t.borrower.full_name,
-            checkout_date=t.checkout_date,
-            due_date=t.due_date,
-            return_date=t.return_date,
-            was_overdue=was_overdue_val,
-            status="returned_late" if was_overdue_val else "returned_on_time",
-        ))
 
     return ItemHistoryResponse(
         item_id=item_id,
@@ -221,7 +224,7 @@ def get_borrower_circulation_history(
     base_query = db.query(CirculationTransaction).filter(
         and_(
             CirculationTransaction.borrower_id == borrower.id,
-            CirculationTransaction.return_date.isnot(None)
+            CirculationTransaction.return_date.isnot(None),
         )
     )
 
@@ -238,27 +241,31 @@ def get_borrower_circulation_history(
     total_items = base_query.count()
     total_pages = max(1, math.ceil(total_items / page_size))
 
-    history_transactions = base_query.options(
-        joinedload(CirculationTransaction.item),
-        joinedload(CirculationTransaction.bibliographic_record),
-    ).order_by(
-        CirculationTransaction.checkout_date.desc()
-    ).offset((page - 1) * page_size).limit(page_size).all()
+    history_transactions = (
+        base_query.options(
+            joinedload(CirculationTransaction.item),
+            joinedload(CirculationTransaction.bibliographic_record),
+        )
+        .order_by(CirculationTransaction.checkout_date.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     history = []
     for t in history_transactions:
-        was_overdue_val = bool(
-            t.return_date and was_returned_late(t.due_date, t.return_date)
+        was_overdue_val = bool(t.return_date and was_returned_late(t.due_date, t.return_date))
+        history.append(
+            BorrowerHistoryItem(
+                item_id=t.item.item_id,
+                bibliographic_record_id=t.bibliographic_record_id,
+                title=t.bibliographic_record.title,
+                checkout_date=t.checkout_date,
+                due_date=t.due_date,
+                return_date=t.return_date,
+                was_overdue=was_overdue_val,
+            )
         )
-        history.append(BorrowerHistoryItem(
-            item_id=t.item.item_id,
-            bibliographic_record_id=t.bibliographic_record_id,
-            title=t.bibliographic_record.title,
-            checkout_date=t.checkout_date,
-            due_date=t.due_date,
-            return_date=t.return_date,
-            was_overdue=was_overdue_val,
-        ))
 
     return BorrowerHistoryResponse(
         borrower_id=borrower_id,

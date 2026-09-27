@@ -41,11 +41,11 @@ from .bulk import (
     bulk_change_role_endpoint,
     bulk_delete_borrowers_endpoint,
     bulk_delete_records_endpoint,
-    merge_records_endpoint,
     bulk_edit_borrowers_endpoint,
     bulk_edit_records_endpoint,
     delete_orphan_records_endpoint,
     get_orphan_records_endpoint,
+    merge_records_endpoint,
 )
 from .covers import (
     _download_lock,

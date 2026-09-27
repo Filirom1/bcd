@@ -35,6 +35,7 @@ def _get_env_file_path() -> str:
 def _get_database_url() -> str:
     """Get default database URL based on portable mode."""
     import os
+
     env_db_url = os.environ.get("DATABASE_URL")
     if env_db_url:
         return env_db_url
@@ -42,7 +43,6 @@ def _get_database_url() -> str:
         db_path = get_data_dir() / "bcd.db"
         return f"sqlite:///{db_path}"
     return "sqlite:///./data/bcd.db"
-
 
 
 class Settings(BaseSettings):
@@ -59,12 +59,12 @@ class Settings(BaseSettings):
     # Default behavior fallback to get_data_dir(), get_config_dir() or standard paths
     # Set these in your .env to override default ./data, ./config, ./logs, ./data/covers, and ./backups directories.
     # Useful for packaging under Linux (e.g., /var/lib/bcd, /var/log/bcd, /etc/bcd)
-    data_dir_path: str = ""       # Defaults to ./data (or app_dir/data in portable mode)
-    config_dir_path: str = ""     # Defaults to . (or app_dir/config in portable mode)
-    log_dir_path: str = ""        # Defaults to ./logs (or app_dir/logs in portable mode)
-    covers_dir_path: str = ""     # Defaults to ./data/covers
-    models_dir_path: str = ""     # Defaults to ./data/models
-    backups_dir_path: str = ""    # Defaults to ./backups
+    data_dir_path: str = ""  # Defaults to ./data (or app_dir/data in portable mode)
+    config_dir_path: str = ""  # Defaults to . (or app_dir/config in portable mode)
+    log_dir_path: str = ""  # Defaults to ./logs (or app_dir/logs in portable mode)
+    covers_dir_path: str = ""  # Defaults to ./data/covers
+    models_dir_path: str = ""  # Defaults to ./data/models
+    backups_dir_path: str = ""  # Defaults to ./backups
 
     # Database
     database_url: str = _get_database_url()

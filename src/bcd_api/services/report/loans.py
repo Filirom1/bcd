@@ -3,7 +3,6 @@
 Handles reports about currently active or overdue loans, holds, and reservations.
 """
 
-import json
 import logging
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -41,24 +40,23 @@ def get_overdue_items(
     """
     today = datetime.utcnow().date()
 
-    query = db.query(
-        CirculationTransaction,
-        Borrower,
-        Item,
-        BibliographicRecord,
-        Class,
-    ).join(
-        Borrower, CirculationTransaction.borrower_id == Borrower.id
-    ).join(
-        Item, CirculationTransaction.item_id == Item.id
-    ).join(
-        BibliographicRecord, Item.bibliographic_record_id == BibliographicRecord.id
-    ).outerjoin(
-        Class, Borrower.class_id == Class.id
-    ).filter(
-        and_(
-            CirculationTransaction.return_date.is_(None),
-            CirculationTransaction.due_date < today,
+    query = (
+        db.query(
+            CirculationTransaction,
+            Borrower,
+            Item,
+            BibliographicRecord,
+            Class,
+        )
+        .join(Borrower, CirculationTransaction.borrower_id == Borrower.id)
+        .join(Item, CirculationTransaction.item_id == Item.id)
+        .join(BibliographicRecord, Item.bibliographic_record_id == BibliographicRecord.id)
+        .outerjoin(Class, Borrower.class_id == Class.id)
+        .filter(
+            and_(
+                CirculationTransaction.return_date.is_(None),
+                CirculationTransaction.due_date < today,
+            )
         )
     )
 
@@ -80,19 +78,21 @@ def get_overdue_items(
     for circ, borrower, item, biblio, class_obj in results:
         days_overdue = (today - circ.due_date).days
 
-        overdue_items.append({
-            "circulation_id": circ.id,
-            "borrower_id": borrower.borrower_id,
-            "borrower_name": borrower.full_name,
-            "class_name": class_obj.name if class_obj else None,
-            "item_id": item.item_id,
-            "record_id": biblio.id,
-            "title": biblio.title,
-            "authors": _deserialize_authors(biblio.authors),
-            "checkout_date": circ.checkout_date.date(),
-            "due_date": circ.due_date,
-            "days_overdue": days_overdue,
-        })
+        overdue_items.append(
+            {
+                "circulation_id": circ.id,
+                "borrower_id": borrower.borrower_id,
+                "borrower_name": borrower.full_name,
+                "class_name": class_obj.name if class_obj else None,
+                "item_id": item.item_id,
+                "record_id": biblio.id,
+                "title": biblio.title,
+                "authors": _deserialize_authors(biblio.authors),
+                "checkout_date": circ.checkout_date.date(),
+                "due_date": circ.due_date,
+                "days_overdue": days_overdue,
+            }
+        )
 
     return overdue_items, total_count
 
@@ -108,28 +108,27 @@ def get_overdue_summary_by_class(
 
     today = datetime.utcnow().date()
 
-    query = db.query(
-        Class.name,
-        func.count(CirculationTransaction.id).label("overdue_count"),
-    ).join(
-        Borrower, Class.id == Borrower.class_id
-    ).join(
-        CirculationTransaction, Borrower.id == CirculationTransaction.borrower_id
-    ).filter(
-        and_(
-            CirculationTransaction.return_date.is_(None),
-            CirculationTransaction.due_date < today,
+    query = (
+        db.query(
+            Class.name,
+            func.count(CirculationTransaction.id).label("overdue_count"),
         )
-    ).group_by(Class.name)
+        .join(Borrower, Class.id == Borrower.class_id)
+        .join(CirculationTransaction, Borrower.id == CirculationTransaction.borrower_id)
+        .filter(
+            and_(
+                CirculationTransaction.return_date.is_(None),
+                CirculationTransaction.due_date < today,
+            )
+        )
+        .group_by(Class.name)
+    )
 
     query = query.order_by(Class.name)
 
     results = query.all()
 
-    return [
-        {"class_name": class_name, "overdue_count": count}
-        for class_name, count in results
-    ]
+    return [{"class_name": class_name, "overdue_count": count} for class_name, count in results]
 
 
 def get_holds_report(
@@ -140,12 +139,11 @@ def get_holds_report(
     """
     Get holds/reservations report with filtering by status and class.
     """
-    query = db.query(Hold, Borrower, BibliographicRecord, Class).join(
-        Borrower, Hold.borrower_id == Borrower.id
-    ).join(
-        BibliographicRecord, Hold.bibliographic_record_id == BibliographicRecord.id
-    ).outerjoin(
-        Class, Borrower.class_id == Class.id
+    query = (
+        db.query(Hold, Borrower, BibliographicRecord, Class)
+        .join(Borrower, Hold.borrower_id == Borrower.id)
+        .join(BibliographicRecord, Hold.bibliographic_record_id == BibliographicRecord.id)
+        .outerjoin(Class, Borrower.class_id == Class.id)
     )
 
     if status:
@@ -195,16 +193,16 @@ def get_active_loans(
     """
     Get all active loans (items currently checked out).
     """
-    query = db.query(CirculationTransaction, Borrower, Item, BibliographicRecord, Class).join(
-        Borrower, CirculationTransaction.borrower_id == Borrower.id
-    ).join(
-        Item, CirculationTransaction.item_id == Item.id
-    ).join(
-        BibliographicRecord, CirculationTransaction.bibliographic_record_id == BibliographicRecord.id
-    ).outerjoin(
-        Class, Borrower.class_id == Class.id
-    ).filter(
-        CirculationTransaction.return_date.is_(None)
+    query = (
+        db.query(CirculationTransaction, Borrower, Item, BibliographicRecord, Class)
+        .join(Borrower, CirculationTransaction.borrower_id == Borrower.id)
+        .join(Item, CirculationTransaction.item_id == Item.id)
+        .join(
+            BibliographicRecord,
+            CirculationTransaction.bibliographic_record_id == BibliographicRecord.id,
+        )
+        .outerjoin(Class, Borrower.class_id == Class.id)
+        .filter(CirculationTransaction.return_date.is_(None))
     )
 
     if class_name:
@@ -218,20 +216,22 @@ def get_active_loans(
         days_until_due = (circ.due_date - today).days
         is_overdue = circ.due_date < today
 
-        loans_list.append({
-            "circulation_id": circ.id,
-            "borrower_id": borrower.borrower_id,
-            "borrower_name": borrower.full_name,
-            "class_name": class_obj.name if class_obj else None,
-            "item_id": item.item_id,
-            "bibliographic_record_id": biblio.id,
-            "title": biblio.title,
-            "authors": _deserialize_authors(biblio.authors),
-            "checkout_date": circ.checkout_date,
-            "due_date": circ.due_date,
-            "days_until_due": days_until_due,
-            "is_overdue": is_overdue,
-            "renewal_count": circ.renewal_count,
-        })
+        loans_list.append(
+            {
+                "circulation_id": circ.id,
+                "borrower_id": borrower.borrower_id,
+                "borrower_name": borrower.full_name,
+                "class_name": class_obj.name if class_obj else None,
+                "item_id": item.item_id,
+                "bibliographic_record_id": biblio.id,
+                "title": biblio.title,
+                "authors": _deserialize_authors(biblio.authors),
+                "checkout_date": circ.checkout_date,
+                "due_date": circ.due_date,
+                "days_until_due": days_until_due,
+                "is_overdue": is_overdue,
+                "renewal_count": circ.renewal_count,
+            }
+        )
 
     return loans_list

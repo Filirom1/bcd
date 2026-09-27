@@ -65,12 +65,11 @@ from pathlib import Path
 
 import pytest
 import requests
-
-pytestmark = [pytest.mark.e2e, pytest.mark.external, pytest.mark.slow]
 from click.testing import CliRunner
 
-# Import CLI app
 from src.bcd_cli.main import cli
+
+pytestmark = [pytest.mark.e2e, pytest.mark.external, pytest.mark.slow]
 
 
 @pytest.fixture(scope="module")
@@ -98,12 +97,7 @@ def api_server(test_database):
 
     # Run migrations
     print(f"\n📦 Running database migrations for {test_db_path}...")
-    subprocess.run(
-        ["alembic", "upgrade", "head"],
-        env=env,
-        check=True,
-        capture_output=True
-    )
+    subprocess.run(["alembic", "upgrade", "head"], env=env, check=True, capture_output=True)
     print("✓ Migrations complete")
 
     # Seed default SystemSettings (required for API to work)
@@ -113,8 +107,8 @@ def api_server(test_database):
     from src.bcd_api.models.system_settings import SystemSettings
 
     engine = create_engine(f"sqlite:///{test_db_path.absolute()}")
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    db = SessionLocal()
+    session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db = session_local()
 
     settings = SystemSettings(
         id=1,
@@ -128,7 +122,7 @@ def api_server(test_database):
         barcode_type="code39",
         language="fr",
         academic_year_current="2025-2026",
-        library_name="BCD E2E Test Library"
+        library_name="BCD E2E Test Library",
     )
     db.add(settings)
     db.commit()
@@ -140,12 +134,22 @@ def api_server(test_database):
     log_file = open("test_e2e_real_data_server.log", "w")
     project_root = Path(__file__).resolve().parents[2]
     process = subprocess.Popen(
-        ["python", "-m", "uvicorn", "src.bcd_api.main:app",
-         "--host", "127.0.0.1", "--port", "8001", "--log-level", "error"],
+        [
+            "python",
+            "-m",
+            "uvicorn",
+            "src.bcd_api.main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "8001",
+            "--log-level",
+            "error",
+        ],
         env=env,
         stdout=log_file,
         stderr=log_file,
-        cwd=project_root
+        cwd=project_root,
     )
 
     # Wait for server to start (max 15 seconds)
@@ -221,12 +225,9 @@ def test_02_transform_catalog_to_dublin_core(runner, sample_data_dir):
         output_csv.unlink()
 
     # Transform via CLI
-    result = runner.invoke(cli, [
-        "catalog", "transform",
-        str(input_csv),
-        str(output_csv),
-        "--format", "dublin-core"
-    ])
+    result = runner.invoke(
+        cli, ["catalog", "transform", str(input_csv), str(output_csv), "--format", "dublin-core"]
+    )
 
     print("\n--- Transform Catalog Output ---")
     print(result.output)
@@ -235,13 +236,16 @@ def test_02_transform_catalog_to_dublin_core(runner, sample_data_dir):
     if result.exit_code != 0 and result.exception:
         print(f"Exception: {result.exception}")
         import traceback
-        traceback.print_exception(type(result.exception), result.exception, result.exception.__traceback__)
+
+        traceback.print_exception(
+            type(result.exception), result.exception, result.exception.__traceback__
+        )
 
     assert result.exit_code == 0, f"Transform failed: {result.output}"
     assert output_csv.exists(), "Output Dublin Core CSV not created"
 
     # Verify output format
-    with open(output_csv, 'r', encoding='utf-8') as f:
+    with open(output_csv, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         assert len(rows) > 0, "No rows in transformed CSV"
@@ -256,12 +260,9 @@ def test_03_import_catalog_dublin_core(runner, sample_data_dir, api_server):
     assert dc_csv.exists(), "Dublin Core CSV not found (run transform test first)"
 
     # Import via CLI (with --yes to skip confirmation)
-    result = runner.invoke(cli, [
-        "catalog", "import-dc",
-        str(dc_csv),
-        "--api-url", api_server,
-        "--yes"
-    ])
+    result = runner.invoke(
+        cli, ["catalog", "import-dc", str(dc_csv), "--api-url", api_server, "--yes"]
+    )
 
     print("\n--- Import Catalog Output ---")
     print(result.output)
@@ -270,7 +271,10 @@ def test_03_import_catalog_dublin_core(runner, sample_data_dir, api_server):
     if result.exit_code != 0 and result.exception:
         print(f"Exception: {result.exception}")
         import traceback
-        traceback.print_exception(type(result.exception), result.exception, result.exception.__traceback__)
+
+        traceback.print_exception(
+            type(result.exception), result.exception, result.exception.__traceback__
+        )
 
     # Note: Import might have errors for duplicate ISBNs or malformed data - that's OK
     # Verify some data was imported using search endpoint (no direct list endpoint exists)
@@ -295,7 +299,7 @@ def test_04_add_borrowers_via_api(api_server, sample_data_dir):
     assert csv_file.exists(), f"Students CSV not found: {csv_file}"
 
     # Read CSV and add borrowers via API
-    with open(csv_file, 'r', encoding='utf-8') as f:
+    with open(csv_file, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         students = list(reader)
 
@@ -317,7 +321,7 @@ def test_04_add_borrowers_via_api(api_server, sample_data_dir):
             class_payload = {
                 "name": student["Class"],
                 "grade_level": student["Class"].split("-")[0],  # e.g., "CP" from "CP-A"
-                "academic_year": "2025-2026"
+                "academic_year": "2025-2026",
             }
             requests.post(f"{api_server}/api/v1/classes", json=class_payload)
             # Get class ID
@@ -339,15 +343,14 @@ def test_04_add_borrowers_via_api(api_server, sample_data_dir):
     response = requests.get(f"{api_server}/api/v1/borrowers?limit=100")
     assert response.status_code == 200
     borrowers = response.json()
-    assert borrowers['total'] >= imported, f"Expected at least {imported} borrowers, got {borrowers['total']}"
+    assert (
+        borrowers["total"] >= imported
+    ), f"Expected at least {imported} borrowers, got {borrowers['total']}"
 
 
 def test_05_list_borrowers_via_cli(runner, api_server):
     """Test listing borrowers via CLI."""
-    result = runner.invoke(cli, [
-        "borrower", "list",
-        "--api-url", api_server
-    ])
+    result = runner.invoke(cli, ["borrower", "list", "--api-url", api_server])
 
     print("\n--- List Borrowers CLI Output ---")
     print(result.output)
@@ -357,11 +360,7 @@ def test_05_list_borrowers_via_cli(runner, api_server):
 
 def test_06_search_catalog_via_cli(runner, api_server):
     """Test catalog search via CLI."""
-    result = runner.invoke(cli, [
-        "catalog", "search",
-        "--title", "Stuart",
-        "--api-url", api_server
-    ])
+    result = runner.invoke(cli, ["catalog", "search", "--title", "Stuart", "--api-url", api_server])
 
     print("\n--- Search Catalog CLI Output ---")
     print(result.output)
@@ -376,10 +375,12 @@ def test_07_checkout_item_via_cli(runner, api_server):
     borrowers_response = requests.get(f"{api_server}/api/v1/borrowers?limit=100")
     assert borrowers_response.status_code == 200
     borrowers_data = borrowers_response.json()
-    assert borrowers_data['total'] > 0, "No borrowers available"
+    assert borrowers_data["total"] > 0, "No borrowers available"
 
-    borrower = borrowers_data['items'][0]
-    print(f"\n📖 Testing checkout for borrower: {borrower['full_name']} (ID: {borrower['borrower_id']})")
+    borrower = borrowers_data["items"][0]
+    print(
+        f"\n📖 Testing checkout for borrower: {borrower['full_name']} (ID: {borrower['borrower_id']})"
+    )
 
     # Get a bibliographic record with items
     search_response = requests.get(f"{api_server}/api/v1/catalog/bibliographic/search?limit=10")
@@ -392,7 +393,9 @@ def test_07_checkout_item_via_cli(runner, api_server):
     for record in search_data.get("items", []):
         biblio_id = record.get("id")
         # Get items for this bibliographic record
-        items_response = requests.get(f"{api_server}/api/v1/catalog/bibliographic/{biblio_id}/items")
+        items_response = requests.get(
+            f"{api_server}/api/v1/catalog/bibliographic/{biblio_id}/items"
+        )
         if items_response.status_code == 200:
             items = items_response.json()
             if len(items) > 0:
@@ -409,12 +412,9 @@ def test_07_checkout_item_via_cli(runner, api_server):
         pytest.skip("Items not accessible via /bibliographic/{id}/items endpoint")
 
     # Checkout via CLI
-    result = runner.invoke(cli, [
-        "checkout",
-        borrower["borrower_id"],
-        item_id,
-        "--api-url", api_server
-    ])
+    result = runner.invoke(
+        cli, ["checkout", borrower["borrower_id"], item_id, "--api-url", api_server]
+    )
 
     print("\n--- Checkout CLI Output ---")
     print(result.output)
@@ -424,7 +424,9 @@ def test_07_checkout_item_via_cli(runner, api_server):
         print(f"Exception: {result.exception}")
 
     # Verify loan was created
-    response = requests.get(f"{api_server}/api/v1/circulation/borrower/{borrower['borrower_id']}/items")
+    response = requests.get(
+        f"{api_server}/api/v1/circulation/borrower/{borrower['borrower_id']}/items"
+    )
     if response.status_code == 200:
         loans_data = response.json()
         loans = loans_data.get("loans", [])
@@ -443,8 +445,10 @@ def test_08_return_item_via_cli(runner, api_server):
     # Find a borrower with active loans
     item_to_return = None
     borrower_name = None
-    for borrower in borrowers_data['items']:
-        loans_response = requests.get(f"{api_server}/api/v1/circulation/borrower/{borrower['borrower_id']}/items")
+    for borrower in borrowers_data["items"]:
+        loans_response = requests.get(
+            f"{api_server}/api/v1/circulation/borrower/{borrower['borrower_id']}/items"
+        )
         if loans_response.status_code == 200:
             loans_data = loans_response.json()
             loans = loans_data.get("loans", [])
@@ -461,11 +465,7 @@ def test_08_return_item_via_cli(runner, api_server):
         pytest.skip("No active loans (checkout test skipped)")
 
     # Return via CLI
-    result = runner.invoke(cli, [
-        "return",
-        item_to_return,
-        "--api-url", api_server
-    ])
+    result = runner.invoke(cli, ["return", item_to_return, "--api-url", api_server])
 
     print("\n--- Return CLI Output ---")
     print(result.output)
@@ -479,10 +479,7 @@ def test_08_return_item_via_cli(runner, api_server):
 
 def test_09_overdue_report_via_cli(runner, api_server):
     """Test overdue report generation via CLI."""
-    result = runner.invoke(cli, [
-        "report", "overdue",
-        "--api-url", api_server
-    ])
+    result = runner.invoke(cli, ["report", "overdue", "--api-url", api_server])
 
     print("\n--- Overdue Report CLI Output ---")
     print(result.output)

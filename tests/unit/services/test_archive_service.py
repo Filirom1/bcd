@@ -47,7 +47,13 @@ def test_archive_stats_empty_result():
 
 def test_archive_stats_populated_result():
     db = MagicMock()
-    db.execute.return_value.fetchone.return_value = (10, "2020-01-01", "2024-01-01", "2024-02-01", "2024-02-02")
+    db.execute.return_value.fetchone.return_value = (
+        10,
+        "2020-01-01",
+        "2024-01-01",
+        "2024-02-01",
+        "2024-02-02",
+    )
     result = archive_service.get_archive_stats(db)
     assert result["total_archived"] == 10
     assert result["oldest_transaction_date"] == "2020-01-01"
@@ -58,7 +64,9 @@ def test_get_archived_transactions_maps_rows_and_filters():
     row = SimpleNamespace(_mapping={"id": 1, "borrower_id": 2})
     db = MagicMock()
     db.execute.return_value = [row]
-    result = archive_service.get_archived_transactions(db, borrower_id=2, item_id=3, limit=5, offset=1)
+    result = archive_service.get_archived_transactions(
+        db, borrower_id=2, item_id=3, limit=5, offset=1
+    )
     assert result == [{"id": 1, "borrower_id": 2}]
     params = db.execute.call_args.args[1]
     assert params == {"borrower_id": 2, "item_id": 3, "limit": 5, "offset": 1}

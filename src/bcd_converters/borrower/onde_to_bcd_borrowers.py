@@ -48,37 +48,48 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 # Column name variations for flexible matching
-LAST_NAME_USAGE_VARIATIONS = [
-    'Nom d’usage élève', "Nom d'usage élève", 'Nom usage responsable'
-]
-LAST_NAME_LEGAL_VARIATIONS = ['Nom', 'Nom élève', "Nom de l'élève", 'NOM', 'nom']
+LAST_NAME_USAGE_VARIATIONS = ["Nom d’usage élève", "Nom d'usage élève", "Nom usage responsable"]
+LAST_NAME_LEGAL_VARIATIONS = ["Nom", "Nom élève", "Nom de l'élève", "NOM", "nom"]
 
 COLUMN_VARIATIONS = {
-    'last_name': LAST_NAME_LEGAL_VARIATIONS + LAST_NAME_USAGE_VARIATIONS,
-    'first_name': [
-        'Prénom', 'Prénom élève', "Prénom de l'élève", 'PRENOM',
-        'prenom', 'Prenom'
+    "last_name": LAST_NAME_LEGAL_VARIATIONS + LAST_NAME_USAGE_VARIATIONS,
+    "first_name": ["Prénom", "Prénom élève", "Prénom de l'élève", "PRENOM", "prenom", "Prenom"],
+    "borrower_id": [
+        "INE",
+        "Identifiant National Élève",
+        "Identifiant National Eleve",
+        "ine",
+        "Numéro INE",
+        "Numero INE",
     ],
-    'borrower_id': [
-        'INE', 'Identifiant National Élève', 'Identifiant National Eleve',
-        'ine', 'Numéro INE', 'Numero INE'
+    "class": [
+        "Identifiant Classe",
+        "Libellé classe",
+        "Classe",
+        "classe",
+        "CLASSE",
+        "Nom de la classe",
     ],
-    'class': [
-        'Identifiant Classe', 'Libellé classe', 'Classe', 'classe',
-        'CLASSE', 'Nom de la classe'
-    ]
 }
 
 # BCD borrower CSV columns
 BCD_COLUMNS = [
-    'borrower_id', 'external_id', 'first_name', 'last_name', 'role', 'class',
-    'active', 'email', 'phone', 'notes'
+    "borrower_id",
+    "external_id",
+    "first_name",
+    "last_name",
+    "role",
+    "class",
+    "active",
+    "email",
+    "phone",
+    "notes",
 ]
 
 
 def normalize_column_name(name: str) -> str:
     """Normalize a column name by removing surrounding/repeated whitespace."""
-    return ' '.join(name.strip().split())
+    return " ".join(name.strip().split())
 
 
 def find_column_mapping(headers: List[str]) -> Dict[str, Optional[str]]:
@@ -97,16 +108,20 @@ def find_column_mapping(headers: List[str]) -> Dict[str, Optional[str]]:
     def find_header(variations):
         normalized_variations = {normalize_column_name(value).casefold() for value in variations}
         return next(
-            (header for header in headers if normalize_column_name(header).casefold() in normalized_variations),
+            (
+                header
+                for header in headers
+                if normalize_column_name(header).casefold() in normalized_variations
+            ),
             None,
         )
 
-    mapping['last_name_usage'] = find_header(LAST_NAME_USAGE_VARIATIONS)
-    mapping['last_name_legal'] = find_header(LAST_NAME_LEGAL_VARIATIONS)
-    mapping['last_name'] = mapping['last_name_usage'] or mapping['last_name_legal']
+    mapping["last_name_usage"] = find_header(LAST_NAME_USAGE_VARIATIONS)
+    mapping["last_name_legal"] = find_header(LAST_NAME_LEGAL_VARIATIONS)
+    mapping["last_name"] = mapping["last_name_usage"] or mapping["last_name_legal"]
 
     for bcd_field, variations in COLUMN_VARIATIONS.items():
-        if bcd_field == 'last_name':
+        if bcd_field == "last_name":
             continue
         found = None
         normalized_variations = {normalize_column_name(value).casefold() for value in variations}
@@ -135,10 +150,10 @@ def extract_grade_level(class_name: str) -> str:
         Grade level without section
     """
     if not class_name:
-        return ''
+        return ""
 
     # Remove section suffix (after dash or space)
-    for separator in ['-', ' ']:
+    for separator in ["-", " "]:
         if separator in class_name:
             return class_name.split(separator)[0].strip()
 
@@ -160,26 +175,23 @@ def generate_borrower_id(row_number: int) -> str:
 def convert(content: bytes) -> str:
     """Convert ONDE CSV bytes to normalized BCD borrower CSV text."""
     try:
-        text = content.decode('utf-8-sig')
+        text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
-        text = content.decode('cp1252')
+        text = content.decode("cp1252")
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        input_path = Path(temp_dir) / 'onde.csv'
-        output_path = Path(temp_dir) / 'borrowers.csv'
-        input_path.write_text(text, encoding='utf-8', newline='')
+        input_path = Path(temp_dir) / "onde.csv"
+        output_path = Path(temp_dir) / "borrowers.csv"
+        input_path.write_text(text, encoding="utf-8", newline="")
         # The command-line converter prints a human-readable summary; the API
         # returns only the normalized CSV.
         with contextlib.redirect_stdout(io.StringIO()):
-            convert_onde_to_bcd(input_path, output_path, delimiter=';')
-        return output_path.read_text(encoding='utf-8-sig')
+            convert_onde_to_bcd(input_path, output_path, delimiter=";")
+        return output_path.read_text(encoding="utf-8-sig")
 
 
 def convert_onde_to_bcd(
-    input_path: Path,
-    output_path: Path,
-    delimiter: str = ';',
-    encoding: str = 'utf-8'
+    input_path: Path, output_path: Path, delimiter: str = ";", encoding: str = "utf-8"
 ) -> None:
     """Convert ONDE CSV export to BCD borrower format.
 
@@ -197,20 +209,24 @@ def convert_onde_to_bcd(
     seen_ines: Set[str] = set()
 
     # Read ONDE CSV
-    with open(input_path, 'r', encoding=encoding, newline='') as f_in:
+    with open(input_path, "r", encoding=encoding, newline="") as f_in:
         reader = csv.DictReader(f_in, delimiter=delimiter)
 
         # Map ONDE columns to BCD fields
         column_mapping = find_column_mapping(reader.fieldnames or [])
 
         # Validate that we found required columns
-        if not column_mapping.get('first_name'):
-            print(f"ERROR: Could not find first name column. Expected one of: {COLUMN_VARIATIONS['first_name']}")
+        if not column_mapping.get("first_name"):
+            print(
+                f"ERROR: Could not find first name column. Expected one of: {COLUMN_VARIATIONS['first_name']}"
+            )
             print(f"   Found columns: {', '.join(reader.fieldnames or [])}")
             sys.exit(1)
 
-        if not column_mapping.get('last_name'):
-            print(f"ERROR: Could not find last name column. Expected one of: {COLUMN_VARIATIONS['last_name']}")
+        if not column_mapping.get("last_name"):
+            print(
+                f"ERROR: Could not find last name column. Expected one of: {COLUMN_VARIATIONS['last_name']}"
+            )
             print(f"   Found columns: {', '.join(reader.fieldnames or [])}")
             sys.exit(1)
 
@@ -230,12 +246,12 @@ def convert_onde_to_bcd(
             total_rows += 1
 
             # Extract and map fields
-            first_name = row.get(column_mapping.get('first_name', ''), '').strip()
-            usage_last_name = row.get(column_mapping.get('last_name_usage', ''), '').strip()
-            legal_last_name = row.get(column_mapping.get('last_name_legal', ''), '').strip()
+            first_name = row.get(column_mapping.get("first_name", ""), "").strip()
+            usage_last_name = row.get(column_mapping.get("last_name_usage", ""), "").strip()
+            legal_last_name = row.get(column_mapping.get("last_name_legal", ""), "").strip()
             last_name = usage_last_name or legal_last_name
-            ine = row.get(column_mapping.get('borrower_id', ''), '').strip()
-            class_name = row.get(column_mapping.get('class', ''), '').strip()
+            ine = row.get(column_mapping.get("borrower_id", ""), "").strip()
+            class_name = row.get(column_mapping.get("class", ""), "").strip()
 
             # Skip rows with missing required fields
             if not first_name or not last_name:
@@ -246,7 +262,9 @@ def convert_onde_to_bcd(
             if ine:
                 if ine in seen_ines:
                     duplicate_ines.add(ine)
-                    print(f"WARNING: Row {row_num}: Duplicate INE '{ine}' detected, using first occurrence")
+                    print(
+                        f"WARNING: Row {row_num}: Duplicate INE '{ine}' detected, using first occurrence"
+                    )
                     continue
                 seen_ines.add(ine)
             else:
@@ -254,24 +272,24 @@ def convert_onde_to_bcd(
 
             # Create BCD borrower record
             bcd_row = {
-                'borrower_id': '',
-                'external_id': ine,
-                'first_name': first_name,
-                'last_name': last_name,
-                'role': 'student',  # All ONDE records are students
-                'class': class_name,
-                'active': 'true',  # Default to active
-                'email': '',  # ONDE typically doesn't include email
-                'phone': '',  # ONDE typically doesn't include phone
-                'notes': 'Imported from ONDE' if not ine else ''
+                "borrower_id": "",
+                "external_id": ine,
+                "first_name": first_name,
+                "last_name": last_name,
+                "role": "student",  # All ONDE records are students
+                "class": class_name,
+                "active": "true",  # Default to active
+                "email": "",  # ONDE typically doesn't include email
+                "phone": "",  # ONDE typically doesn't include phone
+                "notes": "Imported from ONDE" if not ine else "",
             }
 
             bcd_rows.append(bcd_row)
             converted_rows += 1
 
         # Write BCD CSV with UTF-8 BOM for Excel compatibility
-        with open(output_path, 'w', encoding='utf-8-sig', newline='') as f_out:
-            writer = csv.DictWriter(f_out, fieldnames=BCD_COLUMNS, delimiter=',')
+        with open(output_path, "w", encoding="utf-8-sig", newline="") as f_out:
+            writer = csv.DictWriter(f_out, fieldnames=BCD_COLUMNS, delimiter=",")
             writer.writeheader()
             writer.writerows(bcd_rows)
 
@@ -294,7 +312,7 @@ def convert_onde_to_bcd(
 def main():
     """Main entry point for ONDE to BCD borrower conversion script."""
     parser = argparse.ArgumentParser(
-        description='Convert ONDE CSV export to BCD borrower format',
+        description="Convert ONDE CSV export to BCD borrower format",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -322,21 +340,15 @@ Notes:
   - Grade levels are extracted from class names (CP-A -> CP, CE1-B -> CE1)
   - Duplicate INE values are detected and skipped (first occurrence kept)
   - Output uses UTF-8 with BOM for Excel compatibility
-"""
+""",
     )
 
-    parser.add_argument('input', type=Path, help='Path to ONDE CSV file')
-    parser.add_argument('output', type=Path, help='Path to output BCD borrower CSV file')
+    parser.add_argument("input", type=Path, help="Path to ONDE CSV file")
+    parser.add_argument("output", type=Path, help="Path to output BCD borrower CSV file")
     parser.add_argument(
-        '--delimiter',
-        default=';',
-        help='CSV delimiter for input file (default: semicolon ";")'
+        "--delimiter", default=";", help='CSV delimiter for input file (default: semicolon ";")'
     )
-    parser.add_argument(
-        '--encoding',
-        default='utf-8',
-        help='Input file encoding (default: utf-8)'
-    )
+    parser.add_argument("--encoding", default="utf-8", help="Input file encoding (default: utf-8)")
 
     args = parser.parse_args()
 
@@ -350,9 +362,9 @@ Notes:
         input_path=args.input,
         output_path=args.output,
         delimiter=args.delimiter,
-        encoding=args.encoding
+        encoding=args.encoding,
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

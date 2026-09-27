@@ -27,6 +27,7 @@ from src.bcd_api.services.external.cover import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_client(content: bytes = b"", status: int = 200, content_type: str = "image/jpeg"):
     """Build a mock httpx.Client whose get() returns a fake response."""
     response = MagicMock()
@@ -48,6 +49,7 @@ def _image(size: int = 10_000) -> bytes:
 # ---------------------------------------------------------------------------
 # ISBN helpers
 # ---------------------------------------------------------------------------
+
 
 class TestIsbnHelpers:
     def test_isbn10_to_isbn13_correct_check_digit(self):
@@ -106,6 +108,7 @@ class TestIsbnHelpers:
 # _fetch
 # ---------------------------------------------------------------------------
 
+
 class TestFetch:
     def test_returns_bytes_for_valid_image(self):
         data = _image()
@@ -141,6 +144,7 @@ class TestFetch:
 # _try_amazon
 # ---------------------------------------------------------------------------
 
+
 class TestTryAmazon:
     def test_returns_bytes_using_lzzzzzzz_first(self):
         data = _image()
@@ -158,6 +162,7 @@ class TestTryAmazon:
         good = _make_client(content=data)
 
         call_count = 0
+
         def side_effect(url, **kwargs):
             nonlocal call_count
             call_count += 1
@@ -198,6 +203,7 @@ class TestTryAmazon:
 # _try_openlibrary
 # ---------------------------------------------------------------------------
 
+
 class TestTryOpenlibrary:
     def test_prefers_isbn13_over_isbn10(self):
         data = _image()
@@ -213,7 +219,9 @@ class TestTryOpenlibrary:
     def test_falls_back_to_isbn10_when_isbn13_fails(self):
         data = _image()
         with patch("src.bcd_api.services.external.cover._fetch") as mock_fetch:
-            mock_fetch.side_effect = lambda url, c: (data if "2211056466" in url and "978" not in url else None)
+            mock_fetch.side_effect = lambda url, c: (
+                data if "2211056466" in url and "978" not in url else None
+            )
             client = MagicMock()
             result = _try_openlibrary("2211056466", "9782211056465", client)
         assert result == data
@@ -235,15 +243,12 @@ class TestTryOpenlibrary:
 # _try_google_api
 # ---------------------------------------------------------------------------
 
+
 class TestTryGoogleApi:
     def _google_response(self, thumbnail_url: str = "http://books.google.com/cover.jpg"):
         return {
             "totalItems": 1,
-            "items": [{
-                "volumeInfo": {
-                    "imageLinks": {"thumbnail": thumbnail_url}
-                }
-            }]
+            "items": [{"volumeInfo": {"imageLinks": {"thumbnail": thumbnail_url}}}],
         }
 
     def test_returns_bytes_on_success(self):
@@ -303,10 +308,16 @@ class TestTryGoogleApi:
         client = _make_client()
         client.get.return_value.json.return_value = {
             "totalItems": 1,
-            "items": [{"volumeInfo": {"imageLinks": {
-                "thumbnail": "https://example.com/thumb.jpg",
-                "large": "https://example.com/large.jpg",
-            }}}]
+            "items": [
+                {
+                    "volumeInfo": {
+                        "imageLinks": {
+                            "thumbnail": "https://example.com/thumb.jpg",
+                            "large": "https://example.com/large.jpg",
+                        }
+                    }
+                }
+            ],
         }
         with patch("src.bcd_api.services.external.cover._fetch") as mock_fetch:
             mock_fetch.return_value = _image()
@@ -331,6 +342,7 @@ class TestTryGoogleApi:
 # ---------------------------------------------------------------------------
 # _try_geobib
 # ---------------------------------------------------------------------------
+
 
 class TestTryGeobib:
     def test_returns_bytes_on_success(self):
@@ -361,6 +373,7 @@ class TestTryGeobib:
 # download_cover — cascade logic
 # ---------------------------------------------------------------------------
 
+
 class TestDownloadCover:
     @pytest.fixture(autouse=True)
     def covers_dir(self, tmp_path):
@@ -376,8 +389,7 @@ class TestDownloadCover:
         defaults.update(results)
         patches = {}
         for name, retval in defaults.items():
-            p = patch(f"src.bcd_api.services.external.cover._try_{name}",
-                      return_value=retval)
+            p = patch(f"src.bcd_api.services.external.cover._try_{name}", return_value=retval)
             patches[name] = p
         return patches
 
@@ -388,7 +400,7 @@ class TestDownloadCover:
 
     def test_strips_isbn_prefix(self):
         data = _image()
-        patches = self._patch_providers({"amazon": data})
+        self._patch_providers({"amazon": data})
         with patch("src.bcd_api.services.external.cover._try_amazon", return_value=data):
             with patch("httpx.Client", return_value=_make_client()):
                 result = download_cover("isbn:2211056466", covers_dir=self.covers)
@@ -404,11 +416,13 @@ class TestDownloadCover:
 
     def test_cascade_stops_at_amazon(self):
         data = _image()
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=data) as mock_amz, \
-             patch("src.bcd_api.services.external.cover._try_openlibrary") as mock_ol, \
-             patch("src.bcd_api.services.external.cover._try_google_api") as mock_g, \
-             patch("src.bcd_api.services.external.cover._try_geobib") as mock_geo, \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=data),
+            patch("src.bcd_api.services.external.cover._try_openlibrary") as mock_ol,
+            patch("src.bcd_api.services.external.cover._try_google_api") as mock_g,
+            patch("src.bcd_api.services.external.cover._try_geobib") as mock_geo,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             result = download_cover("2211056466", covers_dir=self.covers)
         assert result == "9782211056465.jpg"
         mock_ol.assert_not_called()
@@ -417,11 +431,13 @@ class TestDownloadCover:
 
     def test_cascade_falls_through_to_openlibrary(self):
         data = _image()
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=data), \
-             patch("src.bcd_api.services.external.cover._try_google_api") as mock_g, \
-             patch("src.bcd_api.services.external.cover._try_geobib") as mock_geo, \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=data),
+            patch("src.bcd_api.services.external.cover._try_google_api") as mock_g,
+            patch("src.bcd_api.services.external.cover._try_geobib") as mock_geo,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             result = download_cover("9782211056465", covers_dir=self.covers)
         assert result == "9782211056465.jpg"
         mock_g.assert_not_called()
@@ -429,38 +445,46 @@ class TestDownloadCover:
 
     def test_cascade_falls_through_to_google_api(self):
         data = _image()
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_google_api", return_value=data), \
-             patch("src.bcd_api.services.external.cover._try_geobib") as mock_geo, \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_google_api", return_value=data),
+            patch("src.bcd_api.services.external.cover._try_geobib") as mock_geo,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             result = download_cover("9782211056465", covers_dir=self.covers)
         assert result == "9782211056465.jpg"
         mock_geo.assert_not_called()
 
     def test_cascade_falls_through_to_geobib(self):
         data = _image()
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_google_api", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_geobib", return_value=data), \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_google_api", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_geobib", return_value=data),
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             result = download_cover("9782211056465", covers_dir=self.covers)
         assert result == "9782211056465.jpg"
 
     def test_returns_none_when_all_fail(self):
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_google_api", return_value=None), \
-             patch("src.bcd_api.services.external.cover._try_geobib", return_value=None), \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_openlibrary", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_google_api", return_value=None),
+            patch("src.bcd_api.services.external.cover._try_geobib", return_value=None),
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             result = download_cover("9782211056465", covers_dir=self.covers)
         assert result is None
 
     def test_file_written_to_covers_dir(self):
         data = _image()
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=data), \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=data),
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             download_cover("2211056466", covers_dir=self.covers)
         assert (self.covers / "9782211056465.jpg").exists()
         assert (self.covers / "9782211056465.jpg").stat().st_size == len(data)
@@ -471,15 +495,19 @@ class TestDownloadCover:
 
     def test_covers_dir_created_if_missing(self):
         assert not self.covers.exists()
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=_image()), \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=_image()),
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             download_cover("2211056466", covers_dir=self.covers)
         assert self.covers.exists()
 
     def test_normalizes_hyphened_isbn(self):
         data = _image()
-        with patch("src.bcd_api.services.external.cover._try_amazon", return_value=data), \
-             patch("httpx.Client", return_value=_make_client()):
+        with (
+            patch("src.bcd_api.services.external.cover._try_amazon", return_value=data),
+            patch("httpx.Client", return_value=_make_client()),
+        ):
             result = download_cover("978-2-211-05646-5", covers_dir=self.covers)
         assert result == "9782211056465.jpg"
 
@@ -487,6 +515,7 @@ class TestDownloadCover:
 # ---------------------------------------------------------------------------
 # configure()
 # ---------------------------------------------------------------------------
+
 
 class TestConfigure:
     def test_sets_google_api_key(self):

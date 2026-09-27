@@ -28,11 +28,7 @@ from playwright.sync_api import expect
 class TestClassManagementBasics:
     """Test basic class management CRUD operations."""
 
-    def test_navigate_to_classes_page(
-        self,
-        classes_page,
-        db_session
-    ):
+    def test_navigate_to_classes_page(self, classes_page, db_session):
         """
         Navigate to Classes page and verify it loads.
 
@@ -49,23 +45,14 @@ class TestClassManagementBasics:
         expect(create_button).to_be_visible(timeout=5000)
 
 
-
-
-
 class TestClassEditing:
     """Test editing existing classes."""
-
-
 
 
 class TestClassDeletion:
     """Test deleting classes with various scenarios."""
 
-    def test_delete_class_with_no_students(
-        self,
-        classes_page,
-        db_session
-    ):
+    def test_delete_class_with_no_students(self, classes_page, db_session):
         """
         Delete a class with no students assigned.
 
@@ -86,14 +73,12 @@ class TestClassDeletion:
         classes_page.delete_class("EMPTY-CLASS")
 
         # Assert
-        assert not classes_page.class_exists("EMPTY-CLASS"), "Deleted class should not appear in table"
-
+        assert not classes_page.class_exists(
+            "EMPTY-CLASS"
+        ), "Deleted class should not appear in table"
 
     def test_delete_class_with_students_unassigns_them(
-        self,
-        classes_page,
-        borrower_factory,
-        db_session
+        self, classes_page, borrower_factory, db_session
     ):
         """
         Deleting class with students unassigns all students (class_id set to NULL).
@@ -110,20 +95,18 @@ class TestClassDeletion:
         db_session.add(test_class)
         db_session.commit()
 
-        borrower1 = borrower_factory.create(
+        borrower_factory.create(
             borrower_id="UNASSIGN001",
             first_name="Will",
             last_name="BeUnassigned",
-            class_id=test_class.id
+            class_id=test_class.id,
         )
-        borrower2 = borrower_factory.create(
+        borrower_factory.create(
             borrower_id="UNASSIGN002",
             first_name="Also",
             last_name="Unassigned",
-            class_id=test_class.id
+            class_id=test_class.id,
         )
-
-        class_id = test_class.id
 
         classes_page.goto()
 
@@ -135,8 +118,12 @@ class TestClassDeletion:
 
         # Verify students are unassigned (check database)
         db_session.expire_all()  # Refresh from database
-        borrower1_updated = db_session.query(Borrower).filter(Borrower.borrower_id == "UNASSIGN001").first()
-        borrower2_updated = db_session.query(Borrower).filter(Borrower.borrower_id == "UNASSIGN002").first()
+        borrower1_updated = (
+            db_session.query(Borrower).filter(Borrower.borrower_id == "UNASSIGN001").first()
+        )
+        borrower2_updated = (
+            db_session.query(Borrower).filter(Borrower.borrower_id == "UNASSIGN002").first()
+        )
 
         assert borrower1_updated is not None, "Borrower 1 should still exist"
         assert borrower2_updated is not None, "Borrower 2 should still exist"
@@ -147,17 +134,13 @@ class TestClassDeletion:
 class TestClassStudentCount:
     """Test student_count display in class table."""
 
-        # Note: Detailed student count validation depends on UI structure
+    # Note: Detailed student count validation depends on UI structure
 
 
 class TestClassValidation:
     """Test validation rules for class management."""
 
-    def test_duplicate_class_name_validation(
-        self,
-        classes_page,
-        db_session
-    ):
+    def test_duplicate_class_name_validation(self, classes_page, db_session):
         """
         Creating class with duplicate name shows error.
 
@@ -173,7 +156,7 @@ class TestClassValidation:
         db_session.commit()
 
         classes_page.goto()
-        initial_count = classes_page.get_class_count()
+        classes_page.get_class_count()
 
         # Act - Try to create duplicate
         classes_page.click_create_class()

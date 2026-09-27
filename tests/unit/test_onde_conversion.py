@@ -26,27 +26,27 @@ class TestGradeLevelExtraction:
 
     def test_extract_grade_with_dash_separator(self):
         """CP-A should extract to CP."""
-        assert extract_grade_level('CP-A') == 'CP'
-        assert extract_grade_level('CE1-B') == 'CE1'
-        assert extract_grade_level('CM2-C') == 'CM2'
+        assert extract_grade_level("CP-A") == "CP"
+        assert extract_grade_level("CE1-B") == "CE1"
+        assert extract_grade_level("CM2-C") == "CM2"
 
     def test_extract_grade_with_space_separator(self):
         """CP A should extract to CP."""
-        assert extract_grade_level('CP A') == 'CP'
-        assert extract_grade_level('CE1 B') == 'CE1'
+        assert extract_grade_level("CP A") == "CP"
+        assert extract_grade_level("CE1 B") == "CE1"
 
     def test_extract_grade_without_separator(self):
         """CM2 should remain CM2."""
-        assert extract_grade_level('CM2') == 'CM2'
-        assert extract_grade_level('CP') == 'CP'
+        assert extract_grade_level("CM2") == "CM2"
+        assert extract_grade_level("CP") == "CP"
 
     def test_extract_grade_empty_string(self):
         """Empty string should return empty."""
-        assert extract_grade_level('') == ''
+        assert extract_grade_level("") == ""
 
     def test_extract_grade_with_multiple_separators(self):
         """CP-A-Matin should extract to CP."""
-        assert extract_grade_level('CP-A-Matin') == 'CP'
+        assert extract_grade_level("CP-A-Matin") == "CP"
 
 
 class TestBorrowerIdGeneration:
@@ -54,15 +54,15 @@ class TestBorrowerIdGeneration:
 
     def test_generate_borrower_id_format(self):
         """Should generate STUDENT-#### format."""
-        assert generate_borrower_id(1) == 'STUDENT-0001'
-        assert generate_borrower_id(42) == 'STUDENT-0042'
-        assert generate_borrower_id(999) == 'STUDENT-0999'
-        assert generate_borrower_id(1234) == 'STUDENT-1234'
+        assert generate_borrower_id(1) == "STUDENT-0001"
+        assert generate_borrower_id(42) == "STUDENT-0042"
+        assert generate_borrower_id(999) == "STUDENT-0999"
+        assert generate_borrower_id(1234) == "STUDENT-1234"
 
     def test_generate_borrower_id_padding(self):
         """Should zero-pad to 4 digits."""
-        assert len(generate_borrower_id(1).split('-')[1]) == 4
-        assert len(generate_borrower_id(99).split('-')[1]) == 4
+        assert len(generate_borrower_id(1).split("-")[1]) == 4
+        assert len(generate_borrower_id(99).split("-")[1]) == 4
 
 
 class TestColumnMapping:
@@ -70,69 +70,82 @@ class TestColumnMapping:
 
     def test_standard_onde_columns(self):
         """Should detect standard ONDE column names."""
-        headers = ['Nom', 'Prénom', 'INE', 'Identifiant Classe']
+        headers = ["Nom", "Prénom", "INE", "Identifiant Classe"]
         mapping = find_column_mapping(headers)
 
-        assert mapping['last_name'] == 'Nom'
-        assert mapping['first_name'] == 'Prénom'
-        assert mapping['borrower_id'] == 'INE'
-        assert mapping['class'] == 'Identifiant Classe'
+        assert mapping["last_name"] == "Nom"
+        assert mapping["first_name"] == "Prénom"
+        assert mapping["borrower_id"] == "INE"
+        assert mapping["class"] == "Identifiant Classe"
 
     def test_alternative_onde_columns(self):
         """Should detect alternative ONDE column names."""
-        headers = ['Nom de l\'élève', 'Prénom de l\'élève', 'Numéro INE', 'Classe']
+        headers = ["Nom de l'élève", "Prénom de l'élève", "Numéro INE", "Classe"]
         mapping = find_column_mapping(headers)
 
-        assert mapping['last_name'] == 'Nom de l\'élève'
-        assert mapping['first_name'] == 'Prénom de l\'élève'
-        assert mapping['borrower_id'] == 'Numéro INE'
-        assert mapping['class'] == 'Classe'
+        assert mapping["last_name"] == "Nom de l'élève"
+        assert mapping["first_name"] == "Prénom de l'élève"
+        assert mapping["borrower_id"] == "Numéro INE"
+        assert mapping["class"] == "Classe"
 
     def test_case_insensitive_matching(self):
         """Should match columns case-insensitively."""
-        headers = ['NOM', 'PRENOM', 'ine', 'classe']
+        headers = ["NOM", "PRENOM", "ine", "classe"]
         mapping = find_column_mapping(headers)
 
-        assert mapping['last_name'] == 'NOM'
-        assert mapping['first_name'] == 'PRENOM'
-        assert mapping['borrower_id'] == 'ine'
-        assert mapping['class'] == 'classe'
+        assert mapping["last_name"] == "NOM"
+        assert mapping["first_name"] == "PRENOM"
+        assert mapping["borrower_id"] == "ine"
+        assert mapping["class"] == "classe"
 
     def test_missing_optional_columns(self):
         """Should handle missing optional columns."""
-        headers = ['Nom', 'Prénom']  # Missing INE and class
+        headers = ["Nom", "Prénom"]  # Missing INE and class
         mapping = find_column_mapping(headers)
 
-        assert mapping['last_name'] == 'Nom'
-        assert mapping['first_name'] == 'Prénom'
-        assert mapping['borrower_id'] is None
-        assert mapping['class'] is None
+        assert mapping["last_name"] == "Nom"
+        assert mapping["first_name"] == "Prénom"
+        assert mapping["borrower_id"] is None
+        assert mapping["class"] is None
 
     def test_official_onde_student_export_headers(self):
         """Should recognize the headers listed by listes-onde-csv."""
         headers = [
-            'Nom élève', "Nom d'usage élève", 'Prénom élève',
-            'Date naissance', 'Sexe', 'INE', 'Adresse1', 'Cp1',
-            'Commune1', 'Pays1', ' Cycle', 'Niveau', 'Libellé classe',
-            'Identifiant classe', 'Décision de passage',
+            "Nom élève",
+            "Nom d'usage élève",
+            "Prénom élève",
+            "Date naissance",
+            "Sexe",
+            "INE",
+            "Adresse1",
+            "Cp1",
+            "Commune1",
+            "Pays1",
+            " Cycle",
+            "Niveau",
+            "Libellé classe",
+            "Identifiant classe",
+            "Décision de passage",
         ]
         mapping = find_column_mapping(headers)
 
-        assert mapping['last_name'] == "Nom d'usage élève"
-        assert mapping['last_name_legal'] == 'Nom élève'
-        assert mapping['first_name'] == 'Prénom élève'
-        assert mapping['borrower_id'] == 'INE'
-        assert mapping['class'] == 'Libellé classe'
+        assert mapping["last_name"] == "Nom d'usage élève"
+        assert mapping["last_name_legal"] == "Nom élève"
+        assert mapping["first_name"] == "Prénom élève"
+        assert mapping["borrower_id"] == "INE"
+        assert mapping["class"] == "Libellé classe"
 
     def test_headers_are_matched_after_case_and_whitespace_normalization(self):
         """ONDE header matching should tolerate case and extra whitespace."""
-        mapping = find_column_mapping(['  NOM ÉLÈVE  ', ' prénom élève ', ' ine ', ' LIBELLÉ CLASSE '])
+        mapping = find_column_mapping(
+            ["  NOM ÉLÈVE  ", " prénom élève ", " ine ", " LIBELLÉ CLASSE "]
+        )
 
-        assert mapping['last_name'] == '  NOM ÉLÈVE  '
-        assert mapping['last_name_legal'] == '  NOM ÉLÈVE  '
-        assert mapping['first_name'] == ' prénom élève '
-        assert mapping['borrower_id'] == ' ine '
-        assert mapping['class'] == ' LIBELLÉ CLASSE '
+        assert mapping["last_name"] == "  NOM ÉLÈVE  "
+        assert mapping["last_name_legal"] == "  NOM ÉLÈVE  "
+        assert mapping["first_name"] == " prénom élève "
+        assert mapping["borrower_id"] == " ine "
+        assert mapping["class"] == " LIBELLÉ CLASSE "
 
 
 class TestColumnNameNormalization:
@@ -140,12 +153,12 @@ class TestColumnNameNormalization:
 
     def test_normalize_removes_whitespace(self):
         """Should remove leading/trailing whitespace."""
-        assert normalize_column_name('  Nom  ') == 'Nom'
-        assert normalize_column_name('\tPrénom\n') == 'Prénom'
+        assert normalize_column_name("  Nom  ") == "Nom"
+        assert normalize_column_name("\tPrénom\n") == "Prénom"
 
     def test_normalize_preserves_content(self):
         """Should preserve column content."""
-        assert normalize_column_name('Nom de l\'élève') == 'Nom de l\'élève'
+        assert normalize_column_name("Nom de l'élève") == "Nom de l'élève"
 
 
 class TestConversionEndToEnd:
@@ -153,43 +166,45 @@ class TestConversionEndToEnd:
 
     def test_official_sample_fixture_conversion(self):
         """The complete ONDE fixture from listes-onde-csv should import cleanly."""
-        input_path = Path('data/sample_imports/onde_official_sample.csv')
-        output_path = Path(tempfile.mktemp(suffix='.csv'))
+        input_path = Path("data/sample_imports/onde_official_sample.csv")
+        output_path = Path(tempfile.mktemp(suffix=".csv"))
 
         try:
-            convert_onde_to_bcd(input_path, output_path, delimiter=';')
-            with open(output_path, 'r', encoding='utf-8-sig', newline='') as f_out:
+            convert_onde_to_bcd(input_path, output_path, delimiter=";")
+            with open(output_path, "r", encoding="utf-8-sig", newline="") as f_out:
                 rows = list(csv.DictReader(f_out))
 
             assert len(rows) == 5
-            assert rows[0]['last_name'] == 'DUPONT'
-            assert rows[1]['last_name'] == 'MARTIN-BERNARD'
-            assert rows[2]['last_name'] == 'GARCIA'
-            assert rows[0]['class'] == 'CP A'
-            assert rows[2]['external_id'] == ''
-            assert all(row['role'] == 'student' for row in rows)
+            assert rows[0]["last_name"] == "DUPONT"
+            assert rows[1]["last_name"] == "MARTIN-BERNARD"
+            assert rows[2]["last_name"] == "GARCIA"
+            assert rows[0]["class"] == "CP A"
+            assert rows[2]["external_id"] == ""
+            assert all(row["role"] == "student" for row in rows)
         finally:
             output_path.unlink(missing_ok=True)
 
     def test_basic_onde_conversion(self):
         """Should convert basic ONDE CSV to BCD format."""
         # Create temporary input file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f_in:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, encoding="utf-8"
+        ) as f_in:
             input_path = Path(f_in.name)
-            writer = csv.writer(f_in, delimiter=';')
-            writer.writerow(['Nom', 'Prénom', 'INE', 'Identifiant Classe'])
-            writer.writerow(['Dupont', 'Marie', '12345678901', 'CP-A'])
-            writer.writerow(['Martin', 'Lucas', '98765432109', 'CE1-B'])
+            writer = csv.writer(f_in, delimiter=";")
+            writer.writerow(["Nom", "Prénom", "INE", "Identifiant Classe"])
+            writer.writerow(["Dupont", "Marie", "12345678901", "CP-A"])
+            writer.writerow(["Martin", "Lucas", "98765432109", "CE1-B"])
 
         # Create temporary output file
-        output_path = Path(tempfile.mktemp(suffix='.csv'))
+        output_path = Path(tempfile.mktemp(suffix=".csv"))
 
         try:
             # Convert
-            convert_onde_to_bcd(input_path, output_path, delimiter=';')
+            convert_onde_to_bcd(input_path, output_path, delimiter=";")
 
             # Read output
-            with open(output_path, 'r', encoding='utf-8-sig', newline='') as f_out:
+            with open(output_path, "r", encoding="utf-8-sig", newline="") as f_out:
                 reader = csv.DictReader(f_out)
                 rows = list(reader)
 
@@ -197,20 +212,20 @@ class TestConversionEndToEnd:
             assert len(rows) == 2
 
             # Check first row
-            assert rows[0]['borrower_id'] == ''
-            assert rows[0]['external_id'] == '12345678901'
-            assert rows[0]['first_name'] == 'Marie'
-            assert rows[0]['last_name'] == 'Dupont'
-            assert rows[0]['role'] == 'student'
-            assert rows[0]['class'] == 'CP-A'
-            assert rows[0]['active'] == 'true'
+            assert rows[0]["borrower_id"] == ""
+            assert rows[0]["external_id"] == "12345678901"
+            assert rows[0]["first_name"] == "Marie"
+            assert rows[0]["last_name"] == "Dupont"
+            assert rows[0]["role"] == "student"
+            assert rows[0]["class"] == "CP-A"
+            assert rows[0]["active"] == "true"
 
             # Check second row
-            assert rows[1]['borrower_id'] == ''
-            assert rows[1]['external_id'] == '98765432109'
-            assert rows[1]['first_name'] == 'Lucas'
-            assert rows[1]['last_name'] == 'Martin'
-            assert rows[1]['class'] == 'CE1-B'
+            assert rows[1]["borrower_id"] == ""
+            assert rows[1]["external_id"] == "98765432109"
+            assert rows[1]["first_name"] == "Lucas"
+            assert rows[1]["last_name"] == "Martin"
+            assert rows[1]["class"] == "CE1-B"
 
         finally:
             # Cleanup
@@ -220,31 +235,33 @@ class TestConversionEndToEnd:
     def test_conversion_with_missing_ine(self):
         """Should generate fallback IDs for missing INE."""
         # Create temporary input file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f_in:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, encoding="utf-8"
+        ) as f_in:
             input_path = Path(f_in.name)
-            writer = csv.writer(f_in, delimiter=';')
-            writer.writerow(['Nom', 'Prénom', 'INE', 'Classe'])
-            writer.writerow(['Dupont', 'Marie', '', 'CP'])  # Missing INE
-            writer.writerow(['Martin', 'Lucas', '98765432109', 'CE1'])
+            writer = csv.writer(f_in, delimiter=";")
+            writer.writerow(["Nom", "Prénom", "INE", "Classe"])
+            writer.writerow(["Dupont", "Marie", "", "CP"])  # Missing INE
+            writer.writerow(["Martin", "Lucas", "98765432109", "CE1"])
 
-        output_path = Path(tempfile.mktemp(suffix='.csv'))
+        output_path = Path(tempfile.mktemp(suffix=".csv"))
 
         try:
-            convert_onde_to_bcd(input_path, output_path, delimiter=';')
+            convert_onde_to_bcd(input_path, output_path, delimiter=";")
 
-            with open(output_path, 'r', encoding='utf-8-sig', newline='') as f_out:
+            with open(output_path, "r", encoding="utf-8-sig", newline="") as f_out:
                 reader = csv.DictReader(f_out)
                 rows = list(reader)
 
             # First row should have generated ID
-            assert rows[0]['borrower_id'] == ''
-            assert rows[0]['first_name'] == 'Marie'
-            assert rows[0]['external_id'] == ''
-            assert rows[0]['notes'] == 'Imported from ONDE'
+            assert rows[0]["borrower_id"] == ""
+            assert rows[0]["first_name"] == "Marie"
+            assert rows[0]["external_id"] == ""
+            assert rows[0]["notes"] == "Imported from ONDE"
 
             # Second row should have INE
-            assert rows[1]['borrower_id'] == ''
-            assert rows[1]['notes'] == ''
+            assert rows[1]["borrower_id"] == ""
+            assert rows[1]["notes"] == ""
 
         finally:
             input_path.unlink(missing_ok=True)
@@ -253,29 +270,31 @@ class TestConversionEndToEnd:
     def test_conversion_skips_duplicate_ine(self):
         """Should skip rows with duplicate INE values."""
         # Create temporary input file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f_in:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, encoding="utf-8"
+        ) as f_in:
             input_path = Path(f_in.name)
-            writer = csv.writer(f_in, delimiter=';')
-            writer.writerow(['Nom', 'Prénom', 'INE', 'Classe'])
-            writer.writerow(['Dupont', 'Marie', '12345678901', 'CP'])
-            writer.writerow(['Martin', 'Lucas', '12345678901', 'CE1'])  # Duplicate INE
-            writer.writerow(['Bernard', 'Sophie', '98765432109', 'CM1'])
+            writer = csv.writer(f_in, delimiter=";")
+            writer.writerow(["Nom", "Prénom", "INE", "Classe"])
+            writer.writerow(["Dupont", "Marie", "12345678901", "CP"])
+            writer.writerow(["Martin", "Lucas", "12345678901", "CE1"])  # Duplicate INE
+            writer.writerow(["Bernard", "Sophie", "98765432109", "CM1"])
 
-        output_path = Path(tempfile.mktemp(suffix='.csv'))
+        output_path = Path(tempfile.mktemp(suffix=".csv"))
 
         try:
-            convert_onde_to_bcd(input_path, output_path, delimiter=';')
+            convert_onde_to_bcd(input_path, output_path, delimiter=";")
 
-            with open(output_path, 'r', encoding='utf-8-sig', newline='') as f_out:
+            with open(output_path, "r", encoding="utf-8-sig", newline="") as f_out:
                 reader = csv.DictReader(f_out)
                 rows = list(reader)
 
             # Should only have 2 rows (duplicate skipped)
             assert len(rows) == 2
-            assert rows[0]['borrower_id'] == ''
-            assert rows[0]['first_name'] == 'Marie'
-            assert rows[1]['borrower_id'] == ''
-            assert rows[1]['first_name'] == 'Sophie'
+            assert rows[0]["borrower_id"] == ""
+            assert rows[0]["first_name"] == "Marie"
+            assert rows[1]["borrower_id"] == ""
+            assert rows[1]["first_name"] == "Sophie"
 
         finally:
             input_path.unlink(missing_ok=True)
@@ -284,26 +303,28 @@ class TestConversionEndToEnd:
     def test_conversion_preserves_complete_class_labels(self):
         """Should preserve the complete ONDE class label."""
         # Create temporary input file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f_in:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, encoding="utf-8"
+        ) as f_in:
             input_path = Path(f_in.name)
-            writer = csv.writer(f_in, delimiter=';')
-            writer.writerow(['Nom', 'Prénom', 'INE', 'Identifiant Classe'])
-            writer.writerow(['Dupont', 'Marie', '111', 'CP-A'])
-            writer.writerow(['Martin', 'Lucas', '222', 'CE1-B'])
-            writer.writerow(['Bernard', 'Sophie', '333', 'CM2 C'])  # Space separator
+            writer = csv.writer(f_in, delimiter=";")
+            writer.writerow(["Nom", "Prénom", "INE", "Identifiant Classe"])
+            writer.writerow(["Dupont", "Marie", "111", "CP-A"])
+            writer.writerow(["Martin", "Lucas", "222", "CE1-B"])
+            writer.writerow(["Bernard", "Sophie", "333", "CM2 C"])  # Space separator
 
-        output_path = Path(tempfile.mktemp(suffix='.csv'))
+        output_path = Path(tempfile.mktemp(suffix=".csv"))
 
         try:
-            convert_onde_to_bcd(input_path, output_path, delimiter=';')
+            convert_onde_to_bcd(input_path, output_path, delimiter=";")
 
-            with open(output_path, 'r', encoding='utf-8-sig', newline='') as f_out:
+            with open(output_path, "r", encoding="utf-8-sig", newline="") as f_out:
                 reader = csv.DictReader(f_out)
                 rows = list(reader)
 
-            assert rows[0]['class'] == 'CP-A'
-            assert rows[1]['class'] == 'CE1-B'
-            assert rows[2]['class'] == 'CM2 C'
+            assert rows[0]["class"] == "CP-A"
+            assert rows[1]["class"] == "CE1-B"
+            assert rows[2]["class"] == "CM2 C"
 
         finally:
             input_path.unlink(missing_ok=True)
@@ -312,24 +333,26 @@ class TestConversionEndToEnd:
     def test_conversion_with_comma_delimiter(self):
         """Should support comma-delimited input."""
         # Create temporary input file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8') as f_in:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".csv", delete=False, encoding="utf-8"
+        ) as f_in:
             input_path = Path(f_in.name)
-            writer = csv.writer(f_in, delimiter=',')  # Comma instead of semicolon
-            writer.writerow(['Nom', 'Prénom', 'INE', 'Classe'])
-            writer.writerow(['Dupont', 'Marie', '12345678901', 'CP'])
+            writer = csv.writer(f_in, delimiter=",")  # Comma instead of semicolon
+            writer.writerow(["Nom", "Prénom", "INE", "Classe"])
+            writer.writerow(["Dupont", "Marie", "12345678901", "CP"])
 
-        output_path = Path(tempfile.mktemp(suffix='.csv'))
+        output_path = Path(tempfile.mktemp(suffix=".csv"))
 
         try:
             # Specify comma delimiter
-            convert_onde_to_bcd(input_path, output_path, delimiter=',')
+            convert_onde_to_bcd(input_path, output_path, delimiter=",")
 
-            with open(output_path, 'r', encoding='utf-8-sig', newline='') as f_out:
+            with open(output_path, "r", encoding="utf-8-sig", newline="") as f_out:
                 reader = csv.DictReader(f_out)
                 rows = list(reader)
 
             assert len(rows) == 1
-            assert rows[0]['borrower_id'] == ''
+            assert rows[0]["borrower_id"] == ""
 
         finally:
             input_path.unlink(missing_ok=True)

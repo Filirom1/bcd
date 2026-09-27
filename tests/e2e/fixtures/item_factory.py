@@ -35,17 +35,17 @@ class ItemFactory:
         Returns:
             BibliographicRecord: Created record instance
         """
-        title = kwargs.get('title', f"Test Book {self._record_counter}")
+        title = kwargs.get("title", f"Test Book {self._record_counter}")
         self._record_counter += 1
 
         record = BibliographicRecord(
             title=title,
-            authors=kwargs.get('authors', '["Test Author"]'),
-            publisher=kwargs.get('publisher', 'Test Publisher'),
-            publication_year=kwargs.get('publication_year', 2024),
-            isbn=kwargs.get('isbn'),
-            language=kwargs.get('language', 'fr'),
-            medium_type=kwargs.get('medium_type', 'Livre')
+            authors=kwargs.get("authors", '["Test Author"]'),
+            publisher=kwargs.get("publisher", "Test Publisher"),
+            publication_year=kwargs.get("publication_year", 2024),
+            isbn=kwargs.get("isbn"),
+            language=kwargs.get("language", "fr"),
+            medium_type=kwargs.get("medium_type", "Livre"),
         )
 
         self.db.add(record)
@@ -67,22 +67,20 @@ class ItemFactory:
         Returns:
             Item: Created item instance
         """
-        item_id = kwargs.get('item_id', str(self._item_counter))
+        item_id = kwargs.get("item_id", str(self._item_counter))
         self._item_counter += 1
 
         # Create record if not provided
-        record_id = kwargs.get('bibliographic_record_id')
+        record_id = kwargs.get("bibliographic_record_id")
         if not record_id:
-            record = self.create_record(
-                title=kwargs.get('title', f"Book for Item {item_id}")
-            )
+            record = self.create_record(title=kwargs.get("title", f"Book for Item {item_id}"))
             record_id = record.id
 
         item = Item(
             item_id=item_id,
             bibliographic_record_id=record_id,
-            status=kwargs.get('status', 'available'),
-            acquisition_date=kwargs.get('acquisition_date', date.today())
+            status=kwargs.get("status", "available"),
+            acquisition_date=kwargs.get("acquisition_date", date.today()),
         )
 
         self.db.add(item)
@@ -121,16 +119,15 @@ class ItemFactory:
         """
         # Create item and record
         item, record = self.create_with_record(
-            title=kwargs.get('title', 'Test Book'),
-            status='on_loan'
+            title=kwargs.get("title", "Test Book"), status="on_loan"
         )
 
         # Calculate dates
-        checkout_date = kwargs.get('checkout_date', datetime.now())
+        checkout_date = kwargs.get("checkout_date", datetime.now())
         if isinstance(checkout_date, date) and not isinstance(checkout_date, datetime):
             checkout_date = datetime.combine(checkout_date, datetime.min.time())
 
-        due_date = kwargs.get('due_date')
+        due_date = kwargs.get("due_date")
         if not due_date:
             due_date = (checkout_date + timedelta(days=14)).date()
 
@@ -141,11 +138,11 @@ class ItemFactory:
             bibliographic_record_id=record.id,  # REQUIRED
             checkout_date=checkout_date,
             due_date=due_date,
-            return_date=kwargs.get('return_date'),
-            status=kwargs.get('status', 'active'),
-            renewal_count=kwargs.get('renewal_count', 0),  # NOT renewals_count
-            checked_out_by=kwargs.get('checked_out_by'),
-            notes=kwargs.get('notes')
+            return_date=kwargs.get("return_date"),
+            status=kwargs.get("status", "active"),
+            renewal_count=kwargs.get("renewal_count", 0),  # NOT renewals_count
+            checked_out_by=kwargs.get("checked_out_by"),
+            notes=kwargs.get("notes"),
         )
 
         self.db.add(transaction)
@@ -172,8 +169,8 @@ class ItemFactory:
             borrower_id=borrower_id,
             checkout_date=checkout_date,
             due_date=due_date,
-            status='overdue',
-            **kwargs
+            status="overdue",
+            **kwargs,
         )
 
     def create_returned(self, borrower_id, **kwargs):
@@ -188,8 +185,8 @@ class ItemFactory:
         Returns:
             tuple: (item, record, transaction)
         """
-        checkout_date = kwargs.get('checkout_date', datetime.now() - timedelta(days=7))
-        return_date = kwargs.get('return_date', datetime.now())
+        checkout_date = kwargs.get("checkout_date", datetime.now() - timedelta(days=7))
+        return_date = kwargs.get("return_date", datetime.now())
 
         if isinstance(checkout_date, date) and not isinstance(checkout_date, datetime):
             checkout_date = datetime.combine(checkout_date, datetime.min.time())
@@ -198,8 +195,7 @@ class ItemFactory:
 
         # Create item and record
         item, record = self.create_with_record(
-            title=kwargs.get('title', 'Test Book'),
-            status='available'
+            title=kwargs.get("title", "Test Book"), status="available"
         )
 
         # Create returned transaction
@@ -210,11 +206,11 @@ class ItemFactory:
             checkout_date=checkout_date,
             due_date=(checkout_date + timedelta(days=14)).date(),
             return_date=return_date,
-            status='returned',
-            renewal_count=kwargs.get('renewal_count', 0),
-            checked_out_by=kwargs.get('checked_out_by'),
-            returned_by=kwargs.get('returned_by'),
-            notes=kwargs.get('notes')
+            status="returned",
+            renewal_count=kwargs.get("renewal_count", 0),
+            checked_out_by=kwargs.get("checked_out_by"),
+            returned_by=kwargs.get("returned_by"),
+            notes=kwargs.get("notes"),
         )
 
         self.db.add(transaction)

@@ -44,7 +44,7 @@ def temp_test_db():
 @pytest.fixture
 def mock_backup_service():
     """Mock the backup service"""
-    with patch('src.bcd_api.api.v1.admin.backup_service') as mock:
+    with patch("src.bcd_api.api.v1.admin.backup_service") as mock:
         yield mock
 
 
@@ -61,7 +61,7 @@ class TestCreateBackupEndpoint:
             "size_mb": 5.42,
             "size_bytes": 5681152,
             "created_at": "2026-02-05T12:00:00",
-            "age_days": 0
+            "age_days": 0,
         }
         mock_backup_service.create_backup.return_value = mock_metadata
 
@@ -104,7 +104,7 @@ class TestListBackupsEndpoint:
             "filename": "bcd_backup_20260205_120000.db",
             "size_mb": 5.42,
             "created_at": "2026-02-05T12:00:00",
-            "age_days": 0
+            "age_days": 0,
         }
 
         mock_backup2 = MagicMock()
@@ -112,14 +112,14 @@ class TestListBackupsEndpoint:
             "filename": "bcd_backup_20260204_090000.db",
             "size_mb": 5.38,
             "created_at": "2026-02-04T09:00:00",
-            "age_days": 1
+            "age_days": 1,
         }
 
         mock_backup_service.list_backups.return_value = [mock_backup1, mock_backup2]
         mock_backup_service.get_database_size.return_value = {
             "size_mb": 5.45,
             "size_bytes": 5710848,
-            "path": "/workspace/data/bcd.db"
+            "path": "/workspace/data/bcd.db",
         }
 
         response = client.get("/api/v1/admin/backups")
@@ -138,7 +138,7 @@ class TestListBackupsEndpoint:
         mock_backup_service.get_database_size.return_value = {
             "size_mb": 5.45,
             "size_bytes": 5710848,
-            "path": "/workspace/data/bcd.db"
+            "path": "/workspace/data/bcd.db",
         }
 
         response = client.get("/api/v1/admin/backups")
@@ -168,10 +168,7 @@ class TestRestoreBackupEndpoint:
 
         response = client.post(
             "/api/v1/admin/restore",
-            params={
-                "backup_file": "backups/bcd_backup_20260205_120000.db",
-                "confirm": True
-            }
+            params={"backup_file": "backups/bcd_backup_20260205_120000.db", "confirm": True},
         )
 
         assert response.status_code == 200
@@ -184,11 +181,7 @@ class TestRestoreBackupEndpoint:
     def test_restore_without_confirmation(self, client, mock_backup_service):
         """Test restore fails without confirmation"""
         response = client.post(
-            "/api/v1/admin/restore",
-            params={
-                "backup_file": "backups/backup.db",
-                "confirm": False
-            }
+            "/api/v1/admin/restore", params={"backup_file": "backups/backup.db", "confirm": False}
         )
 
         assert response.status_code == 400
@@ -196,10 +189,7 @@ class TestRestoreBackupEndpoint:
 
     def test_restore_missing_confirmation(self, client, mock_backup_service):
         """Test restore with missing confirm parameter (defaults to False)"""
-        response = client.post(
-            "/api/v1/admin/restore",
-            params={"backup_file": "backups/backup.db"}
-        )
+        response = client.post("/api/v1/admin/restore", params={"backup_file": "backups/backup.db"})
 
         assert response.status_code == 400
         assert "requires explicit confirmation" in response.json()["detail"]
@@ -212,10 +202,7 @@ class TestRestoreBackupEndpoint:
 
         response = client.post(
             "/api/v1/admin/restore",
-            params={
-                "backup_file": "backups/nonexistent.db",
-                "confirm": True
-            }
+            params={"backup_file": "backups/nonexistent.db", "confirm": True},
         )
 
         assert response.status_code == 404
@@ -228,11 +215,7 @@ class TestRestoreBackupEndpoint:
         )
 
         response = client.post(
-            "/api/v1/admin/restore",
-            params={
-                "backup_file": "backups/invalid.db",
-                "confirm": True
-            }
+            "/api/v1/admin/restore", params={"backup_file": "backups/invalid.db", "confirm": True}
         )
 
         assert response.status_code == 400
@@ -243,11 +226,7 @@ class TestRestoreBackupEndpoint:
         mock_backup_service.restore_backup.side_effect = Exception("Restore failed")
 
         response = client.post(
-            "/api/v1/admin/restore",
-            params={
-                "backup_file": "backups/backup.db",
-                "confirm": True
-            }
+            "/api/v1/admin/restore", params={"backup_file": "backups/backup.db", "confirm": True}
         )
 
         assert response.status_code == 500
@@ -362,7 +341,9 @@ class TestVerifyBackupEndpoint:
         # Since we're using a mock_backup_service, we need to create a temp dir
         # to simulate the backups directory, or just test that the endpoint
         # properly returns 404 when the file doesn't exist
-        mock_backup_service._get_backups_dir.return_value = Path("./backups_temp_not_exist_or_mocked")
+        mock_backup_service._get_backups_dir.return_value = Path(
+            "./backups_temp_not_exist_or_mocked"
+        )
         response = client.get("/api/v1/admin/backups/verify/nonexistent.db")
 
         assert response.status_code == 404
@@ -397,11 +378,11 @@ class TestBackupEndpointsIntegration:
 
     def test_full_backup_restore_cycle(self, client, temp_test_db):
         """Test complete backup and restore cycle"""
-        with patch('src.bcd_api.services.admin.backup.settings') as mock_settings:
+        with patch("src.bcd_api.services.admin.backup.settings") as mock_settings:
             mock_settings.database_url = f"sqlite:///{temp_test_db}"
             mock_settings.backups_dir_path = "backups"
 
-            with patch('src.bcd_api.services.admin.backup.engine') as mock_engine:
+            with patch("src.bcd_api.services.admin.backup.engine") as mock_engine:
                 mock_engine.dispose = MagicMock()
 
                 # Create backup
@@ -422,21 +403,20 @@ class TestBackupEndpointsIntegration:
 
                 # Restore backup
                 restore_response = client.post(
-                    "/api/v1/admin/restore",
-                    params={"backup_file": backup_file, "confirm": True}
+                    "/api/v1/admin/restore", params={"backup_file": backup_file, "confirm": True}
                 )
                 assert restore_response.status_code == 200
 
     def test_backup_list_cleanup_cycle(self, client):
         """Test backup creation, listing, and cleanup"""
-        with patch('src.bcd_api.api.v1.admin.backup_service') as mock_service:
+        with patch("src.bcd_api.api.v1.admin.backup_service") as mock_service:
             # Setup mocks
             mock_metadata = MagicMock()
             mock_metadata.to_dict.return_value = {
                 "filename": "test_backup.db",
                 "size_mb": 1.0,
                 "created_at": "2026-01-01T00:00:00",
-                "age_days": 40
+                "age_days": 40,
             }
 
             mock_service.create_backup.return_value = mock_metadata
@@ -465,6 +445,7 @@ class TestDownloadBackupEndpoint:
     def test_download_success(self, client, mock_backup_service):
         """Test successful download of a backup file"""
         from pathlib import Path
+
         backups_dir = Path("./backups")
         backups_dir.mkdir(exist_ok=True)
         test_backup = backups_dir / "test_download.db"
@@ -524,4 +505,3 @@ class TestImportBackupEndpoint:
         assert data["success"] is True
         assert "Database successfully imported and restored" in data["message"]
         mock_backup_service.restore_backup.assert_called_once()
-

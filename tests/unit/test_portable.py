@@ -106,4 +106,3 @@ def test_initialize_portable_environment_portable(monkeypatch, tmp_path):
     portable.initialize_portable_environment()
     assert (app_dir / "data" / "sample_imports").is_dir()
     assert (app_dir / "config" / ".env").is_file()
-

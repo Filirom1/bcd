@@ -5,8 +5,8 @@ No mutations, commits, or rollbacks.
 
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
 from sqlalchemy import case
+from sqlalchemy.orm import Session
 
 from ...core.exceptions import NotFoundException
 from ...models.class_model import Class

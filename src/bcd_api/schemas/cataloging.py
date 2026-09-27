@@ -4,7 +4,6 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-
 ExternalSource = Literal["bnf", "google_books", "sudoc"]
 
 

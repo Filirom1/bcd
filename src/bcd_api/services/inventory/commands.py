@@ -76,11 +76,7 @@ def bulk_mark_inventoried(db: Session, item_ids: list[str]) -> dict:
 
         logger.info(f"Bulk marked {len(items)} items as inventoried, {len(not_found)} not found")
 
-        return {
-            "items_updated": len(items),
-            "items_not_found": not_found,
-            "timestamp": timestamp
-        }
+        return {"items_updated": len(items), "items_not_found": not_found, "timestamp": timestamp}
     except Exception:
         db.rollback()
         raise
@@ -161,7 +157,11 @@ def bulk_update_items(
                     item.call_number = normalize_field_value(generated[:50])
                     updated_call_numbers[item.item_id] = item.call_number
                     call_numbers_updated += 1
-                elif item_updates and "call_number" in item_updates and "call_number" in decision.accepted_updates:
+                elif (
+                    item_updates
+                    and "call_number" in item_updates
+                    and "call_number" in decision.accepted_updates
+                ):
                     updated_call_numbers[item.item_id] = item.call_number
                     call_numbers_updated += 1
 
@@ -186,12 +186,16 @@ def bulk_update_items(
                 records_updated += 1
 
                 # Count other copies affected (items with this record but not in our selection)
-                other_copies_affected += record.total_items - sum(1 for item in items if item.bibliographic_record_id == record.id)
+                other_copies_affected += record.total_items - sum(
+                    1 for item in items if item.bibliographic_record_id == record.id
+                )
 
         db.flush()
         db.commit()
 
-        logger.info(f"Bulk updated {items_updated} items ({items_skipped_on_loan} skipped on_loan), {records_updated} records, {other_copies_affected} other copies affected")
+        logger.info(
+            f"Bulk updated {items_updated} items ({items_skipped_on_loan} skipped on_loan), {records_updated} records, {other_copies_affected} other copies affected"
+        )
 
         return {
             "items_updated": items_updated,
@@ -200,7 +204,7 @@ def bulk_update_items(
             "records_updated": records_updated,
             "other_copies_affected": other_copies_affected,
             "call_numbers_updated": call_numbers_updated,
-            "call_numbers": updated_call_numbers
+            "call_numbers": updated_call_numbers,
         }
     except Exception:
         db.rollback()
@@ -218,19 +222,25 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
         # Find active loans where return_date IS NULL for safety
         active_loan_item_ids = set()
         if items:
-            active_loans = db.query(CirculationTransaction.item_id).filter(
-                CirculationTransaction.item_id.in_([item.id for item in items]),
-                CirculationTransaction.return_date.is_(None)
-            ).all()
+            active_loans = (
+                db.query(CirculationTransaction.item_id)
+                .filter(
+                    CirculationTransaction.item_id.in_([item.id for item in items]),
+                    CirculationTransaction.return_date.is_(None),
+                )
+                .all()
+            )
             active_loan_item_ids = {loan[0] for loan in active_loans}
 
         # Separate deletable from on_loan (based on active loan)
         deletable_items = [
-            item for item in items
+            item
+            for item in items
             if can_deaccession(has_active_loan=item.id in active_loan_item_ids)
         ]
         on_loan_items = [
-            item for item in items
+            item
+            for item in items
             if not can_deaccession(has_active_loan=item.id in active_loan_item_ids)
         ]
 
@@ -253,10 +263,14 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
         # Update parent record counters
         orphan_records_created = 0
         for record_id in record_ids:
-            record = db.query(BibliographicRecord).filter(BibliographicRecord.id == record_id).first()
+            record = (
+                db.query(BibliographicRecord).filter(BibliographicRecord.id == record_id).first()
+            )
             if record:
                 # Recount items for this record
-                item_count = db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
+                item_count = (
+                    db.query(Item).filter(Item.bibliographic_record_id == record_id).count()
+                )
                 record.total_items = item_count
 
                 if item_count == 0:
@@ -264,13 +278,15 @@ def delete_items_bulk(db: Session, item_ids: list[str]) -> dict:
 
         db.commit()
 
-        logger.info(f"Deleted {len(deletable_items)} items ({len(on_loan_items)} skipped on_loan), cancelled {holds_cancelled} holds, created {orphan_records_created} orphans")
+        logger.info(
+            f"Deleted {len(deletable_items)} items ({len(on_loan_items)} skipped on_loan), cancelled {holds_cancelled} holds, created {orphan_records_created} orphans"
+        )
 
         return {
             "items_deleted": len(deletable_items),
             "items_skipped_on_loan": len(on_loan_items),
             "holds_cancelled": holds_cancelled,
-            "orphan_records_created": orphan_records_created
+            "orphan_records_created": orphan_records_created,
         }
     except Exception:
         db.rollback()
@@ -285,9 +301,13 @@ def delete_orphan_records(db: Session) -> dict:
         # Get orphan record IDs
         orphan_ids = [
             record.id
-            for record in db.query(BibliographicRecord).filter(
-                ~db.query(Item).filter(Item.bibliographic_record_id == BibliographicRecord.id).exists()
-            ).all()
+            for record in db.query(BibliographicRecord)
+            .filter(
+                ~db.query(Item)
+                .filter(Item.bibliographic_record_id == BibliographicRecord.id)
+                .exists()
+            )
+            .all()
         ]
 
         # Use existing bulk_delete_records function
@@ -297,9 +317,7 @@ def delete_orphan_records(db: Session) -> dict:
         db.commit()
         logger.info(f"Deleted {len(orphan_ids)} orphan records")
 
-        return {
-            "records_deleted": len(orphan_ids)
-        }
+        return {"records_deleted": len(orphan_ids)}
     except Exception:
         db.rollback()
         raise

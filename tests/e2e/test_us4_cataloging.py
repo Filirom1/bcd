@@ -18,58 +18,46 @@ Test Quality:
 - Mocked BNF API for reliability
 """
 
-
 import pytest
 
 
 class TestUS4FindNotice:
     """Test ISBN lookup and BNF integration."""
 
+    # Assert - Form should be populated
+    # (Check if title field has value)
 
-            # Assert - Form should be populated
-            # (Check if title field has value)
-
-
-            # Assert - Success notification
+    # Assert - Success notification
 
 
 class TestUS4ManualEntry:
     """Test manual cataloging without BNF lookup."""
 
+    # Fill other required fields
+    # Then submit
+    # Assert - Record created
 
-        # Fill other required fields
-        # Then submit
-        # Assert - Record created
-
-
-            # Assert - Should show validation errors
-            # (Browser HTML5 validation or custom errors)
+    # Assert - Should show validation errors
+    # (Browser HTML5 validation or custom errors)
 
 
 class TestUS4DuplicateHandling:
     """Test handling of duplicate ISBNs."""
 
-
-            # Assert - Should show duplicate message
-            # And allow adding copy with new barcode
+    # Assert - Should show duplicate message
+    # And allow adding copy with new barcode
 
 
 class TestUS4KeyboardEntry:
     """Test keyboard/manual entry without scanner."""
 
-
-        # Assert - Should work same as scanning
+    # Assert - Should work same as scanning
 
 
 class TestUS4BulkImport:
     """Test CSV import functionality."""
 
-    def test_us4_ac7_import_books_from_csv(
-        self,
-        page,
-        server_url,
-        tmp_path
-    ):
+    def test_us4_ac7_import_books_from_csv(self, page, server_url, tmp_path):
         """
         US4-AC7: Import books from CSV file.
 
@@ -79,20 +67,24 @@ class TestUS4BulkImport:
         """
         # Arrange - Create test CSV
         import csv
+
         csv_file = tmp_path / "test_books.csv"
-        with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.DictWriter(f, fieldnames=[
-                'title', 'authors', 'isbn', 'publisher', 'publication_year', 'item_id'
-            ])
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=["title", "authors", "isbn", "publisher", "publication_year", "item_id"],
+            )
             writer.writeheader()
-            writer.writerow({
-                'title': 'CSV Import Test Book',
-                'authors': '["CSV Author"]',
-                'isbn': '9782222222222',
-                'publisher': 'CSV Publisher',
-                'publication_year': '2024',
-                'item_id': 'CSV-001'
-            })
+            writer.writerow(
+                {
+                    "title": "CSV Import Test Book",
+                    "authors": '["CSV Author"]',
+                    "isbn": "9782222222222",
+                    "publisher": "CSV Publisher",
+                    "publication_year": "2024",
+                    "item_id": "CSV-001",
+                }
+            )
 
         # Act
         page.goto(f"{server_url}/#/cataloging")

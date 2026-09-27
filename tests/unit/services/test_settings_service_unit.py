@@ -47,10 +47,7 @@ class TestUpdateSettings:
         db_session.commit()
 
         # Update
-        result = settings_service.update_settings(
-            db_session,
-            {"library_name": "New Name"}
-        )
+        result = settings_service.update_settings(db_session, {"library_name": "New Name"})
 
         assert result.library_name == "New Name"
 
@@ -66,7 +63,7 @@ class TestUpdateSettings:
                 "library_name": "Updated Library",
                 "language": "en",
                 "loan_duration_days": 21,
-            }
+            },
         )
 
         assert result.library_name == "Updated Library"
@@ -85,7 +82,7 @@ class TestUpdateSettings:
                 "library_name": "Valid",
                 "invalid_field": "Should be ignored",
                 "another_bad": 123,
-            }
+            },
         )
 
         assert result.library_name == "Valid"
@@ -108,10 +105,7 @@ class TestUpdateSettings:
         db_session.add(settings)
         db_session.commit()
 
-        result = settings_service.update_settings(
-            db_session,
-            {"dewey_colors_enabled": False}
-        )
+        result = settings_service.update_settings(db_session, {"dewey_colors_enabled": False})
 
         assert result.dewey_colors_enabled is False
 
@@ -150,7 +144,9 @@ class TestResetToDefaults:
         assert result.loan_limit_teacher == 5
         assert result.renewal_limit == 2
         assert result.dewey_colors_enabled is True
-        assert result.catalog_medium_types == "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
+        assert (
+            result.catalog_medium_types == "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
+        )
         assert result.catalog_call_number_rules is not None
 
     def test_reset_persists(self, db_session):
@@ -205,7 +201,7 @@ class TestStructuredSettingsSerialization:
                 "dewey_colors": colors_list,
                 "catalog_shelf_locations": shelves_list,
                 "catalog_call_number_rules": rules_list,
-            }
+            },
         )
 
         # Assert database has them stored as JSON strings
@@ -223,4 +219,3 @@ class TestStructuredSettingsSerialization:
         assert len(response.catalog_call_number_rules) == 1
         assert response.catalog_call_number_rules[0].medium_type == "Book"
         assert response.catalog_call_number_rules[0].pattern == "R {AUT3}"
-

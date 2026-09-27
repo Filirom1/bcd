@@ -22,7 +22,9 @@ class Borrower(Base):
     full_name = Column(String(200), nullable=False, index=True)
 
     role = Column(String(20), nullable=False, index=True)
-    class_id = Column(Integer, ForeignKey("class.id", ondelete="SET NULL"), nullable=True, index=True)
+    class_id = Column(
+        Integer, ForeignKey("class.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     grade_level = Column(String(20), nullable=True)
 
     active = Column(Boolean, nullable=False, default=True, index=True)
@@ -34,22 +36,25 @@ class Borrower(Base):
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Constraints
     __table_args__ = (
         CheckConstraint(
             f"role IN ('{BorrowerRole.STUDENT.value}', '{BorrowerRole.TEACHER.value}', '{BorrowerRole.STAFF.value}')",
-            name="check_borrower_role"
+            name="check_borrower_role",
         ),
     )
 
     # Relationships
     class_ = relationship("Class", back_populates="borrowers")
     circulation_transactions = relationship(
-        "CirculationTransaction",
-        back_populates="borrower",
-        cascade="all, delete-orphan"
+        "CirculationTransaction", back_populates="borrower", cascade="all, delete-orphan"
     )
     holds = relationship("Hold", back_populates="borrower", cascade="all, delete-orphan")
 

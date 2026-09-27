@@ -1,19 +1,18 @@
 """Commands module for the catalog domain."""
 
 import logging
-from datetime import date, datetime
-from typing import Any, List, Optional, Set
+from datetime import date
+from typing import List, Optional
+
 from sqlalchemy import and_, bindparam, inspect, text
 from sqlalchemy.orm import Session, joinedload
 
 from src.bcd_api.core.exceptions import (
-    ConflictError,
-    NotFoundError,
-    NotFoundException,
-    ValidationError,
     BibliographicRecordNotFoundException,
-    DuplicateItemIDException,
+    ConflictError,
     ItemHasActiveLoanException,
+    NotFoundError,
+    ValidationError,
 )
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.circulation import CirculationTransaction
@@ -22,16 +21,17 @@ from src.bcd_api.models.item import Item
 from src.bcd_api.schemas.bibliographic_record import BibliographicRecordCreate
 from src.bcd_api.schemas.item import ItemCreate
 from src.shared.constants import MediumType
-from ._validation import (
-    require_record,
-    require_item,
-    normalize_item_id,
-    validate_item_id_available,
-    parse_item_acquisition_date,
-)
+
 from ._serialization import encode_record_lists
-from .projections import refresh_total_items_in_transaction
+from ._validation import (
+    normalize_item_id,
+    parse_item_acquisition_date,
+    require_item,
+    require_record,
+    validate_item_id_available,
+)
 from .lookup import _download_cover
+from .projections import refresh_total_items_in_transaction
 
 logger = logging.getLogger(__name__)
 
@@ -48,13 +48,16 @@ def create_bibliographic_record(
                 .first()
             )
             if existing:
-                raise ConflictError(f"ISBN {record_data.isbn} already exists (record ID: {existing.id})")
+                raise ConflictError(
+                    f"ISBN {record_data.isbn} already exists (record ID: {existing.id})"
+                )
 
         bnf_data = None
         if isbn_lookup and record_data.isbn:
             try:
                 logger.info(f"Looking up ISBN {record_data.isbn} in BNF catalog")
                 from ..external.bnf import search_by_isbn as bnf_search_by_isbn
+
                 bnf_data = bnf_search_by_isbn(record_data.isbn)
                 if bnf_data:
                     logger.info(f"Found BNF data for ISBN {record_data.isbn}")
@@ -121,7 +124,7 @@ def bulk_edit_records(
     medium_type: Optional[str] = None,
     publisher: Optional[str] = None,
     collection: Optional[str] = None,
-    binding_type: Optional[str] = None
+    binding_type: Optional[str] = None,
 ) -> dict:
     """Bulk edit bibliographic records."""
     if not record_ids:
@@ -147,9 +150,7 @@ def bulk_edit_records(
         raise ValidationError("No fields to update (all values are null)")
 
     try:
-        records = db.query(BibliographicRecord).filter(
-            BibliographicRecord.id.in_(record_ids)
-        ).all()
+        records = db.query(BibliographicRecord).filter(BibliographicRecord.id.in_(record_ids)).all()
 
         if not records:
             raise NotFoundError("No records found with provided IDs")
@@ -168,7 +169,7 @@ def bulk_edit_records(
             "total_count": len(record_ids),
             "successful_count": updated_count,
             "failed_count": 0,
-            "details": {"updated_fields": list(updates.keys())}
+            "details": {"updated_fields": list(updates.keys())},
         }
     except Exception:
         db.rollback()
@@ -181,10 +182,12 @@ def bulk_delete_records(db: Session, record_ids: List[int]) -> dict:
         raise ValidationError("No record IDs provided")
 
     try:
-        records = db.query(BibliographicRecord)\
-            .options(joinedload(BibliographicRecord.items))\
-            .filter(BibliographicRecord.id.in_(record_ids))\
+        records = (
+            db.query(BibliographicRecord)
+            .options(joinedload(BibliographicRecord.items))
+            .filter(BibliographicRecord.id.in_(record_ids))
             .all()
+        )
 
         if not records:
             raise NotFoundError("No records found with provided IDs")
@@ -199,26 +202,19 @@ def bulk_delete_records(db: Session, record_ids: List[int]) -> dict:
             from src.bcd_api.models.borrower import Borrower
             from src.bcd_api.models.circulation import CirculationTransaction
 
-            item_with_loan = db.query(
-                Item.item_id,
-                Borrower.full_name,
-                CirculationTransaction.due_date
-            ).join(
-                CirculationTransaction,
-                CirculationTransaction.item_id == Item.id
-            ).join(
-                Borrower,
-                Borrower.id == CirculationTransaction.borrower_id
-            ).filter(
-                Item.id.in_(all_item_ids),
-                CirculationTransaction.return_date.is_(None)
-            ).first()
+            item_with_loan = (
+                db.query(Item.item_id, Borrower.full_name, CirculationTransaction.due_date)
+                .join(CirculationTransaction, CirculationTransaction.item_id == Item.id)
+                .join(Borrower, Borrower.id == CirculationTransaction.borrower_id)
+                .filter(Item.id.in_(all_item_ids), CirculationTransaction.return_date.is_(None))
+                .first()
+            )
 
             if item_with_loan:
                 raise ItemHasActiveLoanException(
                     item_id=item_with_loan.item_id,
                     borrower_name=item_with_loan.full_name,
-                    due_date=item_with_loan.due_date
+                    due_date=item_with_loan.due_date,
                 )
 
         for record in records:
@@ -231,7 +227,7 @@ def bulk_delete_records(db: Session, record_ids: List[int]) -> dict:
             "operation": "bulk_delete_records",
             "total_count": len(record_ids),
             "successful_count": deleted_count,
-            "failed_count": 0
+            "failed_count": 0,
         }
     except Exception:
         db.rollback()
@@ -249,30 +245,35 @@ def merge_bibliographic_records(
         raise ValidationError("At least one source record is required")
 
     normalized_source_ids = list(dict.fromkeys(source_ids))
-    normalized_source_ids = [record_id for record_id in normalized_source_ids if record_id != target_id]
+    normalized_source_ids = [
+        record_id for record_id in normalized_source_ids if record_id != target_id
+    ]
     if not normalized_source_ids:
         raise ValidationError("The target record cannot be the only merge source")
 
     try:
         target = require_record(db, target_id)
-        source_records = db.query(BibliographicRecord).filter(
-            BibliographicRecord.id.in_(normalized_source_ids)
-        ).all()
+        source_records = (
+            db.query(BibliographicRecord)
+            .filter(BibliographicRecord.id.in_(normalized_source_ids))
+            .all()
+        )
         found_source_ids = {record.id for record in source_records}
         missing_source_ids = [
-            record_id for record_id in normalized_source_ids
-            if record_id not in found_source_ids
+            record_id for record_id in normalized_source_ids if record_id not in found_source_ids
         ]
         if missing_source_ids:
             raise NotFoundError(
-                "Bibliographic record", ", ".join(str(record_id) for record_id in missing_source_ids)
+                "Bibliographic record",
+                ", ".join(str(record_id) for record_id in missing_source_ids),
             )
 
         updates_by_item_id = {}
         for item_update in item_updates or []:
             values = (
                 item_update.model_dump(exclude_unset=True)
-                if hasattr(item_update, "model_dump") else item_update
+                if hasattr(item_update, "model_dump")
+                else item_update
             )
             item_id = values.get("item_id")
             if item_id in updates_by_item_id:
@@ -283,9 +284,10 @@ def merge_bibliographic_records(
         # the notice being kept must remain untouched.
         selected_record_ids = normalized_source_ids
         selected_item_ids = {
-            row.id for row in db.query(Item.id).filter(
-                Item.bibliographic_record_id.in_(selected_record_ids)
-            ).all()
+            row.id
+            for row in db.query(Item.id)
+            .filter(Item.bibliographic_record_id.in_(selected_record_ids))
+            .all()
         }
         unknown_item_ids = set(updates_by_item_id) - selected_item_ids
         if unknown_item_ids:
@@ -294,47 +296,70 @@ def merge_bibliographic_records(
                 + ", ".join(str(item_id) for item_id in sorted(unknown_item_ids))
             )
 
-        target_waiting_holds = db.query(Hold).filter(
-            Hold.bibliographic_record_id == target_id,
-            Hold.status == "waiting",
-        ).order_by(Hold.queue_position, Hold.created_at, Hold.id).all()
-        source_waiting_holds = db.query(Hold).filter(
-            Hold.bibliographic_record_id.in_(normalized_source_ids),
-            Hold.status == "waiting",
-        ).all()
+        target_waiting_holds = (
+            db.query(Hold)
+            .filter(
+                Hold.bibliographic_record_id == target_id,
+                Hold.status == "waiting",
+            )
+            .order_by(Hold.queue_position, Hold.created_at, Hold.id)
+            .all()
+        )
+        source_waiting_holds = (
+            db.query(Hold)
+            .filter(
+                Hold.bibliographic_record_id.in_(normalized_source_ids),
+                Hold.status == "waiting",
+            )
+            .all()
+        )
         source_order = {
             record_id: position for position, record_id in enumerate(normalized_source_ids)
         }
-        source_waiting_holds.sort(key=lambda hold: (
-            source_order[hold.bibliographic_record_id],
-            hold.queue_position,
-            hold.created_at,
-            hold.id,
-        ))
+        source_waiting_holds.sort(
+            key=lambda hold: (
+                source_order[hold.bibliographic_record_id],
+                hold.queue_position,
+                hold.created_at,
+                hold.id,
+            )
+        )
         waiting_hold_ids = [hold.id for hold in target_waiting_holds + source_waiting_holds]
 
-        items_moved = db.query(Item).filter(
-            Item.bibliographic_record_id.in_(normalized_source_ids)
-        ).update({Item.bibliographic_record_id: target_id}, synchronize_session=False)
-        circulation_moved = db.query(CirculationTransaction).filter(
-            CirculationTransaction.bibliographic_record_id.in_(normalized_source_ids)
-        ).update({CirculationTransaction.bibliographic_record_id: target_id}, synchronize_session=False)
-        holds_moved = db.query(Hold).filter(
-            Hold.bibliographic_record_id.in_(normalized_source_ids)
-        ).update({Hold.bibliographic_record_id: target_id}, synchronize_session=False)
+        items_moved = (
+            db.query(Item)
+            .filter(Item.bibliographic_record_id.in_(normalized_source_ids))
+            .update({Item.bibliographic_record_id: target_id}, synchronize_session=False)
+        )
+        circulation_moved = (
+            db.query(CirculationTransaction)
+            .filter(CirculationTransaction.bibliographic_record_id.in_(normalized_source_ids))
+            .update(
+                {CirculationTransaction.bibliographic_record_id: target_id},
+                synchronize_session=False,
+            )
+        )
+        holds_moved = (
+            db.query(Hold)
+            .filter(Hold.bibliographic_record_id.in_(normalized_source_ids))
+            .update({Hold.bibliographic_record_id: target_id}, synchronize_session=False)
+        )
 
         archive_moved = 0
         if inspect(db.connection()).has_table("circulation_transaction_archive"):
-            archive_result = db.execute(text(
-                """
+            archive_result = db.execute(
+                text(
+                    """
                 UPDATE circulation_transaction_archive
                 SET bibliographic_record_id = :target_id
                 WHERE bibliographic_record_id IN :source_ids
                 """
-            ).bindparams(bindparam("source_ids", expanding=True)), {
-                "target_id": target_id,
-                "source_ids": normalized_source_ids,
-            })
+                ).bindparams(bindparam("source_ids", expanding=True)),
+                {
+                    "target_id": target_id,
+                    "source_ids": normalized_source_ids,
+                },
+            )
             archive_moved = archive_result.rowcount or 0
 
         db.flush()
@@ -351,8 +376,10 @@ def merge_bibliographic_records(
             if "call_number" in values:
                 item_fields[Item.call_number] = values["call_number"]
             if item_fields:
-                items_updated += db.query(Item).filter(Item.id == item_id).update(
-                    item_fields, synchronize_session=False
+                items_updated += (
+                    db.query(Item)
+                    .filter(Item.id == item_id)
+                    .update(item_fields, synchronize_session=False)
                 )
 
         refresh_total_items_in_transaction(db, {target_id})
@@ -388,6 +415,7 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
     """Create a new item (physical copy) and update the notice counter."""
     try:
         from ..settings_service import get_settings
+
         try:
             sys_settings = get_settings(db)
             prefix = sys_settings.item_barcode_prefix
@@ -407,7 +435,7 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
         validate_item_id_available(db, item_id)
 
         item_dict = item_data.model_dump()
-        item_dict['item_id'] = item_id
+        item_dict["item_id"] = item_id
 
         # The catalog stores periodical numbering in call_number for schema
         # compatibility.  The cataloging UI presents this field explicitly as
@@ -416,8 +444,8 @@ def create_item(db: Session, item_data: ItemCreate) -> Item:
             if not (item_dict.get("call_number") or "").strip():
                 raise ValidationError("A periodical copy requires an issue number")
             item_dict["call_number"] = item_dict["call_number"].strip()
-        if item_dict.get('acquisition_date') is None:
-            item_dict['acquisition_date'] = date.today()
+        if item_dict.get("acquisition_date") is None:
+            item_dict["acquisition_date"] = date.today()
 
         db_item = Item(**item_dict)
         db.add(db_item)
@@ -468,20 +496,17 @@ def update_item(db: Session, item_id: str, update_data: dict) -> Item:
 def _check_item_has_active_loan(db: Session, item: Item) -> Optional[dict]:
     """Check if an item is currently on loan."""
     from src.bcd_api.models.circulation import CirculationTransaction
+
     from ..circulation.query_filters import active_loan_predicate
 
-    active_loan = db.query(CirculationTransaction).filter(
-        and_(
-            CirculationTransaction.item_id == item.id,
-            active_loan_predicate()
-        )
-    ).first()
+    active_loan = (
+        db.query(CirculationTransaction)
+        .filter(and_(CirculationTransaction.item_id == item.id, active_loan_predicate()))
+        .first()
+    )
 
     if active_loan:
-        return {
-            "borrower_name": active_loan.borrower.full_name,
-            "due_date": active_loan.due_date
-        }
+        return {"borrower_name": active_loan.borrower.full_name, "due_date": active_loan.due_date}
     return None
 
 
@@ -495,7 +520,7 @@ def delete_item(db: Session, item_id: str) -> None:
             raise ItemHasActiveLoanException(
                 item_id=item_id,
                 borrower_name=active_loan_info["borrower_name"],
-                due_date=active_loan_info["due_date"]
+                due_date=active_loan_info["due_date"],
             )
 
         record_id = item.bibliographic_record_id

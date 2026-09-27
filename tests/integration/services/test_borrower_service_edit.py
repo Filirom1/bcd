@@ -34,18 +34,12 @@ class TestUpdateBorrowerBasicFields:
         Assert: full_name is "Pierre Dupont"
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Jean",
-            last_name="Dupont"
-        )
+        borrower = borrower_factory.create(borrower_id="101", first_name="Jean", last_name="Dupont")
         assert borrower.full_name == "Jean Dupont"
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            first_name="Pierre"
+            db=db_session, borrower_id="101", first_name="Pierre"
         )
 
         # Assert
@@ -66,17 +60,11 @@ class TestUpdateBorrowerBasicFields:
         Assert: full_name is "Jean Martin"
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Jean",
-            last_name="Dupont"
-        )
+        borrower_factory.create(borrower_id="101", first_name="Jean", last_name="Dupont")
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            last_name="Martin"
+            db=db_session, borrower_id="101", last_name="Martin"
         )
 
         # Assert
@@ -97,18 +85,11 @@ class TestUpdateBorrowerBasicFields:
         Assert: full_name is "Marie Martin"
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Jean",
-            last_name="Dupont"
-        )
+        borrower_factory.create(borrower_id="101", first_name="Jean", last_name="Dupont")
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            first_name="Marie",
-            last_name="Martin"
+            db=db_session, borrower_id="101", first_name="Marie", last_name="Martin"
         )
 
         # Assert
@@ -129,11 +110,7 @@ class TestUpdateBorrowerBasicFields:
         Assert: Fields updated correctly
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Jean",
-            last_name="Dupont"
-        )
+        borrower_factory.create(borrower_id="101", first_name="Jean", last_name="Dupont")
 
         # Act
         updated = borrower_service.update_borrower(
@@ -141,7 +118,7 @@ class TestUpdateBorrowerBasicFields:
             borrower_id="101",
             email="jean.dupont@example.com",
             phone="0612345678",
-            notes="Test notes"
+            notes="Test notes",
         )
 
         # Assert
@@ -166,17 +143,11 @@ class TestUpdateBorrowerID:
         Assert: borrower_id is "102"
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Jean",
-            last_name="Dupont"
-        )
+        borrower = borrower_factory.create(borrower_id="101", first_name="Jean", last_name="Dupont")
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            new_borrower_id="102"
+            db=db_session, borrower_id="101", new_borrower_id="102"
         )
 
         # Assert
@@ -198,15 +169,13 @@ class TestUpdateBorrowerID:
         Assert: DuplicateError raised with BORROWER_ID_NOT_AVAILABLE
         """
         # Arrange
-        borrower1 = borrower_factory.create(borrower_id="101")
-        borrower2 = borrower_factory.create(borrower_id="102")
+        borrower_factory.create(borrower_id="101")
+        borrower_factory.create(borrower_id="102")
 
         # Act & Assert
         with pytest.raises(DuplicateError) as exc_info:
             borrower_service.update_borrower(
-                db=db_session,
-                borrower_id="101",
-                new_borrower_id="102"
+                db=db_session, borrower_id="101", new_borrower_id="102"
             )
 
         assert "102" in str(exc_info.value)
@@ -227,14 +196,12 @@ class TestUpdateBorrowerID:
         from src.bcd_api.core.exceptions import InvalidIDFormatException
 
         # Arrange
-        borrower = borrower_factory.create(borrower_id="101")
+        borrower_factory.create(borrower_id="101")
 
         # Act & Assert
         with pytest.raises(InvalidIDFormatException):
             borrower_service.update_borrower(
-                db=db_session,
-                borrower_id="101",
-                new_borrower_id="ABC"
+                db=db_session, borrower_id="101", new_borrower_id="ABC"
             )
 
     def test_update_borrower_id_to_same_value_succeeds(
@@ -250,13 +217,11 @@ class TestUpdateBorrowerID:
         Assert: No error, borrower_id unchanged
         """
         # Arrange
-        borrower = borrower_factory.create(borrower_id="101")
+        borrower_factory.create(borrower_id="101")
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            new_borrower_id="101"
+            db=db_session, borrower_id="101", new_borrower_id="101"
         )
 
         # Assert
@@ -279,17 +244,12 @@ class TestUpdateBorrowerRole:
         Assert: Role is teacher
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            role="student"
-        )
+        borrower = borrower_factory.create(borrower_id="101", role="student")
         assert borrower.role == BorrowerRole.STUDENT
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            role=BorrowerRole.TEACHER
+            db=db_session, borrower_id="101", role=BorrowerRole.TEACHER
         )
 
         # Assert
@@ -308,16 +268,11 @@ class TestUpdateBorrowerRole:
         Assert: Role is staff
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            role="teacher"
-        )
+        borrower_factory.create(borrower_id="101", role="teacher")
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            role=BorrowerRole.STAFF
+            db=db_session, borrower_id="101", role=BorrowerRole.STAFF
         )
 
         # Assert
@@ -338,15 +293,11 @@ class TestUpdateBorrowerRole:
         from src.bcd_api.core.exceptions import InvalidIDFormatException
 
         # Arrange
-        borrower = borrower_factory.create(borrower_id="101")
+        borrower_factory.create(borrower_id="101")
 
         # Act & Assert
         with pytest.raises(InvalidIDFormatException):
-            borrower_service.update_borrower(
-                db=db_session,
-                borrower_id="101",
-                role="invalid_role"
-            )
+            borrower_service.update_borrower(db=db_session, borrower_id="101", role="invalid_role")
 
 
 class TestUpdateBorrowerClass:
@@ -368,17 +319,11 @@ class TestUpdateBorrowerClass:
         # Arrange
         class1 = class_factory.create(name="CP-A")
         class2 = class_factory.create(name="CE1-A")
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            role="student",
-            class_id=class1.id
-        )
+        borrower_factory.create(borrower_id="101", role="student", class_id=class1.id)
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            class_id=class2.id
+            db=db_session, borrower_id="101", class_id=class2.id
         )
 
         # Assert
@@ -399,18 +344,10 @@ class TestUpdateBorrowerClass:
         """
         # Arrange
         class1 = class_factory.create(name="CP-A")
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            role="student",
-            class_id=class1.id
-        )
+        borrower_factory.create(borrower_id="101", role="student", class_id=class1.id)
 
         # Act
-        updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="101",
-            class_id=None
-        )
+        updated = borrower_service.update_borrower(db=db_session, borrower_id="101", class_id=None)
 
         # Assert
         assert updated.class_id is None
@@ -430,15 +367,11 @@ class TestUpdateBorrowerClass:
         from src.bcd_api.core.exceptions import NotFoundException
 
         # Arrange
-        borrower = borrower_factory.create(borrower_id="101")
+        borrower_factory.create(borrower_id="101")
 
         # Act & Assert
         with pytest.raises(NotFoundException):
-            borrower_service.update_borrower(
-                db=db_session,
-                borrower_id="101",
-                class_id=9999
-            )
+            borrower_service.update_borrower(db=db_session, borrower_id="101", class_id=9999)
 
     def test_update_teacher_class_does_not_affect_student_count(
         self,
@@ -456,17 +389,11 @@ class TestUpdateBorrowerClass:
         # Arrange
         class1 = class_factory.create(name="CP-A")
         class2 = class_factory.create(name="CE1-A")
-        teacher = borrower_factory.create(
-            borrower_id="T001",
-            role="teacher",
-            class_id=class1.id
-        )
+        borrower_factory.create(borrower_id="T001", role="teacher", class_id=class1.id)
 
         # Act
         updated = borrower_service.update_borrower(
-            db=db_session,
-            borrower_id="T001",
-            class_id=class2.id
+            db=db_session, borrower_id="T001", class_id=class2.id
         )
 
         # Assert
@@ -491,11 +418,7 @@ class TestUpdateBorrowerNotFound:
 
         # Act & Assert
         with pytest.raises(BorrowerNotFoundException):
-            borrower_service.update_borrower(
-                db=db_session,
-                borrower_id="999",
-                first_name="Test"
-            )
+            borrower_service.update_borrower(db=db_session, borrower_id="999", first_name="Test")
 
 
 class TestUpdateBorrowerCombinedChanges:
@@ -516,11 +439,8 @@ class TestUpdateBorrowerCombinedChanges:
         """
         # Arrange
         class1 = class_factory.create(name="CP-A")
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Jean",
-            last_name="Dupont",
-            role="student"
+        borrower_factory.create(
+            borrower_id="101", first_name="Jean", last_name="Dupont", role="student"
         )
 
         # Act
@@ -533,7 +453,7 @@ class TestUpdateBorrowerCombinedChanges:
             class_id=class1.id,
             email="marie.martin@example.com",
             phone="0612345678",
-            notes="Updated borrower"
+            notes="Updated borrower",
         )
 
         # Assert
@@ -559,11 +479,7 @@ class TestUpdateBorrowerCombinedChanges:
         Assert: Both ID and name updated, full_name correct
         """
         # Arrange
-        borrower = borrower_factory.create(
-            borrower_id="101",
-            first_name="Jean",
-            last_name="Dupont"
-        )
+        borrower_factory.create(borrower_id="101", first_name="Jean", last_name="Dupont")
 
         # Act
         updated = borrower_service.update_borrower(
@@ -571,7 +487,7 @@ class TestUpdateBorrowerCombinedChanges:
             borrower_id="101",
             new_borrower_id="102",
             first_name="Marie",
-            last_name="Martin"
+            last_name="Martin",
         )
 
         # Assert

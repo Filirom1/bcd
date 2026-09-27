@@ -93,10 +93,7 @@ def add_hold(
         # Display confirmation
         console.print()
         console.print(
-            Panel(
-                "[bold cyan]📌 Nouvelle réservation / New Hold[/bold cyan]",
-                style="cyan"
-            )
+            Panel("[bold cyan]📌 Nouvelle réservation / New Hold[/bold cyan]", style="cyan")
         )
         console.print()
 
@@ -112,20 +109,14 @@ def add_hold(
         console.print(f"[bold]Notice / Record:[/bold] {biblio_data.get('title', 'N/A')}")
         if biblio_data.get("authors"):
             console.print(f"[bold]Auteur / Author:[/bold] {biblio_data['authors']}")
-        console.print(
-            f"[bold]Exemplaires / Copies:[/bold] {biblio_data.get('total_items', 0)}"
-        )
+        console.print(f"[bold]Exemplaires / Copies:[/bold] {biblio_data.get('total_items', 0)}")
 
         # Check how many are available
-        items_response = client.get(
-            f"/api/v1/catalog/bibliographic/{final_biblio_id}/items"
-        )
+        items_response = client.get(f"/api/v1/catalog/bibliographic/{final_biblio_id}/items")
         if items_response.status_code == 200:
             items = items_response.json()
             available = sum(1 for item in items if item.get("status") == "available")
-            console.print(
-                f"  [green]→ {available} disponible(s) / available[/green]"
-            )
+            console.print(f"  [green]→ {available} disponible(s) / available[/green]")
 
         console.print()
 
@@ -150,9 +141,7 @@ def add_hold(
             console.print()
             console.print("[green]✅ Réservation créée / Hold created[/green]")
             console.print(f"   Hold ID: {hold['id']}")
-            console.print(
-                f"   Position dans la file / Queue position: {hold['queue_position']}"
-            )
+            console.print(f"   Position dans la file / Queue position: {hold['queue_position']}")
 
             # Estimate availability
             if hold["queue_position"] > 1:
@@ -162,9 +151,11 @@ def add_hold(
                     f"~{days_estimate} jours / days"
                 )
         else:
-            error_data = response.json() if response.headers.get("content-type", "").startswith(
-                "application/json"
-            ) else {}
+            error_data = (
+                response.json()
+                if response.headers.get("content-type", "").startswith("application/json")
+                else {}
+            )
             print_error(f"Error creating hold: {error_data.get('detail', response.text)}")
 
     except Exception as e:
@@ -205,9 +196,7 @@ def list_holds(borrower_id: str, include_fulfilled: bool, api_url: str):
 
         # Get holds
         params = {"include_fulfilled": include_fulfilled}
-        response = client.get(
-            f"/api/v1/holds/borrower/{borrower_data['id']}", params=params
-        )
+        response = client.get(f"/api/v1/holds/borrower/{borrower_data['id']}", params=params)
 
         if response.status_code == 200:
             holds = response.json()
@@ -217,7 +206,7 @@ def list_holds(borrower_id: str, include_fulfilled: bool, api_url: str):
             console.print(
                 Panel(
                     f"[bold cyan]📌 Réservations / Holds for {borrower_data.get('full_name', 'N/A')}[/bold cyan]",
-                    style="cyan"
+                    style="cyan",
                 )
             )
             console.print()
@@ -298,7 +287,7 @@ def list_for_title(biblio_id: int, api_url: str):
                 Panel(
                     f"[bold cyan]📌 Réservations / Holds for:[/bold cyan]\n"
                     f"{biblio_data.get('title', 'N/A')}",
-                    style="cyan"
+                    style="cyan",
                 )
             )
             console.print()
@@ -385,9 +374,11 @@ def cancel_hold(hold_id: int, api_url: str):
         if response.status_code == 204:
             console.print("[green]✅ Réservation annulée / Hold cancelled[/green]")
         else:
-            error_data = response.json() if response.headers.get("content-type", "").startswith(
-                "application/json"
-            ) else {}
+            error_data = (
+                response.json()
+                if response.headers.get("content-type", "").startswith("application/json")
+                else {}
+            )
             print_error(f"Error cancelling hold: {error_data.get('detail', response.text)}")
 
     except Exception as e:
@@ -417,7 +408,7 @@ def ready_holds(api_url: str):
             console.print(
                 Panel(
                     "[bold cyan]📦 Réservations prêtes / Holds Ready for Pickup[/bold cyan]",
-                    style="cyan"
+                    style="cyan",
                 )
             )
             console.print()
@@ -436,6 +427,7 @@ def ready_holds(api_url: str):
             for hold in holds:
                 # Calculate days until expiration
                 from datetime import date, datetime
+
                 exp_date = hold.get("expiration_date")
                 if exp_date:
                     try:
@@ -463,9 +455,7 @@ def ready_holds(api_url: str):
 
             console.print(table)
             console.print()
-            console.print(
-                "[dim]💡 Tip: Notifiez les emprunteurs / Notify borrowers[/dim]"
-            )
+            console.print("[dim]💡 Tip: Notifiez les emprunteurs / Notify borrowers[/dim]")
         else:
             print_error(f"Error retrieving ready holds: {response.text}")
 

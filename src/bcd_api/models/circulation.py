@@ -18,26 +18,20 @@ class CirculationTransaction(Base):
 
     # Relationships
     borrower_id = Column(
-        Integer,
-        ForeignKey("borrower.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        Integer, ForeignKey("borrower.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    item_id = Column(
-        Integer,
-        ForeignKey("item.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    item_id = Column(Integer, ForeignKey("item.id", ondelete="CASCADE"), nullable=False, index=True)
     bibliographic_record_id = Column(
         Integer,
         ForeignKey("bibliographic_record.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     # Transaction dates
-    checkout_date = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+    checkout_date = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True
+    )
     due_date = Column(Date, nullable=False, index=True)
     return_date = Column(DateTime, nullable=True, index=True)
 
@@ -52,25 +46,32 @@ class CirculationTransaction(Base):
 
     # Audit timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Constraints
     __table_args__ = (
         CheckConstraint(
             f"status IN ('{CirculationStatus.ACTIVE.value}', '{CirculationStatus.RETURNED.value}', "
             f"'{CirculationStatus.OVERDUE.value}', '{CirculationStatus.RENEWED.value}')",
-            name="check_circulation_status"
+            name="check_circulation_status",
         ),
         CheckConstraint(
             "return_date IS NULL OR return_date >= checkout_date",
-            name="check_return_date_after_checkout"
+            name="check_return_date_after_checkout",
         ),
     )
 
     # Relationships
     borrower = relationship("Borrower", back_populates="circulation_transactions")
     item = relationship("Item", back_populates="circulation_transactions")
-    bibliographic_record = relationship("BibliographicRecord", back_populates="circulation_transactions")
+    bibliographic_record = relationship(
+        "BibliographicRecord", back_populates="circulation_transactions"
+    )
 
     @property
     def is_overdue(self) -> bool:

@@ -10,10 +10,28 @@ def ok_result():
 
 def test_bulk_edit_change_class_and_role(monkeypatch):
     calls = []
-    monkeypatch.setattr(admin.borrower_service, "bulk_change_class", lambda **kwargs: calls.append(("class", kwargs)) or ok_result())
-    monkeypatch.setattr(admin.borrower_service, "bulk_change_role", lambda **kwargs: calls.append(("role", kwargs)) or ok_result())
-    assert admin.bulk_edit_borrowers_endpoint("change_class", ["B1"], target_class_id=4, db="db").successful_count == 1
-    assert admin.bulk_edit_borrowers_endpoint("change_role", ["B1"], target_role="staff", db="db").successful_count == 1
+    monkeypatch.setattr(
+        admin.borrower_service,
+        "bulk_change_class",
+        lambda **kwargs: calls.append(("class", kwargs)) or ok_result(),
+    )
+    monkeypatch.setattr(
+        admin.borrower_service,
+        "bulk_change_role",
+        lambda **kwargs: calls.append(("role", kwargs)) or ok_result(),
+    )
+    assert (
+        admin.bulk_edit_borrowers_endpoint(
+            "change_class", ["B1"], target_class_id=4, db="db"
+        ).successful_count
+        == 1
+    )
+    assert (
+        admin.bulk_edit_borrowers_endpoint(
+            "change_role", ["B1"], target_role="staff", db="db"
+        ).successful_count
+        == 1
+    )
     assert calls[0][1]["new_class_id"] == 4
     assert calls[1][1]["new_role"] == "staff"
 

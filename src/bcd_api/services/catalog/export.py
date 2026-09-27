@@ -14,6 +14,7 @@ from src.bcd_api.core.exceptions import ExportFailedException, ExportTooLargeExc
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.item import Item
 from src.bcd_api.utils.serialization import deserialize_json_list
+
 from .import_ import DublinCoreColumns
 
 logger = logging.getLogger(__name__)
@@ -66,9 +67,7 @@ class ExportService:
             # Generate CSV
             output = StringIO()
             writer = csv.DictWriter(
-                output,
-                fieldnames=self._get_csv_fieldnames(),
-                quoting=csv.QUOTE_MINIMAL
+                output, fieldnames=self._get_csv_fieldnames(), quoting=csv.QUOTE_MINIMAL
             )
 
             writer.writeheader()
@@ -101,8 +100,7 @@ class ExportService:
         except Exception as e:
             logger.exception("Catalog export failed")
             raise ExportFailedException(
-                reason=str(e),
-                details={"error_type": type(e).__name__}
+                reason=str(e), details={"error_type": type(e).__name__}
             ) from e
 
     def _get_csv_fieldnames(self) -> List[str]:
@@ -186,19 +184,25 @@ class ExportService:
 
         # Item fields
         if item:
-            row.update({
-                "item.id": item.item_id or "",
-                "item.callNumber": item.call_number or "",
-                "item.acquisitionDate": item.acquisition_date.isoformat() if item.acquisition_date else "",
-                "item.fundingSource": item.funding_source or "",
-            })
+            row.update(
+                {
+                    "item.id": item.item_id or "",
+                    "item.callNumber": item.call_number or "",
+                    "item.acquisitionDate": (
+                        item.acquisition_date.isoformat() if item.acquisition_date else ""
+                    ),
+                    "item.fundingSource": item.funding_source or "",
+                }
+            )
         else:
-            row.update({
-                "item.id": "",
-                "item.callNumber": "",
-                "item.acquisitionDate": "",
-                "item.fundingSource": "",
-            })
+            row.update(
+                {
+                    "item.id": "",
+                    "item.callNumber": "",
+                    "item.acquisitionDate": "",
+                    "item.fundingSource": "",
+                }
+            )
 
         return row
 

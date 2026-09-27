@@ -303,8 +303,12 @@ class TestHoldCreation:
         db_session.add_all([biblio1, biblio2])
         db_session.commit()
 
-        item1 = Item(item_id="001", bibliographic_record_id=biblio1.id, status="on_loan", loanable=True)
-        item2 = Item(item_id="002", bibliographic_record_id=biblio2.id, status="on_loan", loanable=True)
+        item1 = Item(
+            item_id="001", bibliographic_record_id=biblio1.id, status="on_loan", loanable=True
+        )
+        item2 = Item(
+            item_id="002", bibliographic_record_id=biblio2.id, status="on_loan", loanable=True
+        )
         db_session.add_all([item1, item2])
         db_session.commit()
 
@@ -351,18 +355,35 @@ class TestHoldCreation:
             biblio = BibliographicRecord(title=f"Book {i}", medium_type="Livre")
             db_session.add(biblio)
             db_session.commit()
-            item = Item(item_id=f"00{i}", bibliographic_record_id=biblio.id, status="on_loan", loanable=True)
+            item = Item(
+                item_id=f"00{i}", bibliographic_record_id=biblio.id, status="on_loan", loanable=True
+            )
             db_session.add(item)
             biblios.append(biblio)
         db_session.commit()
 
         # First two holds succeed
-        hold_service.create_hold(db=db_session, borrower_id=borrower.id, bibliographic_record_id=biblios[0].id, created_by="test")
-        hold_service.create_hold(db=db_session, borrower_id=borrower.id, bibliographic_record_id=biblios[1].id, created_by="test")
+        hold_service.create_hold(
+            db=db_session,
+            borrower_id=borrower.id,
+            bibliographic_record_id=biblios[0].id,
+            created_by="test",
+        )
+        hold_service.create_hold(
+            db=db_session,
+            borrower_id=borrower.id,
+            bibliographic_record_id=biblios[1].id,
+            created_by="test",
+        )
 
         # Third hold must be rejected
         with pytest.raises(HoldLimitExceededException):
-            hold_service.create_hold(db=db_session, borrower_id=borrower.id, bibliographic_record_id=biblios[2].id, created_by="test")
+            hold_service.create_hold(
+                db=db_session,
+                borrower_id=borrower.id,
+                bibliographic_record_id=biblios[2].id,
+                created_by="test",
+            )
 
 
 class TestHoldRetrieval:
@@ -491,9 +512,7 @@ class TestHoldRetrieval:
             )
 
         # Retrieve holds for biblio record
-        retrieved = hold_service.get_holds_for_bibliographic_record(
-            db_session, biblio.id
-        )
+        retrieved = hold_service.get_holds_for_bibliographic_record(db_session, biblio.id)
         assert len(retrieved) == 3
         # Verify ordering by queue position
         assert retrieved[0].queue_position == 1
@@ -813,20 +832,18 @@ class TestReadyHoldExpiration:
         record = BibliographicRecord(title="Expired hold title", medium_type="Livre")
         db_session.add_all([first_borrower, second_borrower, record])
         db_session.commit()
-        db_session.add(Item(
-            item_id="EXPIRE-ITEM",
-            bibliographic_record_id=record.id,
-            status="available",
-            loanable=True,
-        ))
+        db_session.add(
+            Item(
+                item_id="EXPIRE-ITEM",
+                bibliographic_record_id=record.id,
+                status="available",
+                loanable=True,
+            )
+        )
         db_session.commit()
 
-        expired_hold = hold_commands.create_hold(
-            db_session, first_borrower.id, record.id, "test"
-        )
-        next_hold = hold_commands.create_hold(
-            db_session, second_borrower.id, record.id, "test"
-        )
+        expired_hold = hold_commands.create_hold(db_session, first_borrower.id, record.id, "test")
+        next_hold = hold_commands.create_hold(db_session, second_borrower.id, record.id, "test")
         hold_commands.mark_hold_ready(db_session, expired_hold.id)
         expired_hold.expiration_date = date.today() - timedelta(days=1)
         db_session.commit()
@@ -854,12 +871,14 @@ class TestReadyHoldExpiration:
         record = BibliographicRecord(title="Valid today", medium_type="Livre")
         db_session.add_all([borrower, record])
         db_session.commit()
-        db_session.add(Item(
-            item_id="EXPIRE-TODAY-ITEM",
-            bibliographic_record_id=record.id,
-            status="available",
-            loanable=True,
-        ))
+        db_session.add(
+            Item(
+                item_id="EXPIRE-TODAY-ITEM",
+                bibliographic_record_id=record.id,
+                status="available",
+                loanable=True,
+            )
+        )
         db_session.commit()
 
         hold = hold_commands.create_hold(db_session, borrower.id, record.id, "test")

@@ -13,27 +13,27 @@ class CirculationPage(BasePage):
     """Page object for circulation operations (checkout/return)."""
 
     # Selectors
-    BORROWER_INPUT = '.filter-input'  # Updated for unified ClassRosterPanel
+    BORROWER_INPUT = ".filter-input"  # Updated for unified ClassRosterPanel
     SEARCH_BUTTON = 'button:has-text("Rechercher"), button:has-text("Search")'
-    BORROWER_CARD = '.borrower-strip, .card-header h5, .card-header'
-    ITEM_INPUT = 'input.font-monospace'  # Matches the font-monospace class of the item input
+    BORROWER_CARD = ".borrower-strip, .card-header h5, .card-header"
+    ITEM_INPUT = "input.font-monospace"  # Matches the font-monospace class of the item input
     CHECKOUT_BUTTON = 'button.btn-success:has-text("Emprunter"), button:has-text("Checkout")'
     RETURN_BUTTON = 'button.btn-info:has-text("Retourner"), button:has-text("Return")'
-    SCANNED_ITEMS_LIST = 'table tbody tr'
+    SCANNED_ITEMS_LIST = "table tbody tr"
     RENEW_ALL_BUTTON = 'button:has-text("Renouveler tout"), button:has-text("Renew All")'
-    AUTOCOMPLETE_DROPDOWN = '.autocomplete-dropdown'
-    AUTOCOMPLETE_ITEM = '.autocomplete-item'
+    AUTOCOMPLETE_DROPDOWN = ".autocomplete-dropdown"
+    AUTOCOMPLETE_ITEM = ".autocomplete-item"
 
     def __init__(self, page: Page, server_url: str):
         super().__init__(page, server_url)
 
     def goto_checkout(self):
         """Navigate to checkout page."""
-        self.navigate_to('checkout')
+        self.navigate_to("checkout")
 
     def goto_return(self):
         """Navigate to return page."""
-        self.navigate_to('return')
+        self.navigate_to("return")
 
     def enter_borrower_id(self, borrower_id: str, wait_for_load=True):
         """
@@ -45,7 +45,7 @@ class CirculationPage(BasePage):
         """
         borrower_input = self.page.locator(self.BORROWER_INPUT)
         borrower_input.fill(borrower_id)
-        borrower_input.press('Enter')
+        borrower_input.press("Enter")
 
         if wait_for_load:
             self.wait_for_borrower_loaded()
@@ -69,7 +69,7 @@ class CirculationPage(BasePage):
         # Fill the input and press Enter to submit the form
         item_input = self.page.locator(self.ITEM_INPUT)
         item_input.fill(barcode)
-        item_input.press('Enter')
+        item_input.press("Enter")
 
         if wait_for_feedback:
             # Wait for item to appear in list or notification
@@ -86,7 +86,7 @@ class CirculationPage(BasePage):
         # Fill the input and press Enter to submit the form
         item_input = self.page.locator(self.ITEM_INPUT)
         item_input.fill(barcode)
-        item_input.press('Enter')
+        item_input.press("Enter")
 
         if wait_for_confirmation:
             self.page.wait_for_timeout(1000)
@@ -102,39 +102,42 @@ class CirculationPage(BasePage):
 
     def has_overdue_warning(self) -> bool:
         """Check if overdue warning is displayed."""
-        warning = self.page.locator('.alert-danger, .text-danger:has-text("retard"), .text-danger:has-text("overdue")')
+        warning = self.page.locator(
+            '.alert-danger, .text-danger:has-text("retard"), .text-danger:has-text("overdue")'
+        )
         return warning.count() > 0
 
     def get_loan_count_text(self) -> str:
         """Get loan count display (e.g., '1/2')."""
         # Look for pattern like "1/2" in borrower card
-        text = self.page.locator('.borrower-card').inner_text()
+        text = self.page.locator(".borrower-card").inner_text()
         import re
-        match = re.search(r'\d+/\d+', text)
+
+        match = re.search(r"\d+/\d+", text)
         return match.group(0) if match else ""
 
     # Autocomplete methods
     def select_class(self, class_id: int):
         """Select a class from the dropdown."""
-        self.page.locator('select.form-select').select_option(value=str(class_id))
+        self.page.locator("select.form-select").select_option(value=str(class_id))
         self.page.wait_for_timeout(300)
 
     def get_roster_students_count(self) -> int:
         """Get the count of visible student rows in the roster."""
-        return self.page.locator('.student-row').count()
+        return self.page.locator(".student-row").count()
 
     def get_roster_student_text(self, index: int) -> str:
         """Get text of a roster student row."""
-        return self.page.locator('.student-row').nth(index).inner_text()
+        return self.page.locator(".student-row").nth(index).inner_text()
 
     def click_roster_student(self, index: int):
         """Click a student in the roster list."""
-        self.page.locator('.student-row').nth(index).click()
+        self.page.locator(".student-row").nth(index).click()
         self.page.wait_for_timeout(300)
 
     def is_roster_empty_visible(self) -> bool:
         """Check if 'No students found' placeholder is visible."""
-        return self.page.locator('.roster-placeholder').is_visible()
+        return self.page.locator(".roster-placeholder").is_visible()
 
     def type_borrower_search(self, text: str):
         """Type into borrower input without submitting."""
@@ -173,16 +176,16 @@ class CirculationPage(BasePage):
 
     def press_arrow_down(self):
         """Press ArrowDown key in active input."""
-        self.page.keyboard.press('ArrowDown')
+        self.page.keyboard.press("ArrowDown")
 
     def press_arrow_up(self):
         """Press ArrowUp key in active input."""
-        self.page.keyboard.press('ArrowUp')
+        self.page.keyboard.press("ArrowUp")
 
     def press_escape(self):
         """Press Escape key."""
-        self.page.keyboard.press('Escape')
+        self.page.keyboard.press("Escape")
 
     def press_enter(self):
         """Press Enter key."""
-        self.page.keyboard.press('Enter')
+        self.page.keyboard.press("Enter")

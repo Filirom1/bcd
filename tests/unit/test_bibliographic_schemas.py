@@ -2,8 +2,10 @@ import pytest
 from pydantic import ValidationError
 
 from src.bcd_api.schemas.bibliographic_record import (
-    BibliographicRecordCreate, BibliographicRecordResponse,
-    BibliographicRecordSummary, BibliographicRecordUpdate,
+    BibliographicRecordCreate,
+    BibliographicRecordResponse,
+    BibliographicRecordSummary,
+    BibliographicRecordUpdate,
 )
 
 
@@ -19,7 +21,9 @@ def test_create_schema_detects_issn():
     assert record.isbn == "issn:1234-5678"
 
 
-@pytest.mark.parametrize("field, value", [("title", ""), ("publication_year", 999), ("page_count", -1)])
+@pytest.mark.parametrize(
+    "field, value", [("title", ""), ("publication_year", 999), ("page_count", -1)]
+)
 def test_create_schema_rejects_invalid_values(field, value):
     payload = {"title": "Book", field: value}
     if field == "title":
@@ -30,15 +34,33 @@ def test_create_schema_rejects_invalid_values(field, value):
 
 def test_response_deserializes_json_fields_and_defaults_empty():
     from datetime import datetime, timezone
+
     now = datetime.now(timezone.utc)
-    response = BibliographicRecordResponse(id=1, title="Book", total_items=0, created_at=now, updated_at=now, authors='["A"]', illustrators="invalid", keywords=None)
+    response = BibliographicRecordResponse(
+        id=1,
+        title="Book",
+        total_items=0,
+        created_at=now,
+        updated_at=now,
+        authors='["A"]',
+        illustrators="invalid",
+        keywords=None,
+    )
     assert response.authors == ["A"]
     assert response.illustrators == []
     assert response.keywords == []
 
 
 def test_summary_deserializes_authors():
-    summary = BibliographicRecordSummary(id=1, title="Book", authors='["A", "B"]', publication_year=None, medium_type="Livre", total_items=0, isbn=None)
+    summary = BibliographicRecordSummary(
+        id=1,
+        title="Book",
+        authors='["A", "B"]',
+        publication_year=None,
+        medium_type="Livre",
+        total_items=0,
+        isbn=None,
+    )
     assert summary.authors == ["A", "B"]
 
 
