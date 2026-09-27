@@ -2,6 +2,8 @@
 extends Control
 
 const SERVER_CARD = preload("res://src/components/ServerCard.tscn")
+const MDNS_DISCOVERY = preload("res://src/utils/MdnsDiscovery.gd")
+const MDNS_TIMEOUT_SECONDS := 2.0
 @onready var _title_lbl: Label = %TitleLabel
 @onready var _bg: ColorRect = %Background
 @onready var _settings_btn: Button = %SettingsBtn
@@ -114,42 +116,62 @@ func _discover_servers() -> void:
 	_refresh_btn.disabled = true
 	_clear_servers()
 
-	# Wait for mDNS browser to collect announcements and server to start
-	await get_tree().create_timer(1.5).timeout
-
 	var manual_port := _get_port()
+	var proxy_port := _get_client_only_proxy_port(manual_port)
+
+	# CLIENT_ONLY launched by the Python portable runner exposes a tiny
+	# loopback mDNS snapshot endpoint. It is optional: standalone Kids falls
+	# back to its own PacketPeerUDP DNS-SD client below.
+	var mdns_peers: Array = await _fetch_client_only_mdns_peers(proxy_port)
+	if mdns_peers.is_empty():
+		var mdns := MDNS_DISCOVERY.new()
+		mdns_peers = await mdns.discover(MDNS_TIMEOUT_SECONDS)
+
 	var working_locals := await _find_working_locals(manual_port, 0.8)
 
-	# Fetch mDNS peers via the first working local address
-	var peers: Array = []
+	# If a local BCD server is available, also use its peer registry. This keeps
+	# discovery compatible with existing servers and finds peers missed by the
+	# direct multicast query.
+	var peers: Array = mdns_peers
 	if not working_locals.is_empty():
 		var previous_base_url := GS.base_url
 		GS.base_url = working_locals[0].url + "/api/v1"
-		peers = await _fetch_peers()
+		peers = _merge_peers(peers, await _fetch_peers())
 		GS.base_url = previous_base_url if previous_base_url else ""
 
-	# Probe locals with any port found in mDNS peer URLs (not yet tried)
+	# Probe local ports mentioned by discovered services. This also preserves
+	# the localhost fallback when the server and Kids client share a machine.
 	var tried_ports := {manual_port: true}
 	for peer in peers:
 		var p := _extract_port(peer.get("url", ""))
-		if not tried_ports.has(p):
+		if p > 0 and not tried_ports.has(p):
 			tried_ports[p] = true
 			working_locals += await _find_working_locals(p, 0.8)
 
-	# Show mDNS peers that actually respond — .local may fail when client
-	# and server are on the same machine, so we probe before adding a card
+	# Only display peers whose HTTP endpoint responds. Use /health rather than
+	# the protected settings endpoint so authentication does not affect probing.
 	var shown := 0
-	for peer in peers:
-		var peer_api: String = peer.get("url", "").rstrip("/")
-		if peer_api.is_empty():
+	var shown_urls: Dictionary = {}
+	for peer_variant in peers:
+		if not (peer_variant is Dictionary):
 			continue
-		if await _probe_url(peer_api + "/admin/settings", 0.8):
+		var peer: Dictionary = peer_variant
+		var peer_api: String = str(peer.get("url", "")).rstrip("/")
+		if peer_api.is_empty() or shown_urls.has(peer_api):
+			continue
+		if await _probe_url(peer_api + "/health", 0.8):
 			_display_servers([peer])
+			shown_urls[peer_api] = true
 			shown += 1
 
-	# Show local addresses that responded (127.0.0.1 and/or ::1)
-	for local in working_locals:
-		_add_local_card(local.url + "/api/v1", local.host)
+	# Show local addresses that responded (127.0.0.1 and/or ::1).
+	for local_variant in working_locals:
+		var local: Dictionary = local_variant
+		var local_base_url := str(local.get("url", "")).rstrip("/")
+		if local_base_url.is_empty() or shown_urls.has(local_base_url):
+			continue
+		_add_local_card(local_base_url + "/api/v1", str(local.get("host", "")))
+		shown_urls[local_base_url] = true
 		shown += 1
 
 	if shown > 0:
@@ -158,15 +180,19 @@ func _discover_servers() -> void:
 		_discovering = false
 		return
 
-	# Nothing found yet — retry loop for slow server startup on HDD
-	# Connection-refused is instant so each probe costs < 50 ms
-	var deadline := Time.get_ticks_msec() + 8500  # 1.5 s already spent above
+	# Nothing found yet — retry loop for slow server startup on HDD.
+	# Connection-refused is instant so each probe normally costs < 50 ms.
+	var deadline := Time.get_ticks_msec() + 8500
 	while Time.get_ticks_msec() < deadline:
 		working_locals = await _find_working_locals(manual_port, 0.8)
 		if not working_locals.is_empty():
 			_hide_splash()
-			for local in working_locals:
-				_add_local_card(local.url + "/api/v1", local.host)
+			for local_variant in working_locals:
+				var local: Dictionary = local_variant
+				_add_local_card(
+					str(local.get("url", "")).rstrip("/") + "/api/v1",
+					str(local.get("host", ""))
+				)
 			_refresh_btn.disabled = false
 			_discovering = false
 			return
@@ -178,6 +204,14 @@ func _discover_servers() -> void:
 
 func _get_port() -> int:
 	return _extract_port(_manual_input.text.strip_edges())
+
+func _get_client_only_proxy_port(fallback: int) -> int:
+	var configured := OS.get_environment("BCD_MDNS_PROXY_PORT").strip_edges()
+	if configured.is_valid_int():
+		var port := configured.to_int()
+		if port > 0 and port <= 65535:
+			return port
+	return fallback
 
 func _extract_port(text: String, default_port: int = 8888) -> int:
 	if text.is_empty():
@@ -207,7 +241,9 @@ func _probe_url(url: String, timeout: float) -> bool:
 		return false
 	var response = await http.request_completed
 	http.queue_free()
-	return response[1] >= 200 and response[1] < 500
+	# 401/403 still prove that the endpoint exists and needs credentials;
+	# 404/5xx do not count as a working BCD API or proxy.
+	return (response[1] >= 200 and response[1] < 300) or response[1] in [401, 403]
 
 func _find_working_locals(port: int, timeout: float) -> Array:
 	var result := []
@@ -216,6 +252,29 @@ func _find_working_locals(port: int, timeout: float) -> Array:
 		if await _probe_url(base_url + "/api/v1/admin/settings", timeout):
 			result.append({"url": base_url, "host": candidate.host})
 	return result
+
+func _fetch_client_only_mdns_peers(port: int) -> Array:
+	if port <= 0:
+		return []
+	var http := HTTPRequest.new()
+	http.timeout = 1.0
+	add_child(http)
+	var error := http.request(
+		"http://127.0.0.1:%d/api/v1/collections/peers" % port,
+		[],
+		HTTPClient.METHOD_GET
+	)
+	if error != OK:
+		http.queue_free()
+		return []
+	var response = await http.request_completed
+	http.queue_free()
+	if response[1] != 200:
+		return []
+	var json := JSON.new()
+	if json.parse(response[3].get_string_from_utf8()) != OK:
+		return []
+	return json.data if json.data is Array else []
 
 func _fetch_peers() -> Array:
 	var http := HTTPRequest.new()
@@ -233,6 +292,28 @@ func _fetch_peers() -> Array:
 	if json.parse(response[3].get_string_from_utf8()) != OK:
 		return []
 	return json.data if json.data is Array else []
+
+func _merge_peers(primary: Array, secondary: Array) -> Array:
+	var merged: Array = []
+	var by_url: Dictionary = {}
+	for source in [primary, secondary]:
+		for peer_variant in source:
+			if not (peer_variant is Dictionary):
+				continue
+			var peer: Dictionary = peer_variant
+			var url := str(peer.get("url", "")).rstrip("/")
+			if url.is_empty():
+				continue
+			if by_url.has(url):
+				var existing: Dictionary = by_url[url]
+				if str(existing.get("library_code", "")).is_empty():
+					existing["library_code"] = peer.get("library_code", "")
+				continue
+			var copy: Dictionary = peer.duplicate(true)
+			copy["url"] = url
+			merged.append(copy)
+			by_url[url] = copy
+	return merged
 
 func _add_local_card(api_url: String, host_label: String) -> void:
 	var card := SERVER_CARD.instantiate() as ServerCard

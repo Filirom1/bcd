@@ -23,10 +23,11 @@ tests/
 The recommended way to run tests is using the unified central test runner:
 
 ```bash
-python run_tests.py all         # Run Python + JS plus the minimal browser smoke suite
-python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
+python run_tests.py all         # Run Python + JS + Godot plus the minimal browser smoke suite
+python run_tests.py all --fast  # Run fast Python + JS + Godot tests (ideal before commit)
 python run_tests.py js          # Run JavaScript Vitest tests only
 python run_tests.py python      # Run Python Pytest tests only
+python run_tests.py godot       # Run Godot headless tests only
 python run_tests.py all --cov   # Run with coverage collection enabled
 ```
 
@@ -73,6 +74,20 @@ checked separately by `npm run test:web-production`.
 
 The historical Playwright scenarios remain available for deliberate migration or
 regression investigations, but are not part of the default test path.
+
+### Live mDNS integration
+
+The mDNS integration boundary uses a real `zeroconf.ServiceInfo` advertiser.
+It verifies the Python peer browser, the `CLIENT_ONLY` proxy, and the
+standalone Godot client (without the Python proxy):
+
+```bash
+pytest tests/integration/test_mdns_live.py -m external -v --no-cov
+```
+
+It requires a multicast-capable IPv4 interface and Godot on `PATH` (or
+`GODOT_BIN`); the Godot case is skipped when Godot is not installed. The
+normal `--fast` suite intentionally excludes these live tests.
 
 ### Targeted categories
 

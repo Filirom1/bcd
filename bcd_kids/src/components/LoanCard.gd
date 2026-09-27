@@ -15,6 +15,8 @@ signal title_clicked(loan: Dictionary)
 @onready var _http: HTTPRequest = %CoverHTTP
 
 var _loan_data: Dictionary
+var _renew_signal_connected := false
+var _cover_click_signals_connected := false
 
 func _ready() -> void:
 	_renew_btn.focus_entered.connect(func():
@@ -53,7 +55,9 @@ func setup(loan: Dictionary) -> void:
 		theme_type_variation = "PanelSuccess"
 
 	_renew_btn.text = "🔄 " + "Renouveler"
-	_renew_btn.pressed.connect(func(): renew_clicked.emit(item_id))
+	if not _renew_signal_connected:
+		_renew_btn.pressed.connect(func(): renew_clicked.emit(str(_loan_data.get("item_id", ""))))
+		_renew_signal_connected = true
 	
 	# Cover thumbnail — click opens cover screen
 	var cover_file: String = loan.get("cover_image", "") if loan.get("cover_image") != null else ""
@@ -62,17 +66,22 @@ func setup(loan: Dictionary) -> void:
 	else:
 		_show_placeholder()
 
-	_cover_img.gui_input.connect(func(event):
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			title_clicked.emit(_loan_data)
-	)
-	_cover_placeholder.gui_input.connect(func(event):
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			title_clicked.emit(_loan_data)
-	)
+	if not _cover_click_signals_connected:
+		_cover_img.gui_input.connect(func(event):
+			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+				title_clicked.emit(_loan_data)
+		)
+		_cover_placeholder.gui_input.connect(func(event):
+			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+				title_clicked.emit(_loan_data)
+		)
+		_cover_click_signals_connected = true
 
 func _load_cover(filename: String) -> void:
 	var url := API.get_cover_url(filename)
+	if url.is_empty():
+		_show_placeholder()
+		return
 	_http.request_completed.connect(_on_cover_loaded)
 	var err := _http.request(url)
 	if err != OK:

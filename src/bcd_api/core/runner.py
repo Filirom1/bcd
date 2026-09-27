@@ -1,7 +1,6 @@
 """Runner for the BCD server in both portable and developer modes."""
 
 import argparse
-import asyncio
 import logging
 import threading
 import time
@@ -83,6 +82,35 @@ def _start_server_thread(host: str, port: int) -> tuple:
     return server, server_thread
 
 
+def _start_mdns_proxy_thread(port: int) -> tuple:
+    """Start only the local peer-discovery API used by CLIENT_ONLY Kids."""
+    from src.bcd_api.core.mdns_proxy import app as mdns_proxy_app
+
+    config = uvicorn.Config(
+        mdns_proxy_app,
+        host="127.0.0.1",
+        port=port,
+        log_level="warning",
+    )
+    server = uvicorn.Server(config)
+    server.install_signal_handlers = lambda: None
+    server_thread = threading.Thread(target=server.run, daemon=True)
+    server_thread.start()
+
+    url = f"http://127.0.0.1:{port}/health"
+    for _ in range(40):
+        try:
+            urllib.request.urlopen(url, timeout=0.2).close()
+            return server, server_thread
+        except Exception:
+            time.sleep(0.1)
+
+    server.should_exit = True
+    server_thread.join(timeout=2)
+    logger.warning("Client-only mDNS peer endpoint failed to start on port %d", port)
+    return None, None
+
+
 def _run_portable_browser(host: str, port: int):
     """Run in portable mode: open the system browser, no webview dependency."""
     import webbrowser
@@ -121,6 +149,7 @@ def _run_portable_browser(host: str, port: int):
 
 def _run_portable_kids(host: str, port: int):
     """Run in portable mode: launch Kids client and keep server running."""
+    import os
     import subprocess
 
     kids_path = settings.kids_client_path.strip()
@@ -142,6 +171,19 @@ def _run_portable_kids(host: str, port: int):
         print("Please check your KIDS_CLIENT_PATH setting in config/.env")
         return
 
+    # In CLIENT_ONLY mode, keep only the peer-discovery endpoint alive. It
+    # reuses the normal Python mDNS browser but does not start the BCD API or
+    # database.
+    mdns_proxy_server = None
+    mdns_proxy_thread = None
+    if settings.client_only:
+        mdns_proxy_server, mdns_proxy_thread = _start_mdns_proxy_thread(port)
+
+    child_env = None
+    if mdns_proxy_server is not None:
+        child_env = os.environ.copy()
+        child_env["BCD_MDNS_PROXY_PORT"] = str(port)
+
     # Launch Kids client FIRST so its splash screen is visible immediately
     # while Alembic runs and the server starts in the background.
     process = None
@@ -152,20 +194,30 @@ def _run_portable_kids(host: str, port: int):
             cwd=kids_path_obj.parent,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            env=child_env,
         )
         logger.info(f"Kids client started (PID: {process.pid})")
     except FileNotFoundError:
+        if mdns_proxy_server is not None:
+            mdns_proxy_server.should_exit = True
+            if mdns_proxy_thread is not None:
+                mdns_proxy_thread.join(timeout=2)
         logger.error(f"Failed to launch Kids client: {kids_path_obj}")
         print(f"\nERROR: Could not execute Kids client at: {kids_path_obj}")
         return
 
     if settings.client_only:
-        logger.info("CLIENT_ONLY is enabled. API server startup and migrations skipped.")
+        logger.info("CLIENT_ONLY is enabled. API server and database startup skipped.")
         try:
             process.wait()
             logger.info("Kids client closed.")
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received, exiting...")
+        finally:
+            if mdns_proxy_server is not None:
+                mdns_proxy_server.should_exit = True
+                if mdns_proxy_thread is not None:
+                    mdns_proxy_thread.join(timeout=2)
         return
 
     # Run migrations and start API server while the Kids splash is showing

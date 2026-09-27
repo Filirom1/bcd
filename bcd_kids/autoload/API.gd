@@ -1,6 +1,8 @@
 # Autoload "API" - HTTP Service
 extends Node
 
+const API_HELPERS = preload("res://src/utils/ApiHelpers.gd")
+
 var http: HTTPRequest
 
 func _ready():
@@ -86,6 +88,8 @@ func get_bibliographic_record(biblio_id: int):
 
 func get_cover_url(cover_filename: String) -> String:
 	var base := GS.base_url.rstrip("/")
+	if base.is_empty() or cover_filename.is_empty():
+		return ""
 	if "/api/v1" in base:
 		base = base.split("/api/v1")[0]
 	return base + "/covers/" + cover_filename
@@ -156,10 +160,7 @@ func cancel_hold(hold_id: int) -> void:
 # ============================================================================
 
 func _extract_uri(url: String) -> String:
-	var parts = url.split("://", false, 1)
-	if parts.size() < 2: return "/"
-	var slash = parts[1].find("/")
-	return parts[1].substr(slash) if slash != -1 else "/"
+	return API_HELPERS.extract_uri(url)
 
 func _find_header(headers: PackedStringArray, name: String) -> String:
 	var prefix = name.to_lower() + ":"
@@ -169,22 +170,10 @@ func _find_header(headers: PackedStringArray, name: String) -> String:
 	return ""
 
 func _parse_digest_param(header: String, param: String) -> String:
-	var idx = header.to_lower().find((param + "=").to_lower())
-	if idx == -1: return ""
-	var start = idx + param.length() + 1
-	if start >= header.length(): return ""
-	if header[start] == '"':
-		start += 1
-		var e = header.find('"', start)
-		return header.substr(start, e - start) if e != -1 else ""
-	var e = header.find(",", start)
-	return header.substr(start, (e if e != -1 else header.length()) - start).strip_edges()
+	return API_HELPERS.parse_digest_param(header, param)
 
 func _md5(text: String) -> String:
-	var ctx := HashingContext.new()
-	ctx.start(HashingContext.HASH_MD5)
-	ctx.update(text.to_utf8_buffer())
-	return ctx.finish().hex_encode()
+	return API_HELPERS.md5(text)
 
 func _build_digest_header(method: String, uri: String, www_auth: String) -> String:
 	var realm  = _parse_digest_param(www_auth, "realm")
@@ -219,6 +208,13 @@ func _build_digest_header(method: String, uri: String, www_auth: String) -> Stri
 # ============================================================================
 
 func _request(method: String, endpoint: String, body = null):
+	# A request cannot be meaningful until a server has been selected. Returning
+	# the same structured network error used by HTTPRequest keeps startup and
+	# headless tests deterministic instead of asking HTTPRequest to parse a
+	# relative URL such as "/classes".
+	if GS.base_url.is_empty():
+		return {"error": true, "detail": {"code": "network_error", "details": {}}}
+
 	var url = GS.base_url + endpoint
 	var headers = ["Content-Type: application/json"]
 

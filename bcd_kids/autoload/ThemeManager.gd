@@ -321,8 +321,10 @@ static func animate_pop_in(node: Control) -> void:
 
 static func animate_success_flash(node: Control) -> void:
 	var original_color := node.modulate
+	var manager := _manager_node()
+	var success_color: Color = manager.get("SUCCESS") if manager != null else Color("#33CC66")
 	var tween := node.create_tween()
-	tween.tween_property(node, "modulate", ThemeManager.SUCCESS, 0.1)
+	tween.tween_property(node, "modulate", success_color, 0.1)
 	tween.tween_property(node, "modulate", original_color, 0.3)
 
 static func animate_error_shake(node: Control) -> void:
@@ -336,6 +338,13 @@ static func animate_error_shake(node: Control) -> void:
 # ============================================================================
 # Keyboard navigation focus style helper (matching hover look)
 # ============================================================================
+
+static func _manager_node() -> Node:
+	var main_loop := Engine.get_main_loop()
+	if main_loop is SceneTree:
+		return (main_loop as SceneTree).get_root().get_node_or_null("ThemeManager")
+	return null
+
 
 static func apply_focus_style(btn: Button) -> void:
 	btn.add_theme_stylebox_override("normal", btn.get_theme_stylebox("hover"))

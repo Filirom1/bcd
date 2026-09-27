@@ -13,6 +13,8 @@ signal detail_clicked(book_data: Dictionary)
 @onready var _detail_btn: Button = %DetailBtn
 
 var book_data: Dictionary
+var _action_signal_connected := false
+var _detail_signal_connected := false
 
 func _ready() -> void:
 	_action_btn.focus_entered.connect(func():
@@ -66,13 +68,15 @@ func setup(data: Dictionary, action_label: String, action_color: Color) -> void:
 		str(_call_num) if _call_num != null else ""
 	)
 
-	if action_label.is_empty():
-		_action_btn.visible = false
-	else:
+	_action_btn.visible = not action_label.is_empty()
+	if not action_label.is_empty():
 		_action_btn.text = action_label
 		_action_btn.add_theme_color_override("font_color", action_color)
 		_action_btn.add_theme_color_override("font_pressed_color", ThemeManager.BG_WHITE)
-		_action_btn.pressed.connect(func(): action_clicked.emit(book_data))
+		if not _action_signal_connected:
+			_action_btn.pressed.connect(func(): action_clicked.emit(book_data))
+			_action_signal_connected = true
 
-	_detail_btn.pressed.connect(func(): detail_clicked.emit(book_data))
-	
+	if not _detail_signal_connected:
+		_detail_btn.pressed.connect(func(): detail_clicked.emit(book_data))
+		_detail_signal_connected = true

@@ -7,6 +7,8 @@
     "test:fast": "python run_tests.py all --fast",
     "type-check": "tsc --noEmit",
     "test:js": "npm run type-check && vitest run",
+    "test:godot": "python scripts/run_godot_tests.py",
+    "test:godot:coverage": "python scripts/run_godot_tests.py --coverage --coverage-threshold 80",
     "test:js:watch": "vitest",
     "test:js:coverage": "npm run type-check && vitest run --coverage",
     "build:web": "node scripts/build_web.mjs",

@@ -60,6 +60,7 @@ logs/
 .coverage
 htmlcov/
 coverage-js/
+coverage-godot/
 .tox/
 test-results/
 playwright-report/

@@ -179,7 +179,7 @@ Here is the complete list of settings you can customize in your `.env` file, gro
 
 | Parameter | Default value | Description |
 |-----------|---------------|-------------|
-| **`CLIENT_ONLY`** | `false` | **Client-only mode.** If set to `true`, this machine will not run a database or local server. It will act purely as a terminal connecting to the remote server IP specified in `API_HOST`. |
+| **`CLIENT_ONLY`** | `false` | **Client-only mode.** If set to `true`, this machine will not run the database or the normal local API server. It acts as a terminal connected to the remote server specified in `API_HOST`. With `UI_MODE=kids`, the launcher additionally runs a lightweight loopback mDNS proxy for automatic library discovery; it stores no library data. |
 | **`UI_MODE`** | `webview` | **Startup interface.** Choose which window opens on startup:<br>- `webview`: Native desktop application window.<br>- `browser`: Opens the management portal in your system browser.<br>- `kids`: Launches the kid-friendly student client. |
 | **`KIDS_CLIENT_PATH`** | *(empty)* | **Student client executable path.** Absolute or relative path to the BCD Kids student application executable (e.g. `BCD-Kids.exe` or `./BCD-Kids.x86_64`). |
 | **`AUTO_UPDATE`** | `true` | **Automatic updates.** If `true`, checks GitHub for newer portable releases at startup and offers to update. |

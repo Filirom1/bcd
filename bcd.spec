@@ -73,6 +73,10 @@ hiddenimports = [
     'lxml.etree',
     # HTTP client for BNF API
     'httpx',
+    # mDNS browser used by the optional CLIENT_ONLY proxy
+    'zeroconf',
+    'zeroconf.asyncio',
+    'src.bcd_api.core.mdns_proxy',
     # Format converters (bcd_converters package)
     'bcd_converters',
     'bcd_converters.bibliopuce_to_dublin_core',

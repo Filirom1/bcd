@@ -14,7 +14,7 @@ warning and all public functions become no-ops so the server starts normally.
 import logging
 import re
 import socket
-from typing import TypedDict, NotRequired
+from typing import NotRequired, TypedDict
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ def get_peers() -> list[PeerInfo]:
 
 # ── Internal Zeroconf listener ────────────────────────────────────────────────
 class _BCDServiceListener:
-    """Zeroconf ``ServiceListener`` that keeps ``_peers`` up-to-date.
+    """Zeroconf ``ServiceListener`` that keeps a peer registry up-to-date.
 
     ``AsyncServiceBrowser`` calls these methods from the event-loop thread
     whenever a ``_bcd._tcp.local.`` service appears, changes, or goes away.
@@ -273,6 +273,45 @@ class _BCDServiceListener:
 
 
 # ── Public lifecycle API ──────────────────────────────────────────────────────
+def _start_peer_browser(async_service_browser) -> None:
+    """Start the shared peer browser on the current AsyncZeroconf instance."""
+    global _browser, _listener
+
+    _peers.clear()
+    _listener = _BCDServiceListener()
+    _browser = async_service_browser(
+        _zeroconf.zeroconf,
+        BCD_SERVICE_TYPE,
+        listener=_listener,
+    )
+
+
+async def start_peer_browser() -> bool:
+    """Start browsing BCD peers without advertising a local service."""
+    global _zeroconf, _service_info, _own_service_name
+
+    try:
+        from zeroconf.asyncio import AsyncServiceBrowser, AsyncZeroconf
+    except ImportError:
+        logger.warning("zeroconf package not installed — peer browsing disabled.")
+        return False
+
+    if _zeroconf is not None:
+        await stop_mdns()
+
+    _service_info = None
+    _own_service_name = None
+    try:
+        _zeroconf = AsyncZeroconf()
+        _start_peer_browser(AsyncServiceBrowser)
+        logger.info("mDNS peer discovery started without local advertisement")
+        return True
+    except Exception as exc:
+        logger.warning("mDNS peer discovery failed to start: %s", exc)
+        _zeroconf = None
+        return False
+
+
 async def start_mdns(library_code: str, port: int) -> None:
     """Register the BCD mDNS service and start browsing for peers.
 
@@ -348,16 +387,8 @@ async def start_mdns(library_code: str, port: int) -> None:
         return
 
     # ── Browse for other BCD instances ────────────────────────────────────────
-    _peers.clear()
     try:
-        # Keep listener reference to prevent garbage collection
-        _listener = _BCDServiceListener()
-        # AsyncServiceBrowser takes the underlying *sync* Zeroconf instance
-        _browser = AsyncServiceBrowser(
-            _zeroconf.zeroconf,
-            BCD_SERVICE_TYPE,
-            listener=_listener,
-        )
+        _start_peer_browser(AsyncServiceBrowser)
         logger.info("mDNS peer discovery started  (type: %s)", BCD_SERVICE_TYPE)
     except Exception as exc:
         logger.warning("mDNS peer discovery failed to start: %s", exc)

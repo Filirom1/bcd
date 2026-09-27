@@ -156,12 +156,12 @@ def python_test_suites(fast, coverage, verbose=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="BCD Unified Test Suite Runner (Python + JavaScript)"
+        description="BCD Unified Test Suite Runner (Python + JavaScript + Godot)"
     )
     parser.add_argument(
         "suite",
-        choices=["python", "js", "all"],
-        help="Test suite to run: 'python', 'js', or 'all'",
+        choices=["python", "js", "godot", "all"],
+        help="Test suite to run: 'python', 'js', 'godot', or 'all'",
     )
     parser.add_argument(
         "--fast",
@@ -190,6 +190,7 @@ def main():
     # Determine which suites to run based on the mandatory 'suite' argument
     run_js_suite = args.suite in ("js", "all")
     run_py_suite = args.suite in ("python", "all")
+    run_godot_suite = args.suite in ("godot", "all")
 
     success = True
 
@@ -215,7 +216,22 @@ def main():
             if not run_command(py_cmd, suite_name, verbose):
                 success = False
 
-    # 3. Final Summary
+    # 3. Run Godot headless tests
+    if run_godot_suite:
+        if verbose:
+            print_header("Godot Headless Suite")
+        godot_command = [sys.executable, "scripts/run_godot_tests.py"]
+        if args.coverage:
+            godot_command.append("--coverage")
+        godot_ok = run_command(
+            godot_command,
+            "Godot headless tests",
+            verbose,
+        )
+        if not godot_ok:
+            success = False
+
+    # 4. Final Summary
     if verbose:
         print_header("Test Suite Summary")
     if success:

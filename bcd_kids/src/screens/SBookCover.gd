@@ -39,6 +39,9 @@ func _ready() -> void:
 
 func _load_cover(filename: String) -> void:
 	var url := API.get_cover_url(filename)
+	if url.is_empty():
+		_show_no_cover()
+		return
 	_http.request_completed.connect(_on_cover_loaded)
 	var err := _http.request(url)
 	if err != OK:

@@ -179,7 +179,7 @@ Voici la liste complète des paramètres personnalisables dans le fichier `.env`
 
 | Paramètre | Valeur par défaut | Description |
 |-----------|-------------------|-------------|
-| **`CLIENT_ONLY`** | `false` | **Mode client uniquement.** Si `true`, cette machine n'exécutera aucun serveur local ni base de données. Elle agira comme une station cliente et lancera l'interface choisie (`UI_MODE`) connectée directement au serveur distant spécifié dans `API_HOST`. |
+| **`CLIENT_ONLY`** | `false` | **Mode client uniquement.** Si `true`, cette machine n'exécutera ni base de données ni serveur API local normal. Elle agira comme une station cliente connectée au serveur distant indiqué dans `API_HOST`. Avec `UI_MODE=kids`, le lanceur démarre en plus un petit proxy mDNS local pour la découverte automatique des bibliothèques ; aucune donnée de bibliothèque n'y est stockée. |
 | **`UI_MODE`** | `webview` | **Interface au démarrage.** Choix de la fenêtre qui s'ouvre au lancement :<br>- `webview` : Fenêtre applicative native pour le poste gestion.<br>- `browser` : Ouvre le portail de gestion dans le navigateur web par défaut.<br>- `kids` : Ouvre directement le client ludique BCD Kids pour les élèves. |
 | **`KIDS_CLIENT_PATH`** | *(vide)* | **Chemin du client enfants.** Chemin absolu ou relatif vers l'application élève BCD Kids (ex: `BCD-Kids.exe` ou `./BCD-Kids.x86_64`). |
 | **`AUTO_UPDATE`** | `true` | **Mises à jour automatiques.** Si `true`, BCD vérifie la présence d'une nouvelle version au démarrage (connexion internet requise) et propose de l'installer automatiquement. |

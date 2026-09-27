@@ -10,6 +10,9 @@ signal cancel_clicked(hold_id: int)
 @onready var _expires_lbl: Label = %ExpiresLabel
 @onready var _cancel_btn: Button = %CancelBtn
 
+var _hold_id := 0
+var _cancel_signal_connected := false
+
 func _ready() -> void:
 	_cancel_btn.focus_entered.connect(func():
 		ThemeManager.apply_focus_style(_cancel_btn)
@@ -23,7 +26,7 @@ func grab_first_focus() -> void:
 	_cancel_btn.grab_focus()
 
 func setup(hold: Dictionary) -> void:
-	var hold_id: int = hold.get("id", 0)
+	_hold_id = int(hold.get("id", 0))
 	var status: String = hold.get("status", "")
 
 	_title_lbl.text = hold.get("title", "")
@@ -32,6 +35,8 @@ func setup(hold: Dictionary) -> void:
 	_authors_lbl.text = ", ".join(authors) if authors is Array and not authors.is_empty() else ""
 	_authors_lbl.visible = not _authors_lbl.text.is_empty()
 
+	_expires_lbl.visible = false
+	_expires_lbl.text = ""
 	if status == "ready":
 		_status_lbl.text = "✨ " + I18n.t("hold.available")
 		_status_lbl.theme_type_variation = "LabelSuccess"
@@ -49,4 +54,6 @@ func setup(hold: Dictionary) -> void:
 
 	_cancel_btn.text = I18n.t("hold.cancel")
 	_cancel_btn.add_theme_color_override("font_color", ThemeManager.ERROR)
-	_cancel_btn.pressed.connect(func(): cancel_clicked.emit(hold_id))
+	if not _cancel_signal_connected:
+		_cancel_btn.pressed.connect(func(): cancel_clicked.emit(_hold_id))
+		_cancel_signal_connected = true

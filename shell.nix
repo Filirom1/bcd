@@ -39,6 +39,9 @@ pkgs.mkShell {
     gobject-introspection
     python313Packages.pygobject3
 
+    # Godot 4.6 headless client tests
+    godot
+
     # Testing
     python313Packages.pytest
     python313Packages.pytest-asyncio
@@ -84,8 +87,9 @@ pkgs.mkShell {
     # Set up Python path to include src directory
     export PYTHONPATH="${toString ./.}/src:$PYTHONPATH"
 
-    # Create .env if it doesn't exist
-    if [ ! -f .env ]; then
+    # Create .env only when the path is genuinely absent. Some CI/dev
+    # harnesses expose secrets as a special file at .env; never overwrite it.
+    if [ ! -e .env ]; then
       echo "Creating .env from .env.example..."
       cp .env.example .env
     fi

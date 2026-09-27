@@ -12,7 +12,12 @@ func _ready() -> void:
 	layer = 0
 	_build_background()
 	_build_notif_layer()
-	call_deferred("push", "server_discovery")
+
+	# The normal application starts at server discovery. Headless tests create
+	# the scenes they need explicitly, so avoid starting network discovery in
+	# every test process.
+	if not OS.has_environment("BCD_GODOT_TESTS"):
+		call_deferred("push", "server_discovery")
 
 # ============================================================================
 # Background Image (behind all screens)

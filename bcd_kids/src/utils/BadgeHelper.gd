@@ -25,11 +25,21 @@ static func auto_text_color(bg: Color) -> Color:
 	return Color.BLACK if lum > 0.55 else Color.WHITE
 
 
-# Shelf location color from GS.settings["catalog_shelf_locations"].
+static func _settings() -> Dictionary:
+	var main_loop := Engine.get_main_loop()
+	if main_loop is SceneTree:
+		var state := (main_loop as SceneTree).get_root().get_node_or_null("GS")
+		if state != null:
+			var value = state.get("settings")
+			return value if value is Dictionary else {}
+	return {}
+
+
+# Shelf location color from the global settings store.
 # The API response contains this setting as an Array of Dictionaries.
 # Returns transparent when absent or no color is defined.
 static func get_shelf_color(label: String) -> Color:
-	var locations: Array = GS.settings.get("catalog_shelf_locations", [])
+	var locations: Array = _settings().get("catalog_shelf_locations", [])
 	for entry in locations:
 		if entry is Dictionary and str(entry.get("label", "")).strip_edges() == label.strip_edges():
 			var hex := str(entry.get("color", "")).strip_edges()
@@ -39,12 +49,13 @@ static func get_shelf_color(label: String) -> Color:
 
 # Dewey class color from GS.settings["dewey_colors"] (10-element Array).
 static func get_dewey_color(call_number: String) -> Color:
-	if GS.settings.get("dewey_colors_enabled", true) == false:
+	var settings := _settings()
+	if settings.get("dewey_colors_enabled", true) == false:
 		return Color(0, 0, 0, 0)
 	var trimmed := call_number.strip_edges()
 	if trimmed.is_empty() or trimmed[0] < "0" or trimmed[0] > "9":
 		return Color(0, 0, 0, 0)
-	var colors: Array = GS.settings.get("dewey_colors", [])
+	var colors: Array = settings.get("dewey_colors", [])
 	var idx := int(trimmed[0])
 	if colors.size() < 10 or colors[idx] == null:
 		return Color(0, 0, 0, 0)
@@ -52,8 +63,17 @@ static func get_dewey_color(call_number: String) -> Color:
 	return Color.html(hex) if not hex.is_empty() else Color(0, 0, 0, 0)
 
 
+static func _theme_text_color() -> Color:
+	var main_loop := Engine.get_main_loop()
+	if main_loop is SceneTree:
+		var manager := (main_loop as SceneTree).get_root().get_node_or_null("ThemeManager")
+		if manager != null:
+			return manager.get("TEXT")
+	return Color("#1f2937")
+
+
 # Build a badge PanelContainer.
-# bg.a < 0.01 → transparent background + 1px border in ThemeManager.TEXT color.
+# bg.a < 0.01 → transparent background + 1px border in the theme text color.
 static func _make_badge(text: String, bg: Color, radius: int) -> PanelContainer:
 	var panel := PanelContainer.new()
 
@@ -74,8 +94,8 @@ static func _make_badge(text: String, bg: Color, radius: int) -> PanelContainer:
 		style.border_width_right  = 1
 		style.border_width_top    = 1
 		style.border_width_bottom = 1
-		style.border_color = ThemeManager.TEXT
-		text_color = ThemeManager.TEXT
+		style.border_color = _theme_text_color()
+		text_color = _theme_text_color()
 	else:
 		style.bg_color = bg
 		text_color = auto_text_color(bg)

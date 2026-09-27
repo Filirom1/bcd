@@ -31,7 +31,9 @@ const RESOLUTIONS = {
 
 func _ready() -> void:
 	load_settings()
-	ThemeManager.set_theme(theme)
+	var theme_manager := _theme_manager()
+	if theme_manager != null:
+		theme_manager.call("set_theme", theme)
 	# Wait for scene tree to be ready before applying settings
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -80,7 +82,9 @@ func save_settings() -> void:
 func set_theme(name: String) -> void:
 	theme = name
 	save_settings()
-	ThemeManager.set_theme(name)
+	var theme_manager := _theme_manager()
+	if theme_manager != null:
+		theme_manager.call("set_theme", name)
 
 func set_graphics_quality(quality: String) -> void:
 	graphics_quality = quality
@@ -167,3 +171,8 @@ func clear_auth() -> void:
 	auth_username = ""
 	auth_password = ""
 	save_settings()
+
+
+func _theme_manager() -> Node:
+	var tree := get_tree()
+	return tree.root.get_node_or_null("ThemeManager") if tree != null else null
