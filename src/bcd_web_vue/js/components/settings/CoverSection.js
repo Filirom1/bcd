@@ -37,7 +37,10 @@ export default defineComponent({
             try {
                 const data = await apiClient.post('/admin/covers/backfill');
                 result.value = data;
-                success(t('settings.covers_backfill_done', { count: data.updated }));
+                success(t('settings.covers_backfill_done', {
+                    count: data.updated,
+                    cleaned: data.cleaned || 0
+                }));
             } catch (error) {
                 handleError(error);
             } finally {

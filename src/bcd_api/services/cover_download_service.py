@@ -8,9 +8,10 @@ from typing import Any, Dict
 
 from fastapi import BackgroundTasks
 
+from ..core.config import settings
 from ..core.database import SessionLocal
 from ..models.bibliographic_record import BibliographicRecord
-from .admin_service import get_records_without_covers
+from .admin_service import clean_broken_cover_references, get_records_without_covers
 from .external.cover import download_cover, find_cached_cover
 
 logger = logging.getLogger(__name__)
@@ -59,11 +60,19 @@ class CoverDownloadManager:
 
     def _run_missing_cover_download(self) -> None:
         """Private task execution loop."""
-        covers_dir = Path("data/covers")
+        covers_dir = (
+            Path(settings.covers_dir_path)
+            if settings.covers_dir_path
+            else Path("data/covers")
+        )
         to_download = []
 
         db = SessionLocal()
         try:
+            # Clear stale database references so this action can be used to
+            # retry covers whose files were deleted.
+            clean_broken_cover_references(db, str(covers_dir))
+
             # First match any existing covers already in cache
             records = get_records_without_covers(db)
 

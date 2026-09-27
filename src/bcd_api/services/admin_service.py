@@ -22,8 +22,8 @@ def get_records_without_covers(db: Session) -> list[BibliographicRecord]:
     return (
         db.query(BibliographicRecord)
         .filter(
-            BibliographicRecord.cover_image is None,
-            BibliographicRecord.isbn is not None,
+            BibliographicRecord.cover_image.is_(None),
+            BibliographicRecord.isbn.isnot(None),
             BibliographicRecord.isbn != "",
         )
         .all()
@@ -45,16 +45,62 @@ def get_health_stats(db: Session) -> dict:
     }
 
 
-def backfill_covers_logic(db: Session, covers_dir_path: str) -> dict:
-    """Associate existing cover files with bibliographic records."""
-    from .external.cover import find_cached_cover
+def _cover_file_exists(covers_dir: Path, filename: str | None) -> bool:
+    """Return whether ``filename`` is a regular file in the covers directory.
 
+    ``cover_image`` stores a filename, not an arbitrary path.  Resolving the
+    path before checking it also prevents a malformed database value from
+    making a file outside the covers directory look like a valid cover.
+    """
+    if not filename:
+        return False
+
+    try:
+        covers_root = covers_dir.resolve()
+        cover_path = (covers_dir / filename).resolve()
+        return cover_path.parent == covers_root and cover_path.is_file()
+    except OSError:
+        return False
+
+
+def clean_broken_cover_references(db: Session, covers_dir_path: str | None) -> int:
+    """Clear catalog cover references whose image file is no longer present."""
     covers_dir = Path(covers_dir_path) if covers_dir_path else Path("data/covers")
     records = (
         db.query(BibliographicRecord)
+        .filter(BibliographicRecord.cover_image.isnot(None))
+        .all()
+    )
+
+    cleaned = 0
+    for record in records:
+        if record.cover_image is not None and not _cover_file_exists(
+            covers_dir, record.cover_image
+        ):
+            record.cover_image = None
+            cleaned += 1
+
+    if cleaned:
+        db.commit()
+
+    return cleaned
+
+
+def backfill_covers_logic(db: Session, covers_dir_path: str) -> dict:
+    """Clean broken references and associate existing cover files.
+
+    Clearing stale references makes those records eligible for the
+    ``Download missing covers`` task again.
+    """
+    from .external.cover import find_cached_cover
+
+    covers_dir = Path(covers_dir_path) if covers_dir_path else Path("data/covers")
+    cleaned = clean_broken_cover_references(db, covers_dir_path)
+    records = (
+        db.query(BibliographicRecord)
         .filter(
-            BibliographicRecord.cover_image is None,
-            BibliographicRecord.isbn is not None,
+            BibliographicRecord.cover_image.is_(None),
+            BibliographicRecord.isbn.isnot(None),
             BibliographicRecord.isbn != "",
         )
         .all()
@@ -70,7 +116,7 @@ def backfill_covers_logic(db: Session, covers_dir_path: str) -> dict:
     if updated:
         db.commit()
 
-    return {"updated": updated, "scanned": len(records)}
+    return {"updated": updated, "cleaned": cleaned, "scanned": len(records)}
 
 
 def set_acquisition_dates_from_publication_year(db: Session) -> dict:

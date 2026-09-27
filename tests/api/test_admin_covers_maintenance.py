@@ -38,6 +38,26 @@ def test_backfill_covers_updates_cached_records(monkeypatch, tmp_path):
         "src.bcd_api.services.external.cover.find_cached_cover", lambda isbn, covers_dir: "123.jpg"
     )
     result = admin.backfill_covers(db)
-    assert result == {"updated": 1, "scanned": 1}
+    assert result == {"updated": 1, "cleaned": 0, "scanned": 1}
     assert record.cover_image == "123.jpg"
+    db.commit.assert_called_once()
+
+
+def test_backfill_covers_clears_references_to_deleted_files(monkeypatch, tmp_path):
+    missing = MagicMock(isbn="9780000000000", cover_image="deleted.jpg")
+    cached = MagicMock(isbn="9781111111111", cover_image="cached.jpg")
+    (tmp_path / "cached.jpg").write_bytes(b"image")
+
+    db = MagicMock()
+    db.query.return_value.filter.return_value.all.side_effect = [
+        [missing, cached],
+        [],
+    ]
+    monkeypatch.setattr(admin.app_settings, "covers_dir_path", str(tmp_path))
+
+    result = admin.backfill_covers(db)
+
+    assert result == {"updated": 0, "cleaned": 1, "scanned": 0}
+    assert missing.cover_image is None
+    assert cached.cover_image == "cached.jpg"
     db.commit.assert_called_once()

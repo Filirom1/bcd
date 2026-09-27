@@ -23,7 +23,12 @@ def backfill_covers(db: Session = Depends(get_db)):
     from . import admin_service, app_settings
 
     result = admin_service.backfill_covers_logic(db, app_settings.covers_dir_path)
-    logger.info("Cover backfill: %s/%s records updated", result["updated"], result["scanned"])
+    logger.info(
+        "Cover backfill: %s records updated, %s broken references cleaned, %s records scanned",
+        result["updated"],
+        result["cleaned"],
+        result["scanned"],
+    )
     return result
 
 
