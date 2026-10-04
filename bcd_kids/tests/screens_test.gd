@@ -5,6 +5,12 @@ const I18N_SCRIPT = preload("res://autoload/I18n.gd")
 
 var _test := SUPPORT.new()
 var _screens: Array = []
+var _gs: Node
+var _previous_gs_state: Dictionary = {}
+var _settings: Node
+var _previous_settings_state: Dictionary = {}
+var _theme_manager: Node
+var _previous_theme := ""
 
 
 func _init() -> void:
@@ -13,6 +19,7 @@ func _init() -> void:
 
 func _run() -> void:
 	await _test.wait_frames(self, 3)
+	_save_global_state()
 	_test_scene_contracts()
 	await _mount_screens()
 	await _test_checkout_screen()
@@ -24,6 +31,7 @@ func _run() -> void:
 	await _test_holds_screen()
 	await _test_settings_screen()
 	await _free_screens()
+	_restore_global_state()
 	_test.finish(self)
 
 
@@ -31,15 +39,11 @@ func _test_scene_contracts() -> void:
 	var scene_paths := [
 		"res://src/screens/SClassSelect.tscn",
 		"res://src/screens/SNameInput.tscn",
-		"res://src/screens/SNameChoice.tscn",
 		"res://src/screens/SMainMenu.tscn",
 		"res://src/screens/SCheckout.tscn",
 		"res://src/screens/SReturnScan.tscn",
 		"res://src/screens/SSearch.tscn",
-		"res://src/screens/SHoldConfirm.tscn",
 		"res://src/screens/SHoldReady.tscn",
-		"res://src/screens/SReturnShelve.tscn",
-		"res://src/screens/SBookCover.tscn",
 		"res://src/screens/SBookDetail.tscn",
 		"res://src/screens/SMyHolds.tscn",
 		"res://src/screens/SSettings.tscn",
@@ -52,6 +56,38 @@ func _test_scene_contracts() -> void:
 		var screen: Node = packed.instantiate()
 		_test.expect(screen.get_class() == "Control", "Screen root is Control: " + path)
 		screen.free()
+
+
+func _save_global_state() -> void:
+	_gs = get_root().get_node("GS")
+	_settings = get_root().get_node("Settings")
+	_theme_manager = get_root().get_node("ThemeManager")
+	_previous_gs_state = {
+		"library_name": _gs.get("library_name"),
+		"base_url": _gs.get("base_url"),
+		"current_class": (_gs.get("current_class") as Dictionary).duplicate(true),
+		"current_borrower": (_gs.get("current_borrower") as Dictionary).duplicate(true),
+		"current_loans": (_gs.get("current_loans") as Array).duplicate(true),
+		"current_holds": (_gs.get("current_holds") as Array).duplicate(true),
+		"settings": (_gs.get("settings") as Dictionary).duplicate(true),
+		"filter_medium_types": (_gs.get("filter_medium_types") as Array).duplicate(true),
+		"nav_params": (_gs.get("nav_params") as Dictionary).duplicate(true),
+	}
+	_previous_settings_state = {
+		"theme": _settings.get("theme"),
+		"graphics_quality": _settings.get("graphics_quality"),
+		"resolution": _settings.get("resolution"),
+	}
+	_previous_theme = str(_theme_manager.get("current_theme_name"))
+
+
+func _restore_global_state() -> void:
+	for key in _previous_gs_state:
+		_gs.set(key, _previous_gs_state[key])
+	for key in _previous_settings_state:
+		_settings.set(key, _previous_settings_state[key])
+	_theme_manager.call("set_theme", _previous_theme)
+	_settings.call("save_settings")
 
 
 func _mount_screens() -> void:
@@ -74,15 +110,11 @@ func _mount_screens() -> void:
 	var paths := [
 		"res://src/screens/SClassSelect.tscn",
 		"res://src/screens/SNameInput.tscn",
-		"res://src/screens/SNameChoice.tscn",
 		"res://src/screens/SMainMenu.tscn",
 		"res://src/screens/SCheckout.tscn",
 		"res://src/screens/SReturnScan.tscn",
 		"res://src/screens/SSearch.tscn",
-		"res://src/screens/SHoldConfirm.tscn",
 		"res://src/screens/SHoldReady.tscn",
-		"res://src/screens/SReturnShelve.tscn",
-		"res://src/screens/SBookCover.tscn",
 		"res://src/screens/SBookDetail.tscn",
 		"res://src/screens/SMyHolds.tscn",
 		"res://src/screens/SSettings.tscn",
@@ -264,9 +296,6 @@ func _test_holds_screen() -> void:
 
 	var ready = get_root().get_node("SHoldReady") as Control
 	_test.equal(ready.get_node("MainMargin/Center/Content/InfoPanel/InfoContent/BookTitleLabel").text, "", "Hold-ready screen handles missing hold data")
-	var shelve = get_root().get_node("SReturnShelve") as Control
-	_test.equal(shelve.get_node("MainMargin/Center/Content/InfoPanel/InfoContent/ShelfRow/ShelfLabel").text, "-", "Return-shelve screen defaults a missing shelf")
-	_test.equal(shelve.get_node("MainMargin/Center/Content/InfoPanel/InfoContent/CallRow/CallLabel").text, "-", "Return-shelve screen defaults a missing call number")
 
 
 func _test_settings_screen() -> void:

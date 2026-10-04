@@ -2,23 +2,25 @@
 class_name LoanCard
 extends PanelContainer
 
-signal return_clicked(item_id: String)
+const DATA = preload("res://src/utils/DataHelper.gd")
+
 signal renew_clicked(item_id: String)
 signal title_clicked(loan: Dictionary)
 
-@onready var _cover_img: TextureRect = %CoverImage
+@onready var _cover_img: CoverImage = %CoverImage
 @onready var _cover_placeholder: Label = %CoverPlaceholder
 @onready var _title_lbl: Label = %TitleLabel
 @onready var _authors_lbl: Label = %AuthorsLabel
 @onready var _due_lbl: Label = %DueLabel
 @onready var _renew_btn: Button = %RenewBtn
-@onready var _http: HTTPRequest = %CoverHTTP
 
 var _loan_data: Dictionary
 var _renew_signal_connected := false
 var _cover_click_signals_connected := false
 
 func _ready() -> void:
+	_cover_img.cover_loaded.connect(_on_cover_texture_loaded)
+	_cover_img.cover_failed.connect(_on_cover_failed)
 	_renew_btn.focus_entered.connect(func():
 		ThemeManager.apply_focus_style(_renew_btn)
 	)
@@ -28,11 +30,10 @@ func _ready() -> void:
 
 func setup(loan: Dictionary) -> void:
 	_loan_data = loan
-	var item_id: String = loan.get("item_id", "")
-	var is_overdue: bool = loan.get("is_overdue", false)
-	var due_date: String = loan.get("due_date", "")
+	var is_overdue := DATA.boolean(loan, "is_overdue")
+	var due_date: String = DATA.text(loan, "due_date")
 
-	_title_lbl.text = loan.get("display_title", loan.get("title", ""))
+	_title_lbl.text = DATA.display_title(loan)
 
 	var authors = loan.get("authors", [])
 	var authors_text: String
@@ -41,7 +42,7 @@ func setup(loan: Dictionary) -> void:
 	else:
 		authors_text = str(authors) if authors != null else ""
 	if authors_text.is_empty():
-		authors_text = loan.get("publisher", "")
+		authors_text = DATA.text(loan, "publisher")
 	_authors_lbl.text = authors_text
 	_authors_lbl.visible = not _authors_lbl.text.is_empty()
 
@@ -54,17 +55,16 @@ func setup(loan: Dictionary) -> void:
 		_due_lbl.theme_type_variation = "LabelSubtitle"
 		theme_type_variation = "PanelSuccess"
 
-	_renew_btn.text = "🔄 " + "Renouveler"
+	_renew_btn.text = "🔄 " + I18n.t("main_menu.renew_button")
 	if not _renew_signal_connected:
 		_renew_btn.pressed.connect(func(): renew_clicked.emit(str(_loan_data.get("item_id", ""))))
 		_renew_signal_connected = true
 	
-	# Cover thumbnail — click opens cover screen
-	var cover_file: String = loan.get("cover_image", "") if loan.get("cover_image") != null else ""
+	# Cover thumbnail — click opens the book detail screen.
+	var cover_file: String = DATA.text(loan, "cover_image")
+	_show_placeholder()
 	if not cover_file.is_empty():
 		_load_cover(cover_file)
-	else:
-		_show_placeholder()
 
 	if not _cover_click_signals_connected:
 		_cover_img.gui_input.connect(func(event):
@@ -78,29 +78,14 @@ func setup(loan: Dictionary) -> void:
 		_cover_click_signals_connected = true
 
 func _load_cover(filename: String) -> void:
-	var url := API.get_cover_url(filename)
-	if url.is_empty():
-		_show_placeholder()
-		return
-	_http.request_completed.connect(_on_cover_loaded)
-	var err := _http.request(url)
-	if err != OK:
-		_show_placeholder()
+	_cover_img.load_cover(filename)
 
-func _on_cover_loaded(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-	if result != HTTPRequest.RESULT_SUCCESS or status < 200 or status >= 300:
-		_show_placeholder()
-		return
-	var img := Image.new()
-	var err := img.load_jpg_from_buffer(body)
-	if err != OK:
-		err = img.load_png_from_buffer(body)
-	if err != OK:
-		_show_placeholder()
-		return
-	_cover_img.texture = ImageTexture.create_from_image(img)
+func _on_cover_texture_loaded(_texture: Texture2D) -> void:
 	_cover_img.visible = true
 	_cover_placeholder.visible = false
+
+func _on_cover_failed() -> void:
+	_show_placeholder()
 
 func _show_placeholder() -> void:
 	_cover_img.visible = false

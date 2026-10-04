@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/components/HistoryEntry.gd" id="1_script"]
+
+[node name="HistoryEntry" type="VBoxContainer"]
+theme_override_constants/separation = 2
+script = ExtResource("1_script")
+
+[node name="StatusLabel" type="Label" parent="."]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+
+[node name="LocationRow" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+theme_override_constants/separation = 6
+
+[node name="LocationLabel" type="Label" parent="LocationRow"]
+unique_name_in_owner = true
+text = ""
+theme_type_variation = "LabelSmall"
+
+[node name="Badges" type="HBoxContainer" parent="LocationRow"]
+unique_name_in_owner = true
+theme_override_constants/separation = 4

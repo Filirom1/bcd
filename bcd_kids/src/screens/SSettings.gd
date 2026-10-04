@@ -17,6 +17,11 @@ extends Control
 @onready var _theme_apply_btn: Button = %ThemeApplyBtn
 @onready var _theme_preview: TextureRect = %ThemePreview
 
+@onready var _title_lbl: Label = get_node("MainMargin/Root/Title")
+@onready var _resolution_title_lbl: Label = get_node("MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ResolutionTitle")
+@onready var _quality_title_lbl: Label = get_node("MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/QualityTitle")
+@onready var _theme_title_lbl: Label = get_node("MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeTitle")
+
 var _theme_keys: Array = []
 var _carousel_index: int = 0
 var _original_theme: String = ""
@@ -24,9 +29,7 @@ var _original_theme: String = ""
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
 	_original_theme = ThemeManager.current_theme_name
-	_current_res_lbl.text = "Resolution actuelle: " + Settings.get_resolution_label()
-	_current_quality_lbl.text = "Qualite actuelle: " + Settings.get_quality_label()
-
+	_refresh_ui()
 	_setup_carousel()
 
 	_back_btn.pressed.connect(_on_back)
@@ -37,29 +40,51 @@ func _ready() -> void:
 
 	_btn_720p.pressed.connect(func():
 		Settings.set_resolution("720p")
-		_current_res_lbl.text = "Résolution actuelle: " + Settings.get_resolution_label()
-		Mgr.notify("Résolution 720p appliquée", "success")
+		_refresh_current_labels()
+		Mgr.notify(I18n.t("settings.resolution_applied_720p"), "success")
 	)
 	_btn_1080p.pressed.connect(func():
 		Settings.set_resolution("1080p")
-		_current_res_lbl.text = "Résolution actuelle: " + Settings.get_resolution_label()
-		Mgr.notify("Résolution 1080p appliquée", "success")
+		_refresh_current_labels()
+		Mgr.notify(I18n.t("settings.resolution_applied_1080p"), "success")
 	)
 	_btn_max.pressed.connect(func():
 		Settings.set_resolution("maximized")
-		_current_res_lbl.text = "Résolution actuelle: " + Settings.get_resolution_label()
-		Mgr.notify("Fenêtre maximisée", "success")
+		_refresh_current_labels()
+		Mgr.notify(I18n.t("settings.maximized_applied"), "success")
 	)
 	_btn_low.pressed.connect(func():
 		Settings.set_graphics_quality("low")
-		_current_quality_lbl.text = "Qualité actuelle: " + Settings.get_quality_label()
-		Mgr.notify("Qualité basse activée", "success")
+		_refresh_current_labels()
+		Mgr.notify(I18n.t("settings.quality_low_applied"), "success")
 	)
 	_btn_high.pressed.connect(func():
 		Settings.set_graphics_quality("high")
-		_current_quality_lbl.text = "Qualité actuelle: " + Settings.get_quality_label()
-		Mgr.notify("Qualité haute activée", "success")
+		_refresh_current_labels()
+		Mgr.notify(I18n.t("settings.quality_high_applied"), "success")
 	)
+
+func on_enter() -> void:
+	_refresh_ui()
+	_update_carousel_label()
+
+func _refresh_ui() -> void:
+	_title_lbl.text = I18n.t("settings.title")
+	_back_btn.text = "← " + I18n.t("common.back")
+	_resolution_title_lbl.text = I18n.t("settings.resolution_title")
+	_quality_title_lbl.text = I18n.t("settings.quality_title")
+	_theme_title_lbl.text = I18n.t("settings.theme_title")
+	_btn_720p.text = I18n.t("settings.resolution_720p")
+	_btn_1080p.text = I18n.t("settings.resolution_1080p")
+	_btn_max.text = I18n.t("settings.resolution_maximized")
+	_btn_low.text = I18n.t("settings.quality_low")
+	_btn_high.text = I18n.t("settings.quality_high")
+	_theme_apply_btn.text = I18n.t("settings.apply")
+	_refresh_current_labels()
+
+func _refresh_current_labels() -> void:
+	_current_res_lbl.text = I18n.t("settings.current_resolution", {"value": Settings.get_resolution_label()})
+	_current_quality_lbl.text = I18n.t("settings.current_quality", {"value": Settings.get_quality_label()})
 
 # ============================================================================
 # Theme carousel
@@ -73,6 +98,8 @@ func _setup_carousel() -> void:
 	_update_carousel_label()
 
 func _update_carousel_label() -> void:
+	if _theme_keys.is_empty():
+		return
 	var name: String = _theme_keys[_carousel_index]
 	var cfg: Dictionary = ThemeManager.THEMES[name]
 	var label_key := "label_" + I18n.current_locale

@@ -2,6 +2,8 @@
 class_name HoldCard
 extends PanelContainer
 
+const DATA = preload("res://src/utils/DataHelper.gd")
+
 signal cancel_clicked(hold_id: int)
 
 @onready var _title_lbl: Label = %TitleLabel
@@ -27,9 +29,9 @@ func grab_first_focus() -> void:
 
 func setup(hold: Dictionary) -> void:
 	_hold_id = int(hold.get("id", 0))
-	var status: String = hold.get("status", "")
+	var status: String = DATA.text(hold, "status")
 
-	_title_lbl.text = hold.get("title", "")
+	_title_lbl.text = DATA.text(hold, "title")
 
 	var authors = hold.get("authors", [])
 	_authors_lbl.text = ", ".join(authors) if authors is Array and not authors.is_empty() else ""
@@ -40,14 +42,14 @@ func setup(hold: Dictionary) -> void:
 	if status == "ready":
 		_status_lbl.text = "✨ " + I18n.t("hold.available")
 		_status_lbl.theme_type_variation = "LabelSuccess"
-		var expires: String = hold.get("expiration_date", "")
+		var expires: String = DATA.text(hold, "expiration_date")
 		if expires:
 			_expires_lbl.text = I18n.t("hold.expires", {"date": expires})
 			_expires_lbl.theme_type_variation = "LabelSubtitle"
 			_expires_lbl.visible = true
 		theme_type_variation = "PanelWarning"
 	else:
-		var queue_pos: int = hold.get("queue_position", 0)
+		var queue_pos := DATA.integer(hold, "queue_position")
 		_status_lbl.text = I18n.t("hold.position", {"position": queue_pos})
 		_status_lbl.theme_type_variation = "LabelWarning"
 		theme_type_variation = "PanelInfo"

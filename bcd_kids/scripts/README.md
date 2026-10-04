@@ -30,7 +30,7 @@ Le script vérifie:
 - ✓ RAM ≥ 4 GB
 - ✓ CPU ≥ 2 GHz
 - ✓ GPU compatible OpenGL 3.3+ (info)
-- ✓ Espace disque ≥ 500 MB
+- ✓ Espace disque ≥ 100 MB
 - ✓ Connexion réseau active
 - ✓ (Optionnel) Connectivité serveur BCD
 
@@ -42,6 +42,11 @@ Utile pour:
 - Support technique
 - Documentation des déploiements
 - Vérification avant achat de matériel
+
+Les exports Windows utilisent `BCD-Kids.exe` et les archives de release
+suivent le format `BCD-vX.Y.Z-Windows.zip`. Les chemins de sortie sont
+relatifs au projet (`builds/windows` et `builds/linux`) afin de fonctionner
+sur n'importe quelle machine.
 
 ## Futurs Scripts
 

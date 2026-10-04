@@ -53,6 +53,39 @@ not overwrite a developer's Godot profile or `bcd_settings.cfg`. If Godot is
 not installed, the direct runner skips cleanly; CI installs Godot and executes
 the suite.
 
+### Export verification
+
+Validate the export configuration without building binaries:
+
+```bash
+python scripts/verify_godot_exports.py
+```
+
+When Godot 4.6 release templates are installed, build and run the host-native
+export smoke test for both presets:
+
+```bash
+python scripts/verify_godot_exports.py --actual
+```
+
+CI release jobs can verify an artifact without exporting it again:
+
+```bash
+python scripts/verify_godot_exports.py \
+  --verify-existing path/to/BCD-Kids.x86_64 --platform linux
+python scripts/verify_godot_exports.py \
+  --verify-existing path/to/BCD-Kids.exe --platform windows
+```
+
+The actual check validates the embedded Linux and Windows binaries and starts
+the native binary on the host. A Linux host verifies the Linux runtime; a
+Windows host verifies the Windows runtime. The opposite-platform binary is
+still checked for its executable signature. The check also validates the
+compatibility renderer, embedded PCK, disabled console wrapper, strict locale
+JSON, and the quit confirmation setting. Hardware-dependent emoji shaping,
+HTTPS certificate authentication, and text overflow must additionally be
+checked on one real Windows and Linux export before release.
+
 ### Writing a test
 
 Test scripts live in `bcd_kids/tests/` and follow the `*_test.gd` naming
@@ -156,31 +189,47 @@ treating it as a claim that every line is covered.
 | File | Role |
 |---|---|
 | `GS.gd` | Global state (current user, books, settings) |
-| `API.gd` | HTTP client for the BCD REST API |
+| `API.gd` | HTTP client for the BCD REST API; legacy calls can be wrapped in `ApiResult` |
 | `I18n.gd` | FR/EN translation system with runtime switching |
 | `Mgr.gd` | Screen manager + notification system |
+| `ThemeManager.gd` | Theme catalogue, palette, and focus helpers |
+| `Settings.gd` | Persisted display, theme, server, and authentication settings |
 
 ### Reusable Components
 
 | Component | Description |
 |---|---|
-| `AutocompleteInput` | Text field with suggestions + barcode scanner detection |
-| `FilterPanel` | Dynamic filter panel (Type, Genre, Category, Audience) |
-| `BookCard` | Book card widget with status and action buttons |
+| `AutocompleteInput` | Reusable book-search text field |
+| `FilterPanel` | Medium-type and availability filters |
+| `BookCard` | Book result card with status, metadata, detail, and optional action |
+| `ClassButton` | Class selection button |
+| `Breadcrumb` | Keyboard-accessible navigation path |
+| `LoanCard` | Current-loan card with cover, renewal, and return actions |
+| `HoldCard` | Reservation card with cancellation action |
+| `ServerCard` | Discovered-library card with connect/admin actions |
+| `Notification` | Translated toast notification |
+| `CoverImage` | Timed cover request and JPEG/PNG decoding |
+| `EmptyState`, `CandidateButton`, `FieldRow`, `HistoryEntry`, `LoanSummary`, `Badge` | Editor-adjustable list/detail building blocks |
+
+`ErrorMessages.gd` centralizes API error-code translation. `ApiResult.gd` provides
+an opt-in typed envelope (`ok`, `data`, `error_code`, and `details`) while the
+existing screen-facing API methods retain their legacy return values during the
+migration.
 
 ### Screens
 
 | # | Scene | Description |
 |---|---|---|
 | 0 | `SServerDiscovery` | mDNS server discovery + manual connection fallback |
-| 1 | `SClassSelect` | Class selection |
-| 2 | `SNameInput` | First name input with search |
-| 3 | `SMainMenu` | Main menu hub |
+| 1 | `SClassSelect` | Class selection and teacher quick-return scan |
+| 2 | `SNameInput` | First-name search and duplicate-name selection |
+| 3 | `SMainMenu` | Borrower menu and current loans |
 | 4 | `SCheckout` | Borrow by barcode scan |
-| 5 | `SReturnScan` | Return by barcode scan |
-| 6 | `SSearch` | Advanced search with dynamic filters |
-| 7 | `SHoldConfirm` | Reservation confirmation |
-| 8 | `SMyHolds` | Reservation management |
+| 5 | `SReturnScan` | Return by barcode scan and return history |
+| 6 | `SSearch` | Catalog search with type/availability filters |
+| 7 | `SMyHolds` | Reservation management |
+| 8 | `SBookDetail` | Bibliographic details and cover |
+| 9 | `SHoldReady` | Teacher notification when a returned hold is ready |
 
 ## Server Discovery (mDNS)
 
@@ -214,13 +263,17 @@ The 🌐 button on `SClassSelect` returns to `SServerDiscovery` at any time.
 
 ## Settings Storage
 
-User settings (resolution, quality) are persisted to:
+User settings (resolution, quality, server selection, and optionally scoped
+credentials) are persisted to:
 
 ```
 user://bcd_settings.cfg
 ```
 
-They are automatically restored on next startup.
+They are automatically restored on next startup. Settings files from versions
+that did not store an authentication origin are migrated using the last selected
+server origin when it is available. If no last server is recorded, those
+credentials remain unused without prompting or sending them to a server.
 
 ## Barcode Handling
 

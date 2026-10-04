@@ -18,7 +18,7 @@ var _admin_url := ""
 var _signals_connected := false
 
 func setup(peer: Dictionary, is_localhost: bool = false) -> void:
-	var library_code: String = peer.get("library_code") if peer.get("library_code") is String else "BCD"
+	var library_code: String = peer.get("library_code") if peer.get("library_code") is String else I18n.t("server_discovery.default_name")
 	var url: String = peer.get("url") if peer.get("url") is String else ""
 	var host: String = peer.get("host") if peer.get("host") is String else "localhost"
 
@@ -33,7 +33,7 @@ func setup(peer: Dictionary, is_localhost: bool = false) -> void:
 	if not _signals_connected:
 		_connect_btn.pressed.connect(func(): connect_pressed.emit(_peer_url, _peer_library_code))
 
-	_admin_btn.text = "🔧 Admin"
+	_admin_btn.text = "🔧 " + I18n.t("auth.admin")
 	if not _signals_connected:
 		_admin_btn.pressed.connect(func(): admin_pressed.emit(_admin_url))
 		_signals_connected = true

@@ -1,6 +1,13 @@
 # Screen 5: Return by Scan
 extends Control
 
+const EMPTY_STATE = preload("res://src/components/EmptyState.tscn")
+const HISTORY_ENTRY = preload("res://src/components/HistoryEntry.tscn")
+const CIRCULATION = preload("res://src/utils/CirculationHelper.gd")
+const DATA = preload("res://src/utils/DataHelper.gd")
+const ERROR_MESSAGES = preload("res://src/utils/ErrorMessages.gd")
+const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
+
 @onready var _bg: ColorRect = %Background
 @onready var _back_btn: Button = %BackBtn
 @onready var _breadcrumb: Breadcrumb = %Breadcrumb
@@ -12,12 +19,17 @@ extends Control
 @onready var _history_title: Label = %HistoryTitle
 @onready var _history: VBoxContainer = %HistoryContainer
 
+var _busy := false
+
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
 
 	_title_lbl.text = I18n.t("return.title")
 	_input_lbl.text = I18n.t("return.label")
+	_barcode_input.placeholder_text = I18n.t("common.barcode_placeholder")
 	_history_title.text = I18n.t("return.returned_today")
+	_back_btn.text = "← " + I18n.t("common.back")
+	_validate_btn.text = "✓ " + I18n.t("common.validate")
 
 	_back_btn.pressed.connect(func(): Mgr.pop())
 
@@ -30,56 +42,67 @@ func _ready() -> void:
 	_barcode_input.text_submitted.connect(func(_t): _do_return())
 	_validate_btn.pressed.connect(func(): _do_return())
 	_barcode_input.call_deferred("grab_focus")
-	visibility_changed.connect(func():
-		if visible:
-			_update_breadcrumb()
-			_barcode_input.call_deferred("grab_focus")
-	)
-
 	_update_breadcrumb()
 
-	var placeholder_lbl := Label.new()
-	placeholder_lbl.text = I18n.t("return.scan_books_placeholder")
-	_history.add_child(placeholder_lbl)
+	var placeholder := EMPTY_STATE.instantiate() as EmptyState
+	_history.add_child(placeholder)
+	placeholder.setup(I18n.t("return.scan_books_placeholder"))
+
+# Called when returning to this screen from another stack entry.
+func on_enter() -> void:
+	_title_lbl.text = I18n.t("return.title")
+	_input_lbl.text = I18n.t("return.label")
+	_barcode_input.placeholder_text = I18n.t("common.barcode_placeholder")
+	_history_title.text = I18n.t("return.returned_today")
+	_back_btn.text = "← " + I18n.t("common.back")
+	_validate_btn.text = "✓ " + I18n.t("common.validate")
+	_update_breadcrumb()
+	_barcode_input.call_deferred("grab_focus")
 
 func _do_return() -> void:
+	if _busy:
+		return
+	_busy = true
+	var generation := Mgr.navigation_generation
 	var text := _barcode_input.get_text().strip_edges().replace(" ", "")
 	_error_lbl.text = ""
 	_barcode_input.clear()
 	_barcode_input.grab_focus()
 
 	if text.is_empty():
+		_busy = false
 		return
 
-	var item_id := text
-	var prefix: String = GS.settings.get("item_barcode_prefix", ".")
-	if not prefix.is_empty() and text.begins_with(prefix):
-		item_id = text.substr(prefix.length())
-
+	var item_id := BarcodeHelper.item_id(text, GS.settings)
 	if item_id.length() < 1:
 		_error_lbl.text = I18n.t("return.error_not_found")
 		ThemeManager.animate_error_shake(_barcode_input)
+		_busy = false
 		return
 
-	var result = await API.return_items([item_id])
+	var result = await CIRCULATION.return_book(item_id)
+	if not is_inside_tree() or not Mgr.is_generation_current(generation):
+		_busy = false
+		return
 
 	_barcode_input.grab_focus()
 
-	if result.has("error"):
+	if result is Dictionary and result.has("error"):
 		_handle_error(result)
 		ThemeManager.animate_error_shake(_barcode_input)
+		_busy = false
+		return
 	else:
-		var items = result.get("items", [])
-		if items.size() > 0:
+		var items := DATA.array(result, "items")
+		var pending_hold_ready: Dictionary = {}
+		if items.size() > 0 and items[0] is Dictionary:
 			var item := items[0] as Dictionary
-			var was_overdue: bool = item.get("was_overdue", false)
-			var days_overdue: int = item.get("days_overdue", 0)
-			var borrower_name: String = item.get("borrower_name", "")
-			var title: String = item.get("display_title", item.get("title", ""))
-			var _sl = item.get("shelf_location")
-			var _cn = item.get("call_number")
-			var shelf: String = (str(_sl) if _sl != null else "").strip_edges()
-			var call_num: String = (str(_cn) if _cn != null else "").strip_edges()
+			var was_overdue := DATA.boolean(item, "was_overdue")
+			var days_overdue := DATA.integer(item, "days_overdue")
+			var borrower_name := DATA.text(item, "borrower_name")
+			var title: String = CIRCULATION.display_title(item)
+			var shelf := DATA.text(item, "shelf_location").strip_edges()
+			var call_num := DATA.text(item, "call_number").strip_edges()
 			_add_to_history(title, borrower_name, was_overdue, days_overdue, shelf, call_num)
 
 			if title.is_empty():
@@ -87,39 +110,27 @@ func _do_return() -> void:
 			else:
 				Mgr.notify(I18n.t("return.success_with_title", {"title": title}), "success")
 
-			var hold_ready = item.get("hold_ready", null)
-			if hold_ready != null and hold_ready is Dictionary:
-				GS.current_class["_temp_hold_ready"] = {
-					"title": item.get("display_title", item.get("title", "")),
-					"borrower_name": hold_ready.get("borrower_name", ""),
-					"class_name": hold_ready.get("class_name", ""),
-					"borrower_id": hold_ready.get("borrower_id", "")
-				}
-				Mgr.push("hold_ready")
+			pending_hold_ready = CIRCULATION.hold_ready_payload(item)
 
 			ThemeManager.animate_success_flash(_barcode_input)
-			var loans_result = await API.get_current_loans(GS.current_borrower.get("borrower_id", ""))
-			if not loans_result.has("error"):
-				GS.current_loans = loans_result.get("loans", [])
-				GS.current_borrower.current_loans_count = GS.current_loans.size()
+			var loans_result = await CIRCULATION.refresh_loans(GS.current_borrower.get("borrower_id", ""))
+			if is_inside_tree() and Mgr.is_generation_current(generation) \
+					and loans_result is Dictionary and not loans_result.has("error"):
+				CIRCULATION.apply_loans_result(loans_result, GS.current_borrower)
+			if not is_inside_tree() or not Mgr.is_generation_current(generation):
+				_busy = false
+				return
 			_barcode_input.grab_focus()
+		if CIRCULATION.present_hold_ready(pending_hold_ready):
+			_busy = false
+			return
+	_busy = false
 
 func _handle_error(result: Dictionary) -> void:
-	if result.has("detail") and result.detail is Dictionary:
-		match result.detail.get("code", ""):
-			"item_not_found": _error_lbl.text = I18n.t("return.error_not_found")
-			"item_not_on_loan": _error_lbl.text = I18n.t("return.error_not_on_loan")
-			_: _error_lbl.text = I18n.t("common.error_unknown")
-	else:
-		_error_lbl.text = I18n.t("common.error_unknown")
+	_error_lbl.text = ERROR_MESSAGES.message(result, ERROR_MESSAGES.RETURN)
 
 func _update_breadcrumb() -> void:
-	_breadcrumb.set_path([
-		{"text": GS.library_name, "screen": "class_select", "clickable": true},
-		{"text": GS.current_class.get("name", ""), "screen": "class_select", "clickable": true},
-		{"text": "%s %s" % [GS.current_borrower.get("first_name", ""), GS.current_borrower.get("last_name", "")], "screen": "main_menu", "clickable": true},
-		{"text": I18n.t("return.title"), "screen": "", "clickable": false}
-	])
+	_breadcrumb.set_path(CIRCULATION.borrower_breadcrumb(I18n.t("return.title")))
 
 func _add_to_history(
 	title: String,
@@ -129,35 +140,12 @@ func _add_to_history(
 	shelf: String,
 	call_num: String
 ) -> void:
-	if _history.get_child_count() == 1 and _history.get_child(0) is Label:
-		_history.get_child(0).queue_free()
+	if _history.get_child_count() == 1 and _history.get_child(0) is EmptyState:
+		NODE_HELPER.dispose(_history.get_child(0))
 
-	var entry := VBoxContainer.new()
-	entry.add_theme_constant_override("separation", 2)
+	var entry := HISTORY_ENTRY.instantiate() as HistoryEntry
 	_history.add_child(entry)
-
-	# Status line
-	var status_text := I18n.t("return.late", {"days": days_overdue}) if was_late else I18n.t("return.on_time")
-	var icon := "⚠️" if was_late else "✅"
-	var lbl := Label.new()
-	lbl.text = "%s %s · %s · %s" % [icon, title, borrower_name, status_text]
-	entry.add_child(lbl)
-
-	# Location badges
-	if not shelf.is_empty() or not call_num.is_empty():
-		var loc_row := HBoxContainer.new()
-		loc_row.add_theme_constant_override("separation", 6)
-		entry.add_child(loc_row)
-
-		var loc_lbl := Label.new()
-		loc_lbl.text = I18n.t("return.ranger_a")
-		loc_lbl.theme_type_variation = "LabelSmall"
-		loc_row.add_child(loc_lbl)
-
-		var badges := HBoxContainer.new()
-		badges.add_theme_constant_override("separation", 4)
-		loc_row.add_child(badges)
-		BadgeHelper.populate_badges(badges, shelf, call_num)
+	entry.setup(title, borrower_name, was_late, days_overdue, shelf, call_num)
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):

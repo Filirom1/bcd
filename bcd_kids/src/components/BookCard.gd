@@ -2,6 +2,8 @@
 class_name BookCard
 extends PanelContainer
 
+const DATA = preload("res://src/utils/DataHelper.gd")
+
 signal action_clicked(book_data: Dictionary)
 signal detail_clicked(book_data: Dictionary)
 
@@ -17,6 +19,7 @@ var _action_signal_connected := false
 var _detail_signal_connected := false
 
 func _ready() -> void:
+	_detail_btn.text = "🔍 " + I18n.t("book_detail.detail")
 	_action_btn.focus_entered.connect(func():
 		ThemeManager.apply_focus_style(_action_btn)
 	)
@@ -39,8 +42,8 @@ func grab_first_focus() -> void:
 func setup(data: Dictionary, action_label: String, action_color: Color) -> void:
 	book_data = data
 
-	var available_copies := int(data.get("available_copies", 0))
-	var holds_count := int(data.get("active_holds_count", 0))
+	var available_copies := DATA.integer(data, "available_copies")
+	var holds_count := DATA.integer(data, "active_holds_count")
 
 	if available_copies > 0:
 		_status_lbl.text = "🟢"
@@ -51,21 +54,19 @@ func setup(data: Dictionary, action_label: String, action_color: Color) -> void:
 
 	theme_type_variation = "PanelNeutral"
 
-	_title_lbl.text = data.get("title", "Unknown")
+	_title_lbl.text = DATA.text(data, "title", I18n.t("common.unknown_title"))
 
 	var authors = data.get("authors", [])
 	var authors_text := ", ".join(authors) if authors is Array and not authors.is_empty() else ""
 	if authors_text.is_empty():
-		authors_text = data.get("publisher", "")
+		authors_text = DATA.text(data, "publisher")
 	_authors_lbl.text = authors_text
 	_authors_lbl.visible = not authors_text.is_empty()
 
-	var _shelf_loc = data.get("shelf_location")
-	var _call_num = data.get("call_number")
 	BadgeHelper.populate_badges(
 		_badges_row,
-		str(_shelf_loc) if _shelf_loc != null else "",
-		str(_call_num) if _call_num != null else ""
+		DATA.text(data, "shelf_location"),
+		DATA.text(data, "call_number")
 	)
 
 	_action_btn.visible = not action_label.is_empty()

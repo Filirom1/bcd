@@ -36,12 +36,23 @@ func enqueue(
 	body: String = "",
 	extra_headers: Dictionary = {}
 ) -> void:
+	enqueue_delayed(path, status_code, body, 0, extra_headers)
+
+
+func enqueue_delayed(
+	path: String,
+	status_code: int,
+	body: String = "",
+	delay_frames: int = 0,
+	extra_headers: Dictionary = {}
+) -> void:
 	if not _routes.has(path):
 		_routes[path] = []
 	_routes[path].append({
 		"status": status_code,
 		"body": body,
 		"headers": extra_headers,
+		"delay_frames": maxi(0, delay_frames),
 	})
 
 
@@ -70,6 +81,19 @@ func _process(_delta: float) -> void:
 		if peer.get_status() == StreamPeerTCP.STATUS_ERROR or peer.get_status() == StreamPeerTCP.STATUS_NONE:
 			_clients.remove_at(index)
 			continue
+		if state.has("pending_response"):
+			var delay_ticks := int(state.get("delay_ticks", 0)) - 1
+			if delay_ticks <= 0:
+				_send_response(peer, state.get("pending_response", {}))
+				state.erase("pending_response")
+				state.erase("delay_ticks")
+				state["response_sent"] = true
+				state["close_ticks"] = 2
+			else:
+				state["delay_ticks"] = delay_ticks
+			_clients[index] = state
+			continue
+
 		if state.get("response_sent", false):
 			var close_ticks := int(state.get("close_ticks", 0)) - 1
 			if close_ticks <= 0:
@@ -95,12 +119,17 @@ func _process(_delta: float) -> void:
 		if request.is_empty():
 			continue
 		requests.append(request)
-		_respond(peer, request)
-		# Keep the peer alive for a couple of frames.  HTTPRequest can otherwise
-		# observe the close before the final packet has reached its parser on
-		# slower CI machines.
-		state["response_sent"] = true
-		state["close_ticks"] = 2
+		var response := _take_response(request)
+		var delay_frames := int(response.get("delay_frames", 0))
+		if delay_frames > 0:
+			state["pending_response"] = response
+			state["delay_ticks"] = delay_frames
+		else:
+			_send_response(peer, response)
+			# Keep the peer alive for a couple of frames. HTTPRequest can otherwise
+			# observe the close before the final packet reaches its parser.
+			state["response_sent"] = true
+			state["close_ticks"] = 2
 		_clients[index] = state
 
 
@@ -146,16 +175,17 @@ func _parse_request(buffer: PackedByteArray) -> Dictionary:
 	}
 
 
-func _respond(peer: StreamPeerTCP, request: Dictionary) -> void:
+func _take_response(request: Dictionary) -> Dictionary:
 	var path: String = request.get("path", "")
-	var response: Dictionary = {}
 	var queue: Array = _routes.get(path, [])
-	if not queue.is_empty():
-		response = queue.pop_front()
-		_routes[path] = queue
-	else:
-		response = {"status": 404, "body": "", "headers": {}}
+	if queue.is_empty():
+		return {"status": 404, "body": "", "headers": {}, "delay_frames": 0}
+	var response: Dictionary = queue.pop_front()
+	_routes[path] = queue
+	return response
 
+
+func _send_response(peer: StreamPeerTCP, response: Dictionary) -> void:
 	var status_code := int(response.get("status", 500))
 	var body_value = response.get("body", "")
 	var body: PackedByteArray
@@ -175,7 +205,6 @@ func _respond(peer: StreamPeerTCP, request: Dictionary) -> void:
 	var packet := head.to_utf8_buffer()
 	packet.append_array(body)
 	peer.put_data(packet)
-	peer.disconnect_from_host()
 
 
 func _reason_phrase(status_code: int) -> String:

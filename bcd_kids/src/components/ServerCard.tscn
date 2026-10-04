@@ -25,11 +25,10 @@ theme_type_variation = "LabelSmall"
 
 [node name="AdminBtn" type="Button" parent="Row"]
 unique_name_in_owner = true
-text = "Admin"
-custom_minimum_size = Vector2(80, 32)
+custom_minimum_size = Vector2(80, 60)
 theme_type_variation = "ButtonSmall"
 
 [node name="ConnectBtn" type="Button" parent="Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(110, 32)
+custom_minimum_size = Vector2(110, 60)
 theme_type_variation = "ButtonSmall"

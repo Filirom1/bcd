@@ -259,27 +259,34 @@ func _apply_record(
 		services: Dictionary,
 		host_addresses: Dictionary
 ) -> void:
-	# The cache-flush bit is part of the class field and is not relevant here.
-	var _ignored_class := record_class & 0x7fff
+	# The cache-flush bit is part of the class field, but the base class must
+	# still identify an Internet record.
+	if (record_class & 0x7fff) != DNS_CLASS_IN:
+		return
+	if record_start < 0 or record_length < 0 or record_start + record_length > data.size():
+		return
 
 	match record_type:
 		DNS_TYPE_PTR:
+			if record_name != SERVICE_TYPE:
+				return
 			var ptr_target := _read_dns_name(data, record_start)
-			if not ptr_target.get("valid", false):
+			if not ptr_target.get("valid", false) \
+				or int(ptr_target.get("next_offset", -1)) > record_start + record_length:
 				return
 			var target_name := _canonical_name(str(ptr_target.get("name", "")))
-			if target_name == SERVICE_TYPE or not target_name.ends_with(SERVICE_TYPE):
+			# PTR records for the queried service type point to concrete instance
+			# names, never to a different service type or an arbitrary hostname.
+			if not _is_service_name(target_name):
 				return
-			# PTR records for the service type point to concrete service names.
-			# The service type itself is not a server instance.
-			if target_name != SERVICE_TYPE:
-				_ensure_service(services, target_name)
+			_ensure_service(services, target_name)
 
 		DNS_TYPE_SRV:
 			if record_length < 7 or not _is_service_name(record_name):
 				return
 			var srv_target := _read_dns_name(data, record_start + 6)
-			if not srv_target.get("valid", false):
+			if not srv_target.get("valid", false) \
+				or int(srv_target.get("next_offset", -1)) > record_start + record_length:
 				return
 			var srv_service := _ensure_service(services, record_name)
 			srv_service["host"] = _canonical_name(str(srv_target.get("name", "")))
@@ -341,11 +348,14 @@ func _build_peers(services: Dictionary, host_addresses: Dictionary) -> Array:
 	var peers: Array = []
 	for service_name_variant in services.keys():
 		var service_name := str(service_name_variant)
-		var service: Dictionary = services[service_name]
+		var canonical_service_name := _canonical_name(service_name)
+		if not _is_service_name(canonical_service_name):
+			continue
+		var service: Dictionary = services[service_name_variant]
 		var host := str(service.get("host", ""))
 		var port := int(service.get("port", 0))
 		var addresses: Array = host_addresses.get(host, [])
-		if host.is_empty() or port <= 0 or addresses.is_empty():
+		if host.is_empty() or port <= 0 or port > 65535 or addresses.is_empty():
 			continue
 
 		var properties: Dictionary = service.get("properties", {})
@@ -354,7 +364,7 @@ func _build_peers(services: Dictionary, host_addresses: Dictionary) -> Array:
 			library_code = _library_code_from_service_name(service_name)
 
 		var peer := {
-			"name": service_name + ".",
+			"name": service_name.rstrip(".") + ".",
 			"library_code": library_code,
 			"host": host + ".",
 			"addresses": addresses.duplicate(),
@@ -379,7 +389,10 @@ func _library_code_from_service_name(service_name: String) -> String:
 
 
 func _is_service_name(name: String) -> bool:
-	return name != SERVICE_TYPE and name.ends_with(SERVICE_TYPE)
+	var canonical := _canonical_name(name)
+	return not canonical.is_empty() \
+		and canonical != SERVICE_TYPE \
+		and canonical.ends_with("." + SERVICE_TYPE)
 
 
 func _read_dns_name(data: PackedByteArray, offset: int) -> Dictionary:
@@ -410,7 +423,9 @@ func _read_dns_name(data: PackedByteArray, offset: int) -> Dictionary:
 			if cursor + 1 >= data.size():
 				return {"valid": false, "next_offset": -1, "name": ""}
 			var pointer := ((label_length & 0x3f) << 8) | int(data[cursor + 1])
-			if pointer >= data.size() or visited.has(pointer):
+			# DNS compression pointers refer to an earlier name. Rejecting forward
+			# pointers also prevents a crafted packet from escaping its RDATA path.
+			if pointer >= cursor or pointer >= data.size() or visited.has(pointer):
 				return {"valid": false, "next_offset": -1, "name": ""}
 			visited[pointer] = true
 			if not jumped:

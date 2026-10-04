@@ -30,7 +30,7 @@ size_flags_horizontal = 3
 
 [node name="ServerBtn" type="Button" parent="MainMargin/Root/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(200, 40)
+custom_minimum_size = Vector2(200, 60)
 
 [node name="TopSpacer" type="Control" parent="MainMargin/Root/TopBar"]
 size_flags_horizontal = 3
@@ -39,7 +39,7 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 size_flags_vertical = 4
 text = "⚙️"
-custom_minimum_size = Vector2(50, 40)
+custom_minimum_size = Vector2(50, 60)
 
 [node name="LangSep1" type="Control" parent="MainMargin/Root/TopBar"]
 custom_minimum_size = Vector2(8, 0)
@@ -47,7 +47,7 @@ custom_minimum_size = Vector2(8, 0)
 [node name="FrBtn" type="Button" parent="MainMargin/Root/TopBar"]
 unique_name_in_owner = true
 text = "FR"
-custom_minimum_size = Vector2(60, 40)
+custom_minimum_size = Vector2(60, 60)
 
 [node name="LangSep2" type="Control" parent="MainMargin/Root/TopBar"]
 custom_minimum_size = Vector2(8, 0)
@@ -55,7 +55,7 @@ custom_minimum_size = Vector2(8, 0)
 [node name="EnBtn" type="Button" parent="MainMargin/Root/TopBar"]
 unique_name_in_owner = true
 text = "EN"
-custom_minimum_size = Vector2(60, 40)
+custom_minimum_size = Vector2(60, 60)
 
 [node name="TitleLabel" type="Label" parent="MainMargin/Root"]
 unique_name_in_owner = true

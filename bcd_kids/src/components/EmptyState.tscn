@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/components/EmptyState.gd" id="1_script"]
+
+[node name="EmptyState" type="Label"]
+size_flags_horizontal = 3
+text = ""
+autowrap_mode = 3
+theme_type_variation = "LabelMedium"
+script = ExtResource("1_script")

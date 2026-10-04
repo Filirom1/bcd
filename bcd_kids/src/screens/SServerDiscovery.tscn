@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bcd4scr0011"]
 
 [ext_resource type="Script" uid="uid://dd4h0pgs6egme" path="res://src/screens/SServerDiscovery.gd" id="1_scr"]
+[ext_resource type="PackedScene" path="res://src/components/ReadingIntro.tscn" id="2_reading_intro"]
 
 [node name="SServerDiscovery" type="Control" unique_id=864758025]
 layout_mode = 3
@@ -42,7 +43,7 @@ size_flags_horizontal = 3
 
 [node name="SettingsBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234503]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(50, 40)
+custom_minimum_size = Vector2(50, 60)
 layout_mode = 2
 size_flags_vertical = 4
 text = "⚙️"
@@ -53,7 +54,7 @@ layout_mode = 2
 
 [node name="FrBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234505]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 40)
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
 text = "FR"
 
@@ -63,7 +64,7 @@ layout_mode = 2
 
 [node name="EnBtn" type="Button" parent="MainMargin/Root/TopBar" unique_id=201234507]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 40)
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
 text = "EN"
 
@@ -83,7 +84,7 @@ theme_override_constants/separation = 8
 
 [node name="RefreshBtn" type="Button" parent="MainMargin/Root/StatusRow" unique_id=2101556452]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 32)
+custom_minimum_size = Vector2(130, 60)
 layout_mode = 2
 theme_type_variation = &"LabelSmall"
 
@@ -117,12 +118,10 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "http://localhost:8888"
-placeholder_text = "http://localhost:8888"
 
 [node name="ConnectManualBtn" type="Button" parent="MainMargin/Root/ManualRow" unique_id=1026626992]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(110, 36)
+custom_minimum_size = Vector2(110, 60)
 layout_mode = 2
 theme_type_variation = &"LabelSmall"
 
@@ -142,6 +141,11 @@ layout_mode = 2
 theme_type_variation = &"LabelMedium"
 
 [node name="UseSavedAuth" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=1311754810]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="RememberAuth" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
@@ -183,102 +187,15 @@ size_flags_horizontal = 3
 
 [node name="RetryBtn" type="Button" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=1955114295]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(110, 32)
+custom_minimum_size = Vector2(110, 60)
 layout_mode = 2
 theme_type_variation = &"LabelSmall"
 
 [node name="ClearAuthBtn" type="Button" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=632013538]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(80, 32)
+custom_minimum_size = Vector2(80, 60)
 layout_mode = 2
 theme_type_variation = &"LabelSmall"
 
-[node name="SplashPanel" type="ColorRect" parent="." unique_id=500000001]
+[node name="ReadingIntro" parent="." instance=ExtResource("2_reading_intro")]
 unique_name_in_owner = true
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-
-[node name="SplashCenter" type="CenterContainer" parent="SplashPanel" unique_id=500000002]
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-
-[node name="SplashVBox" type="VBoxContainer" parent="SplashPanel/SplashCenter" unique_id=500000003]
-layout_mode = 2
-theme_override_constants/separation = 20
-alignment = 1
-
-[node name="SplashBook" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000014]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 72
-text = "📚"
-horizontal_alignment = 1
-
-[node name="SplashTitle" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000004]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"LabelTitle"
-text = "BCD"
-horizontal_alignment = 1
-
-[node name="SplashTagline" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000005]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"LabelMedium"
-horizontal_alignment = 1
-
-[node name="SplashSep" type="Control" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000006]
-custom_minimum_size = Vector2(0, 8)
-layout_mode = 2
-
-[node name="SplashMessage" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000007]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 32)
-layout_mode = 2
-theme_type_variation = &"LabelSmall"
-horizontal_alignment = 1
-
-[node name="SplashAuthor" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000015]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0)
-layout_mode = 2
-theme_type_variation = &"LabelSmall"
-horizontal_alignment = 1
-
-[node name="SplashDots" type="HBoxContainer" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000008]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 16
-alignment = 1
-
-[node name="Dot0" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000009]
-modulate = Color(1, 1, 1, 0.15)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "●"
-
-[node name="Dot1" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000010]
-modulate = Color(1, 1, 1, 0.15)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "●"
-
-[node name="Dot2" type="Label" parent="SplashPanel/SplashCenter/SplashVBox/SplashDots" unique_id=500000011]
-modulate = Color(1, 1, 1, 0.15)
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "●"
-
-[node name="BadgeSep" type="Control" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000012]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-
-[node name="SplashBadge" type="Label" parent="SplashPanel/SplashCenter/SplashVBox" unique_id=500000013]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0.5)
-layout_mode = 2
-theme_type_variation = &"LabelSmall"
-horizontal_alignment = 1

@@ -1,25 +1,35 @@
 # Screen: Book Detail — shown from search
 extends Control
 
+const FIELD_ROW = preload("res://src/components/FieldRow.tscn")
+const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
+const DATA = preload("res://src/utils/DataHelper.gd")
+
 @onready var _bg: ColorRect = %Background
 @onready var _back_btn: Button = %BackBtn
-@onready var _cover_img: TextureRect = %CoverImage
+@onready var _cover_img: CoverImage = %CoverImage
 @onready var _no_cover_lbl: Label = %NoCoverLabel
 @onready var _fields_container: VBoxContainer = %FieldsContainer
-@onready var _http: HTTPRequest = %CoverHTTP
+
 
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
-	_back_btn.pressed.connect(func(): Mgr.pop())
+	_cover_img.cover_loaded.connect(_on_cover_texture_loaded)
+	_cover_img.cover_failed.connect(_on_cover_failed)
+	_back_btn.text = "← " + I18n.t("common.back")
+	_back_btn.pressed.connect(_go_back)
 	_back_btn.call_deferred("grab_focus")
 
-	var book: Dictionary = GS.current_class.get("_temp_book_data", {})
+	var book: Dictionary = GS.get_nav_param("book_data", {})
 	_build_fields(book)
 
 	var biblio_id := int(book.get("id", 0))
+	var generation := Mgr.navigation_generation
 	if biblio_id > 0:
 		var record = await API.get_bibliographic_record(biblio_id)
-		if not record.has("error"):
+		if not is_inside_tree() or not Mgr.is_generation_current(generation):
+			return
+		if record is Dictionary and not record.has("error"):
 			for key in ["shelf_location", "call_number"]:
 				if record.get(key) == null and book.get(key) != null:
 					record[key] = book[key]
@@ -31,28 +41,26 @@ func _ready() -> void:
 	_show_no_cover()
 
 func _build_fields(data: Dictionary) -> void:
-	for c in _fields_container.get_children():
-		c.queue_free()
+	NODE_HELPER.clear_children(_fields_container)
 
 	var field_defs := [
-		["title",            "Titre"],
-		["subtitle",         "Sous-titre"],
-		["authors",          "Auteurs"],
-		["illustrators",     "Illustrateurs"],
-		["publisher",        "Éditeur"],
-		["publication_year", "Année"],
-		["collection",       "Collection"],
-		["series_number",    "Numéro de série"],
-		["level",            "Niveau"],
-		["medium_type",      "Type"],
-		["page_count",       "Pages"],
-		["keywords",         "Mots-clés"],
-		["description",      "Résumé"],
+		["title",            "book_detail.title"],
+		["subtitle",         "book_detail.subtitle"],
+		["authors",          "book_detail.authors"],
+		["illustrators",     "book_detail.illustrators"],
+		["publisher",        "book_detail.publisher"],
+		["publication_year", "book_detail.publication_year"],
+		["collection",       "book_detail.collection"],
+		["series_number",    "book_detail.series_number"],
+		["level",            "book_detail.level"],
+		["medium_type",      "book_detail.medium_type"],
+		["page_count",       "book_detail.page_count"],
+		["keywords",         "book_detail.keywords"],
+		["description",      "book_detail.description"],
 	]
 
 	for pair in field_defs:
 		var key: String = pair[0]
-		var label: String = pair[1]
 		var value = data.get(key, null)
 		if value == null:
 			continue
@@ -69,73 +77,37 @@ func _build_fields(data: Dictionary) -> void:
 			if value.is_empty():
 				continue
 
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
+		var row := FIELD_ROW.instantiate() as FieldRow
 		_fields_container.add_child(row)
+		row.setup(I18n.t(pair[1]), str(value))
 
-		var key_lbl := Label.new()
-		key_lbl.text = label + " :"
-		key_lbl.theme_type_variation = "LabelSmall"
-		key_lbl.custom_minimum_size = Vector2(130, 0)
-		row.add_child(key_lbl)
-
-		var val_lbl := Label.new()
-		val_lbl.text = str(value)
-		val_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		val_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.add_child(val_lbl)
-
-	# Shelf location and call number — rendered with colored badges at the bottom
-	var _sl = data.get("shelf_location")
-	var _cn = data.get("call_number")
-	var shelf: String = (str(_sl) if _sl != null else "").strip_edges()
-	var call_num: String = (str(_cn) if _cn != null else "").strip_edges()
+	# Shelf location and call number are rendered with colored badges.
+	var shelf := DATA.text(data, "shelf_location").strip_edges()
+	var call_num := DATA.text(data, "call_number").strip_edges()
 	if not shelf.is_empty() or not call_num.is_empty():
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		_fields_container.add_child(row)
-
-		var key_lbl := Label.new()
-		key_lbl.text = I18n.t("book_detail.location_label") + " :"
-		key_lbl.theme_type_variation = "LabelSmall"
-		key_lbl.custom_minimum_size = Vector2(130, 0)
-		row.add_child(key_lbl)
-
-		var badges := HBoxContainer.new()
-		badges.add_theme_constant_override("separation", 4)
-		row.add_child(badges)
-		BadgeHelper.populate_badges(badges, shelf, call_num)
+		var location_row := FIELD_ROW.instantiate() as FieldRow
+		_fields_container.add_child(location_row)
+		location_row.setup_location(I18n.t("book_detail.location_label"), shelf, call_num)
 
 func _load_cover(filename: String) -> void:
-	var url := API.get_cover_url(filename)
-	if url.is_empty():
-		_show_no_cover()
-		return
-	_http.request_completed.connect(_on_cover_loaded)
-	var err := _http.request(url)
-	if err != OK:
-		_show_no_cover()
+	_cover_img.load_cover(filename)
 
-func _on_cover_loaded(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-	if result != HTTPRequest.RESULT_SUCCESS or status < 200 or status >= 300:
-		_show_no_cover()
-		return
-	var img := Image.new()
-	var err := img.load_jpg_from_buffer(body)
-	if err != OK:
-		err = img.load_png_from_buffer(body)
-	if err != OK:
-		_show_no_cover()
-		return
-	_cover_img.texture = ImageTexture.create_from_image(img)
+func _on_cover_texture_loaded(_texture: Texture2D) -> void:
 	_cover_img.visible = true
 	_no_cover_lbl.visible = false
+
+func _on_cover_failed() -> void:
+	_show_no_cover()
 
 func _show_no_cover() -> void:
 	_cover_img.visible = false
 	_no_cover_lbl.visible = true
 
+func _go_back() -> void:
+	GS.clear_nav_param("book_data")
+	Mgr.pop()
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		Mgr.pop()
+		_go_back()
 		get_viewport().set_input_as_handled()

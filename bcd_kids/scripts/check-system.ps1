@@ -57,6 +57,7 @@ Write-Host ""
 
 # Vérifier GPU (optionnel)
 Write-Host "[4/6] Vérification GPU..." -ForegroundColor Yellow
+$gpuName = "Unknown"
 try {
     $gpu = Get-CimInstance Win32_VideoController | Select-Object -First 1
     $gpuName = $gpu.Name
@@ -74,8 +75,8 @@ $freeSpaceGB = [math]::Round($disk.FreeSpace / 1GB, 2)
 
 Write-Host "  Espace libre C:\: $freeSpaceGB GB"
 
-if ($freeSpaceGB -lt 0.5) {
-    Write-Host "  ✗ ERREUR: Minimum 500 MB requis" -ForegroundColor Red
+if ($freeSpaceGB -lt 0.1) {
+    Write-Host "  ✗ ERREUR: Minimum 100 MB requis" -ForegroundColor Red
     $compatible = $false
 } else {
     Write-Host "  ✓ OK" -ForegroundColor Green
@@ -120,9 +121,9 @@ if ($compatible) {
     Write-Host "✓ Système COMPATIBLE avec BCD Godot Client" -ForegroundColor Green
     Write-Host ""
     Write-Host "Vous pouvez installer l'application en suivant ces étapes:" -ForegroundColor White
-    Write-Host "1. Extraire BCD-Godot-vX.X.X-Windows.zip dans C:\BCD" -ForegroundColor Gray
-    Write-Host "2. Lancer C:\BCD\BCD-Godot.exe" -ForegroundColor Gray
-    Write-Host "3. Si l'antivirus bloque, ajouter une exclusion pour C:\BCD\BCD-Godot.exe" -ForegroundColor Gray
+    Write-Host "1. Extraire BCD-vX.X.X-Windows.zip dans C:\BCD" -ForegroundColor Gray
+    Write-Host "2. Lancer C:\BCD\BCD-Kids.exe" -ForegroundColor Gray
+    Write-Host "3. Si l'antivirus bloque, ajouter une exclusion pour C:\BCD\BCD-Kids.exe" -ForegroundColor Gray
 } else {
     Write-Host "✗ Système NON COMPATIBLE" -ForegroundColor Red
     Write-Host ""
@@ -130,7 +131,7 @@ if ($compatible) {
 }
 
 Write-Host ""
-Write-Host "Documentation complète: bcd_godot/DEPLOYMENT.md" -ForegroundColor Cyan
+Write-Host "Documentation complète: bcd_kids/README.md et bcd_kids/TECHNICAL.md" -ForegroundColor Cyan
 Write-Host ""
 
 # Optionnel: générer un rapport
@@ -153,8 +154,8 @@ Réseau: $($network.Count) connexion(s) active(s)
 Statut: $(if ($compatible) { "COMPATIBLE" } else { "NON COMPATIBLE" })
 
 Pour plus d'informations, voir:
-- bcd_godot/README.md
-- bcd_godot/DEPLOYMENT.md
+- bcd_kids/README.md
+- bcd_kids/TECHNICAL.md
 "@ | Out-File -FilePath $reportPath -Encoding UTF8
 
     Write-Host "Rapport sauvegardé: $reportPath" -ForegroundColor Green

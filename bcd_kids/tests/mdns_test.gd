@@ -68,6 +68,7 @@ func _test_name_helpers() -> void:
 		"mDNS canonicalizes names"
 	)
 	_test.expect(_mdns.call("_is_service_name", "Room._bcd._tcp.local"), "mDNS recognizes service instance names")
+	_test.expect(not _mdns.call("_is_service_name", "evil_bcd._tcp.local"), "mDNS rejects names without a service-type separator")
 	_test.expect(not _mdns.call("_is_service_name", MDNS_SCRIPT.SERVICE_TYPE), "mDNS excludes the service type itself")
 	_test.equal(
 		_mdns.call("_library_code_from_service_name", "Room (Annex)._bcd._tcp.local"),
@@ -216,9 +217,12 @@ func _test_record_validation() -> void:
 
 	_mdns.call("_apply_record", empty_data, MDNS_SCRIPT.SERVICE_TYPE, MDNS_SCRIPT.DNS_TYPE_PTR, 1, 0, 0, services, hosts)
 	_mdns.call("_apply_record", empty_data, "wrong._bcd._tcp.local", MDNS_SCRIPT.DNS_TYPE_SRV, 1, 0, 0, services, hosts)
+	var wrong_ptr_target := _dns_name("unrelated.local")
+	_mdns.call("_apply_record", wrong_ptr_target, MDNS_SCRIPT.SERVICE_TYPE, MDNS_SCRIPT.DNS_TYPE_PTR, 1, 0, 0, services, hosts)
+	_mdns.call("_apply_record", wrong_ptr_target, MDNS_SCRIPT.SERVICE_TYPE, MDNS_SCRIPT.DNS_TYPE_PTR, 2, 0, 0, services, hosts)
 	_mdns.call("_apply_record", empty_data, "not-service.local", MDNS_SCRIPT.DNS_TYPE_TXT, 1, 0, 0, services, hosts)
 	_mdns.call("_apply_record", empty_data, "bcd-host.local", MDNS_SCRIPT.DNS_TYPE_A, 1, 0, 3, services, hosts)
-	_test.expect(services.is_empty(), "mDNS rejects malformed PTR, SRV, TXT, and A records")
+	_test.expect(services.is_empty(), "mDNS rejects malformed PTR, wrong-class, SRV, TXT, and A records")
 
 	var txt_data := PackedByteArray([5, 65, 66])
 	_test.equal(

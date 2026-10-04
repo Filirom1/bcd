@@ -2,11 +2,17 @@
 extends CanvasLayer
 
 const NOTIFICATION = preload("res://src/components/Notification.tscn")
+const MANAGER_BACKGROUND = preload("res://src/components/ManagerBackground.tscn")
+const MANAGER_NOTIFICATIONS = preload("res://src/components/ManagerNotifications.tscn")
+const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
 
 var _stack: Array = []
 var _notif_box: VBoxContainer
-var _screen_cache: Dictionary = {}
 var _bg_tex_rect: TextureRect
+
+# Incremented whenever navigation starts. Screens use it to ignore results from
+# requests that began before the current screen/session became active.
+var navigation_generation := 0
 
 func _ready() -> void:
 	layer = 0
@@ -24,145 +30,156 @@ func _ready() -> void:
 # ============================================================================
 
 func _build_background() -> void:
-	var bg_layer := CanvasLayer.new()
-	bg_layer.layer = -10
-	add_child(bg_layer)
-
-	var root := Control.new()
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bg_layer.add_child(root)
-
-	_bg_tex_rect = TextureRect.new()
-	_bg_tex_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var background := MANAGER_BACKGROUND.instantiate()
+	add_child(background)
+	_bg_tex_rect = background.get_node("Root/BackgroundTexture") as TextureRect
 	_bg_tex_rect.texture = ThemeManager.background_texture
-	_bg_tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_bg_tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_bg_tex_rect)
-
 	ThemeManager.theme_changed.connect(_on_theme_changed)
 
 func _on_theme_changed() -> void:
 	_bg_tex_rect.texture = ThemeManager.background_texture
 	var new_theme := get_tree().root.theme
-	for scr in _screen_cache.values():
+	for scr_variant in _stack:
+		if not (scr_variant is Control) or not is_instance_valid(scr_variant):
+			continue
+		var scr: Control = scr_variant
 		scr.theme = new_theme
 		var bg = scr.get_node_or_null("%Background")
 		if bg is ColorRect:
 			bg.color = ThemeManager.BG
-	for scr in _stack:
-		if scr not in _screen_cache.values():
-			scr.theme = new_theme
-			var bg = scr.get_node_or_null("%Background")
-			if bg is ColorRect:
-				bg.color = ThemeManager.BG
 
 # ============================================================================
 # Notification Layer (always on top)
 # ============================================================================
 
 func _build_notif_layer() -> void:
-	var nl := CanvasLayer.new()
-	nl.layer = 20
-	add_child(nl)
-
-	var root := Control.new()
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	nl.add_child(root)
-
-	_notif_box = VBoxContainer.new()
-	_notif_box.anchor_left = 0.0
-	_notif_box.anchor_right = 1.0
-	_notif_box.anchor_top = 1.0
-	_notif_box.anchor_bottom = 1.0
-	_notif_box.offset_top = -180
-	_notif_box.offset_bottom = 0.0
-	_notif_box.alignment = BoxContainer.ALIGNMENT_END
-	_notif_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_notif_box.add_theme_constant_override("separation", 4)
-	root.add_child(_notif_box)
-
-# ============================================================================
-# Splash Screen (Initial Loading)
-# ============================================================================
+	var notification_layer := MANAGER_NOTIFICATIONS.instantiate()
+	add_child(notification_layer)
+	_notif_box = notification_layer.get_node("Root/NotificationBox") as VBoxContainer
 
 # ============================================================================
 # Navigation (Screen Stack)
 # ============================================================================
 
 func push(name: String) -> void:
+	# A screen type may occur only once in the stack. Breadcrumbs and repeated
+	# button presses should reveal the existing screen rather than add a second
+	# instance of it.
+	if _find_stack_index(name) >= 0:
+		pop_to(name)
+		return
+
+	navigation_generation += 1
 	if not _stack.is_empty():
 		_hide_screen(_stack.back() as Control)
+	_push_new(name)
+
+func pop() -> void:
+	if _stack.size() <= 1:
+		return
+
+	navigation_generation += 1
+	var old_screen := _stack.pop_back() as Control
+	_dispose(old_screen)
+	_show_screen(_stack.back() as Control)
+
+func replace(name: String) -> void:
+	if _stack.is_empty():
+		push(name)
+		return
+
+	navigation_generation += 1
+	var old_screen := _stack.pop_back() as Control
+	_dispose(old_screen)
+
+	var existing := _find_stack_index(name)
+	if existing >= 0:
+		while _stack.size() - 1 > existing:
+			_dispose(_stack.pop_back() as Control)
+		_show_screen(_stack.back() as Control)
+		return
+
+	_push_new(name)
+
+func reset_to(name: String) -> void:
+	# Used for logout/server changes. No old screen, cached data, or pending
+	# screen instance may remain reachable from the navigation stack.
+	navigation_generation += 1
+	while not _stack.is_empty():
+		_dispose(_stack.pop_back() as Control)
+	_push_new(name)
+
+func pop_to(name: String) -> void:
+	var target := _find_stack_index(name)
+	if target < 0:
+		replace(name)
+		return
+
+	navigation_generation += 1
+	while _stack.size() - 1 > target:
+		_dispose(_stack.pop_back() as Control)
+	_show_screen(_stack.back() as Control)
+
+func _push_new(name: String) -> void:
 	var scr := _make(name)
 	_stack.append(scr)
 	if not scr.is_inside_tree():
 		add_child(scr)
 	_show_screen(scr)
 
-func pop() -> void:
-	if _stack.size() <= 1:
-		return
-	var old_screen := _stack.pop_back() as Control
-	var is_cached := old_screen in _screen_cache.values()
-	if not is_cached:
-		old_screen.queue_free()
-	else:
-		_hide_screen(old_screen)
-	_show_screen(_stack.back() as Control)
-
-func replace(name: String) -> void:
-	if not _stack.is_empty():
-		var old_screen := _stack.pop_back() as Control
-		var is_cached := old_screen in _screen_cache.values()
-		if not is_cached:
-			old_screen.queue_free()
-		else:
-			_hide_screen(old_screen)
-	push(name)
+func _find_stack_index(name: String) -> int:
+	for index in range(_stack.size() - 1, -1, -1):
+		var scr = _stack[index]
+		if scr is Control and is_instance_valid(scr) \
+				and scr.get_meta("screen_name", "") == name:
+			return index
+	return -1
 
 func _hide_screen(scr: Control) -> void:
+	if not is_instance_valid(scr):
+		return
 	scr.hide()
 	scr.process_mode = Node.PROCESS_MODE_DISABLED
 
 func _show_screen(scr: Control) -> void:
+	if not is_instance_valid(scr):
+		return
+	var was_entered := bool(scr.get_meta("mgr_entered", false))
 	scr.process_mode = Node.PROCESS_MODE_INHERIT
 	scr.show()
+	if was_entered and scr.has_method("on_enter"):
+		scr.call("on_enter")
+	scr.set_meta("mgr_entered", true)
+
+func _dispose(scr: Control) -> void:
+	NODE_HELPER.dispose(scr)
+
+func is_generation_current(generation: int) -> bool:
+	return generation == navigation_generation
 
 func _make(name: String) -> Control:
-	if _screen_cache.has(name):
-		print("[Mgr] Using cached screen: %s" % name)
-		return _screen_cache[name]
-
 	var scr: Control
 	match name:
 		"server_discovery": scr = preload("res://src/screens/SServerDiscovery.tscn").instantiate()
 		"class_select":     scr = preload("res://src/screens/SClassSelect.tscn").instantiate()
 		"name_input":       scr = preload("res://src/screens/SNameInput.tscn").instantiate()
-		"name_choice":      scr = preload("res://src/screens/SNameChoice.tscn").instantiate()
 		"main_menu":        scr = preload("res://src/screens/SMainMenu.tscn").instantiate()
 		"checkout":         scr = preload("res://src/screens/SCheckout.tscn").instantiate()
 		"return_scan":      scr = preload("res://src/screens/SReturnScan.tscn").instantiate()
 		"search":           scr = preload("res://src/screens/SSearch.tscn").instantiate()
-		"hold_confirm":     scr = preload("res://src/screens/SHoldConfirm.tscn").instantiate()
 		"hold_ready":       scr = preload("res://src/screens/SHoldReady.tscn").instantiate()
-		"return_shelve":    scr = preload("res://src/screens/SReturnShelve.tscn").instantiate()
-		"book_detail":  	scr = preload("res://src/screens/SBookDetail.tscn").instantiate()
+		"book_detail":      scr = preload("res://src/screens/SBookDetail.tscn").instantiate()
 		"my_holds":         scr = preload("res://src/screens/SMyHolds.tscn").instantiate()
 		"settings":         scr = preload("res://src/screens/SSettings.tscn").instantiate()
 		_:
 			push_error("Unknown screen: " + name)
 			scr = Control.new()
 
+	scr.set_meta("screen_name", name)
 	scr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	# FIX: CanvasLayer bloque l'héritage du thème, on l'applique explicitement
+	# CanvasLayer blocks theme inheritance, so apply the active theme explicitly.
 	scr.theme = get_tree().root.theme
-
-	if name in ["server_discovery", "class_select", "checkout", "search"]:
-		_screen_cache[name] = scr
-		print("[Mgr] Cached screen: %s" % name)
-
 	return scr
 
 # ============================================================================

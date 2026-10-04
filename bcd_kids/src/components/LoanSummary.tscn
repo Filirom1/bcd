@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/components/LoanSummary.gd" id="1_script"]
+
+[node name="LoanSummary" type="Label"]
+size_flags_horizontal = 3
+theme_type_variation = "LabelMedium"
+script = ExtResource("1_script")

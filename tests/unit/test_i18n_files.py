@@ -7,8 +7,10 @@ Validates that JSON files are valid and contain required keys.
 import json
 from pathlib import Path
 
-# Path to locales directory
-LOCALES_DIR = Path(__file__).parent.parent.parent / "src" / "bcd_web_vue" / "locales"
+# Paths to the web and Godot locale directories.
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+LOCALES_DIR = PROJECT_ROOT / "src" / "bcd_web_vue" / "locales"
+KIDS_LOCALES_DIR = PROJECT_ROOT / "bcd_kids" / "locales"
 
 
 class TestI18nFiles:
@@ -35,6 +37,54 @@ class TestI18nFiles:
 
         assert isinstance(data, dict), "fr.json should contain a JSON object"
         assert len(data) > 0, "fr.json should not be empty"
+
+    def test_kids_locale_json_files_are_valid(self):
+        """Test that both Godot locale files are valid, non-empty JSON objects."""
+        for locale in ("en", "fr"):
+            locale_file = KIDS_LOCALES_DIR / f"{locale}.json"
+            assert locale_file.exists(), f"Godot {locale}.json file not found"
+
+            with locale_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            assert isinstance(data, dict), f"Godot {locale}.json should contain a JSON object"
+            assert data, f"Godot {locale}.json should not be empty"
+
+    def test_kids_en_and_fr_have_same_top_level_keys(self):
+        """Test that the Godot locales expose the same translation sections."""
+        with (KIDS_LOCALES_DIR / "en.json").open("r", encoding="utf-8") as f:
+            en_data = json.load(f)
+        with (KIDS_LOCALES_DIR / "fr.json").open("r", encoding="utf-8") as f:
+            fr_data = json.load(f)
+
+        assert set(en_data) == set(fr_data), (
+            "Godot locale sections differ: "
+            f"missing in fr={sorted(set(en_data) - set(fr_data))}, "
+            f"missing in en={sorted(set(fr_data) - set(en_data))}"
+        )
+
+    def test_kids_en_and_fr_have_same_nested_keys(self):
+        """Test that every nested Godot translation key exists in both locales."""
+        def flatten(value, prefix=""):
+            keys = set()
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    child_prefix = f"{prefix}.{key}" if prefix else key
+                    keys.update(flatten(child, child_prefix))
+            else:
+                keys.add(prefix)
+            return keys
+
+        with (KIDS_LOCALES_DIR / "en.json").open("r", encoding="utf-8") as f:
+            en_keys = flatten(json.load(f))
+        with (KIDS_LOCALES_DIR / "fr.json").open("r", encoding="utf-8") as f:
+            fr_keys = flatten(json.load(f))
+
+        assert en_keys == fr_keys, (
+            "Godot locale keys differ: "
+            f"missing in fr={sorted(en_keys - fr_keys)}, "
+            f"missing in en={sorted(fr_keys - en_keys)}"
+        )
 
     def test_en_and_fr_have_same_top_level_keys(self):
         """Test that en.json and fr.json have the same top-level keys."""

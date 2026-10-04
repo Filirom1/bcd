@@ -32,15 +32,13 @@ theme_override_constants/separation = 12
 
 [node name="BackBtn" type="Button" parent="MainMargin/Root/Header"]
 unique_name_in_owner = true
-text = "← Retour"
-custom_minimum_size = Vector2(120, 40)
+custom_minimum_size = Vector2(120, 60)
 
 [node name="Breadcrumb" parent="MainMargin/Root/Header" instance=ExtResource("2_bc")]
 unique_name_in_owner = true
 
 [node name="TitleLabel" type="Label" parent="MainMargin/Root"]
 unique_name_in_owner = true
-text = "Emprunter"
 horizontal_alignment = 1
 theme_type_variation = "LabelTitle"
 
@@ -59,13 +57,11 @@ theme_override_constants/separation = 12
 
 [node name="BarcodeInput" type="LineEdit" parent="MainMargin/Root/InputRow"]
 unique_name_in_owner = true
-placeholder_text = "Ex: .00342"
 custom_minimum_size = Vector2(280, 48)
 
 [node name="ValidateBtn" type="Button" parent="MainMargin/Root/InputRow"]
 unique_name_in_owner = true
-text = "✓ Valider"
-custom_minimum_size = Vector2(130, 48)
+custom_minimum_size = Vector2(130, 60)
 
 [node name="ErrorLabel" type="Label" parent="MainMargin/Root"]
 unique_name_in_owner = true

@@ -12,6 +12,17 @@ var _previous_base_url := ""
 var _previous_library_name := ""
 var _previous_last_url := ""
 var _previous_last_name := ""
+var _previous_auth_username := ""
+var _previous_auth_password := ""
+var _previous_auth_scheme := ""
+var _previous_auth_origin := ""
+var _previous_session_username := ""
+var _previous_session_password := ""
+var _previous_session_scheme := ""
+var _previous_session_origin := ""
+var _previous_gs_settings: Dictionary = {}
+var _previous_filter_medium_types: Array = []
+var _previous_nav_params: Dictionary = {}
 
 
 func _init() -> void:
@@ -26,6 +37,17 @@ func _run() -> void:
 	_previous_library_name = str(_gs.get("library_name"))
 	_previous_last_url = str(_settings.get("last_server_url"))
 	_previous_last_name = str(_settings.get("last_library_name"))
+	_previous_auth_username = str(_settings.get("auth_username"))
+	_previous_auth_password = str(_settings.get("auth_password"))
+	_previous_auth_scheme = str(_settings.get("auth_scheme"))
+	_previous_auth_origin = str(_settings.get("auth_server_origin"))
+	_previous_session_username = str(_settings.get("session_auth_username"))
+	_previous_session_password = str(_settings.get("session_auth_password"))
+	_previous_session_scheme = str(_settings.get("session_auth_scheme"))
+	_previous_session_origin = str(_settings.get("session_auth_server_origin"))
+	_previous_gs_settings = (_gs.get("settings") as Dictionary).duplicate(true)
+	_previous_filter_medium_types = (_gs.get("filter_medium_types") as Array).duplicate(true)
+	_previous_nav_params = (_gs.get("nav_params") as Dictionary).duplicate(true)
 
 	_server = HTTP_SERVER.new()
 	get_root().add_child(_server)
@@ -44,6 +66,7 @@ func _run() -> void:
 	await _test_proxy_response_branches()
 	await _test_health_response_branches()
 	await _test_auth_connection_branches()
+	await _test_connection_race()
 	_test_peer_merging()
 
 	if is_instance_valid(_screen):
@@ -53,8 +76,22 @@ func _run() -> void:
 	_server.queue_free()
 	_gs.base_url = _previous_base_url
 	_gs.library_name = _previous_library_name
+	_gs.settings = _previous_gs_settings
+	_gs.filter_medium_types = _previous_filter_medium_types
+	_gs.nav_params = _previous_nav_params
 	_settings.last_server_url = _previous_last_url
 	_settings.last_library_name = _previous_last_name
+	_settings.auth_username = _previous_auth_username
+	_settings.auth_password = _previous_auth_password
+	_settings.auth_scheme = _previous_auth_scheme
+	_settings.auth_server_origin = _previous_auth_origin
+	_settings.call("set_session_auth", {
+		"username": _previous_session_username,
+		"password": _previous_session_password,
+		"scheme": _previous_session_scheme,
+		"server_origin": _previous_session_origin,
+	})
+	_settings.call("save_settings")
 	_test.finish(self)
 
 
@@ -65,6 +102,10 @@ func _clear_fixture() -> void:
 
 func _enqueue_json(path: String, status_code: int, value) -> void:
 	_server.call("enqueue", path, status_code, JSON.stringify(value))
+
+
+func _enqueue_json_delayed(path: String, status_code: int, value, delay_frames: int) -> void:
+	_server.call("enqueue_delayed", path, status_code, JSON.stringify(value), delay_frames)
 
 
 func _test_proxy_response_branches() -> void:
@@ -138,10 +179,6 @@ func _test_auth_connection_branches() -> void:
 		"catalog_medium_types": "Livre,BD",
 		"catalog_levels": "CP,CE1",
 	})
-	_enqueue_json("/api/v1/admin/settings", 200, {
-		"catalog_medium_types": "Livre,BD",
-		"catalog_levels": "CP,CE1",
-	})
 	await _screen.call(
 		"_select_server",
 		"http://127.0.0.1:%d/api/v1" % int(_server.get("port")),
@@ -151,6 +188,27 @@ func _test_auth_connection_branches() -> void:
 	_test.equal(_gs.base_url, "http://127.0.0.1:%d/api/v1" % int(_server.get("port")), "Discovery keeps the connected API URL")
 	_test.equal(_gs.library_name, "Connected Library", "Discovery stores the connected library name")
 	_test.equal(_settings.get("last_library_name"), "Connected Library", "Discovery persists the connected library name")
+
+
+func _test_connection_race() -> void:
+	var port := int(_server.get("port"))
+	var candidate := "http://127.0.0.1:%d/api/v1" % port
+	_gs.base_url = ""
+	_gs.library_name = ""
+	_settings.set("auth_username", "")
+	_settings.set("auth_password", "")
+	_settings.set("auth_scheme", "basic")
+	_settings.call("clear_session_auth")
+	_clear_fixture()
+	_enqueue_json_delayed("/api/v1/admin/settings", 200, {"catalog_medium_types": "Livre"}, 40)
+	_enqueue_json("/api/v1/admin/settings", 200, {"catalog_medium_types": "Livre"})
+	var first = _screen.call("_select_server", candidate, "Library A")
+	await _test.wait_frames(self, 2)
+	var second = _screen.call("_select_server", candidate, "Library B")
+	await second
+	_test.equal(_gs.library_name, "Library B", "The newest server selection wins")
+	await _test.wait_frames(self, 60)
+	_test.equal(_gs.library_name, "Library B", "A stale server response cannot overwrite the newest selection")
 
 
 func _test_peer_merging() -> void:

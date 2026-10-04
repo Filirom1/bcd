@@ -51,13 +51,13 @@ func _test_global_state() -> void:
 	state.current_borrower = {"id": 17}
 	state.current_loans = [{"item_id": "A-1"}]
 	state.current_holds = [{"id": 3}]
-	state.reserved_biblio_ids = {4: true}
+	state.set_nav_param("book_data", {"title": "Temporary"})
 	state.reset_borrower()
 
 	_assert(state.current_borrower.is_empty(), "GS.reset_borrower clears the borrower")
 	_assert(state.current_loans.is_empty(), "GS.reset_borrower clears current loans")
 	_assert(state.current_holds.is_empty(), "GS.reset_borrower clears current holds")
-	_assert(state.reserved_biblio_ids.is_empty(), "GS.reset_borrower clears reservations")
+	_assert(state.nav_params.is_empty(), "GS.reset_borrower clears navigation parameters")
 
 
 func _test_api_helpers() -> void:

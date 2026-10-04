@@ -5,7 +5,7 @@ signal theme_changed
 
 const THEMES := {
 	"forest": {
-		"label_fr": "Foret enchantee",
+		"label_fr": "Forêt enchantée",
 		"label_en": "Enchanted Forest",
 		"tres": "res://themes/forest.tres",
 		"background": "res://assets/images/backgrounds/forest.png"
@@ -29,7 +29,7 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/minecraft.png"
 	},
 	"pokemon": {
-		"label_fr": "Pokemon",
+		"label_fr": "Pokémon",
 		"label_en": "Pokemon",
 		"tres": "res://themes/pokemon.tres",
 		"background": "res://assets/images/backgrounds/pokemon.png"
@@ -59,7 +59,7 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/reine-des-neiges.png"
 	},
 	"asterix": {
-		"label_fr": "Asterix",
+		"label_fr": "Astérix",
 		"label_en": "Asterix",
 		"tres": "res://themes/asterix.tres",
 		"background": "res://assets/images/backgrounds/asterix.png"
@@ -83,7 +83,7 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/coco.png"
 	},
 	"mortelle-adele": {
-		"label_fr": "Mortelle Adele",
+		"label_fr": "Mortelle Adèle",
 		"label_en": "Mortelle Adele",
 		"tres": "res://themes/mortelle-adele.tres",
 		"background": "res://assets/images/backgrounds/mortelle-adele.png"
@@ -119,7 +119,7 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/pirate.png"
 	},
 	"belle-et-la-bete": {
-		"label_fr": "Belle et la Bete",
+		"label_fr": "Belle et la Bête",
 		"label_en": "Beauty and the Beast",
 		"tres": "res://themes/belle-et-la-bete.tres",
 		"background": "res://assets/images/backgrounds/belle-et-la-bete.png"
@@ -131,7 +131,7 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/chaperon-rouge.png"
 	},
 	"sorciere": {
-		"label_fr": "Sorciere",
+		"label_fr": "Sorcière",
 		"label_en": "Witch",
 		"tres": "res://themes/sorciere.tres",
 		"background": "res://assets/images/backgrounds/sorciere.png"
@@ -143,7 +143,7 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/anatole.png"
 	},
 	"bd": {
-		"label_fr": "Bande Dessinee",
+		"label_fr": "Bande dessinée",
 		"label_en": "Comics",
 		"tres": "res://themes/bd.tres",
 		"background": "res://assets/images/backgrounds/bd.png"
@@ -185,7 +185,7 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/les-sisters.png"
 	},
 	"mortelle-adele2": {
-		"label_fr": "Mortelle Adele 2",
+		"label_fr": "Mortelle Adèle 2",
 		"label_en": "Mortelle Adele 2",
 		"tres": "res://themes/mortelle-adele2.tres",
 		"background": "res://assets/images/backgrounds/mortelle-adele2.png"
@@ -215,13 +215,13 @@ const THEMES := {
 		"background": "res://assets/images/backgrounds/popup.png"
 	},
 	"bcd": {
-		"label_fr": "Bibliotheque",
+		"label_fr": "Bibliothèque",
 		"label_en": "Library",
 		"tres": "res://themes/bcd.tres",
 		"background": "res://assets/images/backgrounds/bcd.png"
 	},
 	"bcd2": {
-		"label_fr": "Bibliotheque 2",
+		"label_fr": "Bibliothèque 2",
 		"label_en": "Library 2",
 		"tres": "res://themes/bcd2.tres",
 		"background": "res://assets/images/backgrounds/bcd2.png"
@@ -328,12 +328,17 @@ static func animate_success_flash(node: Control) -> void:
 	tween.tween_property(node, "modulate", original_color, 0.3)
 
 static func animate_error_shake(node: Control) -> void:
-	var original_pos := node.position
+	# Controls inside containers cannot safely animate their position: the
+	# container recalculates it every frame. Use a small scale pulse instead.
+	var original_scale := node.scale
+	var manager := _manager_node()
+	var error_color: Color = manager.get("ERROR") if manager != null else Color("#F24D66")
+	var original_modulate := node.modulate
 	var tween := node.create_tween()
-	for i in range(3):
-		tween.tween_property(node, "position:x", original_pos.x + 10, 0.05)
-		tween.tween_property(node, "position:x", original_pos.x - 10, 0.05)
-	tween.tween_property(node, "position", original_pos, 0.05)
+	tween.tween_property(node, "scale", original_scale * 1.04, 0.06)
+	tween.parallel().tween_property(node, "modulate", error_color, 0.06)
+	tween.tween_property(node, "scale", original_scale, 0.12)
+	tween.tween_property(node, "modulate", original_modulate, 0.12)
 
 # ============================================================================
 # Keyboard navigation focus style helper (matching hover look)

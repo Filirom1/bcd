@@ -5,9 +5,7 @@ extends VBoxContainer
 signal filters_changed(filters: Dictionary)
 
 @onready var _type_label: Label = %TypeLabel
-@onready var _genre_label: Label = %GenreLabel
 @onready var _type_option: OptionButton = %TypeOption
-@onready var _genre_option: OptionButton = %GenreOption
 @onready var _available_checkbox: CheckBox = %AvailableCheckbox
 
 func _ready() -> void:
@@ -17,10 +15,6 @@ func _ready() -> void:
 func setup(types: Array) -> void:
 	_type_label.text = I18n.t("search.filter_type")
 	_available_checkbox.text = I18n.t("search.available_only")
-
-	# Hide genre options as genre classification is removed
-	_genre_label.hide()
-	_genre_option.hide()
 
 	_type_option.clear()
 	_type_option.add_item(I18n.t("common.all"))

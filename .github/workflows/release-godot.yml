@@ -153,6 +153,13 @@ jobs:
           path: bcd_kids/builds/windows/BCD-Kids-v${{ steps.get_version.outputs.VERSION }}-Windows.zip
           retention-days: 90
 
+      - name: Upload Windows binary for release verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-export-binary
+          path: bcd_kids/builds/windows/BCD-Kids.exe
+          retention-days: 1
+
   export-linux:
     name: Linux Export
     needs: compile-templates
@@ -204,10 +211,57 @@ jobs:
           path: bcd_kids/builds/linux/BCD-Kids-v${{ steps.get_version.outputs.VERSION }}-Linux.tar.gz
           retention-days: 90
 
+      - name: Upload Linux binary for release verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-export-binary
+          path: bcd_kids/builds/linux/BCD-Kids.x86_64
+          retention-days: 1
+
+  verify-windows-export:
+    name: Verify Windows export before release
+    needs: export-windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-export-binary
+          path: artifacts/windows/
+
+      - name: Verify the Windows binary and readiness test
+        shell: pwsh
+        run: |
+          $binary = Get-ChildItem -Path artifacts/windows -Filter BCD-Kids.exe -Recurse | Select-Object -First 1
+          if ($null -eq $binary) { throw "BCD-Kids.exe was not found in the export artifact" }
+          python scripts/verify_godot_exports.py `
+            --verify-existing $binary.FullName --platform windows
+
+  verify-linux-export:
+    name: Verify Linux export before release
+    needs: export-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-export-binary
+          path: artifacts/linux/
+
+      - name: Verify the Linux binary and readiness test
+        shell: bash
+        run: |
+          BINARY=$(find artifacts/linux -type f -name 'BCD-Kids.x86_64' -print -quit)
+          test -n "$BINARY"
+          python scripts/verify_godot_exports.py \
+            --verify-existing "$BINARY" --platform linux
+
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [export-windows, export-linux]
+    needs: [export-windows, export-linux, verify-windows-export, verify-linux-export]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

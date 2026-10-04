@@ -7,6 +7,8 @@ const GS_SCRIPT = preload("res://autoload/GS.gd")
 const I18N_SCRIPT = preload("res://autoload/I18n.gd")
 const SETTINGS_SCRIPT = preload("res://autoload/Settings.gd")
 const THEME_MANAGER_SCRIPT = preload("res://autoload/ThemeManager.gd")
+const CIRCULATION = preload("res://src/utils/CirculationHelper.gd")
+const DATA = preload("res://src/utils/DataHelper.gd")
 
 var _test := SUPPORT.new()
 
@@ -23,6 +25,7 @@ func _run() -> void:
 	_test_i18n()
 	_test_api_helpers()
 	_test_api_helpers_on_autoload()
+	_test_circulation_helper()
 	await _test_badges()
 	_test_theme_manager()
 	_test_settings()
@@ -43,13 +46,36 @@ func _test_global_state() -> void:
 	state.current_borrower = {"id": 17}
 	state.current_loans = [{"item_id": "A-1"}]
 	state.current_holds = [{"id": 3}]
-	state.reserved_biblio_ids = {4: true}
+	state.set_nav_param("book_data", {"title": "Temporary"})
 	state.reset_borrower()
 
 	_test.expect(state.current_borrower.is_empty(), "GS.reset_borrower clears the borrower")
 	_test.expect(state.current_loans.is_empty(), "GS.reset_borrower clears current loans")
 	_test.expect(state.current_holds.is_empty(), "GS.reset_borrower clears current holds")
-	_test.expect(state.reserved_biblio_ids.is_empty(), "GS.reset_borrower clears reservations")
+	_test.expect(state.nav_params.is_empty(), "GS.reset_borrower clears navigation parameters")
+
+
+func _test_circulation_helper() -> void:
+	_test.equal(
+		CIRCULATION.display_title({"display_title": "Display title", "title": "Fallback"}),
+		"Display title",
+		"Circulation helper prefers the display title"
+	)
+	_test.equal(
+		CIRCULATION.display_title({"title": "Fallback"}),
+		"Fallback",
+		"Circulation helper falls back to the title"
+	)
+	_test.equal(
+		CIRCULATION.hold_ready_payload({"title": "Book", "hold_ready": {"borrower_name": "Reader", "class_name": "CE1"}}),
+		{"title": "Book", "borrower_name": "Reader", "class_name": "CE1", "borrower_id": ""},
+		"Circulation helper normalizes ready-hold data"
+	)
+	_test.equal(CIRCULATION.hold_ready_payload({"title": "Book"}), {}, "Circulation helper ignores returns without a ready hold")
+	_test.equal(DATA.text({"publisher": null}, "publisher", "Unknown"), "Unknown", "Data helper handles a null text field")
+	_test.equal(DATA.display_title({"display_title": null, "title": "Fallback"}), "Fallback", "Data helper falls back from a null display title")
+	_test.equal(DATA.integer({"count": null}, "count", 3), 3, "Data helper handles a null integer field")
+	_test.equal(DATA.boolean({"flag": null}, "flag", true), true, "Data helper handles a null boolean field")
 
 
 func _test_i18n() -> void:
@@ -223,24 +249,39 @@ func _test_theme_manager() -> void:
 
 func _test_settings() -> void:
 	var settings: Node = get_root().get_node("Settings")
+	var previous_state := {
+		"theme": settings.get("theme"),
+		"graphics_quality": settings.get("graphics_quality"),
+		"resolution": settings.get("resolution"),
+		"last_server_url": settings.get("last_server_url"),
+		"last_library_name": settings.get("last_library_name"),
+		"auth_username": settings.get("auth_username"),
+		"auth_password": settings.get("auth_password"),
+		"auth_scheme": settings.get("auth_scheme"),
+		"auth_server_origin": settings.get("auth_server_origin"),
+		"session_auth_username": settings.get("session_auth_username"),
+		"session_auth_password": settings.get("session_auth_password"),
+		"session_auth_scheme": settings.get("session_auth_scheme"),
+		"session_auth_server_origin": settings.get("session_auth_server_origin"),
+	}
 	settings.call("load_settings")
 	settings.call("set_graphics_quality", "low")
-	_test.equal(str(settings.call("get_quality_label")), "Basse (vieux PC)", "Settings labels low graphics quality")
+	_test.equal(str(settings.call("get_quality_label")), "Basse qualité (vieux PC)", "Settings labels low graphics quality")
 	settings.call("set_graphics_quality", "high")
-	_test.equal(str(settings.call("get_quality_label")), "Haute (PC récent)", "Settings labels high graphics quality")
+	_test.equal(str(settings.call("get_quality_label")), "Haute qualité (PC récent)", "Settings labels high graphics quality")
 	settings.call("set_graphics_quality", "unsupported")
 	_test.equal(str(settings.get("graphics_quality")), "low", "Settings normalizes unsupported graphics quality")
-	_test.equal(str(settings.call("get_quality_label")), "Basse (vieux PC)", "Settings falls back to low quality")
+	_test.equal(str(settings.call("get_quality_label")), "Basse qualité (vieux PC)", "Settings falls back to low quality")
 
 	settings.call("set_resolution", "720p")
 	_test.equal(str(settings.call("get_resolution_label")), "1280×720 (petits écrans)", "Settings labels 720p")
 	settings.call("set_resolution", "1080p")
 	_test.equal(str(settings.call("get_resolution_label")), "1920×1080 (grands écrans)", "Settings labels 1080p")
 	settings.call("set_resolution", "maximized")
-	_test.equal(str(settings.call("get_resolution_label")), "Fenêtre maximisée", "Settings labels maximized mode")
+	_test.equal(str(settings.call("get_resolution_label")), "Maximisée (recommandé)", "Settings labels maximized mode")
 	settings.call("set_resolution", "unsupported")
 	_test.equal(str(settings.get("resolution")), "maximized", "Settings normalizes unsupported resolution")
-	_test.equal(str(settings.call("get_resolution_label")), "Fenêtre maximisée", "Settings falls back to maximized mode")
+	_test.equal(str(settings.call("get_resolution_label")), "Maximisée (recommandé)", "Settings falls back to maximized mode")
 
 	settings.call("save_server", "http://library.example/api/v1", "School Library")
 	_test.equal(str(settings.get("last_server_url")), "http://library.example/api/v1", "Settings stores the last server URL")
@@ -248,6 +289,27 @@ func _test_settings() -> void:
 	settings.call("save_auth", "alice", "secret", "digest")
 	_test.equal(str(settings.get("auth_username")), "alice", "Settings stores the authentication username")
 	_test.equal(str(settings.get("auth_scheme")), "digest", "Settings stores the authentication scheme")
+	_test.equal(
+		str(settings.get("auth_server_origin")),
+		"http://library.example",
+		"Settings stores the normalized authentication origin"
+	)
+	settings.set("auth_server_origin", "")
+	_test.expect(settings.call("migrate_legacy_auth"), "Settings migrates legacy credentials using the last server")
+	_test.equal(
+		str(settings.get("auth_server_origin")),
+		"http://library.example",
+		"Settings associates migrated credentials with the last server"
+	)
+	settings.set("auth_server_origin", "")
+	settings.call("save_settings")
+	settings.call("load_settings")
+	_test.equal(
+		str(settings.get("auth_server_origin")),
+		"http://library.example",
+		"Settings migrates legacy credentials while loading the settings file"
+	)
+	_test.expect(not settings.call("migrate_legacy_auth"), "Settings does not migrate already scoped credentials twice")
 	settings.call("clear_auth")
 	_test.equal(str(settings.get("auth_username")), "", "Settings clears saved authentication")
 	_test.equal(str(settings.get("auth_password")), "", "Settings clears the saved password")
@@ -259,6 +321,16 @@ func _test_settings() -> void:
 	_test.equal(str(reloaded.get("last_server_url")), str(settings.get("last_server_url")), "Settings round-trips the server URL")
 	_test.equal(str(reloaded.get("last_library_name")), str(settings.get("last_library_name")), "Settings round-trips the library name")
 	_test.equal(str(reloaded.get("theme")), "forest", "Settings round-trips the theme")
+
+	for key in previous_state:
+		settings.set(key, previous_state[key])
+	settings.call("set_session_auth", {
+		"username": previous_state["session_auth_username"],
+		"password": previous_state["session_auth_password"],
+		"scheme": previous_state["session_auth_scheme"],
+		"server_origin": previous_state["session_auth_server_origin"],
+	})
+	settings.call("save_settings")
 
 
 func _test_api_helpers_on_autoload() -> void:
@@ -277,6 +349,12 @@ func _test_api_helpers_on_autoload() -> void:
 		"API transport delegates digest parsing"
 	)
 	_test.equal(api.call("_md5", "hello"), API_HELPERS.md5("hello"), "API transport delegates MD5 hashing")
+	var success_result = api.call("to_result", {"items": []})
+	_test.expect(success_result.ok, "API converts a successful legacy response to a typed result")
+	_test.equal(success_result.unwrap(), {"items": []}, "Typed API result exposes successful data")
+	var error_result = api.call("to_result", {"error": true, "detail": {"code": "network_error", "details": {}}})
+	_test.expect(not error_result.ok, "API converts a structured error to a typed result")
+	_test.equal(error_result.error_code, "network_error", "Typed API result preserves the error code")
 	_test.equal(
 		api.call("_find_header", PackedStringArray(["Content-Type: text/plain", "WWW-Authenticate: Digest realm=BCD"]), "www-authenticate"),
 		"Digest realm=BCD",
@@ -316,8 +394,8 @@ func _test_api_wrappers() -> void:
 	var previous_base_url: String = str(gs.get("base_url"))
 	gs.set("base_url", "")
 	await api.call("load_settings")
-	_test.equal(await api.call("get_classes"), [], "API returns an empty class list on a network error")
-	_test.equal(await api.call("get_holds", 7), [], "API returns an empty hold list on a network error")
+	_test.equal(await api.call("get_classes"), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API preserves a class-list network error")
+	_test.equal(await api.call("get_holds", 7), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API preserves a hold-list network error")
 	_test.equal(await api.call("get_students", 7, "Zoé"), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API preserves a borrower search network error")
 	_test.equal(await api.call("get_borrower", "card-1"), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API preserves a borrower lookup network error")
 	_test.equal(await api.call("get_current_loans", "student-1"), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API preserves a loan lookup network error")
@@ -329,5 +407,5 @@ func _test_api_wrappers() -> void:
 	_test.equal(await api.call("search_catalog", "Harry Potter", {}), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API handles catalog search network errors")
 	_test.equal(await api.call("search_catalog", "", {"medium_type": "BD", "target_audience": "CP", "available_only": true}), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API handles all catalog filters")
 	_test.equal(await api.call("create_hold", 7, 4), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API handles hold creation network errors")
-	await api.call("cancel_hold", 9)
+	_test.equal(await api.call("cancel_hold", 9), {"error": true, "detail": {"code": "network_error", "details": {}}}, "API returns cancellation errors")
 	gs.set("base_url", previous_base_url)

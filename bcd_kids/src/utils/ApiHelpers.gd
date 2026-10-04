@@ -27,8 +27,16 @@ static func parse_digest_param(header: String, param: String) -> String:
 
 
 static func md5(text: String) -> String:
+	return _hash(text, HashingContext.HASH_MD5)
+
+
+static func sha256(text: String) -> String:
+	return _hash(text, HashingContext.HASH_SHA256)
+
+
+static func _hash(text: String, algorithm) -> String:
 	var context := HashingContext.new()
-	context.start(HashingContext.HASH_MD5)
+	context.start(algorithm)
 	context.update(text.to_utf8_buffer())
 	return context.finish().hex_encode()
 

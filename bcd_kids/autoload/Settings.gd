@@ -9,7 +9,7 @@ var _config_cache: ConfigFile = null
 # Active theme name (must be a key in ThemeManager.THEMES)
 var theme := "forest"
 
-# Graphics quality: "low" (vieux PC) or "high" (PC puissants)
+# Graphics quality: "low" for older PCs or "high" for newer PCs.
 var graphics_quality := "low"
 
 # Resolution presets: "720p", "1080p", "maximized"
@@ -21,6 +21,14 @@ var last_library_name := ""
 var auth_username := ""
 var auth_password := ""
 var auth_scheme := "basic"  # "basic" or "digest"
+var auth_server_origin := ""
+
+# Session credentials are never written to disk. They are scoped to the
+# confirmed server origin and are used for the current application session.
+var session_auth_username := ""
+var session_auth_password := ""
+var session_auth_scheme := "basic"
+var session_auth_server_origin := ""
 
 # Available resolution presets
 const RESOLUTIONS = {
@@ -57,6 +65,8 @@ func load_settings() -> void:
 		auth_username = config.get_value("auth", "username", "")
 		auth_password = config.get_value("auth", "password", "")
 		auth_scheme = config.get_value("auth", "scheme", "basic")
+		auth_server_origin = config.get_value("auth", "server_origin", "")
+		migrate_legacy_auth()
 		print("[Settings] Loaded settings: quality=%s, resolution=%s, server=%s" % [graphics_quality, resolution, last_library_name])
 	else:
 		print("[Settings] No settings file found, using defaults")
@@ -72,6 +82,7 @@ func save_settings() -> void:
 	config.set_value("auth", "username", auth_username)
 	config.set_value("auth", "password", auth_password)
 	config.set_value("auth", "scheme", auth_scheme)
+	config.set_value("auth", "server_origin", auth_server_origin)
 
 	var err = config.save(SETTINGS_FILE)
 	if err == OK:
@@ -87,14 +98,14 @@ func set_theme(name: String) -> void:
 		theme_manager.call("set_theme", name)
 
 func set_graphics_quality(quality: String) -> void:
-	graphics_quality = quality
-	save_settings()
+	graphics_quality = quality if quality in ["low", "high"] else "low"
 	apply_graphics_quality()
+	save_settings()
 
 func set_resolution(res: String) -> void:
-	resolution = res
-	save_settings()
+	resolution = res if RESOLUTIONS.has(res) else "maximized"
 	apply_resolution()
+	save_settings()
 
 func apply_graphics_quality() -> void:
 	var viewport = get_tree().root
@@ -104,12 +115,12 @@ func apply_graphics_quality() -> void:
 
 	match graphics_quality:
 		"low":
-			# Vieux PC: texture pixelisée, pas d'antialiasing
+			# Older PCs: nearest-neighbour textures and no antialiasing.
 			viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 			viewport.msaa_2d = Viewport.MSAA_DISABLED
 			print("[Settings] Applied LOW quality (nearest neighbor, no AA)")
 		"high":
-			# PC puissant: texture lissée, antialiasing
+			# Newer PCs: filtered textures and antialiasing.
 			viewport.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 			viewport.msaa_2d = Viewport.MSAA_2X
 			print("[Settings] Applied HIGH quality (linear+mipmaps, MSAA 2x)")
@@ -145,32 +156,116 @@ func apply_resolution() -> void:
 
 func get_quality_label() -> String:
 	match graphics_quality:
-		"low": return "Basse (vieux PC)"
-		"high": return "Haute (PC récent)"
-		_: return "Inconnu"
+		"low": return _t("settings.quality_low").replace("\n", " ")
+		"high": return _t("settings.quality_high").replace("\n", " ")
+		_: return _t("common.error_unknown")
 
 func get_resolution_label() -> String:
 	match resolution:
-		"720p": return "1280×720 (petits écrans)"
-		"1080p": return "1920×1080 (grands écrans)"
-		"maximized": return "Fenêtre maximisée"
-		_: return "Inconnu"
+		"720p": return _t("settings.resolution_720p").replace("\n", " ")
+		"1080p": return _t("settings.resolution_1080p").replace("\n", " ")
+		"maximized": return _t("settings.resolution_maximized").replace("\n", " ")
+		_: return _t("common.error_unknown")
+
+func _t(key: String) -> String:
+	var main_loop := Engine.get_main_loop()
+	if main_loop is SceneTree:
+		var i18n := (main_loop as SceneTree).get_root().get_node_or_null("I18n")
+		if i18n != null:
+			return i18n.call("t", key)
+	return key
 
 func save_server(url: String, library_name: String) -> void:
 	last_server_url = url
 	last_library_name = library_name
 	save_settings()
 
-func save_auth(username: String, password: String, scheme: String = "basic") -> void:
+func save_auth(username: String, password: String, scheme: String = "basic", server_url: String = "") -> void:
 	auth_username = username
 	auth_password = password
 	auth_scheme = scheme
+	auth_server_origin = server_origin(server_url if not server_url.is_empty() else last_server_url)
+	set_session_auth({
+		"username": username,
+		"password": password,
+		"scheme": scheme,
+		"server_origin": auth_server_origin,
+	})
 	save_settings()
+
+func migrate_legacy_auth() -> bool:
+	# Older settings files did not record the server origin. The last selected
+	# server is the safest available association and preserves the old behavior
+	# for installations that normally use one library server.
+	if auth_username.is_empty() or auth_password.is_empty() or not auth_server_origin.is_empty():
+		return false
+	var inferred_origin := server_origin(last_server_url)
+	if inferred_origin.is_empty() or not (inferred_origin.begins_with("http://") or inferred_origin.begins_with("https://")):
+		return false
+	auth_server_origin = inferred_origin
+	save_settings()
+	return true
+
+
+func get_saved_auth_for_server(server_url: String) -> Dictionary:
+	var origin := server_origin(server_url)
+	if origin.is_empty() or origin != auth_server_origin:
+		return {}
+	if auth_username.is_empty() or auth_password.is_empty():
+		return {}
+	return {
+		"username": auth_username,
+		"password": auth_password,
+		"scheme": auth_scheme,
+		"server_origin": origin,
+	}
+
+func set_session_auth(credentials: Dictionary) -> void:
+	session_auth_username = str(credentials.get("username", ""))
+	session_auth_password = str(credentials.get("password", ""))
+	session_auth_scheme = str(credentials.get("scheme", "basic"))
+	session_auth_server_origin = str(credentials.get("server_origin", ""))
+
+func get_session_auth_for_server(server_url: String) -> Dictionary:
+	var origin := server_origin(server_url)
+	if origin.is_empty() or origin != session_auth_server_origin:
+		return {}
+	if session_auth_username.is_empty() or session_auth_password.is_empty():
+		return {}
+	return {
+		"username": session_auth_username,
+		"password": session_auth_password,
+		"scheme": session_auth_scheme,
+		"server_origin": origin,
+	}
+
+func clear_session_auth() -> void:
+	session_auth_username = ""
+	session_auth_password = ""
+	session_auth_scheme = "basic"
+	session_auth_server_origin = ""
 
 func clear_auth() -> void:
 	auth_username = ""
 	auth_password = ""
+	auth_scheme = "basic"
+	auth_server_origin = ""
+	clear_session_auth()
 	save_settings()
+
+func server_origin(url: String) -> String:
+	var value := url.strip_edges().rstrip("/")
+	if value.is_empty():
+		return ""
+	if "/api/v1" in value:
+		value = value.split("/api/v1")[0].rstrip("/")
+	var scheme_separator := value.find("://")
+	if scheme_separator == -1:
+		return value.to_lower()
+	var authority_start := scheme_separator + 3
+	var slash := value.find("/", authority_start)
+	var authority := value.substr(authority_start) if slash == -1 else value.substr(authority_start, slash - authority_start)
+	return value.substr(0, authority_start).to_lower() + authority.to_lower()
 
 
 func _theme_manager() -> Node:

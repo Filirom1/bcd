@@ -4,6 +4,12 @@ const SUPPORT = preload("res://tests/test_support.gd")
 const THEME_MANAGER_SCRIPT = preload("res://autoload/ThemeManager.gd")
 
 var _test := SUPPORT.new()
+var _gs: Node
+var _settings: Node
+var _theme_manager: Node
+var _previous_gs_state: Dictionary = {}
+var _previous_settings_state: Dictionary = {}
+var _previous_theme := ""
 
 
 func _init() -> void:
@@ -12,13 +18,47 @@ func _init() -> void:
 
 func _run() -> void:
 	await _test.wait_frames(self, 3)
+	_save_global_state()
 	await _test_navigation_manager()
 	await _test_keyboard_and_empty_inputs()
 	await _test_cover_fallbacks()
 	await _test_search_actions()
 	await _test_borrower_actions()
-	_test_theme_animations()
+	await _test_theme_animations()
+	_restore_global_state()
 	_test.finish(self)
+
+
+func _save_global_state() -> void:
+	_gs = get_root().get_node("GS")
+	_settings = get_root().get_node("Settings")
+	_theme_manager = get_root().get_node("ThemeManager")
+	_previous_gs_state = {
+		"base_url": _gs.get("base_url"),
+		"library_name": _gs.get("library_name"),
+		"current_class": (_gs.get("current_class") as Dictionary).duplicate(true),
+		"current_borrower": (_gs.get("current_borrower") as Dictionary).duplicate(true),
+		"current_loans": (_gs.get("current_loans") as Array).duplicate(true),
+		"current_holds": (_gs.get("current_holds") as Array).duplicate(true),
+		"settings": (_gs.get("settings") as Dictionary).duplicate(true),
+		"filter_medium_types": (_gs.get("filter_medium_types") as Array).duplicate(true),
+		"nav_params": (_gs.get("nav_params") as Dictionary).duplicate(true),
+	}
+	_previous_settings_state = {
+		"theme": _settings.get("theme"),
+		"graphics_quality": _settings.get("graphics_quality"),
+		"resolution": _settings.get("resolution"),
+	}
+	_previous_theme = str(_theme_manager.get("current_theme_name"))
+
+
+func _restore_global_state() -> void:
+	for key in _previous_gs_state:
+		_gs.set(key, _previous_gs_state[key])
+	for key in _previous_settings_state:
+		_settings.set(key, _previous_settings_state[key])
+	_theme_manager.call("set_theme", _previous_theme)
+	_settings.call("save_settings")
 
 
 func _test_navigation_manager() -> void:
@@ -36,8 +76,25 @@ func _test_navigation_manager() -> void:
 	manager.call("push", "settings")
 	manager.call("pop")
 	manager.call("replace", "class_select")
-	_test.expect(true, "Manager supports push, pop, and replace navigation")
+	_test.equal(_stack_names(manager), ["class_select"], "Manager replaces without leaving an orphaned screen")
+
+	manager.call("push", "main_menu")
+	manager.call("replace", "class_select")
+	_test.equal(_stack_names(manager), ["class_select"], "Manager reuses an existing target instead of duplicating it")
+
+	manager.call("push", "main_menu")
+	manager.call("push", "checkout")
+	manager.call("pop_to", "main_menu")
+	_test.equal(_stack_names(manager), ["class_select", "main_menu"], "Manager pops to an existing breadcrumb target")
+	manager.call("reset_to", "class_select")
+	_test.equal(_stack_names(manager), ["class_select"], "Manager reset_to clears the entire navigation stack")
 	await _test.wait_frames(self, 2)
+
+func _stack_names(manager: Node) -> Array:
+	var names: Array = []
+	for screen in manager.get("_stack"):
+		names.append(screen.get_meta("screen_name", ""))
+	return names
 
 
 func _test_keyboard_and_empty_inputs() -> void:
@@ -45,10 +102,8 @@ func _test_keyboard_and_empty_inputs() -> void:
 	class_select.call("_handle_scan", "   ")
 	class_select.call("_quick_return", "")
 	class_select.call("_login_by_card", "")
-	class_select.call("_select_class", {"id": 2, "name": "CP"})
-	class_select.call("_refresh_ui")
 	class_select.call("_input", _escape_event())
-	_test.expect(true, "Class selection handles empty scans and keyboard input")
+	_test.equal(class_select.get_node("MainMargin/Root/ScanRow/ScanInput").text, "", "Class selection clears empty scans")
 	await _unmount(class_select)
 
 	var checkout: Control = await _mount("res://src/screens/SCheckout.tscn")
@@ -75,15 +130,9 @@ func _test_keyboard_and_empty_inputs() -> void:
 
 
 func _test_cover_fallbacks() -> void:
-	var cover: Control = await _mount("res://src/screens/SBookCover.tscn")
-	cover.call("_load_cover", "missing.jpg")
-	cover.call("_on_cover_loaded", HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray())
-	_test.expect(cover.get_node("MainMargin/Root/Center/Content/NoCoverLabel").visible, "Book cover screen falls back when loading fails")
-	await _unmount(cover)
-
 	var detail: Control = await _mount("res://src/screens/SBookDetail.tscn")
 	detail.call("_load_cover", "missing.jpg")
-	detail.call("_on_cover_loaded", HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray())
+	detail.call("_on_cover_failed")
 	detail.call("_unhandled_key_input", _escape_event())
 	_test.expect(detail.get_node("MainMargin/Root/Body/CoverCol/NoCoverLabel").visible, "Book detail screen falls back when loading fails")
 	await _unmount(detail)
@@ -96,20 +145,25 @@ func _test_search_actions() -> void:
 	await search.call("_on_reserve_clicked", {"id": 9, "title": "Unavailable"})
 	await search.call("_on_cancel_clicked", {"id": 9, "title": "Unavailable"}, 1)
 	search.call("_on_detail_clicked", {"id": 9, "title": "Unavailable"})
+	_test.equal(
+		_gs.get("nav_params").get("book_data", {}).get("title", ""),
+		"Unavailable",
+		"Search stores book data before opening details"
+	)
 	search.call("_input", _escape_event())
 	search.call("_unhandled_key_input", _escape_event())
-	_test.expect(true, "Search exercises network error, reserve, cancel, detail, and keyboard paths")
+	var i18n: Node = get_root().get_node("I18n")
+	_test.equal(search.get_node("MainMargin/Root/CountLabel").text, i18n.call("t", "common.error_network"), "Search reports a network error")
 	await _unmount(search)
 
 
 func _test_borrower_actions() -> void:
 	var gs: Node = get_root().get_node("GS")
 	var main_menu: Control = await _mount("res://src/screens/SMainMenu.tscn")
-	main_menu.call("_show_book_cover", {"bibliographic_record_id": 4, "title": "Book"})
-	await main_menu.call("_return_item", "missing")
+	main_menu.call("_show_book_detail", {"bibliographic_record_id": 4, "title": "Book"})
+	_test.equal(gs.get("nav_params").get("book_data", {}).get("title", ""), "Book", "Main menu stores navigation book data before opening details")
 	await main_menu.call("_renew_item", "missing")
 	main_menu.call("_unhandled_key_input", _escape_event())
-	_test.expect(true, "Main menu exercises return, renew, detail, and keyboard paths")
 	await _unmount(main_menu)
 
 	var holds: Control = await _mount("res://src/screens/SMyHolds.tscn")
@@ -117,39 +171,47 @@ func _test_borrower_actions() -> void:
 	await holds.call("_cancel_hold", 1)
 	holds.call("_input", _escape_event())
 	holds.call("_unhandled_key_input", _escape_event())
-	_test.expect(true, "My holds exercises cancellation and keyboard paths")
+	_test.equal(gs.get("current_holds").size(), 1, "My holds preserves its data when cancellation fails")
 	await _unmount(holds)
-
-	var confirm: Control = await _mount("res://src/screens/SHoldConfirm.tscn")
-	confirm.call("_go_back")
-	confirm.call("_unhandled_key_input", _escape_event())
-	await _unmount(confirm)
 
 	var ready: Control = await _mount("res://src/screens/SHoldReady.tscn")
 	ready.call("_go_back")
 	ready.call("_unhandled_key_input", _escape_event())
 	await _unmount(ready)
 
-	var shelve: Control = await _mount("res://src/screens/SReturnShelve.tscn")
-	shelve.call("_go_back")
-	shelve.call("_unhandled_key_input", _escape_event())
-	await _unmount(shelve)
-
 	var settings: Control = await _mount("res://src/screens/SSettings.tscn")
 	settings.call("_on_carousel_apply")
+	_test.equal(_settings.get("theme"), _theme_manager.get("current_theme_name"), "Settings apply stores the active theme")
 	settings.call("_on_back")
 	settings.call("_unhandled_key_input", _escape_event())
+	_test.expect(is_instance_valid(settings), "Settings remains valid while handling back input")
 	await _unmount(settings)
 
 
 func _test_theme_animations() -> void:
-	var node := Control.new()
-	get_root().add_child(node)
-	THEME_MANAGER_SCRIPT.animate_pop_in(node)
-	THEME_MANAGER_SCRIPT.animate_success_flash(node)
-	THEME_MANAGER_SCRIPT.animate_error_shake(node)
-	_test.expect(node.get_tree() != null, "Theme animation helpers create tweens on controls")
-	node.queue_free()
+	var pop_node := Control.new()
+	get_root().add_child(pop_node)
+	THEME_MANAGER_SCRIPT.animate_pop_in(pop_node)
+	_test.equal(pop_node.scale, Vector2(0.5, 0.5), "Pop-in animation starts from a reduced scale")
+	_test.equal(pop_node.modulate.a, 0.0, "Pop-in animation starts transparent")
+	await _test.wait_frames(self, 30)
+	_test.expect(pop_node.scale.x > 0.5, "Pop-in animation advances its scale")
+
+	var flash_node := Control.new()
+	get_root().add_child(flash_node)
+	THEME_MANAGER_SCRIPT.animate_success_flash(flash_node)
+	await _test.wait_frames(self, 90)
+	_test.equal(flash_node.modulate, Color.WHITE, "Success flash restores the original modulation")
+
+	var shake_node := Control.new()
+	get_root().add_child(shake_node)
+	THEME_MANAGER_SCRIPT.animate_error_shake(shake_node)
+	await _test.wait_frames(self, 60)
+	_test.equal(shake_node.scale, Vector2.ONE, "Error shake restores the original scale")
+
+	pop_node.queue_free()
+	flash_node.queue_free()
+	shake_node.queue_free()
 
 
 func _mount(path: String) -> Control:

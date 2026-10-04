@@ -20,6 +20,16 @@ npm run test:godot:coverage
 # Run one script while developing it
 python scripts/run_godot_tests.py \
   --test bcd_kids/tests/components_test.gd
+
+# Validate the export configuration
+python scripts/verify_godot_exports.py
+
+# Build and run actual exports when release templates are installed
+python scripts/verify_godot_exports.py --actual
+
+# Verify an export artifact produced by CI without exporting again
+python scripts/verify_godot_exports.py \
+  --verify-existing path/to/BCD-Kids.x86_64 --platform linux
 ```
 
 The runner imports the project before testing so `class_name` scripts work from
@@ -66,13 +76,21 @@ requires a multicast-capable IPv4 interface and a local Godot executable.
 
 | File | Scope |
 |---|---|
-| `api_contract_test.gd` | API helpers, autoload delegation, i18n fallback |
-| `core_test.gd` | State, settings, themes, badges, API error contracts |
+| `api_contract_test.gd` | API helpers, autoload delegation, and i18n fallback |
+| `core_test.gd` | State, settings, themes, badges, and API error contracts |
 | `components_test.gd` | Component scenes, visual states, and signals |
+| `component_branches_test.gd` | Focus styles, cover decoding, and repeated setup signals |
 | `screens_test.gd` | Screen scene contracts and rendered states |
-| `behavior_test.gd` | Navigation, keyboard/input, fallback and action paths |
+| `behavior_test.gd` | Navigation, keyboard/input, fallback, and action paths |
+| `main_behavior_test.gd` | Quit dialog and close-request behavior |
 | `mdns_test.gd` | DNS-SD query encoding, packet parsing, validation, and peer building |
+| `mdns_live_integration.gd` | Optional live multicast discovery check |
 | `server_discovery_test.gd` | Offline discovery-screen helpers, cards, auth, and splash states |
+| `discovery_branches_test.gd` | Proxy, health, auth, and peer-merging response branches |
+| `api_transport_test.gd` | Real loopback HTTP status, method, body, and auth handling |
+| `workflows_test.gd` | Successful checkout, return, search, holds, names, and classes |
+| `settings_branches_test.gd` | Persistence, display controls, and theme preview branches |
+| `export_readiness_test.gd` | Locale text, emoji labels, quit guard, and authentication transport checks |
 
 ## Writing tests
 

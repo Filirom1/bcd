@@ -329,11 +329,54 @@ jobs:
           retention-days: 1
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # JOB 7 : Assemblage des archives + GitHub Release
+  # JOB 7 : Vérification des exports déjà produits
+  # ═══════════════════════════════════════════════════════════════════════════
+  verify-kids-linux:
+    name: Verify BCD Kids Linux export
+    needs: build-kids-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: bcd-kids-linux-files
+          path: artifacts/linux/
+
+      - name: Verify the Linux binary and run its readiness test
+        shell: bash
+        run: |
+          BINARY=$(find artifacts/linux -type f -name 'BCD-Kids.x86_64' -print -quit)
+          test -n "$BINARY"
+          python scripts/verify_godot_exports.py \
+            --verify-existing "$BINARY" --platform linux
+
+  verify-kids-windows:
+    name: Verify BCD Kids Windows export
+    needs: build-kids-windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: bcd-kids-windows-files
+          path: artifacts/windows/
+
+      - name: Verify the Windows binary and run its readiness test
+        shell: pwsh
+        run: |
+          $binary = Get-ChildItem -Path artifacts/windows -Filter BCD-Kids.exe -Recurse | Select-Object -First 1
+          if ($null -eq $binary) { throw "BCD-Kids.exe was not found in the build artifact" }
+          python scripts/verify_godot_exports.py `
+            --verify-existing $binary.FullName --platform windows
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 8 : Assemblage des archives + GitHub Release
   # ═══════════════════════════════════════════════════════════════════════════
   release:
     name: Create GitHub Release
-    needs: [build-bcd-windows, build-bcd-linux, build-kids-windows, build-kids-linux]
+    needs: [build-bcd-windows, build-bcd-linux, build-kids-windows, build-kids-linux, verify-kids-windows, verify-kids-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -361,7 +404,9 @@ jobs:
 
           # BCD Kids client (Godot)
           cp artifacts/bcd-kids-windows-files/BCD-Kids.exe "$PKG/"
-          cp artifacts/bcd-kids-windows-files/BCD-Kids.pck "$PKG/"
+          if [ -f artifacts/bcd-kids-windows-files/BCD-Kids.pck ]; then
+            cp artifacts/bcd-kids-windows-files/BCD-Kids.pck "$PKG/"
+          fi
 
           # Documentation
           cp README.md README_FR.md INSTALL.md LICENSE "$PKG/"
@@ -385,7 +430,9 @@ jobs:
 
           # BCD Kids client (Godot)
           cp artifacts/bcd-kids-linux-files/BCD-Kids.x86_64 "$PKG/"
-          cp artifacts/bcd-kids-linux-files/BCD-Kids.pck "$PKG/"
+          if [ -f artifacts/bcd-kids-linux-files/BCD-Kids.pck ]; then
+            cp artifacts/bcd-kids-linux-files/BCD-Kids.pck "$PKG/"
+          fi
           chmod +x "$PKG/BCD-Kids.x86_64"
 
           # Documentation

@@ -22,6 +22,7 @@ func _run() -> void:
 	await _test.wait_frames(self, 3)
 	_settings = get_root().get_node("Settings")
 	_theme_manager = get_root().get_node("ThemeManager")
+	_test_autoload_order_and_theme_restore()
 	_original_theme = str(_settings.get("theme"))
 	_original_quality = str(_settings.get("graphics_quality"))
 	_original_resolution = str(_settings.get("resolution"))
@@ -36,6 +37,25 @@ func _run() -> void:
 	await _test_settings_buttons_and_preview()
 	_restore_settings()
 	_test.finish(self)
+
+
+func _test_autoload_order_and_theme_restore() -> void:
+	var project_file := FileAccess.open("res://project.godot", FileAccess.READ)
+	if project_file == null:
+		_test.expect(false, "Project configuration is readable for autoload-order regression")
+		return
+	var project_text := project_file.get_as_text()
+	project_file.close()
+	_test.expect(
+		project_text.find('ThemeManager="*res://autoload/ThemeManager.gd"')
+			< project_text.find('Settings="*res://autoload/Settings.gd"'),
+		"ThemeManager autoloads before Settings"
+	)
+	_test.equal(
+		str(_theme_manager.get("current_theme_name")),
+		str(_settings.get("theme")),
+		"Settings reapplies the saved theme after autoload initialization"
+	)
 
 
 func _test_corrupt_and_partial_files() -> void:

@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/components/CandidateButton.gd" id="1_script"]
+
+[node name="CandidateButton" type="Button"]
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(450, 60)
+theme_type_variation = "ButtonMedium"
+script = ExtResource("1_script")

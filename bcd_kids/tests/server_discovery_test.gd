@@ -4,6 +4,16 @@ const SUPPORT = preload("res://tests/test_support.gd")
 
 var _test := SUPPORT.new()
 var _screen: Control
+var _settings: Node
+var _i18n: Node
+var _previous_auth_username := ""
+var _previous_auth_password := ""
+var _previous_auth_scheme := ""
+var _previous_auth_origin := ""
+var _previous_session_username := ""
+var _previous_session_password := ""
+var _previous_session_scheme := ""
+var _previous_session_origin := ""
 
 
 func _init() -> void:
@@ -12,15 +22,35 @@ func _init() -> void:
 
 func _run() -> void:
 	await _test.wait_frames(self, 3)
+	_settings = get_root().get_node("Settings")
+	_i18n = get_root().get_node("I18n")
+	_previous_auth_username = str(_settings.get("auth_username"))
+	_previous_auth_password = str(_settings.get("auth_password"))
+	_previous_auth_scheme = str(_settings.get("auth_scheme"))
+	_previous_auth_origin = str(_settings.get("auth_server_origin"))
+	_previous_session_username = str(_settings.get("session_auth_username"))
+	_previous_session_password = str(_settings.get("session_auth_password"))
+	_previous_session_scheme = str(_settings.get("session_auth_scheme"))
+	_previous_session_origin = str(_settings.get("session_auth_server_origin"))
 	await _mount_discovery_screen()
 	_test_scene_initialization()
 	_test_url_helpers()
 	await _test_network_fallbacks()
-	_test_peer_merging()
 	await _test_server_cards()
 	await _test_auth_controls()
 	await _test_splash_states()
 	await _unmount_discovery_screen()
+	_settings.auth_username = _previous_auth_username
+	_settings.auth_password = _previous_auth_password
+	_settings.auth_scheme = _previous_auth_scheme
+	_settings.auth_server_origin = _previous_auth_origin
+	_settings.call("set_session_auth", {
+		"username": _previous_session_username,
+		"password": _previous_session_password,
+		"scheme": _previous_session_scheme,
+		"server_origin": _previous_session_origin,
+	})
+	_settings.call("save_settings")
 	_test.finish(self)
 
 
@@ -126,29 +156,19 @@ func _test_network_fallbacks() -> void:
 	settings.set("last_server_url", "")
 	_screen.get_node("MainMargin/Root/ManualRow/ManualInput").text = ""
 	_screen.call("_connect_manual")
+	var manager: Node = get_root().get_node("Mgr")
+	var notifications: VBoxContainer = manager.get("_notif_box")
+	var last_message := ""
+	if notifications != null and notifications.get_child_count() > 0:
+		var notification: Node = notifications.get_child(notifications.get_child_count() - 1)
+		last_message = notification.get_node("MessageLabel").text
 	_test.equal(
-		_screen.get_node("MainMargin/Root/ManualRow/ManualInput").text,
-		"",
+		last_message,
+		_i18n.call("t", "server_discovery.enter_url"),
 		"Server discovery reports an empty manual address"
 	)
 	settings.set("last_server_url", previous_last_url)
 
-
-func _test_peer_merging() -> void:
-	var merged: Array = _screen.call("_merge_peers", [
-		{"url": "http://library.example:8888/", "library_code": ""},
-		{"url": "", "library_code": "Ignored"},
-		"not a peer",
-	], [
-		{"url": "http://library.example:8888", "library_code": "Main Library"},
-		{"url": "http://annex.example:9000/", "library_code": "Annex"},
-	])
-	_test.equal(merged.size(), 2, "Server discovery removes empty and duplicate peer URLs")
-	if merged.size() == 2:
-		_test.equal(merged[0].get("url", ""), "http://library.example:8888", "Server discovery normalizes peer URLs")
-		_test.equal(merged[0].get("library_code", ""), "Main Library", "Server discovery fills a missing duplicate library name")
-		_test.equal(merged[1].get("url", ""), "http://annex.example:9000", "Server discovery keeps a second peer")
-	_test.equal(_screen.call("_merge_peers", [], []), [], "Server discovery merges empty peer lists")
 
 
 func _test_server_cards() -> void:
@@ -194,6 +214,9 @@ func _test_auth_controls() -> void:
 	settings.set("auth_username", "saved-user")
 	settings.set("auth_password", "saved-secret")
 	settings.set("auth_scheme", "digest")
+	_screen.get_node("MainMargin/Root/ManualRow/ManualInput").text = "http://localhost:8888"
+	_screen.set("_pending_base_url", "")
+	settings.set("auth_server_origin", settings.call("server_origin", "http://localhost:8888"))
 	_screen.call("_on_use_saved_auth_toggled", true)
 	_test.equal(username.text, "saved-user", "Server discovery restores a saved username")
 	_test.equal(password.text, "saved-secret", "Server discovery restores a saved password")
@@ -201,13 +224,24 @@ func _test_auth_controls() -> void:
 	_screen.call("_on_use_saved_auth_toggled", false)
 	_test.equal(username.text, "", "Server discovery clears the username when saved auth is disabled")
 	_test.equal(password.text, "", "Server discovery clears the password when saved auth is disabled")
+	_test.equal(settings.get("auth_username"), "saved-user", "Disabling saved auth keeps the saved username")
+	_test.equal(settings.get("auth_password"), "saved-secret", "Disabling saved auth keeps the saved password")
+
+	_screen.set("_pending_base_url", "http://127.0.0.1:8888")
+	username.text = "teacher"
+	password.text = "secret"
+	var origin_a: Dictionary = _screen.call("_auth_from_ui_for_server", "http://127.0.0.1:8888")
+	var origin_b: Dictionary = _screen.call("_auth_from_ui_for_server", "http://localhost:8888")
+	_test.equal(origin_a.get("username", ""), "teacher", "Server discovery accepts credentials for their selected origin")
+	_test.equal(origin_b, {}, "Server discovery does not reuse credentials for another origin")
 
 	username.text = "teacher"
 	password.text = "secret"
 	basic.button_pressed = true
 	digest.button_pressed = false
+	_screen.get_node("MainMargin/Root/AuthPanel/AuthContent/RememberAuth").button_pressed = true
 	_screen.call("_apply_auth_from_ui")
-	_test.equal(settings.get("auth_username"), "teacher", "Server discovery saves credentials entered in the UI")
+	_test.equal(settings.get("auth_username"), "teacher", "Server discovery saves credentials only when requested")
 	_test.equal(settings.get("auth_scheme"), "basic", "Server discovery saves the selected basic auth scheme")
 
 	_screen.call("_on_clear_auth")
@@ -221,28 +255,22 @@ func _test_auth_controls() -> void:
 
 
 func _test_splash_states() -> void:
-	var message: Label = _screen.get_node("SplashPanel/SplashCenter/SplashVBox/SplashMessage")
-	var author: Label = _screen.get_node("SplashPanel/SplashCenter/SplashVBox/SplashAuthor")
-	_screen.set("_splash_cycling", true)
-	_screen.set("_splash_msgs_shuffled", [{"type": "citation", "text": "A quote", "author": "An author"}])
-	_screen.set("_splash_msg_idx", 0)
-	_screen.call("_cycle_splash_messages")
-	_test.equal(message.text, "A quote", "Server discovery displays a citation splash message")
-	_test.equal(author.text, "An author", "Server discovery displays a splash author")
+	var intro: Control = _screen.get_node("ReadingIntro")
+	var message: Label = intro.get_node("SplashPanel/SplashCenter/SplashCanvas/SplashMessage")
+	var author: Label = intro.get_node("SplashPanel/SplashCenter/SplashCanvas/SplashAuthor")
+	_test.expect(intro is ReadingIntro, "Server discovery owns a dedicated reading intro component")
+	_test.expect(not message.text.is_empty(), "Reading intro selects a localized quote")
 
-	_screen.set("_splash_msgs_shuffled", ["A punchline"])
-	_screen.set("_splash_msg_idx", 0)
-	_screen.call("_cycle_splash_messages")
-	_test.equal(message.text, "A punchline", "Server discovery displays a plain splash message")
-	_screen.set("_splash_msgs_shuffled", [])
-	_screen.call("_cycle_splash_messages")
-	_screen.set("_splash_cycling", false)
-	_screen.call("_cycle_splash_messages")
-	_screen.call("_shuffle_and_start")
-	await _test.wait_frames(self, 2)
-	_test.expect(is_instance_valid(_screen), "Server discovery remains mounted during splash cycling")
+	intro.call("_set_quote_entry", {"type": "citation", "text": "A quote", "author": "An author"})
+	_test.equal(message.text, "A quote", "Reading intro displays a quote")
+	_test.equal(author.text, "An author", "Reading intro displays an optional quote author")
+	intro.call("_set_quote_entry", "A page adventure")
+	_test.equal(message.text, "A page adventure", "Reading intro handles a plain quote entry")
+
+	_test.expect(is_instance_valid(_screen), "Server discovery remains mounted during the reading intro")
 	_screen.call("_hide_splash")
-	_test.equal(_screen.get("_splash_cycling"), false, "Server discovery stops splash cycling when hidden")
+	await create_timer(0.45).timeout
+	_test.expect(not intro.visible, "Server discovery hides the dedicated reading intro")
 
 
 func _unmount_discovery_screen() -> void:

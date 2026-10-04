@@ -11,6 +11,9 @@ var _settings: Node
 var _i18n: Node
 var _mounted: Array = []
 var _previous_base_url := ""
+var _previous_library_name := ""
+var _previous_nav_params: Dictionary = {}
+var _previous_filter_medium_types: Array = []
 var _previous_settings: Dictionary = {}
 var _previous_borrower: Dictionary = {}
 var _previous_class: Dictionary = {}
@@ -72,6 +75,9 @@ func _run() -> void:
 
 func _save_state() -> void:
 	_previous_base_url = str(_gs.get("base_url"))
+	_previous_library_name = str(_gs.get("library_name"))
+	_previous_nav_params = (_gs.get("nav_params") as Dictionary).duplicate(true)
+	_previous_filter_medium_types = (_gs.get("filter_medium_types") as Array).duplicate(true)
 	_previous_settings = (_gs.get("settings") as Dictionary).duplicate(true)
 	_previous_borrower = (_gs.get("current_borrower") as Dictionary).duplicate(true)
 	_previous_class = (_gs.get("current_class") as Dictionary).duplicate(true)
@@ -81,6 +87,9 @@ func _save_state() -> void:
 
 func _restore_state() -> void:
 	_gs.set("base_url", _previous_base_url)
+	_gs.set("library_name", _previous_library_name)
+	_gs.set("nav_params", _previous_nav_params)
+	_gs.set("filter_medium_types", _previous_filter_medium_types)
 	_gs.set("settings", _previous_settings)
 	_gs.set("current_borrower", _previous_borrower)
 	_gs.set("current_class", _previous_class)
@@ -96,6 +105,18 @@ func _clear_fixture() -> void:
 func _enqueue_json(path: String, status_code: int, data, headers := {}) -> void:
 	_server.call("enqueue", path, status_code, JSON.stringify(data), headers)
 
+func _enqueue_raw(path: String, status_code: int, body: String, headers := {}) -> void:
+	_server.call("enqueue", path, status_code, body, headers)
+
+func _clear_notifications() -> void:
+	var manager: Node = get_root().get_node("Mgr")
+	var box: VBoxContainer = manager.get("_notif_box")
+	if box == null:
+		return
+	for child in box.get_children():
+		box.remove_child(child)
+		child.queue_free()
+
 
 func _mount(path: String) -> Control:
 	var screen: Control = load(path).instantiate()
@@ -107,12 +128,10 @@ func _mount(path: String) -> Control:
 
 
 func _wait_until_http_idle() -> void:
-	var request: Node = _api.get("http")
 	var idle_frames := 0
 	for _index in range(180):
 		await _test.wait_frames(self)
-		var status := int(request.call("get_http_client_status"))
-		if status == 0:
+		if int(_api.get("in_flight_requests")) == 0:
 			idle_frames += 1
 			if idle_frames >= 3:
 				return
@@ -230,7 +249,7 @@ func _test_return_successes() -> void:
 	input.text = ".RETURN-2"
 	await return_scan.call("_do_return")
 	await _test.wait_frames(self, 3)
-	var hold_ready: Dictionary = _gs.current_class.get("_temp_hold_ready", {})
+	var hold_ready: Dictionary = _gs.nav_params.get("hold_ready", {})
 	_test.equal(hold_ready.get("borrower_name", ""), "Claire Student", "Return stores a ready hold for the teacher")
 	_test.equal(_gs.current_borrower.current_loans_count, 1, "Return updates the borrower count after a second return")
 	var ready_screen := get_root().get_node_or_null("Mgr/SHoldReady")
@@ -241,6 +260,13 @@ func _test_return_successes() -> void:
 			"Ready Book",
 			"Ready-hold screen displays the returned title"
 		)
+
+
+func _find_hold(biblio_id: int) -> bool:
+	for hold in _gs.current_holds:
+		if hold is Dictionary and int(hold.get("bibliographic_record_id", 0)) == biblio_id:
+			return true
+	return false
 
 
 func _test_search_and_holds() -> void:
@@ -264,6 +290,8 @@ func _test_search_and_holds() -> void:
 		var held: Control = results.get_child(2)
 		_test.equal(available.get_node("Content/StatusRow/StatusLabel").text, "🟢", "Search marks an available book")
 		_test.equal(unavailable.get_node("Content/StatusRow/StatusLabel").text, "🔴", "Search marks an unavailable book")
+		_test.expect(available.get_node("Content/BtnRow/ActionBtn").visible, "Search shows Reserve for an available book")
+		_test.equal(available.get_node("Content/BtnRow/ActionBtn").text, _i18n.call("t", "search.reserve"), "Search labels available books with Reserve")
 		_test.equal(held.get_node("Content/BtnRow/ActionBtn").text, _i18n.call("t", "hold.cancel"), "Search changes the action for an already-held book")
 		_test.expect(held.theme_type_variation == "PanelWarning", "Search highlights an already-held result")
 
@@ -275,32 +303,59 @@ func _test_search_and_holds() -> void:
 	_test.equal(_gs.current_holds.size(), 1, "Successful reservation refreshes the borrower's holds")
 	_test.expect(_last_notification_text().contains("Available"), "Successful reservation includes the book title")
 
-	for code in ["borrower_blocked", "hold_already_exists", "no_items_for_record", "hold_limit_exceeded", "unmapped"]:
+	_clear_fixture()
+	_enqueue_json("/api/v1/holds", 201, {"id": 12, "queue_position": 2})
+	_enqueue_json("/api/v1/holds/borrower/42", 500, {"error": "refresh failed"})
+	await search.call("_on_reserve_clicked", {"id": 2, "title": "Unavailable"})
+	_test.expect(_find_hold(2), "Reservation remains local after a successful POST and failed refresh")
+	_test.equal(_last_notification_text(), _i18n.call("t", "common.refresh_failed"), "Reservation reports a refresh failure separately")
+
+	var hold_error_keys := {
+		"borrower_blocked": "hold.error_blocked",
+		"hold_already_exists": "hold.error_duplicate",
+		"no_items_for_record": "hold.error_no_items",
+		"hold_limit_exceeded": "hold.error_limit",
+		"unmapped": "common.error_unknown",
+	}
+	for code in hold_error_keys:
 		_clear_fixture()
+		_clear_notifications()
 		_enqueue_json("/api/v1/holds", 409, {
 			"success": false,
 			"error_code": str(code).to_upper(),
 			"context": {},
 		})
 		await search.call("_on_reserve_clicked", book)
-		_test.expect(not _last_notification_text().is_empty(), "Reservation displays an error for " + code)
+		_test.equal(
+			_last_notification_text(),
+			_i18n.call("t", hold_error_keys[code]),
+			"Reservation maps the server error for " + code
+		)
 
 	_gs.current_holds = [{"id": 7, "bibliographic_record_id": 3}]
 	_clear_fixture()
-	_enqueue_json("/api/v1/holds/7", 204, "")
+	_enqueue_raw("/api/v1/holds/7", 204, "")
 	_enqueue_json("/api/v1/holds/borrower/42", 200, [])
 	await search.call("_on_cancel_clicked", {"id": 3, "title": "Already held"}, 7)
 	_test.equal(_gs.current_holds, [], "Cancelling a hold refreshes the hold list")
 	_test.expect(_last_notification_text().contains("Already held"), "Cancellation includes the book title")
+
+	_gs.current_holds = [{"id": 8, "bibliographic_record_id": 2, "title": "Unavailable"}]
+	_clear_fixture()
+	_enqueue_raw("/api/v1/holds/8", 204, "")
+	_enqueue_json("/api/v1/holds/borrower/42", 500, {"error": "refresh failed"})
+	await search.call("_on_cancel_clicked", {"id": 2, "title": "Unavailable"}, 8)
+	_test.expect(not _find_hold(2), "Cancellation remains local after a successful DELETE and failed refresh")
+	_test.equal(_last_notification_text(), _i18n.call("t", "common.refresh_failed"), "Cancellation reports a refresh failure separately")
 
 	_clear_fixture()
 	_enqueue_json("/api/v1/catalog/bibliographic/3", 200, {"id": 3, "title": "Already held", "authors": ["Author"]})
 	await search.call("_on_detail_clicked", {"id": 3, "title": "Already held", "authors": ["Author"]})
 	await _test.wait_frames(self, 10)
 	_test.equal(
-		_gs.current_class.get("_temp_book_data", {}).get("title", ""),
+		_gs.nav_params.get("book_data", {}).get("title", ""),
 		"Already held",
-		"Search stores temporary book data before opening details"
+		"Search stores navigation book data before opening details"
 	)
 
 
@@ -358,6 +413,12 @@ func _test_name_and_class_workflows() -> void:
 	_test.equal(name_error.text, _i18n.call("t", "name_input.not_found"), "Student search reports zero matches")
 
 	_clear_fixture()
+	_enqueue_json("/api/v1/borrowers", 200, [])
+	name_edit.text = "Al"
+	await name_input.call("_search")
+	_test.equal(name_error.text, _i18n.call("t", "common.error_unknown"), "Student search rejects a response with the wrong JSON shape")
+
+	_clear_fixture()
 	_enqueue_json("/api/v1/borrowers", 200, {"items": [
 		{"id": 9, "first_name": "Alex", "last_name": "One", "current_loans_count": 0},
 		{"id": 10, "first_name": "Alex", "last_name": "Two", "current_loans_count": 2},
@@ -385,6 +446,7 @@ func _test_name_and_class_workflows() -> void:
 
 	_clear_fixture()
 	_enqueue_json("/api/v1/borrowers/CARD-7", 200, {
+		"id": 7,
 		"borrower_id": "ST-7",
 		"first_name": "Sam",
 		"last_name": "Scanner",
@@ -416,28 +478,25 @@ func _test_main_menu_actions() -> void:
 	var main_menu: Control = await _mount("res://src/screens/SMainMenu.tscn")
 
 	_clear_fixture()
-	_enqueue_json("/api/v1/circulation/return", 200, {"items": [{"display_title": "Book"}]})
-	_enqueue_json("/api/v1/circulation/borrower/ST-42/items", 200, {"loans": []})
-	await main_menu.call("_return_item", "A-1")
-	_test.equal(_gs.current_loans, [], "Main-menu return success updates the visible loans")
-	_test.expect(_last_notification_text().contains("Book"), "Main-menu return success includes the title")
-
-	_clear_fixture()
-	_enqueue_json("/api/v1/circulation/return", 404, '{"error_code":"ITEM_NOT_ON_LOAN","context":{}}')
-	await main_menu.call("_return_item", "missing")
-	_test.equal(_last_notification_text(), _i18n.call("t", "return.error_not_on_loan"), "Main-menu return failure displays a translated error")
-
-	_clear_fixture()
 	_enqueue_json("/api/v1/circulation/renew", 200, {"renewed": [{"new_due_date": "2026-09-01"}]})
 	_enqueue_json("/api/v1/circulation/borrower/ST-42/items", 200, {"loans": [{"item_id": "A-1", "due_date": "2026-09-01"}]})
 	await main_menu.call("_renew_item", "A-1")
 	_test.expect(_last_notification_text().contains("2026-09-01"), "Main-menu renewal success displays the new due date")
 
-	for code in ["NO_RENEWABLE_ITEMS", "UNKNOWN_RENEWAL_ERROR"]:
+	var renewal_error_keys := {
+		"NO_RENEWABLE_ITEMS": "main_menu.renew_no_items",
+		"UNKNOWN_RENEWAL_ERROR": "common.error_unknown",
+	}
+	for code in renewal_error_keys:
 		_clear_fixture()
+		_clear_notifications()
 		_enqueue_json("/api/v1/circulation/renew", 409, {"error_code": code, "context": {}})
 		await main_menu.call("_renew_item", "A-1")
-		_test.expect(not _last_notification_text().is_empty(), "Main-menu renewal displays an error for " + code)
+		_test.equal(
+			_last_notification_text(),
+			_i18n.call("t", renewal_error_keys[code]),
+			"Main-menu renewal maps the server error for " + code
+		)
 
 	var theme_manager: Node = get_root().get_node("ThemeManager")
 	_gs.current_borrower.current_loans_count = 2

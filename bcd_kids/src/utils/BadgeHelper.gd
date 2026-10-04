@@ -18,6 +18,9 @@
 
 class_name BadgeHelper
 
+const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
+const BADGE_SCENE = preload("res://src/components/Badge.tscn")
+
 
 # Returns Color.BLACK or Color.WHITE for readable text on bg.
 static func auto_text_color(bg: Color) -> Color:
@@ -72,42 +75,12 @@ static func _theme_text_color() -> Color:
 	return Color("#1f2937")
 
 
-# Build a badge PanelContainer.
+# Build a badge PanelContainer from the editable Badge scene.
 # bg.a < 0.01 → transparent background + 1px border in the theme text color.
 static func _make_badge(text: String, bg: Color, radius: int) -> PanelContainer:
-	var panel := PanelContainer.new()
-
-	var style := StyleBoxFlat.new()
-	style.corner_radius_top_left    = radius
-	style.corner_radius_top_right   = radius
-	style.corner_radius_bottom_left = radius
-	style.corner_radius_bottom_right = radius
-	style.content_margin_left   = 6.0
-	style.content_margin_right  = 6.0
-	style.content_margin_top    = 2.0
-	style.content_margin_bottom = 2.0
-
-	var text_color: Color
-	if bg.a < 0.01:
-		style.bg_color = Color(0, 0, 0, 0)
-		style.border_width_left   = 1
-		style.border_width_right  = 1
-		style.border_width_top    = 1
-		style.border_width_bottom = 1
-		style.border_color = _theme_text_color()
-		text_color = _theme_text_color()
-	else:
-		style.bg_color = bg
-		text_color = auto_text_color(bg)
-
-	panel.add_theme_stylebox_override("panel", style)
-
-	var lbl := Label.new()
-	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", 13)
-	lbl.add_theme_color_override("font_color", text_color)
-	panel.add_child(lbl)
-
+	var text_color := _theme_text_color() if bg.a < 0.01 else auto_text_color(bg)
+	var panel := BADGE_SCENE.instantiate() as PanelContainer
+	panel.call("setup", text, bg, radius, text_color)
 	return panel
 
 
@@ -130,8 +103,7 @@ static func make_cote_badge(call_number: String) -> PanelContainer:
 # Populate an HBoxContainer with shelf + cote badges.
 # Clears existing children. Hides the row if no badges.
 static func populate_badges(row: HBoxContainer, shelf: String, call_number: String) -> void:
-	for c in row.get_children():
-		c.queue_free()
+	NODE_HELPER.clear_children(row)
 	var visible := false
 	var shelf_badge := make_shelf_badge(shelf)
 	if shelf_badge:

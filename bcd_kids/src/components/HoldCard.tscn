@@ -35,4 +35,4 @@ visible = false
 
 [node name="CancelBtn" type="Button" parent="Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 45)
+custom_minimum_size = Vector2(100, 60)

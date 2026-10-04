@@ -1,12 +1,10 @@
 [gd_scene format=3 uid="uid://bcd4cmp0003"]
 
 [ext_resource type="Script" uid="uid://bd68nwxpaoqio" path="res://src/components/LoanCard.gd" id="1_scr"]
+[ext_resource type="PackedScene" path="res://src/components/CoverImage.tscn" id="2_cover"]
 
 [node name="LoanCard" type="PanelContainer" unique_id=1858058856]
 script = ExtResource("1_scr")
-
-[node name="CoverHTTP" type="HTTPRequest" parent="." unique_id=1100650606]
-unique_name_in_owner = true
 
 [node name="Row" type="HBoxContainer" parent="." unique_id=1702715976]
 layout_mode = 2
@@ -17,15 +15,13 @@ theme_override_constants/separation = 10
 custom_minimum_size = Vector2(56, 76)
 layout_mode = 2
 
-[node name="CoverImage" type="TextureRect" parent="Row/CoverZone" unique_id=833707495]
+[node name="CoverImage" parent="Row/CoverZone" instance=ExtResource("2_cover")]
 unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(56, 76)
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
-mouse_filter = 0
-expand_mode = 1
-stretch_mode = 5
 
 [node name="CoverPlaceholder" type="Label" parent="Row/CoverZone" unique_id=794031128]
 unique_name_in_owner = true
