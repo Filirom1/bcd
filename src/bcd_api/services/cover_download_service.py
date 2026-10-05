@@ -61,9 +61,7 @@ class CoverDownloadManager:
     def _run_missing_cover_download(self) -> None:
         """Private task execution loop."""
         covers_dir = (
-            Path(settings.covers_dir_path)
-            if settings.covers_dir_path
-            else Path("data/covers")
+            Path(settings.covers_dir_path) if settings.covers_dir_path else Path("data/covers")
         )
         to_download = []
 

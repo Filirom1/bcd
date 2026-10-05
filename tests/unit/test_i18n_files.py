@@ -65,6 +65,7 @@ class TestI18nFiles:
 
     def test_kids_en_and_fr_have_same_nested_keys(self):
         """Test that every nested Godot translation key exists in both locales."""
+
         def flatten(value, prefix=""):
             keys = set()
             if isinstance(value, dict):

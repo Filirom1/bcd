@@ -165,6 +165,7 @@ jobs:
         run: godot --headless --editor --path bcd_kids --quit
 
       - name: Run headless Godot tests
+        shell: bash
         env:
           BCD_GODOT_TESTS: '1'
         run: |

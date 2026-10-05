@@ -67,9 +67,7 @@ def clean_broken_cover_references(db: Session, covers_dir_path: str | None) -> i
     """Clear catalog cover references whose image file is no longer present."""
     covers_dir = Path(covers_dir_path) if covers_dir_path else Path("data/covers")
     records = (
-        db.query(BibliographicRecord)
-        .filter(BibliographicRecord.cover_image.isnot(None))
-        .all()
+        db.query(BibliographicRecord).filter(BibliographicRecord.cover_image.isnot(None)).all()
     )
 
     cleaned = 0
