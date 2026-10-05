@@ -6,6 +6,7 @@ import { jsonResponse } from '../../helpers/http.js';
 import { apiClient } from '../../../../src/bcd_web_vue/js/api/client.js';
 import { useNotification } from '../../../../src/bcd_web_vue/js/composables/useNotification.js';
 import { useGlobalModal } from '../../../../src/bcd_web_vue/js/composables/useGlobalModal.js';
+import { useHoldReadyModal } from '../../../../src/bcd_web_vue/js/composables/useHoldReadyModal.js';
 import { useAppState } from '../../../../src/bcd_web_vue/js/composables/useAppState.js';
 import { ApiError, ERROR_CODES } from '../../../../src/bcd_web_vue/js/models/error.js';
 import CirculationPage from '../../../../src/bcd_web_vue/js/pages/CirculationPage.js';
@@ -63,7 +64,13 @@ function mountRealCirculationPage(mode = 'checkout') {
     });
 }
 
+const clearHoldReadyQueue = () => {
+    const modal = useHoldReadyModal();
+    while (modal.holdReady.value) modal.dismissHoldReady();
+};
+
 beforeEach(() => {
+    clearHoldReadyQueue();
     useNotification().clear();
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(jsonResponse({
         borrower_barcode_prefix: '%',
@@ -74,6 +81,7 @@ beforeEach(() => {
 afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    clearHoldReadyQueue();
     useNotification().clear();
 });
 
@@ -423,9 +431,15 @@ describe('CirculationPage', () => {
             returned_by: 'web-ui'
         });
         expect(useNotification().notifications.value).toEqual([
-            expect.objectContaining({ type: 'warning', message: 'circulation.item_returned_overdue' }),
-            expect.objectContaining({ type: 'warning', message: 'circulation.hold_ready_message' })
+            expect.objectContaining({ type: 'warning', message: 'circulation.item_returned_overdue' })
         ]);
+        expect(useHoldReadyModal().holdReady.value).toEqual(expect.objectContaining({
+            title: 'Matilda',
+            item_id: 'I-005',
+            borrower_name: 'Louis Martin',
+            class_name: 'CM1'
+        }));
+        expect(wrapper.vm.scannerDisabled).toBe(true);
     });
 
     it('quick-returns a borrower item, reloads the borrower, and refreshes the roster', async () => {
@@ -567,12 +581,15 @@ describe('CirculationPage', () => {
     });
 
     it('handles return network errors, missing metadata, and hold expiry', async () => {
-        const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ items: [{ item_id: 'I-X', hold_ready: { borrower_name: 'A', expires_at: '2030-02-01' } }] });
+        const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ items: [{ item_id: 'I-X', hold_ready: { borrower_name: 'A', expiration_date: '2030-02-01' } }] });
         const wrapper = mountCirculationPage('return');
         await flushPromises();
         await wrapper.vm.handleItemScanned('.I-X');
         expect(wrapper.vm.scannedItems[0]).toEqual(expect.objectContaining({ title: 'Unknown', shelf_location: undefined }));
-        expect(useNotification().notifications.value).toEqual([expect.objectContaining({ type: 'warning' })]);
+        expect(useNotification().notifications.value).toEqual([]);
+        expect(useHoldReadyModal().holdReady.value).toEqual(expect.objectContaining({
+            item_id: 'I-X', borrower_name: 'A', expiration_date: '2030-02-01'
+        }));
         post.mockRejectedValueOnce(new Error('network'));
         await wrapper.vm.handleItemScanned('.I-Y');
         expect(useNotification().notifications.value.at(-1).message).toBe('network');
@@ -759,9 +776,13 @@ describe('CirculationPage', () => {
 
         expect(post).toHaveBeenNthCalledWith(2, '/circulation/return', expect.objectContaining({ item_ids: ['I-22'] }));
         expect(useNotification().notifications.value).toEqual(expect.arrayContaining([
-            expect.objectContaining({ type: 'warning', message: 'circulation.hold_ready_message' }),
             expect.objectContaining({ type: 'success' })
         ]));
+        expect(useHoldReadyModal().holdReady.value).toEqual(expect.objectContaining({
+            title: 'Book',
+            borrower_name: 'Noémie',
+            class_name: 'B-202'
+        }));
         expect(wrapper.vm.borrower).toBeTruthy();
         expect(emit).toHaveBeenCalledTimes(2);
         expect(emit).toHaveBeenCalledWith('circulation:roster-refresh');

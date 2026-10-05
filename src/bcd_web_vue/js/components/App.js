@@ -12,9 +12,11 @@ import SidebarNav from './layout/SidebarNav.js';
 import NotificationContainer from './ui/NotificationContainer.js';
 import RecordDetail from './catalog/RecordDetail.js';
 import BorrowerDetail from './borrowers/BorrowerDetail.js';
+import HoldReadyModal from './circulation/HoldReadyModal.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
+import { useHoldReadyModal } from '../composables/useHoldReadyModal.js';
 import { useNotification } from '../composables/useNotification.js';
 import { apiClient } from '../api/client.js';
 import { getLocalizedErrorMessage } from '../models/error.js';
@@ -28,12 +30,14 @@ export default defineComponent({
         NotificationContainer,
         RecordDetail,
         BorrowerDetail,
+        HoldReadyModal,
     },
 
     setup() {
         const { t } = useI18n();
         const { isLoading } = useAppState();
-        const { success, error: showError, warning } = useNotification();
+        const { success, error: showError } = useNotification();
+        const { showHoldReady } = useHoldReadyModal();
         useKeyboardShortcuts();
         const appReady = ref(false);
         const route = useRoute();
@@ -67,11 +71,7 @@ export default defineComponent({
                 const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
                 success(`✓ ${titleDisplay}${shelfInfo}`);
                 if (returned?.hold_ready) {
-                    const hr = returned.hold_ready;
-                    warning(t('circulation.hold_ready_message', {
-                        name: hr.borrower_name,
-                        class: hr.class_name || hr.borrower_id,
-                    }));
+                    showHoldReady(returned.hold_ready, returned);
                 }
                 // Reload RecordDetail by toggling the ID
                 closeRecord();
@@ -162,6 +162,9 @@ export default defineComponent({
                 @updated="() => {}"
                 @view-item="handleGlobalViewItem"
             />
+
+            <!-- Blocking hold-ready notice shared by every item-return workflow -->
+            <hold-ready-modal />
         </div>
     `
 });

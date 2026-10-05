@@ -8,6 +8,7 @@
  *   static   (Boolean) — if true, backdrop click and ESC don't close (default: false)
  *   centered (Boolean) — vertically centered dialog (default: false)
  *   scrollable (Boolean) — scrollable body (default: false)
+ *   showClose (Boolean) — show the header close button (default: true)
  *
  * Emits: close
  * Slots: header, default (body), footer
@@ -43,6 +44,10 @@ export default defineComponent({
         scrollable: {
             type: Boolean,
             default: false
+        },
+        showClose: {
+            type: Boolean,
+            default: true
         }
     },
 
@@ -66,6 +71,7 @@ export default defineComponent({
                     class="modal fade show d-block"
                     tabindex="-1"
                     role="dialog"
+                    aria-modal="true"
                     @click.self="onBackdropClick"
                 >
                     <div
@@ -83,6 +89,7 @@ export default defineComponent({
                                     <slot name="header">{{ title }}</slot>
                                 </h5>
                                 <button
+                                    v-if="showClose"
                                     type="button"
                                     class="btn-close"
                                     @click="close"

@@ -13,6 +13,7 @@ import { useErrorHandler } from '../composables/useErrorHandler.js';
 import { useBarcodeUtils } from '../composables/useBarcodeUtils.js';
 import { useBlockReasonTranslation } from '../composables/useBlockReasonTranslation.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
+import { useHoldReadyModal } from '../composables/useHoldReadyModal.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useItemBadge } from '../composables/useItemBadge.js';
 import { events } from '../utils/events.js';
@@ -44,6 +45,7 @@ export default defineComponent({
         const { useRoute } = VueRouter;
         const route = useRoute();
         const { openRecord } = useGlobalModal();
+        const { holdReady, showHoldReady } = useHoldReadyModal();
         const { settings: appSettings, loadSettings } = useAppState();
         const { getShelfBadge, getCoteBadge } = useItemBadge(appSettings);
         const { success, error: showError, warning } = useNotification();
@@ -97,6 +99,8 @@ export default defineComponent({
                    (borrower.value.last_name?.[0] || '').toUpperCase();
         });
         const scannerDisabled = computed(() => {
+            // Pause scanning until the librarian acknowledges the hold-ready alert.
+            if (holdReady.value) return true;
             // Disable if settings are still loading
             if (settingsLoading.value) return true;
             // In checkout mode, also disable if borrower not loaded
@@ -342,13 +346,9 @@ export default defineComponent({
                     }));
                 }
 
-                // Show hold_ready notification so librarian knows to set the book aside
+                // Show the blocking app-level alert; the session row keeps a persistent reminder.
                 if (transaction.hold_ready) {
-                    const hr = transaction.hold_ready;
-                    warning(t('circulation.hold_ready_message', {
-                        name: hr.borrower_name,
-                        class: hr.class_name || hr.borrower_id
-                    }));
+                    showHoldReady(transaction.hold_ready, transaction);
                 }
 
             } catch (err) {
@@ -506,13 +506,8 @@ export default defineComponent({
                 const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
                 success(`✓ ${titleDisplay}${shelfInfo}`);
 
-                // Show hold_ready notification so librarian knows to set the book aside
                 if (returned?.hold_ready) {
-                    const hr = returned.hold_ready;
-                    warning(t('circulation.hold_ready_message', {
-                        name: hr.borrower_name,
-                        class: hr.class_name || hr.borrower_id
-                    }));
+                    showHoldReady(returned.hold_ready, returned);
                 }
 
                 // Reload borrower to get updated loan info

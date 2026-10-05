@@ -5,6 +5,7 @@ import { shallowMount } from '@vue/test-utils';
 import App from '../../../src/bcd_web_vue/js/components/App.js';
 import { apiClient } from '../../../src/bcd_web_vue/js/api/client.js';
 import { useGlobalModal } from '../../../src/bcd_web_vue/js/composables/useGlobalModal.js';
+import { useHoldReadyModal } from '../../../src/bcd_web_vue/js/composables/useHoldReadyModal.js';
 import { useNotification } from '../../../src/bcd_web_vue/js/composables/useNotification.js';
 import { events } from '../../../src/bcd_web_vue/js/utils/events.js';
 
@@ -18,6 +19,7 @@ function mountApp() {
                 NotificationContainer: true,
                 RecordDetail: true,
                 BorrowerDetail: true,
+                HoldReadyModal: true,
                 'router-view': true
             }
         }
@@ -30,6 +32,7 @@ beforeEach(() => {
     globalThis.__testRoute.meta = reactive({});
     useGlobalModal().closeRecord();
     useGlobalModal().closeBorrower();
+    while (useHoldReadyModal().holdReady.value) useHoldReadyModal().dismissHoldReady();
     useNotification().clear();
 });
 
@@ -39,6 +42,7 @@ afterEach(() => {
     globalThis.__testRoute.meta = {};
     useGlobalModal().closeRecord();
     useGlobalModal().closeBorrower();
+    while (useHoldReadyModal().holdReady.value) useHoldReadyModal().dismissHoldReady();
     useNotification().clear();
 });
 
@@ -79,6 +83,37 @@ describe('App', () => {
         });
         expect(emit).toHaveBeenCalledWith('catalog:refresh');
         expect(globalRecordId.value).toBe(42);
+        expect(useNotification().notifications.value).toEqual([
+            expect.objectContaining({ type: 'success' })
+        ]);
+    });
+
+    it('opens the shared blocking alert after a quick return from the catalog', async () => {
+        useGlobalModal().openRecord(12);
+        vi.spyOn(apiClient, 'post').mockResolvedValue({
+            items: [{
+                item_id: 'I-012',
+                title: 'Le Petit Nicolas',
+                hold_ready: {
+                    borrower_name: 'Lina Martin',
+                    borrower_id: 'B-9',
+                    class_name: 'CE2',
+                    expiration_date: '2030-02-01'
+                }
+            }]
+        });
+        const wrapper = mountApp();
+
+        await wrapper.vm.handleGlobalQuickReturn('I-012');
+
+        expect(useHoldReadyModal().holdReady.value).toEqual({
+            title: 'Le Petit Nicolas',
+            item_id: 'I-012',
+            borrower_name: 'Lina Martin',
+            borrower_id: 'B-9',
+            class_name: 'CE2',
+            expiration_date: '2030-02-01'
+        });
         expect(useNotification().notifications.value).toEqual([
             expect.objectContaining({ type: 'success' })
         ]);
