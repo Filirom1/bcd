@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Godot Kids class selection now supports book returns by scanning a prefixed barcode or typing an unprefixed item code.
 - Added native Godot and CLIENT_ONLY mDNS discovery with live integration tests.
 - Checkout class filter now displays the assigned homeroom teacher after the class name.
 - Added direct checkout navigation from borrower and copy details through the existing checkout workflow.

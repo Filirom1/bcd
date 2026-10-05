@@ -17,9 +17,8 @@ static func item_id(text: String, settings: Dictionary) -> String:
 		return value.substr(prefix.length())
 	return value
 
-# The class-selection scan field distinguishes borrower cards from item cards.
-# An item prefix is required unless the server explicitly configured an empty
-# prefix, which means every non-borrower scan is treated as an item.
+# The borrower prefix takes precedence, so other input can be treated as an
+# item ID whether it came from a prefixed scanner or was typed without a prefix.
 static func parse_class_scan(text: String, settings: Dictionary) -> Dictionary:
 	var value := clean(text)
 	if value.is_empty():
@@ -29,9 +28,4 @@ static func parse_class_scan(text: String, settings: Dictionary) -> Dictionary:
 	if not borrower_prefix.is_empty() and value.begins_with(borrower_prefix):
 		return {"kind": "borrower", "id": value.substr(borrower_prefix.length())}
 
-	var item_prefix := configured_prefix(settings, "item_barcode_prefix", ".")
-	if item_prefix.is_empty():
-		return {"kind": "item", "id": value}
-	if value.begins_with(item_prefix):
-		return {"kind": "item", "id": value.substr(item_prefix.length())}
-	return {"kind": "unknown", "id": ""}
+	return {"kind": "item", "id": item_id(value, settings)}

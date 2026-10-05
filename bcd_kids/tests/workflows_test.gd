@@ -389,6 +389,18 @@ func _test_name_and_class_workflows() -> void:
 		"Item barcode scanning performs a quick return without a borrower"
 	)
 
+	_clear_fixture()
+	_enqueue_json("/api/v1/circulation/return", 200, {"items": [{"title": "Typed return"}]})
+	class_select.call("_handle_scan", "RAW-ITEM")
+	await _wait_until_http_idle()
+	var typed_return_request := _last_request_containing("/circulation/return")
+	var typed_return_body = JSON.parse_string(typed_return_request.get("body", ""))
+	_test.equal(
+		typed_return_body.get("item_ids", []) if typed_return_body is Dictionary else [],
+		["RAW-ITEM"],
+		"Typing an item ID without its configured prefix performs a quick return"
+	)
+
 	_server.get("requests").clear()
 	class_select.call("_handle_scan", ".")
 	await _test.wait_frames(self, 3)
@@ -398,7 +410,13 @@ func _test_name_and_class_workflows() -> void:
 	_enqueue_json("/api/v1/circulation/return", 200, {"items": []})
 	class_select.call("_handle_scan", "RAW-ITEM")
 	await _wait_until_http_idle()
-	_test.expect(_last_request_containing("/circulation/return").get("target", "") != "", "An empty item prefix accepts a raw item barcode")
+	var empty_prefix_request := _last_request_containing("/circulation/return")
+	var empty_prefix_body = JSON.parse_string(empty_prefix_request.get("body", ""))
+	_test.equal(
+		empty_prefix_body.get("item_ids", []) if empty_prefix_body is Dictionary else [],
+		["RAW-ITEM"],
+		"An empty item prefix continues to accept raw item IDs"
+	)
 	_gs.settings["item_barcode_prefix"] = "."
 
 	var name_input: Control = await _mount("res://src/screens/SNameInput.tscn")

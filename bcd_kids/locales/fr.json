@@ -7,7 +7,7 @@
 	},
 	"class_select": {
 		"title": "Choisis ta classe",
-		"scan_placeholder": "Scanne un livre ou la carte d'un élève…",
+		"scan_placeholder": "Tape le code du livre, scanne un livre ou la carte d'un élève…",
 		"no_classes": "Aucune classe trouvée"
 	},
 	"name_input": {

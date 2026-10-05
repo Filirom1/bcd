@@ -7,7 +7,7 @@
 	},
 	"class_select": {
 		"title": "Choose your class",
-		"scan_placeholder": "Scan book or child card…",
+		"scan_placeholder": "Type a book code, scan a book, or scan a student card…",
 		"no_classes": "No classes found"
 	},
 	"name_input": {
