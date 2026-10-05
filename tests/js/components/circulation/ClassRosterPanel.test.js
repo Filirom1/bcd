@@ -111,7 +111,34 @@ describe('ClassRosterPanel', () => {
         expect(get).toHaveBeenCalledWith('/borrowers', { class_id: 9, role: 'student', limit: 500 });
     });
 
-    it('selects roster students from prefixed scans and leaves text filters local', async () => {
+    it('searches students by name across classes without requiring a class selection', async () => {
+        vi.useFakeTimers();
+        const get = vi.mocked(apiClient.get);
+        const wrapper = mount(ClassRosterPanel, { props: { settings: {} } });
+        await flushPromises();
+        expect(wrapper.vm.selectedClassId).toBeNull();
+
+        expect(wrapper.find('select option').text()).toBe('borrowers.all_classes');
+        wrapper.vm.handleFilterInput('A');
+        vi.advanceTimersByTime(300);
+        await flushPromises();
+        expect(get.mock.calls.filter(([endpoint]) => endpoint === '/borrowers')).toHaveLength(0);
+
+        wrapper.vm.handleFilterInput('Amir');
+        vi.advanceTimersByTime(300);
+        await flushPromises();
+
+        expect(get).toHaveBeenCalledWith('/borrowers', {
+            q: 'Amir',
+            role: 'student',
+            limit: 500
+        });
+        expect(wrapper.vm.filteredRoster).toEqual(mockRoster);
+        expect(wrapper.text()).not.toContain('circulation.no_class_selected');
+        vi.useRealTimers();
+    });
+
+    it('selects roster students from prefixed scans and keeps name search within the selected class', async () => {
         vi.useFakeTimers();
         const wrapper = mount(ClassRosterPanel, {
             props: { settings: { borrower_barcode_prefix: '%' } }
@@ -126,12 +153,15 @@ describe('ClassRosterPanel', () => {
         expect(wrapper.emitted('borrower-selected')).toEqual([['102']]);
         expect(wrapper.vm.filterQuery).toBe('');
 
-        const before = apiClient.get.mock.calls.length;
+        const borrowerCallsBeforeSearch = apiClient.get.mock.calls
+            .filter(([endpoint]) => endpoint === '/borrowers').length;
         wrapper.vm.handleFilterInput('Amira');
-        vi.advanceTimersByTime(500);
+        vi.advanceTimersByTime(300);
         await flushPromises();
         expect(wrapper.vm.filterQuery).toBe('Amira');
-        expect(apiClient.get.mock.calls.length).toBe(before);
+        expect(wrapper.vm.filteredRoster).toHaveLength(1);
+        expect(apiClient.get.mock.calls
+            .filter(([endpoint]) => endpoint === '/borrowers')).toHaveLength(borrowerCallsBeforeSearch);
         vi.useRealTimers();
     });
 
@@ -170,6 +200,6 @@ describe('ClassRosterPanel', () => {
 
         expect(wrapper.vm.classes).toEqual([]);
         expect(wrapper.vm.selectedClassId).toBeNull();
-        expect(wrapper.text()).toContain('circulation.no_class_selected');
+        expect(wrapper.text()).toContain('circulation.search_all_classes_hint');
     });
 });

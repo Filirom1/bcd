@@ -47,14 +47,19 @@ export default defineComponent({
         const classes = ref([]);
         const selectedClassId = ref(null);
         const roster = ref([]);
+        const searchResults = ref([]);
+        const globalSearchActive = ref(false);
         const filterQuery = ref('');
         const rosterLoading = ref(false);
+        let searchRequestId = 0;
         const classesLoading = ref(true);
         const filterInputRef = ref(null);
 
         // ── Computed ──────────────────────────────────────────────────────────
 
         const filteredRoster = computed(() => {
+            if (globalSearchActive.value) return searchResults.value;
+
             const prefix = props.settings?.borrower_barcode_prefix || '';
             let q = filterQuery.value.trim().toLowerCase();
             // Strip barcode prefix so "%101" matches borrower_id "101"
@@ -142,12 +147,43 @@ export default defineComponent({
         };
 
         const selectClass = async (classId) => {
-            const id = Number(classId);
-            if (!id) return;
+            const id = classId ? Number(classId) : null;
+            performLookup.cancel();
+            performNameSearch.cancel();
+            searchRequestId++;
+            globalSearchActive.value = false;
+            searchResults.value = [];
             selectedClassId.value = id;
             filterQuery.value = '';
-            await loadRoster(id);
+            if (id) {
+                await loadRoster(id);
+            } else {
+                roster.value = [];
+                rosterLoading.value = false;
+            }
         };
+
+        // Search globally when no class is selected. The borrowers API supports
+        // q + role filters, so checkout doesn't require a class first.
+        const performNameSearch = useDebouncedAction(async (query) => {
+            const requestId = ++searchRequestId;
+            rosterLoading.value = true;
+            try {
+                const data = await apiClient.get('/borrowers', {
+                    q: query,
+                    role: 'student',
+                    limit: 500
+                });
+                if (requestId === searchRequestId) {
+                    searchResults.value = normalizeCollection(data).items;
+                }
+            } catch (err) {
+                console.error('Failed to search students:', err);
+                if (requestId === searchRequestId) searchResults.value = [];
+            } finally {
+                if (requestId === searchRequestId) rosterLoading.value = false;
+            }
+        }, 300);
 
         // ── Input handler: filter by name OR resolve barcode scan ─────────────
 
@@ -178,16 +214,57 @@ export default defineComponent({
             filterQuery.value = value;
             performLookup.cancel();
 
-            if (!value.trim()) return;
+            if (!value.trim()) {
+                performNameSearch.cancel();
+                searchRequestId++;
+                globalSearchActive.value = false;
+                searchResults.value = [];
+                rosterLoading.value = false;
+                return;
+            }
 
             // Strip borrower barcode prefix (e.g. "%421" → "421")
             const prefix = props.settings?.borrower_barcode_prefix || '';
             const stripped = prefix ? stripBarcodePrefix(value.trim(), prefix) : value.trim();
 
-            // Need a non-empty stripped value and it must look like an ID
-            if (!stripped) return;
+            // A prefix by itself is an incomplete barcode scan; wait for its ID.
+            if (!stripped) {
+                performNameSearch.cancel();
+                searchRequestId++;
+                globalSearchActive.value = false;
+                searchResults.value = [];
+                rosterLoading.value = false;
+                return;
+            }
             const couldBeId = stripped !== value.trim() || /^\d+$/.test(stripped);
-            if (!couldBeId) return; // Pure text filter — filteredRoster handles it
+            if (!couldBeId) {
+                // With a class selected, the loaded roster is enough and must
+                // remain the search scope. Only query the API for all classes
+                // when the class selector is set to "all classes".
+                performNameSearch.cancel();
+                searchRequestId++;
+                searchResults.value = [];
+                if (selectedClassId.value) {
+                    globalSearchActive.value = false;
+                    rosterLoading.value = false;
+                    return;
+                }
+
+                globalSearchActive.value = value.trim().length >= 2;
+                if (value.trim().length < 2) {
+                    rosterLoading.value = false;
+                    return;
+                }
+                rosterLoading.value = true;
+                performNameSearch(value.trim());
+                return;
+            }
+
+            performNameSearch.cancel();
+            searchRequestId++;
+            globalSearchActive.value = false;
+            searchResults.value = [];
+            rosterLoading.value = false;
 
             // Debounce: barcode scanners complete in ~50 ms, manual typing waits 300 ms.
             // This prevents partial barcode states (%4, %42…) from firing stale lookups.
@@ -195,7 +272,15 @@ export default defineComponent({
         };
 
         const selectStudent = (borrowerId) => {
+            const selectedFromGlobalSearch = globalSearchActive.value;
+            const borrower = searchResults.value.find(b => b.borrower_id === borrowerId);
             filterQuery.value = '';
+            globalSearchActive.value = false;
+            searchResults.value = [];
+            if (selectedFromGlobalSearch && borrower?.class_id) {
+                selectedClassId.value = borrower.class_id;
+                loadRoster(borrower.class_id);
+            }
             emit('borrower-selected', borrowerId);
         };
 
@@ -222,6 +307,7 @@ export default defineComponent({
             classLabel,
             roster,
             filteredRoster,
+            globalSearchActive,
             filterQuery,
             filterInputRef,
             rosterLoading,
@@ -255,15 +341,15 @@ export default defineComponent({
                         :value="selectedClassId"
                         @change="selectClass($event.target.value)"
                     >
-                        <option value="" disabled :selected="!selectedClassId">
-                            {{ t('circulation.select_class') }}
+                        <option value="">
+                            {{ t('borrowers.all_classes') }}
                         </option>
                         <option v-for="cls in classes" :key="cls.id" :value="cls.id">
                             {{ classLabel(cls) }}
                         </option>
                     </select>
                     <div v-else class="text-muted small mb-2">
-                        <i class="bi bi-info-circle me-1"></i>{{ t('circulation.no_class_selected') }}
+                        <i class="bi bi-info-circle me-1"></i>{{ t('circulation.search_all_classes_hint') }}
                     </div>
                 </template>
 
@@ -313,9 +399,9 @@ export default defineComponent({
                 </div>
 
                 <!-- No class selected -->
-                <div v-else-if="!selectedClassId" class="roster-placeholder">
+                <div v-else-if="!selectedClassId && !globalSearchActive" class="roster-placeholder">
                     <i class="bi bi-diagram-3 fs-4 mb-2"></i>
-                    {{ t('circulation.no_class_selected') }}
+                    {{ t('circulation.search_all_classes_hint') }}
                 </div>
 
                 <!-- Student rows -->
@@ -366,7 +452,7 @@ export default defineComponent({
             </div><!-- /roster-scroll -->
 
             <!-- ── Legend ── -->
-            <div v-if="roster.length > 0" class="roster-legend">
+            <div v-if="roster.length > 0 && !globalSearchActive" class="roster-legend">
                 <span class="legend-item">
                     <span class="legend-dot dot-green"></span>
                     {{ t('circulation.has_borrowed') }}
