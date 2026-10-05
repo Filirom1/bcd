@@ -5,6 +5,7 @@ import BorrowersPage from '../../../../src/bcd_web_vue/js/pages/BorrowersPage.js
 import { apiClient } from '../../../../src/bcd_web_vue/js/api/client.js';
 import { useNotification } from '../../../../src/bcd_web_vue/js/composables/useNotification.js';
 import { ApiError } from '../../../../src/bcd_web_vue/js/models/error.js';
+import { events } from '../../../../src/bcd_web_vue/js/utils/events.js';
 import { makeBorrower } from '../../fixtures/borrowers.js';
 
 const borrower = makeBorrower({ borrower_id: 'B-101' });
@@ -76,6 +77,18 @@ describe('BorrowersPage', () => {
             active: true
         });
         expect(wrapper.vm.currentPage).toBe(1);
+    });
+
+    it('reloads the table when another component emits borrowers:refresh', async () => {
+        const get = mockBorrowerListApi();
+        const wrapper = mountBorrowersPage();
+        await flushPromises();
+        expect(get).toHaveBeenCalledTimes(1);
+
+        events.emit('borrowers:refresh');
+        await flushPromises();
+
+        expect(get).toHaveBeenCalledTimes(2);
     });
 
     it('opens edit mode only for the single selected borrower', async () => {

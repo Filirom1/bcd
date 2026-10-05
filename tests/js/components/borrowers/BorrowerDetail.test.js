@@ -370,16 +370,21 @@ describe('BorrowerDetail', () => {
         expect(wrapper.emitted('view-item')).toEqual([[42]]);
     });
 
-    it('reloads borrower data after a block or unblock action', async () => {
+    it('refreshes borrower lists after block, unblock, and renew actions', async () => {
         const getSpy = mockBorrowerApi();
+        const refreshSpy = vi.spyOn(events, 'emit');
         const wrapper = mountDetail({ initialMode: 'view' });
         await flushPromises();
         const initialCalls = getSpy.mock.calls.length;
 
-        wrapper.vm.handleActionCompleted('block');
-        await flushPromises();
+        for (const action of ['block', 'unblock', 'renew']) {
+            wrapper.vm.handleActionCompleted(action);
+            await flushPromises();
+        }
 
-        expect(wrapper.emitted('updated')).toEqual([['block']]);
+        expect(wrapper.emitted('updated')).toEqual([['block'], ['unblock'], ['renew']]);
+        expect(refreshSpy).toHaveBeenCalledTimes(3);
+        expect(refreshSpy).toHaveBeenCalledWith('borrowers:refresh');
         expect(getSpy.mock.calls.length).toBeGreaterThan(initialCalls);
     });
 

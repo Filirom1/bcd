@@ -659,6 +659,7 @@ export default {
         // Handle action completed (block, unblock, renew)
         const handleActionCompleted = (action) => {
             loadBorrowerData();
+            events.emit('borrowers:refresh');
             emit('updated', action);
         };
 

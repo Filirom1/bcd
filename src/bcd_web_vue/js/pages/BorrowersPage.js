@@ -318,11 +318,11 @@ export default defineComponent({
             }
         };
 
-        // Handle borrower created from add modal
+        // Handle borrower created from add modal. BorrowerAddForm emits the
+        // borrowers:refresh event; the page's event subscription reloads the list.
         const handleBorrowerCreated = (newBorrower) => {
             success(t('admin.borrower.add.success'));
             showAddModal.value = false;
-            loadBorrowers();
         };
 
         // Handle borrower saved from edit modal
@@ -336,8 +336,7 @@ export default defineComponent({
             // Close modal
             showEditModal.value = false;
 
-            // Reload borrowers to get updated data
-            loadBorrowers();
+            // BorrowerDetail emits borrowers:refresh after the successful save.
         };
 
         // Handle borrower deleted from edit modal
@@ -351,8 +350,7 @@ export default defineComponent({
             // Close edit modal
             showEditModal.value = false;
 
-            // Reload borrowers to reflect deletion
-            loadBorrowers();
+            // BorrowerDetail emits borrowers:refresh after the successful deletion.
         };
 
         // Handle bulk operation execution
