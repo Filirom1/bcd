@@ -1,4 +1,5 @@
 import asyncio
+import json
 import threading
 from unittest.mock import MagicMock
 
@@ -40,3 +41,4 @@ def test_validation_exception_handler_returns_422():
     )
     response = _run_async(exception_handlers.validation_exception_handler(MagicMock(), exc))
     assert response.status_code == 422
+    assert json.loads(response.body)["error_code"] == "VALIDATION_ERROR"

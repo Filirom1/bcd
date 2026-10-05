@@ -7,6 +7,7 @@ const { defineComponent, ref, reactive, computed, onMounted, watch, onBeforeUnmo
 const { useI18n } = VueI18n;
 const { useRoute, useRouter } = VueRouter;
 import { apiClient } from '../api/client.js';
+import { getLocalizedErrorMessage } from '../models/error.js';
 import { events } from '../utils/events.js';
 import { normalizeCollection } from '../models/pagination.js';
 import { useAppState } from '../composables/useAppState.js';
@@ -79,14 +80,13 @@ export default defineComponent({
         // Bulk operations (useBulkOperations composable)
         const {
             loading: bulkLoading,
-            error: bulkError,
             progress: bulkProgress,
             showProgress: bulkShowProgress,
             bulkEditRecords,
             bulkDeleteRecords,
             mergeRecords,
             updateRecord
-        } = useBulkOperations('catalog');
+        } = useBulkOperations('catalog', t);
 
         // Column settings (with localStorage persistence)
         const { visibleColumns, isColumnVisible, toggleColumn, resetToDefaults } = useColumnSettings();
@@ -583,7 +583,7 @@ export default defineComponent({
 
             } catch (err) {
                 console.error('Export failed:', err);
-                showError(t('catalog.export_failed') + ': ' + err.message);
+                showError(getLocalizedErrorMessage(err, t, 'catalog.export_failed'));
             } finally {
                 exportLoading.value = false;
             }

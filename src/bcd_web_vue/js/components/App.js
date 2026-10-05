@@ -17,6 +17,7 @@ import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { useNotification } from '../composables/useNotification.js';
 import { apiClient } from '../api/client.js';
+import { getLocalizedErrorMessage } from '../models/error.js';
 import { events } from '../utils/events.js';
 
 export default defineComponent({
@@ -78,7 +79,7 @@ export default defineComponent({
                 // Signal CatalogPage to refresh its search results
                 events.emit('catalog:refresh');
             } catch (err) {
-                showError(err.message || t('common.error'));
+                showError(getLocalizedErrorMessage(err, t, 'common.error'));
             }
         };
 

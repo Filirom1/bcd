@@ -47,6 +47,7 @@ const HOLD := {
 	"borrower_blocked": "hold.error_blocked",
 	"hold_already_exists": "hold.error_duplicate",
 	"no_items_for_record": "hold.error_no_items",
+	"record_not_found": "hold.error_record_not_found",
 	"hold_limit_exceeded": "hold.error_limit",
 }
 

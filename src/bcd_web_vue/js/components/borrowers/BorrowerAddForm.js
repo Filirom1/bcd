@@ -10,6 +10,8 @@ const { ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import BorrowerFields from './BorrowerFields.js';
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
+import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { events } from '../../utils/events.js';
 
 export default {
@@ -26,6 +28,7 @@ export default {
   emits: ['update:show', 'created'],
   setup(props, { emit }) {
     const { t } = useI18n();
+    const { handleValidationError } = useErrorHandler(t);
 
     const defaultForm = () => ({
       borrower_id: '',
@@ -123,18 +126,27 @@ export default {
         closeModal();
       } catch (error) {
         console.error('Error creating borrower:', error);
-        if (error.statusCode === 409) {
-          errors.value.borrower_id = t('errors.BORROWER_ID_NOT_AVAILABLE');
-        } else if (error.statusCode === 400) {
-          if (error.message && error.message.includes('borrower_id')) {
-            errors.value.borrower_id = error.message;
-          } else if (error.message && error.message.includes('role')) {
-            errors.value.role = error.message;
-          } else {
-            errors.value.general = error.message || t('admin.borrower.add.error');
-          }
+        const validationErrors = handleValidationError(error);
+        if (Object.keys(validationErrors).length > 0) {
+          errors.value = { ...errors.value, ...validationErrors };
+        } else if (error.statusCode === 409) {
+          errors.value.borrower_id = getLocalizedErrorMessage(
+            error,
+            t,
+            'errors.BORROWER_ID_NOT_AVAILABLE'
+          );
+        } else if (error.statusCode === 400 && error.message?.includes('borrower_id')) {
+          errors.value.borrower_id = error.message;
+        } else if (error.statusCode === 400 && error.message?.includes('role')) {
+          errors.value.role = error.message;
         } else {
-          errors.value.general = error.message || t('admin.borrower.add.error');
+          errors.value.general = getLocalizedErrorMessage(
+            error,
+            t,
+            error.statusCode === 400
+              ? 'errors.validation_failed'
+              : 'admin.borrower.add.error'
+          );
         }
       } finally {
         isSubmitting.value = false;

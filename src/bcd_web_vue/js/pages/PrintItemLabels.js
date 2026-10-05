@@ -4,6 +4,7 @@ import { useBarcodeRenderer } from '../composables/useBarcodeRenderer.js';
 import { useAppState } from '../composables/useAppState.js';
 import { LABEL_FORMATS, DEFAULT_FORMAT_ID } from '../config/labelFormats.js';
 import { apiClient } from '../api/client.js';
+import { getLocalizedErrorMessage } from '../models/error.js';
 import { useDebouncedAction } from '../composables/useDebouncedAction.js';
 import { getJSON, setJSON, removeItem } from '../utils/storage.js';
 
@@ -243,7 +244,7 @@ export default defineComponent({
                 await nextTick();
                 renderBarcodesCurrentFormat();
             } catch (err) {
-                error.value = err.message;
+                error.value = getLocalizedErrorMessage(err, t, 'errors.generic');
                 loading.value = false;
             }
         };

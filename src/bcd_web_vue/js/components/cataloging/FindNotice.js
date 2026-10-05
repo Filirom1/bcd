@@ -9,6 +9,7 @@
 const { defineComponent, ref, computed, onMounted, nextTick } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
 import { useNotification } from '../../composables/useNotification.js';
 
 const SOURCES = ['bnf', 'google_books', 'sudoc'];
@@ -206,7 +207,11 @@ export default defineComponent({
                 if (error?.name === 'AbortError') return;
                 if (generation !== searchGeneration) return;
                 state.status = 'error';
-                state.error = error?.message || t('cataloging.external_lookup_error');
+                state.error = getLocalizedErrorMessage(
+                    error,
+                    t,
+                    'cataloging.external_lookup_error'
+                );
                 await runSource(index + 1, generation);
             } finally {
                 if (activeRequest.value === controller) activeRequest.value = null;
@@ -273,7 +278,7 @@ export default defineComponent({
                 // A failed local query must not silently turn into an external
                 // request: the librarian can retry or continue manually.
                 loading.value = false;
-                showError(error?.message || t('cataloging.local_search_error'));
+                showError(getLocalizedErrorMessage(error, t, 'cataloging.local_search_error'));
             } finally {
                 if (generation === searchGeneration) searchingLocal.value = false;
             }

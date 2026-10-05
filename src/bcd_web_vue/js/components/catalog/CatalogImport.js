@@ -9,6 +9,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
 import Modal from '../ui/Modal.js';
 import { events } from '../../utils/events.js';
 
@@ -316,7 +317,7 @@ export default {
           items_created: 0,
           records_skipped: 0,
           items_skipped: 0,
-          errors: [error.message || t('catalog.import_failed')],
+          errors: [getLocalizedErrorMessage(error, t, 'catalog.import_failed')],
           total_rows: 0
         };
       } finally {

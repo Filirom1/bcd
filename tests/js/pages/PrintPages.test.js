@@ -85,7 +85,7 @@ describe('PrintBorrowerReference', () => {
         const wrapper = mount(PrintBorrowerReference);
         await flushPromises();
         expect(wrapper.vm.loading).toBe(false);
-        expect(wrapper.vm.error).toBe('Failed to load borrowers');
+        expect(wrapper.vm.error).toBe('cannot load');
     });
 });
 

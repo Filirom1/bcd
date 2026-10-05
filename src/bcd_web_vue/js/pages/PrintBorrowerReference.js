@@ -4,6 +4,7 @@ const { useRoute } = VueRouter;
 import { useBarcodeRenderer } from '../composables/useBarcodeRenderer.js';
 import { useBorrowerData } from '../composables/useBorrowerData.js';
 import { useAppState } from '../composables/useAppState.js';
+import { getLocalizedErrorMessage } from '../models/error.js';
 
 export default defineComponent({
     name: 'PrintBorrowerReference',
@@ -80,7 +81,7 @@ export default defineComponent({
                     height: 50
                 });
             } catch (err) {
-                error.value = err.message;
+                error.value = getLocalizedErrorMessage(err, t, 'errors.generic');
                 loading.value = false;
             }
         });

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from src.bcd_api.core.exceptions import (
     BibliographicRecordNotFoundException,
-    ConflictError,
+    DuplicateISBNException,
     ItemHasActiveLoanException,
     NotFoundError,
     ValidationError,
@@ -48,9 +48,7 @@ def create_bibliographic_record(
                 .first()
             )
             if existing:
-                raise ConflictError(
-                    f"ISBN {record_data.isbn} already exists (record ID: {existing.id})"
-                )
+                raise DuplicateISBNException(record_data.isbn, existing.id)
 
         bnf_data = None
         if isbn_lookup and record_data.isbn:

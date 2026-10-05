@@ -311,6 +311,7 @@ func _test_search_and_holds() -> void:
 	_test.equal(_last_notification_text(), _i18n.call("t", "common.refresh_failed"), "Reservation reports a refresh failure separately")
 
 	var hold_error_keys := {
+		"network_error": "common.error_network",
 		"borrower_blocked": "hold.error_blocked",
 		"hold_already_exists": "hold.error_duplicate",
 		"no_items_for_record": "hold.error_no_items",

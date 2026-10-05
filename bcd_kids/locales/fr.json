@@ -127,7 +127,8 @@
 		"cancelled_with_title": "{title} — Réservation annulée",
 		"error_blocked": "Ton compte est bloqué",
 		"error_duplicate": "Tu as déjà réservé ce livre",
-		"error_no_items": "Ce livre n'existe pas dans notre collection",
+		"error_no_items": "Ce livre n'a aucun exemplaire à réserver",
+		"error_record_not_found": "Ce livre n'existe pas dans le catalogue",
 		"error_limit": "Tu as trop de réservations en cours"
 	},
 	"server_discovery": {

@@ -7,6 +7,7 @@
 const { defineComponent, ref, onMounted, nextTick } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
 import { normalizeCollection } from '../../models/pagination.js';
 
 export default defineComponent({
@@ -48,7 +49,7 @@ export default defineComponent({
                 await nextTick();
                 window.print();
             } catch (err) {
-                error.value = err.message || 'Erreur';
+                error.value = getLocalizedErrorMessage(err, t, 'errors.generic');
                 loading.value = false;
             }
         });

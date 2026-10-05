@@ -6,6 +6,7 @@
 const { defineComponent, ref, computed, onMounted, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../api/client.js';
+import { getLocalizedErrorMessage } from '../models/error.js';
 import { formatCivilDate, formatTime } from '../utils/date.js';
 import { useNotification } from '../composables/useNotification.js';
 import { useErrorHandler } from '../composables/useErrorHandler.js';
@@ -284,8 +285,11 @@ export default defineComponent({
                         break;
 
                     default:
-                        // Fallback to raw error message or generic error
-                        friendlyMessage = err.message || t('circulation.error_checkout_failed');
+                        friendlyMessage = getLocalizedErrorMessage(
+                            err,
+                            t,
+                            'circulation.error_checkout_failed'
+                        );
                 }
 
                 showError(friendlyMessage);
@@ -368,7 +372,11 @@ export default defineComponent({
                         break;
 
                     default:
-                        friendlyMessage = err.message || t('circulation.error_return_failed');
+                        friendlyMessage = getLocalizedErrorMessage(
+                            err,
+                            t,
+                            'circulation.error_return_failed'
+                        );
                 }
 
                 showError(friendlyMessage);

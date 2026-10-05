@@ -11,6 +11,7 @@
 const { defineComponent, ref, computed, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -108,7 +109,9 @@ export default defineComponent({
 
             } catch (err) {
                 console.error('Search error:', err);
-                error(t('inventory.search.error', { error: err.message || 'Unknown error' }));
+                error(t('inventory.search.error', {
+                    error: getLocalizedErrorMessage(err, t)
+                }));
             } finally {
                 searching.value = false;
             }
@@ -211,7 +214,9 @@ export default defineComponent({
 
             } catch (err) {
                 console.error('Add to table error:', err);
-                error(t('inventory.search.add_error', { error: err.message || 'Unknown error' }));
+                error(t('inventory.search.add_error', {
+                    error: getLocalizedErrorMessage(err, t)
+                }));
             }
         };
 

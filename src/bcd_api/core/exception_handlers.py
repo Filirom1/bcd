@@ -44,6 +44,7 @@ async def validation_exception_handler(
         content={
             "success": False,
             "error": "Validation error",
+            "error_code": "VALIDATION_ERROR",
             "details": exc.errors(),
         },
     )
@@ -57,6 +58,7 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
         content={
             "success": False,
             "error": "Database integrity error",
+            "error_code": "INTEGRITY_ERROR",
             "details": str(exc.orig),
         },
     )

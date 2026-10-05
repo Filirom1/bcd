@@ -354,6 +354,7 @@ class TestBibliographicRecordCreation:
         # Verify error message is helpful
         assert "already exists" in str(exc_info.value).lower()
         assert "9780451524935" in str(exc_info.value)
+        assert exc_info.value.error_code == "DUPLICATE_ISBN"
 
     def test_create_bibliographic_record_without_isbn(self, db_session):
         """

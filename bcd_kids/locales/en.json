@@ -127,7 +127,8 @@
 		"cancelled_with_title": "{title} — Hold cancelled",
 		"error_blocked": "Your account is blocked",
 		"error_duplicate": "You already have a hold on this book",
-		"error_no_items": "This book doesn't exist in our collection",
+		"error_no_items": "This book has no copies to reserve",
+		"error_record_not_found": "This book does not exist in the catalog",
 		"error_limit": "You have too many active reservations"
 	},
 	"server_discovery": {

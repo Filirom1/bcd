@@ -409,6 +409,8 @@ describe('BorrowerDetail', () => {
         const getSpy = mockBorrowerApi();
         const postSpy = vi.spyOn(apiClient, 'post')
             .mockRejectedValueOnce({ code: 'hold_limit_exceeded', details: { limit: 3 } })
+            .mockRejectedValueOnce({ code: 'network_error', message: 'Network error: Unable to reach server' })
+            .mockRejectedValueOnce({ code: 'hold_already_exists', message: 'Borrower already has an active hold' })
             .mockRejectedValueOnce(new Error('hold offline'));
         const deleteSpy = vi.spyOn(apiClient, 'delete').mockRejectedValue(new Error('cancel offline'));
         const wrapper = mountDetail({ initialMode: 'view' });
@@ -421,13 +423,17 @@ describe('BorrowerDetail', () => {
         expect(wrapper.vm.holdSearchLoading).toBe(false);
 
         await wrapper.vm.createHold(7);
-        expect(wrapper.vm.holdFormMessage).toEqual(expect.objectContaining({ type: 'error' }));
+        expect(wrapper.vm.holdFormMessage.text).toBe('holds.hold_limit_exceeded');
         await wrapper.vm.createHold(8);
+        expect(wrapper.vm.holdFormMessage.text).toBe('errors.network_error');
+        await wrapper.vm.createHold(9);
+        expect(wrapper.vm.holdFormMessage.text).toBe('holds.already_exists');
+        await wrapper.vm.createHold(10);
         expect(wrapper.vm.holdFormMessage.text).toBe('hold offline');
         await wrapper.vm.cancelHold(1);
         expect(deleteSpy).toHaveBeenCalledWith('/holds/1');
         expect(wrapper.vm.holds).toEqual([]);
-        expect(postSpy).toHaveBeenCalledTimes(2);
+        expect(postSpy).toHaveBeenCalledTimes(4);
     });
 
     it('handles history errors and changes both page and page size', async () => {
@@ -609,7 +615,7 @@ describe('BorrowerDetail', () => {
         const wrapper = mountDetail({ initialMode: 'edit' });
         await flushPromises();
         await wrapper.vm.handleDeleteConfirm('B-101');
-        expect(wrapper.vm.errors.general).toBe('admin.error_delete_borrower');
+        expect(wrapper.vm.errors.general).toBe('offline');
         expect(wrapper.vm.showDeleteDialog).toBe(false);
         expect(consoleSpy).toHaveBeenCalledWith('Error deleting borrower:', expect.any(Error));
     });
@@ -641,8 +647,8 @@ describe('BorrowerDetail', () => {
 
         await wrapper.vm.handleSubmit();
 
-        expect(wrapper.vm.errors.general).toBe('admin.borrower.edit.error');
-        expect(wrapper.get('[data-testid="general-error"]').text()).toContain('admin.borrower.edit.error');
+        expect(wrapper.vm.errors.general).toBe('errors.validation_failed');
+        expect(wrapper.get('[data-testid="general-error"]').text()).toContain('errors.validation_failed');
         expect(wrapper.vm.isSubmitting).toBe(false);
     });
 
@@ -726,7 +732,7 @@ describe('BorrowerDetail', () => {
 
         wrapper.vm.isEditMode = true;
         await wrapper.vm.handleSubmit();
-        expect(wrapper.vm.errors.general).toBe('admin.borrower.edit.error');
+        expect(wrapper.vm.errors.general).toBe('errors.validation_failed');
         await wrapper.vm.handleSubmit();
         expect(wrapper.vm.errors.general).toBe('admin.borrower.edit.error');
 

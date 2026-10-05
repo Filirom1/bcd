@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from src.shared.constants import DEFAULT_HOLD_EXPIRATION_DAYS
 
 from ...core.exceptions import (
+    BibliographicRecordNotFoundException,
+    BorrowerNotFoundException,
     ConflictError,
     HoldLimitExceededException,
     NotFoundError,
@@ -49,11 +51,14 @@ def create_hold_in_transaction(
     """Place a hold/reservation (in-transaction helper, no commit)."""
     borrower = db.query(Borrower).filter(Borrower.id == borrower_id).first()
     if not borrower:
-        raise NotFoundError("Borrower", borrower_id)
+        raise BorrowerNotFoundException(str(borrower_id))
 
     if not borrower.active:
+        reason = borrower.blocked_reason or "Account inactive"
         raise ValidationError(
-            f"Borrower {borrower.borrower_id} is blocked: {borrower.blocked_reason}"
+            f"Borrower {borrower.borrower_id} is blocked: {reason}",
+            error_code="BORROWER_BLOCKED",
+            context={"borrower_id": borrower.borrower_id, "reason": reason},
         )
 
     biblio = (
@@ -62,13 +67,17 @@ def create_hold_in_transaction(
         .first()
     )
     if not biblio:
-        raise NotFoundError("Bibliographic record", bibliographic_record_id)
+        raise BibliographicRecordNotFoundException(bibliographic_record_id)
 
     item_count = (
         db.query(Item).filter(Item.bibliographic_record_id == bibliographic_record_id).count()
     )
     if item_count == 0:
-        raise ValidationError("Bibliographic record has no items to reserve")
+        raise ValidationError(
+            "Bibliographic record has no items to reserve",
+            error_code="NO_ITEMS_FOR_RECORD",
+            context={"record_id": bibliographic_record_id},
+        )
 
     existing_hold = (
         db.query(Hold)
@@ -83,7 +92,8 @@ def create_hold_in_transaction(
     )
     if existing_hold:
         raise ConflictError(
-            f"Borrower already has an active hold for this record (Hold ID: {existing_hold.id})"
+            f"Borrower already has an active hold for this record (Hold ID: {existing_hold.id})",
+            error_code="HOLD_ALREADY_EXISTS",
         )
 
     settings = db.query(SystemSettings).first()

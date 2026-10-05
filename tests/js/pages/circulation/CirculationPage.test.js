@@ -165,6 +165,38 @@ describe('CirculationPage', () => {
         })]);
     });
 
+    it('localizes network errors during checkout', async () => {
+        mockBorrowerRequests();
+        vi.spyOn(apiClient, 'post').mockRejectedValue(
+            ApiError.networkError(new TypeError('Failed to fetch'))
+        );
+        const wrapper = mountCirculationPage();
+        await flushPromises();
+        await wrapper.vm.loadBorrower('B-101');
+
+        await wrapper.vm.handleItemScanned('.I-012');
+
+        expect(useNotification().notifications.value.at(-1)).toEqual(expect.objectContaining({
+            type: 'error',
+            message: 'errors.network_error'
+        }));
+    });
+
+    it('localizes network errors during return', async () => {
+        vi.spyOn(apiClient, 'post').mockRejectedValue(
+            ApiError.networkError(new TypeError('Failed to fetch'))
+        );
+        const wrapper = mountCirculationPage('return');
+        await flushPromises();
+
+        await wrapper.vm.handleItemScanned('.I-012');
+
+        expect(useNotification().notifications.value.at(-1)).toEqual(expect.objectContaining({
+            type: 'error',
+            message: 'errors.network_error'
+        }));
+    });
+
     it('shows renewal results for renewed and failed items', async () => {
         mockBorrowerRequests();
         const post = vi.spyOn(apiClient, 'post').mockResolvedValue({

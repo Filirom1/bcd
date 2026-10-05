@@ -151,6 +151,8 @@ class TestCatalogExceptions:
         assert "978-2-8006-8734-6" in str(exc.detail)
         assert "42" in str(exc.detail)
         assert "already exists" in str(exc.detail).lower()
+        assert exc.error_code == "DUPLICATE_ISBN"
+        assert exc.context == {"isbn": "978-2-8006-8734-6", "existing_record_id": 42}
 
 
 class TestDuplicateExceptions:

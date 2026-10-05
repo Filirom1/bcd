@@ -158,7 +158,8 @@ describe('RecordDetail', () => {
         expect(wrapper.vm.loading).toBe(false);
         expect(wrapper.vm.record).toBeNull();
         expect(wrapper.vm.items).toEqual([]);
-        expect(wrapper.text()).toContain('Failed to load record details');
+        expect(wrapper.vm.loadError).toBe('record unavailable');
+        expect(wrapper.text()).toContain('record unavailable');
     });
 
     it('maps available, loaned, lost, and withdrawn copies to their status badges', async () => {
@@ -383,6 +384,30 @@ describe('RecordDetail', () => {
         expect(getSpy).toHaveBeenCalledWith('/holds/bibliographic/42');
     });
 
+    it('translates network errors while creating a hold', async () => {
+        vi.spyOn(apiClient, 'post').mockRejectedValue({
+            code: 'network_error',
+            message: 'Network error: Unable to reach server'
+        });
+        const wrapper = mountDetail();
+        await flushPromises();
+
+        await wrapper.vm.createHold({ id: 7, first_name: 'A', last_name: 'B' });
+        expect(wrapper.vm.reserveMessage.text).toBe('errors.network_error');
+    });
+
+    it('translates duplicate hold errors', async () => {
+        vi.spyOn(apiClient, 'post').mockRejectedValue({
+            code: 'hold_already_exists',
+            message: 'Borrower already has an active hold'
+        });
+        const wrapper = mountDetail();
+        await flushPromises();
+
+        await wrapper.vm.createHold({ id: 7, first_name: 'A', last_name: 'B' });
+        expect(wrapper.vm.reserveMessage.text).toBe('holds.already_exists');
+    });
+
     it('reports hold limit and generic hold errors and ignores an empty borrower', async () => {
         const postSpy = vi.spyOn(apiClient, 'post');
         const wrapper = mountDetail();
@@ -472,7 +497,7 @@ describe('RecordDetail', () => {
 
         wrapper.vm.showDeleteDialog = true;
         await wrapper.vm.handleDeleteConfirm(42);
-        expect(wrapper.vm.errors.general).toBe('errors.network_error');
+        expect(wrapper.vm.errors.general).toBe('offline');
         expect(wrapper.vm.showDeleteDialog).toBe(false);
         expect(consoleSpy).toHaveBeenCalledWith('Error deleting record:', expect.any(Error));
     });
@@ -567,7 +592,7 @@ describe('RecordDetail', () => {
         const wrapper = mountDetail({ initialMode: 'edit' });
         await flushPromises();
         await wrapper.vm.handleDeleteConfirm(42);
-        expect(wrapper.vm.errors.general).toBe('errors.network_error');
+        expect(wrapper.vm.errors.general).toBe('Record still in use');
         expect(wrapper.vm.showDeleteDialog).toBe(false);
         expect(wrapper.emitted('deleted')).toBeUndefined();
     });

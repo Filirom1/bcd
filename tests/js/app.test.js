@@ -96,7 +96,10 @@ describe('initApp', () => {
     ])('exposes a startup error for %s', async (_label, frResponse, expectedMessage) => {
         vi.spyOn(apiClient, 'get').mockResolvedValue(null);
         vi.stubGlobal('fetch', localeFetch({
-            en: {},
+            en: {
+                app: { startup_error_title: 'Startup failed' },
+                common: { reload: 'Restart' }
+            },
             frResponse
         }));
         const error = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -106,6 +109,9 @@ describe('initApp', () => {
         expect(window.__BCD_APP__.ready).toBe(false);
         expect(window.__BCD_APP__.error.message).toBe(expectedMessage);
         expect(document.querySelector('#app .alert-danger').textContent).toContain(expectedMessage);
+        expect(document.querySelector('#app h4').textContent).toBe('Startup failed');
+        expect(document.querySelector('#app button').textContent).toBe('Restart');
+        expect(document.querySelector('#app img')).toBeNull();
         expect(error).toHaveBeenCalledWith('❌ Failed to initialize app:', expect.any(Error));
     });
 });

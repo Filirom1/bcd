@@ -9,6 +9,7 @@
  */
 
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
 import Modal from '../ui/Modal.js';
 
 export default {
@@ -298,7 +299,7 @@ export default {
           failed_rows: 1,
           borrowers_created: 0,
           borrowers_updated: 0,
-          errors: [{ row_number: 0, error: error.message || t('borrowers.import.import_failed') }]
+          errors: [{ row_number: 0, error: getLocalizedErrorMessage(error, t, 'borrowers.import.import_failed') }]
         };
       } finally {
         importing.value = false;

@@ -26,11 +26,16 @@ export function useErrorHandler(t) {
     const handleError = (error, options = {}) => {
         console.error('Error occurred:', error);
 
-        let message;
+        // Accept the former string form as a translation key while callers
+        // migrate to the documented { fallbackMessage } options object.
+        const fallbackMessage = typeof options === 'string'
+            ? t(options)
+            : (options.fallbackMessage || t('errors.unknown_error'));
+        let message = fallbackMessage;
         let isWarning = false;
 
         if (error instanceof ApiError) {
-            message = error.getTranslatedMessage(t);
+            message = error.getTranslatedMessage(t, fallbackMessage);
 
             // Special handling for certain error codes
             switch (error.code) {
@@ -48,8 +53,10 @@ export function useErrorHandler(t) {
                     break;
             }
         } else {
-            // Generic error
-            message = options.fallbackMessage || t('errors.unknown_error');
+            // Prefer a useful diagnostic over a generic label when there is no
+            // API translation available. This may be English, but avoids
+            // hiding the server's explanation.
+            message = error?.message || fallbackMessage;
         }
 
         // Show notification
@@ -77,13 +84,31 @@ export function useErrorHandler(t) {
 
         /** @type {Record<string, string>} */
         const fieldErrors = {};
-        const details = /** @type {Record<string, any>} */ (error.details || {});
+        const details = error.details || {};
 
-        // Map API validation errors to field names
+        // FastAPI/Pydantic sends validation details as [{loc, msg, type}],
+        // while older endpoints may send a field -> translated-key mapping.
+        if (Array.isArray(details)) {
+            const validationDetails = /** @type {Array<{loc?: unknown[], type?: string}>} */ (details);
+            validationDetails.forEach((detail) => {
+                const location = Array.isArray(detail.loc) ? detail.loc : [];
+                const field = String(location.filter((part) => part !== 'body').at(-1) || 'general');
+                const messageKey = detail.type === 'missing'
+                    ? 'validation.required_field'
+                    : 'errors.validation_failed';
+                fieldErrors[field] = t(messageKey);
+            });
+            return fieldErrors;
+        }
+
+        if (!details || typeof details !== 'object') {
+            return fieldErrors;
+        }
+
         Object.entries(details).forEach(([field, messages]) => {
             if (Array.isArray(messages)) {
                 fieldErrors[field] = messages.map(msg => t(msg)).join(', ');
-            } else {
+            } else if (typeof messages === 'string') {
                 fieldErrors[field] = t(messages);
             }
         });

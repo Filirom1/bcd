@@ -1,11 +1,15 @@
 // @ts-check
 import { apiClient } from '../api/client.js';
+import { getLocalizedErrorMessage } from '../models/error.js';
 
 /** @typedef {import('../models/item.js').BibliographicRecord} BibliographicRecord */
 /** @typedef {import('../models/item.js').Item} Item */
 /** @typedef {import('../models/borrower.js').Borrower} Borrower */
 
 const { ref } = Vue;
+
+/** @param {string} key */
+const identityTranslate = (key) => key;
 
 /**
  * useBulkOperations - Bulk edit/delete API calls composable (DRY component)
@@ -16,7 +20,7 @@ const { ref } = Vue;
  * @param {string} resourceType - Type of resource ('borrowers' or 'catalog')
  * @returns {Object} Bulk operation methods and state
  */
-export function useBulkOperations(resourceType) {
+export function useBulkOperations(resourceType, t = identityTranslate) {
     const loading = ref(false);
     /** @type {import('vue').Ref<string|null>} */
     const error = ref(null);
@@ -52,7 +56,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;
@@ -85,7 +89,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;
@@ -115,7 +119,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;
@@ -147,7 +151,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;
@@ -177,7 +181,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;
@@ -216,7 +220,7 @@ export function useBulkOperations(resourceType) {
             progress.value = 100;
             return result;
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;
@@ -240,7 +244,7 @@ export function useBulkOperations(resourceType) {
         try {
             return await apiClient.patch(`/catalog/records/${recordId}`, data);
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;
@@ -260,7 +264,7 @@ export function useBulkOperations(resourceType) {
         try {
             return await apiClient.patch(`/catalog/items/${itemId}`, data);
         } catch (err) {
-            error.value = /** @type {any} */ (err).message;
+            error.value = getLocalizedErrorMessage(err, t);
             throw err;
         } finally {
             loading.value = false;

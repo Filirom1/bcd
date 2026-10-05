@@ -43,7 +43,7 @@ describe('DataMaintenanceSection', () => {
 
         expect(wrapper.vm.settingAcquisitionDates).toBe(false);
         expect(useNotification().notifications.value).toContainEqual(
-            expect.objectContaining({ type: 'error', message: 'errors.unknown_error' })
+            expect.objectContaining({ type: 'error', message: 'server error' })
         );
     });
 });

@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { ApiError, ERROR_CODES } from '../../../src/bcd_web_vue/js/models/error.js';
+import { ApiError, ERROR_CODES, ERROR_TRANSLATION_KEYS } from '../../../src/bcd_web_vue/js/models/error.js';
+import enMessages from '../../../src/bcd_web_vue/locales/en.json';
+import frMessages from '../../../src/bcd_web_vue/locales/fr.json';
 
 describe('ApiError', () => {
+    it('has a translation for every standardized API error code in both locales', () => {
+        for (const messages of [enMessages, frMessages]) {
+            for (const code of new Set(Object.values(ERROR_CODES))) {
+                const key = ERROR_TRANSLATION_KEYS[code] || `errors.${code}`;
+                const translation = key.split('.').reduce((value, part) => value?.[part], messages);
+                expect(typeof translation, `${code} -> ${key}`).toBe('string');
+            }
+        }
+    });
+
     it('normalizes server error codes and preserves API context', async () => {
         const response = new Response(JSON.stringify({
             error_code: 'LOAN_LIMIT_EXCEEDED',
@@ -77,6 +89,36 @@ describe('ApiError', () => {
         const error = new ApiError('unmapped_error', 'A detailed server message');
 
         expect(error.getTranslatedMessage(key => key)).toBe('A detailed server message');
+    });
+
+    it('routes normalized error codes to legacy and feature-specific translation keys', () => {
+        const borrowerError = new ApiError('duplicate_barcode', 'Barcode conflict', {
+            barcode: 'A-1', existing_item_id: 'A-2'
+        });
+        const holdError = new ApiError('hold_already_exists', 'Duplicate hold');
+        const translate = (key, params = {}) => {
+            if (key === 'errors.DUPLICATE_BARCODE') return `${params.barcode}:${params.existing_item_id}`;
+            if (key === 'holds.already_exists') return 'Duplicate reservation';
+            return key;
+        };
+
+        expect(borrowerError.getTranslatedMessage(translate)).toBe('A-1:A-2');
+        expect(holdError.getTranslatedMessage(translate)).toBe('Duplicate reservation');
+    });
+
+    it('normalizes FastAPI validation error responses to the validation code', async () => {
+        const response = new Response(JSON.stringify({
+            error: 'Validation error',
+            error_code: 'VALIDATION_ERROR',
+            details: [{ loc: ['body', 'title'], msg: 'Field required', type: 'missing' }]
+        }), {
+            status: 422,
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const error = await ApiError.fromResponse(response);
+        expect(error.code).toBe(ERROR_CODES.VALIDATION_ERROR);
+        expect(error.details).toHaveLength(1);
     });
 
     it('preserves the original failure in a network error', () => {

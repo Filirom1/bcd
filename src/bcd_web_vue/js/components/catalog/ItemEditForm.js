@@ -19,6 +19,8 @@ import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import Modal from '../ui/Modal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
+import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { events } from '../../utils/events.js';
 import { computeCallNumber } from '../../utils/callNumber.js';
 
@@ -48,6 +50,7 @@ export default {
   emits: ['update:show', 'saved'],
   setup(props, { emit }) {
     const { t } = useI18n();
+    const { handleValidationError } = useErrorHandler(t);
     const { settings: globalSettings } = useAppState();
     const effectiveSettings = computed(() => props.settings || globalSettings.value || {});
 
@@ -198,17 +201,23 @@ export default {
         closeModal();
       } catch (error) {
         console.error('Error updating item:', error);
-        if (error.statusCode === 409) {
-          // Duplicate barcode
-          errors.value.barcode = t('errors.DUPLICATE_BARCODE', {
-            barcode: formData.value.barcode,
-            existing_item_id: error.details?.existing_item_id || '?'
-          });
-        } else if (error.statusCode === 400) {
-          // Validation error
-          errors.value.general = error.message || t('errors.validation_failed');
+        const validationErrors = handleValidationError(error);
+        if (Object.keys(validationErrors).length > 0) {
+          errors.value = { ...errors.value, ...validationErrors };
+        } else if (error.statusCode === 409) {
+          errors.value.barcode = getLocalizedErrorMessage(
+            error,
+            t,
+            'errors.DUPLICATE_BARCODE'
+          );
         } else {
-          errors.value.general = error.message || t('errors.unknown_error');
+          errors.value.general = getLocalizedErrorMessage(
+            error,
+            t,
+            error.statusCode === 400
+              ? 'errors.validation_failed'
+              : 'errors.unknown_error'
+          );
         }
       } finally {
         isSubmitting.value = false;

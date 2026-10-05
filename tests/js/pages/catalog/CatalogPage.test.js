@@ -131,7 +131,7 @@ describe('CatalogPage', () => {
         expect(wrapper.vm.results).toEqual([]);
         expect(wrapper.vm.totalItems).toBe(0);
         expect(useNotification().notifications.value).toEqual([
-            expect.objectContaining({ type: 'error', message: 'errors.unknown_error' })
+            expect.objectContaining({ type: 'error', message: 'server unavailable' })
         ]);
     });
 
@@ -283,7 +283,7 @@ describe('CatalogPage', () => {
         await wrapper.vm.handleExportCatalog();
         expect(wrapper.vm.exportLoading).toBe(false);
         expect(useNotification().notifications.value.at(-1)).toEqual(
-            expect.objectContaining({ type: 'error', message: 'catalog.export_failed: disk full' })
+            expect.objectContaining({ type: 'error', message: 'disk full' })
         );
 
         await wrapper.vm.handlePrintLabels();

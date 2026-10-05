@@ -4,6 +4,7 @@ import Modal from '../ui/Modal.js';
 import DeweyPicker from '../ui/DeweyPicker.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { formatAuthors, parseJsonSetting } from '../../utils/domain.js';
 import { computeCallNumber } from '../../utils/callNumber.js';
@@ -120,7 +121,11 @@ export default defineComponent({
                     }))
                 );
             } catch (error) {
-                itemLoadError.value = error.message || t('admin.merge_records_items_load_error');
+                itemLoadError.value = getLocalizedErrorMessage(
+                    error,
+                    t,
+                    'admin.merge_records_items_load_error'
+                );
             } finally {
                 itemsLoading.value = false;
             }

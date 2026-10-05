@@ -32,7 +32,7 @@ describe('useBorrowerData', () => {
 
     it('converts API failures into a stable domain error', async () => {
         vi.spyOn(apiClient, 'get').mockRejectedValue(new Error('offline'));
-        await expect(useBorrowerData().fetchBorrowers()).rejects.toThrow('Failed to load borrowers');
+        await expect(useBorrowerData().fetchBorrowers()).rejects.toThrow('offline');
     });
 });
 

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Standardized error-code translations across the Web and Kids clients while preserving server details for untranslated errors.
 - Borrower block, unblock, and renewal actions now refresh the student list through the shared event bus.
 - Restored databases are migrated immediately with Alembic, with the previous database reinstated if migration fails.
 - Godot Kids class selection now supports book returns by scanning a prefixed barcode or typing an unprefixed item code.

@@ -171,7 +171,7 @@ describe('BibliographicForm', () => {
         expect(wrapper.emitted('record-created')).toBeUndefined();
         expect(wrapper.vm.loading).toBe(false);
         expect(useNotification().notifications.value).toEqual([
-            expect.objectContaining({ type: 'error', message: 'errors.unknown_error' })
+            expect.objectContaining({ type: 'error', message: 'invalid title' })
         ]);
     });
 

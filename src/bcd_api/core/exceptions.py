@@ -33,15 +33,29 @@ class NotFoundException(BCDException):
 class ValidationError(BCDException):
     """Exception raised when validation fails."""
 
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+    def __init__(
+        self,
+        detail: str,
+        error_code: Optional[str] = None,
+        context: Optional[dict[str, Any]] = None,
+    ):
+        super().__init__(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=detail,
+            error_code=error_code,
+            context=context,
+        )
 
 
 class ConflictError(BCDException):
     """Exception raised when there's a conflict (e.g., duplicate)."""
 
-    def __init__(self, detail: str):
-        super().__init__(status_code=status.HTTP_409_CONFLICT, detail=detail)
+    def __init__(self, detail: str, error_code: Optional[str] = None):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=detail,
+            error_code=error_code,
+        )
 
 
 class BusinessRuleViolation(BCDException):
@@ -218,6 +232,8 @@ class BibliographicRecordNotFoundException(NotFoundException):
 
     def __init__(self, biblio_id: int):
         super().__init__("Bibliographic record", biblio_id)
+        self.error_code = "RECORD_NOT_FOUND"
+        self.context = {"record_id": biblio_id}
 
 
 class DuplicateISBNException(ConflictError):  # noqa: N818
@@ -225,6 +241,8 @@ class DuplicateISBNException(ConflictError):  # noqa: N818
 
     def __init__(self, isbn: str, existing_id: int):
         super().__init__(f"ISBN {isbn} already exists (Bibliographic record ID: {existing_id})")
+        self.error_code = "DUPLICATE_ISBN"
+        self.context = {"isbn": isbn, "existing_record_id": existing_id}
 
 
 class DuplicateBorrowerIDException(ConflictError):  # noqa: N818
@@ -240,13 +258,18 @@ class DuplicateItemIDException(ConflictError):  # noqa: N818
     def __init__(self, item_id: str):
         super().__init__(f"Item ID {item_id} already exists")
         self.error_code = "DUPLICATE_ITEM_ID"
+        self.context = {"item_id": item_id}
 
 
 class InvalidIDFormatException(ValidationError):  # noqa: N818
     """ID format is invalid."""
 
     def __init__(self, id_type: str, value: str, expected_format: str):
-        super().__init__(f"Invalid {id_type} format: '{value}' (expected: {expected_format})")
+        super().__init__(
+            f"Invalid {id_type} format: '{value}' (expected: {expected_format})",
+            error_code="INVALID_ID_FORMAT",
+            context={"id_type": id_type, "value": value, "expected_format": expected_format},
+        )
 
 
 class ExportTooLargeException(BusinessRuleViolation):

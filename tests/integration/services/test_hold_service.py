@@ -147,13 +147,15 @@ class TestHoldCreation:
         db_session.commit()
 
         # Try to create hold
-        with pytest.raises(ValidationError, match="blocked"):
+        with pytest.raises(ValidationError, match="blocked") as exc_info:
             hold_service.create_hold(
                 db=db_session,
                 borrower_id=borrower.id,
                 bibliographic_record_id=biblio.id,
                 created_by="test",
             )
+        assert exc_info.value.error_code == "BORROWER_BLOCKED"
+        assert exc_info.value.context["borrower_id"] == borrower.borrower_id
 
     def test_create_hold_no_items(self, db_session):
         """Test hold creation when bibliographic record has no items."""
@@ -175,13 +177,15 @@ class TestHoldCreation:
         db_session.commit()
 
         # Try to create hold
-        with pytest.raises(ValidationError, match="no items"):
+        with pytest.raises(ValidationError, match="no items") as exc_info:
             hold_service.create_hold(
                 db=db_session,
                 borrower_id=borrower.id,
                 bibliographic_record_id=biblio.id,
                 created_by="test",
             )
+        assert exc_info.value.error_code == "NO_ITEMS_FOR_RECORD"
+        assert exc_info.value.context["record_id"] == biblio.id
 
     def test_create_hold_duplicate(self, db_session):
         """Test creating duplicate hold for same borrower and record."""
@@ -221,13 +225,14 @@ class TestHoldCreation:
         assert hold1.id is not None
 
         # Try to create duplicate hold
-        with pytest.raises(ConflictError, match="already has an active hold"):
+        with pytest.raises(ConflictError, match="already has an active hold") as exc_info:
             hold_service.create_hold(
                 db=db_session,
                 borrower_id=borrower.id,
                 bibliographic_record_id=biblio.id,
                 created_by="test",
             )
+        assert exc_info.value.error_code == "HOLD_ALREADY_EXISTS"
 
     def test_create_multiple_holds_queue_position(self, db_session):
         """Test queue positions with multiple holds."""

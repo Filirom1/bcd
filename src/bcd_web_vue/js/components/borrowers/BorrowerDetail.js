@@ -13,6 +13,8 @@ import { useBlockReasonTranslation } from '../../composables/useBlockReasonTrans
 import { formatCivilDate } from '../../utils/date.js';
 import { formatAuthors } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
+import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { events } from '../../utils/events.js';
 
@@ -296,7 +298,10 @@ export default {
                                         <div v-else-if="holdSearch && !holdSearchLoading" class="text-muted small mb-2">{{ t('holds.search_no_results') }}</div>
 
                                         <!-- Active holds list -->
-                                        <div v-if="holds.length > 0" class="table-responsive">
+                                        <div v-if="holdsLoadError" class="alert alert-danger py-1 mb-2 small">
+                                            {{ holdsLoadError }}
+                                        </div>
+                                        <div v-else-if="holds.length > 0" class="table-responsive">
                                             <table class="table table-sm">
                                                 <tbody>
                                                     <tr v-for="hold in holds" :key="hold.id">
@@ -328,7 +333,7 @@ export default {
                                                 </tbody>
                                             </table>
                                         </div>
-                                        <div v-if="!holds.length" class="text-muted small">{{ t('holds.no_holds') }}</div>
+                                        <div v-else-if="!holds.length" class="text-muted small">{{ t('holds.no_holds') }}</div>
                                     </div>
 
                                     <!-- History Tab -->
@@ -349,6 +354,9 @@ export default {
                                         </div>
 
                                         <!-- No results -->
+                                        <div v-else-if="historyError" class="alert alert-danger py-1 small">
+                                            {{ historyError }}
+                                        </div>
                                         <div v-else-if="historyItems.length === 0" class="text-muted small">
                                             <span v-if="historyDateFrom || historyDateTo">{{ t('circulation.no_history_for_period') }}</span>
                                             <span v-else>{{ t('circulation.no_history') }}</span>
@@ -420,6 +428,9 @@ export default {
                                     <div v-if="errors.general" class="alert alert-danger" data-testid="general-error">
                                       <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                       {{ errors.general }}
+                                    </div>
+                                    <div v-if="classLoadError" class="alert alert-danger py-1 small">
+                                        {{ classLoadError }}
                                     </div>
 
                                     <form @submit.prevent="handleSubmit">
@@ -529,6 +540,7 @@ export default {
     setup(props, { emit }) {
         const { t, locale } = VueI18n.useI18n();
         const router = useRouter();
+        const { handleValidationError } = useErrorHandler(t);
         const formatDate = (value) => formatCivilDate(value, locale.value);
         const { translateBlockReason } = useBlockReasonTranslation();
         const borrower = Vue.ref(null);
@@ -556,6 +568,7 @@ export default {
         const isSubmitting = Vue.ref(false);
         const classes = Vue.ref([]);
         const isLoadingClasses = Vue.ref(false);
+        const classLoadError = Vue.ref('');
         const showDeleteDialog = Vue.ref(false);
 
         // Holds state
@@ -567,6 +580,7 @@ export default {
         const historyPage = Vue.ref(1);
         const historyPageSize = Vue.ref(10);
         const historyLoading = Vue.ref(false);
+        const historyError = Vue.ref('');
         const historyDateFrom = Vue.ref('');
         const historyDateTo = Vue.ref('');
         const historyLoaded = Vue.ref(false);
@@ -577,6 +591,7 @@ export default {
         const holdResults = Vue.ref([]);
         const holdSearchLoading = Vue.ref(false);
         const holdFormMessage = Vue.ref(null); // { type: 'success'|'error', text: '' }
+        const holdsLoadError = Vue.ref('');
 
         // Initialize form fields
         const initForm = (b) => {
@@ -616,6 +631,7 @@ export default {
 
             loading.value = true;
             error.value = '';
+            holdsLoadError.value = '';
 
             try {
                 const data = await apiClient.get(`/borrowers/${targetId}`, { detail: true });
@@ -628,12 +644,14 @@ export default {
                 // Load active holds for this borrower
                 try {
                     holds.value = await apiClient.get(`/holds/borrower/${data.id}`);
-                } catch {
+                    holdsLoadError.value = '';
+                } catch (err) {
                     holds.value = [];
+                    holdsLoadError.value = getLocalizedErrorMessage(err, t, 'errors.generic');
                 }
 
             } catch (err) {
-                error.value = err.message;
+                error.value = getLocalizedErrorMessage(err, t, 'errors.generic');
                 console.error('Error loading borrower:', err);
             } finally {
                 loading.value = false;
@@ -643,6 +661,7 @@ export default {
         // Load available classes from API
         const loadClasses = async () => {
             isLoadingClasses.value = true;
+            classLoadError.value = '';
             try {
                 const response = await apiClient.get('/classes', { limit: 500 });
                 classes.value = Array.isArray(response)
@@ -651,6 +670,7 @@ export default {
             } catch (error) {
                 console.error('Error loading classes:', error);
                 classes.value = [];
+                classLoadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
             } finally {
                 isLoadingClasses.value = false;
             }
@@ -668,12 +688,17 @@ export default {
             const q = holdSearch.value.trim();
             if (!q) { holdResults.value = []; holdFormMessage.value = null; return; }
             holdSearchLoading.value = true;
+            holdFormMessage.value = null;
             try {
                 const data = await apiClient.get('/catalog/bibliographic/search', { q, limit: 6 });
                 const normalized = normalizeCollection(data);
                 holdResults.value = normalized.items;
-            } catch {
+            } catch (error) {
                 holdResults.value = [];
+                holdFormMessage.value = {
+                    type: 'error',
+                    text: getLocalizedErrorMessage(error, t, 'errors.generic')
+                };
             } finally {
                 holdSearchLoading.value = false;
             }
@@ -694,28 +719,39 @@ export default {
                 // Reload holds
                 try {
                     holds.value = await apiClient.get(`/holds/borrower/${borrower.value.id}`);
-                } catch {
-                    holds.value = [];
+                    holdsLoadError.value = '';
+                } catch (error) {
+                    holdsLoadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
                 }
             } catch (err) {
-                const msg = err.code === 'hold_limit_exceeded'
-                    ? t('holds.hold_limit_exceeded', { limit: err.details?.limit ?? '' })
-                    : (err.message || t('errors.generic'));
-                holdFormMessage.value = { type: 'error', text: msg };
+                holdFormMessage.value = {
+                    type: 'error',
+                    text: getLocalizedErrorMessage(err, t, 'errors.generic', {
+                        borrower_blocked: 'holds.error_blocked'
+                    })
+                };
             }
         };
 
         // Cancel a hold
         const cancelHold = async (holdId) => {
+            holdFormMessage.value = null;
             try {
                 await apiClient.delete(`/holds/${holdId}`);
-                try {
-                    holds.value = await apiClient.get(`/holds/borrower/${borrower.value.id}`);
-                } catch {
-                    holds.value = [];
-                }
-            } catch {
-                // ignore
+                holds.value = holds.value.filter(hold => hold.id !== holdId);
+            } catch (error) {
+                holdFormMessage.value = {
+                    type: 'error',
+                    text: getLocalizedErrorMessage(error, t, 'errors.generic')
+                };
+                return;
+            }
+
+            try {
+                holds.value = await apiClient.get(`/holds/borrower/${borrower.value.id}`);
+                holdsLoadError.value = '';
+            } catch (error) {
+                holdsLoadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
             }
         };
 
@@ -723,6 +759,7 @@ export default {
         const loadHistory = async () => {
             if (!borrower.value) return;
             historyLoading.value = true;
+            historyError.value = '';
             try {
                 const params = {
                     page: historyPage.value,
@@ -734,9 +771,10 @@ export default {
                 historyItems.value = data.history || [];
                 historyPagination.value = data.pagination || null;
                 historyLoaded.value = true;
-            } catch {
+            } catch (error) {
                 historyItems.value = [];
                 historyPagination.value = null;
+                historyError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
             } finally {
                 historyLoading.value = false;
             }
@@ -799,11 +837,11 @@ export default {
                 close();
             } catch (error) {
                 console.error('Error deleting borrower:', error);
-                if (error.statusCode === 400) {
-                    errors.value.general = error.message;
-                } else {
-                    errors.value.general = t('admin.error_delete_borrower');
-                }
+                errors.value.general = getLocalizedErrorMessage(
+                    error,
+                    t,
+                    'admin.error_delete_borrower'
+                );
                 showDeleteDialog.value = false;
             }
         };
@@ -854,18 +892,27 @@ export default {
                 }
             } catch (error) {
                 console.error('Error updating borrower:', error);
-                if (error.statusCode === 409) {
-                    errors.value.borrower_id = t('errors.BORROWER_ID_NOT_AVAILABLE');
-                } else if (error.statusCode === 400) {
-                    if (error.message && error.message.includes('borrower_id')) {
-                        errors.value.borrower_id = error.message;
-                    } else if (error.message && error.message.includes('role')) {
-                        errors.value.role = error.message;
-                    } else {
-                        errors.value.general = error.message || t('admin.borrower.edit.error');
-                    }
+                const validationErrors = handleValidationError(error);
+                if (Object.keys(validationErrors).length > 0) {
+                    errors.value = { ...errors.value, ...validationErrors };
+                } else if (error.statusCode === 409) {
+                    errors.value.borrower_id = getLocalizedErrorMessage(
+                        error,
+                        t,
+                        'errors.BORROWER_ID_NOT_AVAILABLE'
+                    );
+                } else if (error.statusCode === 400 && error.message?.includes('borrower_id')) {
+                    errors.value.borrower_id = error.message;
+                } else if (error.statusCode === 400 && error.message?.includes('role')) {
+                    errors.value.role = error.message;
                 } else {
-                    errors.value.general = error.message || t('admin.borrower.edit.error');
+                    errors.value.general = getLocalizedErrorMessage(
+                        error,
+                        t,
+                        error.statusCode === 400
+                            ? 'errors.validation_failed'
+                            : 'admin.borrower.edit.error'
+                    );
                 }
             } finally {
                 isSubmitting.value = false;
@@ -944,10 +991,12 @@ export default {
             holdResults,
             holdSearchLoading,
             holdFormMessage,
+            holdsLoadError,
             historyItems,
             historyPagination,
             historyPageSize,
             historyLoading,
+            historyError,
             historyDateFrom,
             historyDateTo,
             isEditMode,
@@ -956,6 +1005,7 @@ export default {
             isSubmitting,
             classes,
             isLoadingClasses,
+            classLoadError,
             showDeleteDialog,
             getLoanBadgeClass,
             handleActionCompleted,

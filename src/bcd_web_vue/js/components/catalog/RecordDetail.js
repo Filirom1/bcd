@@ -16,7 +16,7 @@ import ItemEditForm from './ItemEditForm.js';
 import CopiesList from './CopiesList.js';
 import RecordDeleteDialog from './RecordDeleteDialog.js';
 import BibliographicFields from './BibliographicFields.js';
-import { ApiError } from '../../models/error.js';
+import { getLocalizedErrorMessage } from '../../models/error.js';
 import { isPeriodicalRecord } from '../../utils/domain.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -73,12 +73,15 @@ export default defineComponent({
         const { settings: globalSettings } = useAppState();
         const settingsValue = computed(() => props.settings || globalSettings.value);
         const { getShelfBadge, getCoteBadge } = useItemBadge(settingsValue);
-        const { handleError } = useErrorHandler(t);
+        const { handleError, handleValidationError } = useErrorHandler(t);
 
         const record = ref(null);
         const items = ref([]);
         const holds = ref([]);
         const loading = ref(false);
+        const loadError = ref('');
+        const itemsLoadError = ref('');
+        const holdsLoadError = ref('');
         const activeTab = ref('items');
         const coverLoadFailed = ref(false);
 
@@ -129,6 +132,7 @@ export default defineComponent({
         const itemHistoryPagination = ref(null);
         const itemCurrentLoan = ref(null);
         const itemHistoryLoading = ref(false);
+        const itemHistoryError = ref('');
         const itemHistoryLoaded = ref(false);
         const itemHistoryPage = ref(1);
         const itemHistoryDateFrom = ref('');
@@ -165,8 +169,12 @@ export default defineComponent({
         const loadRecord = async (recId) => {
             try {
                 loading.value = true;
+                loadError.value = '';
+                itemsLoadError.value = '';
+                holdsLoadError.value = '';
                 coverLoadFailed.value = false;
                 itemHistoryLoaded.value = false;
+                itemHistoryError.value = '';
                 itemHistoryItems.value = [];
                 itemHistoryPagination.value = null;
                 itemCurrentLoan.value = null;
@@ -182,12 +190,14 @@ export default defineComponent({
                 // Load active holds for this record
                 try {
                     holds.value = await apiClient.get(`/holds/bibliographic/${recId}`);
-                } catch {
-                    holds.value = [];
+                    holdsLoadError.value = '';
+                } catch (error) {
+                    holdsLoadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
                 }
 
             } catch (error) {
                 console.error('Error loading record:', error);
+                loadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
                 record.value = null;
                 items.value = [];
                 holds.value = [];
@@ -197,6 +207,7 @@ export default defineComponent({
         };
 
         const loadRecordItems = async (recId) => {
+            itemsLoadError.value = '';
             try {
                 const itemsData = await apiClient.get(`/catalog/bibliographic/${recId}/items`);
                 const rawItems = Array.isArray(itemsData)
@@ -215,6 +226,7 @@ export default defineComponent({
                 items.value = rawItems;
             } catch (error) {
                 console.error('Error loading record items:', error);
+                itemsLoadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
             }
         };
 
@@ -252,8 +264,9 @@ export default defineComponent({
                 if (activeTab.value === 'holds') {
                     try {
                         holds.value = await apiClient.get(`/holds/bibliographic/${record.value.id}`);
-                    } catch {
-                        // Keep current holds on error
+                        holdsLoadError.value = '';
+                    } catch (error) {
+                        holdsLoadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
                     }
                 }
                 if (activeTab.value === 'history' && itemHistoryLoaded.value) {
@@ -316,14 +329,16 @@ export default defineComponent({
                 reserveBorrowerQuery.value = '';
                 try {
                     holds.value = await apiClient.get(`/holds/bibliographic/${record.value.id}`);
-                } catch {
-                    // Keep holds on error
+                } catch (error) {
+                    holdsLoadError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
                 }
             } catch (err) {
-                const msg = err.code === 'hold_limit_exceeded'
-                    ? t('holds.hold_limit_exceeded', { limit: err.details?.limit ?? '' })
-                    : (err.message || t('errors.generic'));
-                reserveMessage.value = { type: 'danger', text: msg };
+                reserveMessage.value = {
+                    type: 'danger',
+                    text: getLocalizedErrorMessage(err, t, 'errors.generic', {
+                        borrower_blocked: 'holds.error_blocked'
+                    })
+                };
             } finally {
                 reserveLoading.value = false;
             }
@@ -333,6 +348,7 @@ export default defineComponent({
             const firstItem = items.value[0];
             if (!firstItem) return;
             itemHistoryLoading.value = true;
+            itemHistoryError.value = '';
             try {
                 const params = {
                     page: itemHistoryPage.value,
@@ -345,10 +361,11 @@ export default defineComponent({
                 itemHistoryPagination.value = data.pagination || null;
                 itemCurrentLoan.value = data.current_loan || null;
                 itemHistoryLoaded.value = true;
-            } catch {
+            } catch (error) {
                 itemHistoryItems.value = [];
                 itemHistoryPagination.value = null;
                 itemCurrentLoan.value = null;
+                itemHistoryError.value = getLocalizedErrorMessage(error, t, 'errors.generic');
             } finally {
                 itemHistoryLoading.value = false;
             }
@@ -490,10 +507,15 @@ export default defineComponent({
                 }
             } catch (error) {
                 console.error('Error updating record:', error);
-                if (error.statusCode === 400) {
-                    errors.value.general = error.message || t('errors.validation_failed');
+                const validationErrors = handleValidationError(error);
+                if (Object.keys(validationErrors).length > 0) {
+                    errors.value = { ...errors.value, ...validationErrors };
                 } else {
-                    errors.value.general = error.message || t('errors.unknown_error');
+                    errors.value.general = getLocalizedErrorMessage(
+                        error,
+                        t,
+                        error.statusCode === 400 ? 'errors.validation_failed' : 'errors.unknown_error'
+                    );
                 }
             } finally {
                 isSubmitting.value = false;
@@ -514,7 +536,7 @@ export default defineComponent({
                 events.emit('catalog:refresh');
             } catch (error) {
                 console.error('Error deleting record:', error);
-                errors.value.general = t('errors.network_error');
+                errors.value.general = getLocalizedErrorMessage(error, t, 'errors.generic');
                 showDeleteDialog.value = false;
             }
         };
@@ -524,6 +546,9 @@ export default defineComponent({
             items,
             holds,
             loading,
+            loadError,
+            itemsLoadError,
+            holdsLoadError,
             coverLoadFailed,
             activeTab,
             showReserveForm,
@@ -534,6 +559,7 @@ export default defineComponent({
             itemHistoryPagination,
             itemCurrentLoan,
             itemHistoryLoading,
+            itemHistoryError,
             itemHistoryDateFrom,
             itemHistoryDateTo,
             getStatusBadge,
@@ -585,6 +611,9 @@ export default defineComponent({
             </template>
 
             <loading-spinner v-if="loading" />
+            <div v-else-if="loadError" class="alert alert-danger" data-testid="record-load-error">
+                {{ loadError }}
+            </div>
 
             <div v-else-if="record">
                 <!-- General Error (only relevant in edit mode) -->
@@ -696,6 +725,9 @@ export default defineComponent({
                     <!-- Items Tab: shared with the cataloging copy workflow so
                          copy navigation and status presentation stay consistent. -->
                     <div v-if="activeTab === 'items'">
+                        <div v-if="itemsLoadError" class="alert alert-danger" data-testid="items-load-error">
+                            {{ itemsLoadError }}
+                        </div>
                         <copies-list
                             :items="items"
                             :settings="settingsValue"
@@ -717,7 +749,10 @@ export default defineComponent({
 
                     <!-- Holds Tab -->
                     <div v-if="!isEditMode && activeTab === 'holds'">
-                        <div v-if="holds.length === 0" class="alert alert-info">
+                        <div v-if="holdsLoadError" class="alert alert-danger" data-testid="holds-load-error">
+                            {{ holdsLoadError }}
+                        </div>
+                        <div v-else-if="holds.length === 0" class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
                             {{ t('holds.no_holds') }}
                         </div>
@@ -777,6 +812,9 @@ export default defineComponent({
                             <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
                         </div>
 
+                        <div v-else-if="itemHistoryError" class="alert alert-danger py-1 small">
+                            {{ itemHistoryError }}
+                        </div>
                         <div v-else-if="itemHistoryItems.length === 0" class="text-muted small">
                             <span v-if="itemHistoryDateFrom || itemHistoryDateTo">{{ t('circulation.no_history_for_period') }}</span>
                             <span v-else>{{ t('circulation.no_history') }}</span>

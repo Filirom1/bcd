@@ -374,7 +374,7 @@ export default {
             } catch (error) {
                 // Check for specific error codes
                 if (error.code === 'no_renewable_items') {
-                    showWarning(t('circulation.no_renewable_items') || error.message || 'No items can be renewed at this time');
+                    showWarning(t('circulation.no_renewable_items'));
                     return; // Exit gracefully without throwing
                 }
                 handleError(error);

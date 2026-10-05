@@ -16,6 +16,9 @@ import App from './components/App.js';
  * Initialize and mount the Vue app
  */
 export async function initApp() {
+    let bootstrapMessages = {};
+    let activeLocale = 'fr';
+
     // Initialize global test state BEFORE async operations
     if (typeof window !== 'undefined') {
         window.__BCD_APP__ = {
@@ -30,6 +33,7 @@ export async function initApp() {
     try {
         // Get initial locale from app state
         const { locale, setLocale, loadSettings } = useAppState();
+        activeLocale = locale.value;
         // Priority: an explicit browser preference wins; otherwise the server
         // language is the library-wide default for this browser profile.
 
@@ -48,27 +52,26 @@ export async function initApp() {
         } catch (e) {
             // Non-fatal: sidebar will show empty until settings load
         }
+        activeLocale = locale.value;
 
-        // Load translation messages (direct fetch is justified as these are local static JSON resources)
+        // Load translation messages (direct fetch is justified as these are local static JSON resources).
+        // Store each language as soon as it loads so the startup error can use
+        // whichever bundle remains available if the other one is malformed.
+        const loadMessages = async (language) => {
+            const response = await fetch(`/locales/${language}.json`);
+            const text = await response.text();
+            if (!response.ok) throw new Error(`Failed to load ${language}.json: ${response.status}`);
+            try {
+                const messages = JSON.parse(text);
+                bootstrapMessages[language] = messages;
+                return messages;
+            } catch (error) {
+                throw new Error(`Invalid JSON in ${language}.json: ${text.substring(0, 100)}`);
+            }
+        };
         const [frMessages, enMessages] = await Promise.all([
-            fetch('/locales/fr.json').then(async r => {
-                const text = await r.text();
-                if (!r.ok) throw new Error(`Failed to load fr.json: ${r.status}`);
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    throw new Error(`Invalid JSON in fr.json: ${text.substring(0, 100)}`);
-                }
-            }),
-            fetch('/locales/en.json').then(async r => {
-                const text = await r.text();
-                if (!r.ok) throw new Error(`Failed to load en.json: ${r.status}`);
-                try {
-                    return JSON.parse(text);
-                } catch (e) {
-                    throw new Error(`Invalid JSON in en.json: ${text.substring(0, 100)}`);
-                }
-            })
+            loadMessages('fr'),
+            loadMessages('en')
         ]);
 
         // Create i18n instance
@@ -176,13 +179,34 @@ export async function initApp() {
             loadingScreen.remove();
         }
 
-        document.getElementById('app').innerHTML = `
-            <div class="alert alert-danger m-5">
-                <h4>Failed to load application</h4>
-                <p>${error.message}</p>
-                <button class="btn btn-primary" onclick="location.reload()">Reload</button>
-            </div>
-        `;
+        const messages = bootstrapMessages[activeLocale]
+            || bootstrapMessages.fr
+            || bootstrapMessages.en
+            || {};
+        const emergencyText = activeLocale === 'fr'
+            ? { title: "Impossible de charger l'application", reload: 'Recharger' }
+            : { title: 'Unable to load the application', reload: 'Reload' };
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger m-5';
+
+        const heading = document.createElement('h4');
+        heading.textContent = messages.app?.startup_error_title || emergencyText.title;
+        alert.appendChild(heading);
+
+        // Preserve the diagnostic detail for the user, but add it as text so
+        // an error response can never be interpreted as HTML.
+        const detail = document.createElement('p');
+        detail.textContent = error?.message || '';
+        alert.appendChild(detail);
+
+        const reload = document.createElement('button');
+        reload.className = 'btn btn-primary';
+        reload.textContent = messages.common?.reload || emergencyText.reload;
+        reload.addEventListener('click', () => window.location.reload());
+        alert.appendChild(reload);
+
+        const appContainer = document.getElementById('app');
+        if (appContainer) appContainer.replaceChildren(alert);
     }
 }
 

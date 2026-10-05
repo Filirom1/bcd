@@ -35,13 +35,9 @@ export function useBorrowerData() {
             params.class_id = classIds;
         }
 
-        try {
-            const data = await apiClient.get('/borrowers', params);
-            const normalized = normalizeCollection(data);
-            return normalized.items;
-        } catch (error) {
-            throw new Error('Failed to load borrowers');
-        }
+        const data = await apiClient.get('/borrowers', params);
+        const normalized = normalizeCollection(data);
+        return normalized.items;
     };
 
     return { fetchBorrowers };
