@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Added native Godot and CLIENT_ONLY mDNS discovery with live integration tests.
 - Checkout class filter now displays the assigned homeroom teacher after the class name.
 - Added direct checkout navigation from borrower and copy details through the existing checkout workflow.
+- Added a checkout action to newly cataloged copies, opening checkout with the copy preselected.
 - Updated item-label printing to a 40-label (4 × 10, no-margin) A4 format with auto-saved custom layouts and same-tab language-aware navigation.
 - Cover maintenance now clears broken database references to deleted image files and lets the missing-cover downloader retry them, including configured cover directories.
 

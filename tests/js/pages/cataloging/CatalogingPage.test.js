@@ -117,6 +117,30 @@ describe('CatalogingPage', () => {
         expect(wrapper.vm.pageTitle).toBe('cataloging.item_creation_title');
     });
 
+    it('opens checkout for a newly cataloged copy with its barcode prefilled', async () => {
+        const push = vi.fn().mockResolvedValue(undefined);
+        globalThis.__testRouter.push = push;
+        const wrapper = mountCatalogingPage();
+
+        wrapper.vm.handleCheckoutItem({ item_id: 'BCD-123' });
+        await flushPromises();
+
+        expect(push).toHaveBeenCalledWith({
+            name: 'checkout',
+            query: { item_id: 'BCD-123' }
+        });
+    });
+
+    it('does not navigate to checkout when the copy has no barcode', () => {
+        const push = vi.fn();
+        globalThis.__testRouter.push = push;
+        const wrapper = mountCatalogingPage();
+
+        wrapper.vm.handleCheckoutItem({});
+
+        expect(push).not.toHaveBeenCalled();
+    });
+
     it('opens an existing record directly in item creation with fallback fields', () => {
         const wrapper = mountCatalogingPage();
 

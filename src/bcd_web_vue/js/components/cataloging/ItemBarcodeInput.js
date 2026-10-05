@@ -61,7 +61,7 @@ export default defineComponent({
         }
     },
 
-    emits: ['item-created', 'done', 'edit-record'],
+    emits: ['item-created', 'done', 'edit-record', 'checkout-item'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
@@ -381,6 +381,7 @@ export default defineComponent({
             handleItemSaved,
             deleteItem,
             loadExistingItems,
+            checkoutItem: item => emit('checkout-item', item),
             record
         };
     },
@@ -577,9 +578,11 @@ export default defineComponent({
                     :periodical="isPeriodical"
                     :editable="true"
                     :allow-delete="true"
+                    :show-checkout="true"
                     :dense="true"
                     @edit="editItem"
                     @delete="deleteItem"
+                    @checkout="checkoutItem"
                 />
             </div>
 

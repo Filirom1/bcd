@@ -64,6 +64,10 @@ describe('ItemBarcodeInput', () => {
             item_id: 'BCD000123'
         }));
         expect(wrapper.emitted('item-created')).toHaveLength(1);
+
+        const copiesList = wrapper.findComponent({ name: 'CopiesList' });
+        copiesList.vm.$emit('checkout', { item_id: 'BCD000123' });
+        expect(wrapper.emitted('checkout-item')).toEqual([[{ item_id: 'BCD000123' }]]);
     });
 
     it('focuses the barcode input on mount and after a failed scan', async () => {

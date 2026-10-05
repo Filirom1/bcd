@@ -5,7 +5,7 @@
 
 const { defineComponent, ref, computed, onMounted } = Vue;
 const { useI18n } = VueI18n;
-const { useRoute } = VueRouter;
+const { useRoute, useRouter } = VueRouter;
 import FindNotice from '../components/cataloging/FindNotice.js';
 import BibliographicForm from '../components/cataloging/BibliographicForm.js';
 import ItemBarcodeInput from '../components/cataloging/ItemBarcodeInput.js';
@@ -25,6 +25,7 @@ export default defineComponent({
     setup() {
         const { t } = useI18n();
         const route = useRoute();
+        const router = useRouter();
 
         // Workflow state machine
         const state = ref('find-notice'); // 'find-notice' | 'bibliographic-form' | 'item-creation'
@@ -170,6 +171,19 @@ export default defineComponent({
         };
 
         /**
+         * Continue to the regular checkout workflow with the newly cataloged
+         * copy prefilled. The librarian still selects the borrower and confirms
+         * the loan on the circulation page.
+         */
+        const handleCheckoutItem = (item) => {
+            if (!item?.item_id) return;
+            router.push({
+                name: 'checkout',
+                query: { item_id: String(item.item_id) }
+            });
+        };
+
+        /**
          * Handle item creation done
          */
         const handleItemsDone = () => {
@@ -239,6 +253,7 @@ export default defineComponent({
             handleExistingRecordFound,
             handleRecordCreated,
             handleEditRecord,
+            handleCheckoutItem,
             handleFormCancel,
             handleItemsDone,
             resetWorkflow
@@ -310,6 +325,7 @@ export default defineComponent({
                         :record-collection="createdRecord.collection"
                         :record-illustrators="createdRecord.illustrators"
                         @item-created="(item) => {}"
+                        @checkout-item="handleCheckoutItem"
                         @edit-record="handleEditRecord"
                         @done="handleItemsDone"
                     />
