@@ -167,26 +167,10 @@ async def init_mdns(config_settings) -> None:
 
 def init_database_if_needed(config_settings=None) -> None:
     """Run Alembic migrations synchronously to ensure the schema is up to date."""
-    if config_settings is None:
-        from src.bcd_api.core.config import settings as default_settings
+    from src.bcd_api.core.database_migrations import upgrade_database
 
-        config_settings = default_settings
     try:
-        from alembic.command import upgrade
-        from alembic.config import Config
-
-        from src.bcd_api.core.portable import get_alembic_ini_path
-
-        logger.info("Checking database schema (running migrations)...")
-
-        alembic_ini = get_alembic_ini_path()
-        alembic_cfg = Config(str(alembic_ini))
-        alembic_cfg.set_main_option("sqlalchemy.url", config_settings.database_url)
-        alembic_cfg.set_main_option("script_location", str(alembic_ini.parent / "migrations"))
-
-        upgrade(alembic_cfg, "head")
-
-        logger.info("Database schema is up to date.")
+        upgrade_database(config_settings)
     except Exception as e:
         logger.error(f"Error running database migrations: {e}")
         logger.error("Please run 'alembic upgrade head' manually.")

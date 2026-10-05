@@ -379,12 +379,16 @@ class TestRestoreBackup:
         conn.commit()
         conn.close()
 
-        # Restore from backup
-        with patch("src.bcd_api.services.admin.backup.engine") as mock_engine:
+        # Restore from backup and migrate the restored schema
+        with (
+            patch("src.bcd_api.services.admin.backup.engine") as mock_engine,
+            patch("src.bcd_api.services.admin.backup.upgrade_database") as mock_upgrade,
+        ):
             mock_engine.dispose = MagicMock()
 
             result = backup_service.restore_backup(str(backup_file))
             assert result is True
+            mock_upgrade.assert_called_once()
 
         # Verify data was restored (should not have 'new_data')
         conn = sqlite3.connect(str(temp_db))
@@ -395,6 +399,34 @@ class TestRestoreBackup:
 
         assert len(rows) == 1
         assert rows[0][0] == "test_data"
+
+    def test_restore_rolls_back_when_migrations_fail(self, mock_settings, temp_db, temp_backup_dir):
+        """Keep the pre-restore database if upgrading the backup schema fails."""
+        import shutil
+
+        backup_file = temp_backup_dir / "backup.db"
+        shutil.copy2(temp_db, backup_file)
+
+        conn = sqlite3.connect(str(temp_db))
+        conn.execute("INSERT INTO test_table (name) VALUES ('new_data')")
+        conn.commit()
+        conn.close()
+
+        with (
+            patch("src.bcd_api.services.admin.backup.engine") as mock_engine,
+            patch(
+                "src.bcd_api.services.admin.backup.upgrade_database",
+                side_effect=RuntimeError("migration failed"),
+            ),
+        ):
+            mock_engine.dispose = MagicMock()
+            with pytest.raises(IOError, match="previous database was restored"):
+                backup_service.restore_backup(str(backup_file))
+
+        conn = sqlite3.connect(str(temp_db))
+        rows = conn.execute("SELECT name FROM test_table ORDER BY name").fetchall()
+        conn.close()
+        assert rows == [("new_data",), ("test_data",)]
 
     def test_restore_nonexistent_backup(self, mock_settings, temp_db):
         """Test error handling when backup file doesn't exist"""
@@ -422,7 +454,10 @@ class TestRestoreBackup:
         backup_file = temp_backup_dir / "backup.db"
         shutil.copy2(temp_db, backup_file)
 
-        with patch("src.bcd_api.services.admin.backup.engine") as mock_engine:
+        with (
+            patch("src.bcd_api.services.admin.backup.engine") as mock_engine,
+            patch("src.bcd_api.services.admin.backup.upgrade_database"),
+        ):
             mock_engine.dispose = MagicMock()
 
             backup_service.restore_backup(str(backup_file))

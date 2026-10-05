@@ -21,6 +21,7 @@ from typing import Dict, List, Optional
 
 from ...core.config import settings
 from ...core.database import engine
+from ...core.database_migrations import upgrade_database
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +223,25 @@ def restore_backup(backup_file: str) -> bool:
                     sidecar.unlink()
             shutil.copy2(safety_backup, db_path)
             raise IOError("Database restore failed integrity check")
+
+        # Upgrade the restored database immediately so the running server does
+        # not continue using an obsolete schema until its next restart.
+        try:
+            logger.info("Applying Alembic migrations to the restored database")
+            upgrade_database(settings)
+        except Exception as migration_error:
+            logger.exception("Migrations failed after restore; rolling back to safety backup")
+            engine.dispose()
+            for sidecar in (
+                db_path.with_name(db_path.name + "-wal"),
+                db_path.with_name(db_path.name + "-shm"),
+            ):
+                if sidecar.exists():
+                    sidecar.unlink()
+            shutil.copy2(safety_backup, db_path)
+            raise IOError(
+                "Database migrations failed after restore; the previous database was restored"
+            ) from migration_error
 
         logger.info(f"Database restored successfully from {backup_path}")
         logger.info(f"Safety backup available at: {safety_backup}")
