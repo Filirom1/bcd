@@ -3,7 +3,7 @@
  * Checkout and Return workflows with <200ms scanner feedback
  */
 
-const { defineComponent, ref, computed, onMounted, watch } = Vue;
+const { defineComponent, ref, computed, onMounted, onBeforeUnmount, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../api/client.js';
 import { getLocalizedErrorMessage } from '../models/error.js';
@@ -473,6 +473,7 @@ export default defineComponent({
                 });
                 success(`${hold.title} — ${t('circulation.checkout_success', { count: 1 })}`);
                 await loadBorrower(borrower.value.borrower_id);
+                events.emit('circulation:roster-refresh');
             } catch (err) {
                 handleError(err);
             }
@@ -520,6 +521,16 @@ export default defineComponent({
                 handleError(err);
             }
         };
+
+        // A quick return from the global book-detail modal does not pass
+        // through this page's BorrowerCard handler. Reload the selected
+        // borrower's counts and loan list when App reports that return.
+        const unsubscribeBorrowerRefresh = events.on('circulation:borrower-refresh', () => {
+            if (props.mode === 'checkout' && borrower.value) {
+                void loadBorrower(borrower.value.borrower_id);
+            }
+        });
+        onBeforeUnmount(unsubscribeBorrowerRefresh);
 
         const helpSection = computed(() => props.mode === 'return' ? 'return' : 'checkout');
 

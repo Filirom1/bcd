@@ -15,6 +15,8 @@ import { formatAuthors } from '../../utils/domain.js';
 import { apiClient } from '../../api/client.js';
 import { getLocalizedErrorMessage } from '../../models/error.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
+import { useNotification } from '../../composables/useNotification.js';
+import { useHoldReadyModal } from '../../composables/useHoldReadyModal.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { events } from '../../utils/events.js';
 
@@ -236,6 +238,7 @@ export default {
                                                         <th>{{ t('catalog.title') }}</th>
                                                         <th>{{ t('circulation.due_date') }}</th>
                                                         <th>{{ t('circulation.renewals') }}</th>
+                                                        <th class="text-end">{{ t('circulation.return') }}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -260,6 +263,20 @@ export default {
                                                         </td>
                                                         <td>
                                                             <span class="badge bg-secondary">{{ loan.renewal_count }}</span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-sm btn-outline-primary"
+                                                                :data-testid="'quick-return-' + loan.item_id"
+                                                                :aria-label="t('circulation.return') + ' ' + loan.title"
+                                                                :title="t('circulation.return')"
+                                                                :disabled="returningItemId !== null"
+                                                                @click="quickReturn(loan)"
+                                                            >
+                                                                <span v-if="returningItemId === loan.item_id" class="spinner-border spinner-border-sm" role="status"></span>
+                                                                <i v-else class="bi bi-arrow-return-left"></i>
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -540,11 +557,14 @@ export default {
     setup(props, { emit }) {
         const { t, locale } = VueI18n.useI18n();
         const router = useRouter();
-        const { handleValidationError } = useErrorHandler(t);
+        const { handleError, handleValidationError } = useErrorHandler(t);
+        const { success } = useNotification();
+        const { showHoldReady } = useHoldReadyModal();
         const formatDate = (value) => formatCivilDate(value, locale.value);
         const { translateBlockReason } = useBlockReasonTranslation();
         const borrower = Vue.ref(null);
         const currentLoans = Vue.ref([]);
+        const returningItemId = Vue.ref(null);
         const loading = Vue.ref(false);
         const error = Vue.ref('');
 
@@ -622,6 +642,39 @@ export default {
                 return 'bg-warning text-dark';
             }
             return 'bg-secondary';
+        };
+
+        // Return one of the borrower's current loans without leaving the detail.
+        const quickReturn = async (loan) => {
+            if (!loan?.item_id || returningItemId.value !== null) return;
+            returningItemId.value = loan.item_id;
+            try {
+                const result = await apiClient.post('/circulation/return', {
+                    item_ids: [loan.item_id],
+                    returned_by: 'web-ui'
+                });
+                const returned = result.items?.[0];
+                const titleDisplay = returned?.display_title || returned?.title || loan.title || loan.item_id;
+                const locationParts = [];
+                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
+                if (returned?.call_number) locationParts.push(returned.call_number);
+                const locationText = locationParts.length ? locationParts.join(' / ') : '-';
+                success(`✓ ${titleDisplay} — ${t('circulation.ranger')} : ${locationText}`);
+
+                if (returned?.hold_ready) {
+                    showHoldReady(returned.hold_ready, returned);
+                }
+
+                await loadBorrowerData(borrower.value?.borrower_id);
+                events.emit('borrowers:refresh');
+                events.emit('catalog:refresh');
+                events.emit('circulation:roster-refresh');
+                events.emit('circulation:borrower-refresh');
+            } catch (err) {
+                handleError(err);
+            } finally {
+                returningItemId.value = null;
+            }
         };
 
         // Load borrower data
@@ -983,6 +1036,8 @@ export default {
             formatAuthors,
             borrower,
             currentLoans,
+            returningItemId,
+            quickReturn,
             loading,
             error,
             activeTab,

@@ -288,11 +288,19 @@ func _test_search_and_holds() -> void:
 		var available: Control = results.get_child(0)
 		var unavailable: Control = results.get_child(1)
 		var held: Control = results.get_child(2)
-		_test.equal(available.get_node("Content/StatusRow/StatusLabel").text, "🟢", "Search marks an available book")
-		_test.equal(unavailable.get_node("Content/StatusRow/StatusLabel").text, "🔴", "Search marks an unavailable book")
-		_test.expect(available.get_node("Content/BtnRow/ActionBtn").visible, "Search shows Reserve for an available book")
-		_test.equal(available.get_node("Content/BtnRow/ActionBtn").text, _i18n.call("t", "search.reserve"), "Search labels available books with Reserve")
-		_test.equal(held.get_node("Content/BtnRow/ActionBtn").text, _i18n.call("t", "hold.cancel"), "Search changes the action for an already-held book")
+		_test.equal(
+			available.get_node("Content/Info/StatusRow/StatusLabel").text,
+			"🟢 " + str(_i18n.call("t", "search.status_available")),
+			"Search labels an available book"
+		)
+		_test.equal(
+			unavailable.get_node("Content/Info/StatusRow/StatusLabel").text,
+			"🔴 " + str(_i18n.call("t", "search.status_on_loan")),
+			"Search labels an unavailable book"
+		)
+		_test.expect(available.get_node("Content/Info/BtnRow/ActionBtn").visible, "Search shows Reserve for an available book")
+		_test.equal(available.get_node("Content/Info/BtnRow/ActionBtn").text, _i18n.call("t", "search.reserve"), "Search labels available books with Reserve")
+		_test.equal(held.get_node("Content/Info/BtnRow/ActionBtn").text, _i18n.call("t", "hold.cancel"), "Search changes the action for an already-held book")
 		_test.expect(held.theme_type_variation == "PanelWarning", "Search highlights an already-held result")
 
 	var book := {"id": 1, "title": "Available", "authors": ["Author"], "available_copies": 2}

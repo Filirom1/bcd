@@ -82,9 +82,11 @@ func on_enter() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
+		var viewport := get_viewport()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		GS.reset_borrower()
 		Mgr.reset_to("class_select")
-		get_viewport().set_input_as_handled()
 
 func _load_data() -> void:
 	_load_request_id += 1

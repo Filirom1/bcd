@@ -71,7 +71,7 @@ func _build_fields(data: Dictionary) -> void:
 		elif value is int or value is float:
 			if value == 0:
 				continue
-			value = str(value)
+			value = DATA.display_value(value)
 		else:
 			value = str(value).strip_edges()
 			if value.is_empty():
@@ -109,5 +109,7 @@ func _go_back() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
+		var viewport := get_viewport()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		_go_back()
-		get_viewport().set_input_as_handled()

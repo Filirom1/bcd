@@ -9,6 +9,9 @@ var _config_cache: ConfigFile = null
 # Active theme name (must be a key in ThemeManager.THEMES)
 var theme := "forest"
 
+# Interface language supported by I18n.
+var locale := "fr"
+
 # Graphics quality: "low" for older PCs or "high" for newer PCs.
 var graphics_quality := "low"
 
@@ -39,6 +42,7 @@ const RESOLUTIONS = {
 
 func _ready() -> void:
 	load_settings()
+	apply_locale()
 	var theme_manager := _theme_manager()
 	if theme_manager != null:
 		theme_manager.call("set_theme", theme)
@@ -60,6 +64,9 @@ func load_settings() -> void:
 		graphics_quality = config.get_value("graphics", "quality", "low")
 		resolution = config.get_value("display", "resolution", "maximized")
 		theme = config.get_value("display", "theme", "forest")
+		locale = config.get_value("display", "locale", "fr")
+		if locale not in ["fr", "en"]:
+			locale = "fr"
 		last_server_url = config.get_value("server", "url", "")
 		last_library_name = config.get_value("server", "library_name", "")
 		auth_username = config.get_value("auth", "username", "")
@@ -77,6 +84,7 @@ func save_settings() -> void:
 	config.set_value("graphics", "quality", graphics_quality)
 	config.set_value("display", "resolution", resolution)
 	config.set_value("display", "theme", theme)
+	config.set_value("display", "locale", locale)
 	config.set_value("server", "url", last_server_url)
 	config.set_value("server", "library_name", last_library_name)
 	config.set_value("auth", "username", auth_username)
@@ -96,6 +104,18 @@ func set_theme(name: String) -> void:
 	var theme_manager := _theme_manager()
 	if theme_manager != null:
 		theme_manager.call("set_theme", name)
+
+func set_language(language: String) -> void:
+	if language not in ["fr", "en"]:
+		return
+	locale = language
+	apply_locale()
+	save_settings()
+
+func apply_locale() -> void:
+	var i18n := get_node_or_null("/root/I18n")
+	if i18n != null:
+		i18n.call("set_locale", locale)
 
 func set_graphics_quality(quality: String) -> void:
 	graphics_quality = quality if quality in ["low", "high"] else "low"

@@ -40,6 +40,7 @@ func _run() -> void:
 	await _test_auth_controls()
 	await _test_splash_states()
 	await _unmount_discovery_screen()
+	await _test_intro_skipped_on_server_switch()
 	_settings.auth_username = _previous_auth_username
 	_settings.auth_password = _previous_auth_password
 	_settings.auth_scheme = _previous_auth_scheme
@@ -271,6 +272,15 @@ func _test_splash_states() -> void:
 	_screen.call("_hide_splash")
 	await create_timer(0.45).timeout
 	_test.expect(not intro.visible, "Server discovery hides the dedicated reading intro")
+
+
+func _test_intro_skipped_on_server_switch() -> void:
+	get_root().get_node("GS").call("set_nav_param", "skip_reading_intro", true)
+	await _mount_discovery_screen()
+	var intro: Control = _screen.get_node("ReadingIntro")
+	_test.expect(not intro.visible, "Returning to server selection skips the reading intro")
+	_test.expect(bool(intro.get("_hidden")), "Skipped reading intro stays hidden after initialization")
+	await _unmount_discovery_screen()
 
 
 func _unmount_discovery_screen() -> void:

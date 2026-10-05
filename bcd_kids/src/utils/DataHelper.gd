@@ -5,7 +5,15 @@ extends RefCounted
 
 static func text(data: Dictionary, key: String, fallback: String = "") -> String:
 	var value = data.get(key)
-	return fallback if value == null else str(value)
+	return fallback if value == null else display_value(value)
+
+
+static func display_value(value: Variant) -> String:
+	if typeof(value) == TYPE_FLOAT:
+		var numeric_value: float = value
+		if is_finite(numeric_value) and numeric_value == floor(numeric_value):
+			return str(int(numeric_value))
+	return str(value)
 
 
 static func display_title(data: Dictionary) -> String:

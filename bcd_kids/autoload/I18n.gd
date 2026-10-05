@@ -1,6 +1,8 @@
 # Autoload "I18n" - Internationalization System
 extends Node
 
+const DATA = preload("res://src/utils/DataHelper.gd")
+
 var current_locale := "fr"  # Default to French
 var translations := {}
 
@@ -34,7 +36,7 @@ func t(key: String, params: Dictionary = {}) -> String:
 	var text = str(data)
 
 	for param_key in params:
-		text = text.replace("{%s}" % param_key, str(params[param_key]))
+		text = text.replace("{%s}" % param_key, DATA.display_value(params[param_key]))
 
 	return text
 

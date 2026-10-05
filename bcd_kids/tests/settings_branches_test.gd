@@ -7,6 +7,7 @@ var _test := SUPPORT.new()
 var _settings: Node
 var _theme_manager: Node
 var _original_theme := ""
+var _original_locale := "fr"
 var _original_quality := ""
 var _original_resolution := ""
 var _original_last_url := ""
@@ -24,6 +25,7 @@ func _run() -> void:
 	_theme_manager = get_root().get_node("ThemeManager")
 	_test_autoload_order_and_theme_restore()
 	_original_theme = str(_settings.get("theme"))
+	_original_locale = str(_settings.get("locale"))
 	_original_quality = str(_settings.get("graphics_quality"))
 	_original_resolution = str(_settings.get("resolution"))
 	_original_last_url = str(_settings.get("last_server_url"))
@@ -56,6 +58,11 @@ func _test_autoload_order_and_theme_restore() -> void:
 		str(_settings.get("theme")),
 		"Settings reapplies the saved theme after autoload initialization"
 	)
+	_test.equal(
+		str(get_root().get_node("I18n").get("current_locale")),
+		str(_settings.get("locale")),
+		"Settings reapplies the saved language after autoload initialization"
+	)
 
 
 func _test_corrupt_and_partial_files() -> void:
@@ -67,20 +74,36 @@ func _test_corrupt_and_partial_files() -> void:
 	_test.equal(recovered.get("graphics_quality"), "low", "Corrupt settings fall back to the default quality")
 	_test.equal(recovered.get("resolution"), "maximized", "Corrupt settings fall back to the default resolution")
 	_test.equal(recovered.get("theme"), "forest", "Corrupt settings fall back to the default theme")
+	_test.equal(recovered.get("locale"), "fr", "Corrupt settings fall back to French")
 
 	var partial_config := ConfigFile.new()
 	partial_config.set_value("graphics", "quality", "high")
 	partial_config.set_value("display", "theme", "forest")
+	partial_config.set_value("display", "locale", "en")
 	partial_config.save(SETTINGS_SCRIPT.SETTINGS_FILE)
 	var partial = SETTINGS_SCRIPT.new()
 	partial.load_settings()
 	_test.equal(partial.get("graphics_quality"), "high", "Settings load a present key from a partial file")
 	_test.equal(partial.get("resolution"), "maximized", "Settings default a missing resolution key")
+	_test.equal(partial.get("locale"), "en", "Settings load the saved language")
 	_test.equal(partial.get("last_server_url"), "", "Settings default missing server keys")
 	_test.equal(partial.get("auth_scheme"), "basic", "Settings default a missing auth scheme")
 
 
 func _test_settings_buttons_and_preview() -> void:
+	_settings.call("set_language", "en")
+	_test.equal(_settings.get("locale"), "en", "Language selection updates the saved locale")
+	_test.equal(get_root().get_node("I18n").get("current_locale"), "en", "Language selection applies immediately")
+	var reloaded_language = SETTINGS_SCRIPT.new()
+	reloaded_language.load_settings()
+	_test.equal(reloaded_language.get("locale"), "en", "Language selection persists to the settings file")
+	_settings.set("locale", "fr")
+	get_root().get_node("I18n").call("set_locale", "fr")
+	_settings.call("load_settings")
+	_settings.call("apply_locale")
+	_test.equal(get_root().get_node("I18n").get("current_locale"), "en", "Saved language is restored when settings are reloaded")
+	_settings.call("set_language", _original_locale)
+
 	_settings.set("theme", "forest")
 	_settings.set("graphics_quality", "low")
 	_settings.set("resolution", "maximized")
@@ -142,7 +165,9 @@ func _test_settings_buttons_and_preview() -> void:
 
 func _restore_settings() -> void:
 	_settings.set("theme", _original_theme)
+	_settings.set("locale", _original_locale)
 	_settings.set("graphics_quality", _original_quality)
+	get_root().get_node("I18n").call("set_locale", _original_locale)
 	_settings.set("resolution", _original_resolution)
 	_settings.set("last_server_url", _original_last_url)
 	_settings.set("last_library_name", _original_last_name)

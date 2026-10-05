@@ -1,174 +1,180 @@
-# Scripts BCD
+# BCD Scripts
 
-Utilitaires pour le développement et le déploiement de BCD.
+Utilities for BCD development and deployment.
 
 ## Version Management
 
 ### bump_version.py (UNIFIED)
 
-**Script unifié** qui gère la version pour TOUT le projet (API + CLI + Kids client).
+A unified script that manages versions for the entire project (API + CLI + Kids client).
 
 **Usage**:
 ```bash
-# Voir la version actuelle
+# Show the current version
 python scripts/bump_version.py --current
 
-# Bumper la version (met à jour API ET Kids)
+# Bump the version (updates both the API and Kids client)
 python scripts/bump_version.py patch   # 1.0.0 -> 1.0.1 (bug fixes)
 python scripts/bump_version.py minor   # 1.0.0 -> 1.1.0 (new features)
 python scripts/bump_version.py major   # 1.0.0 -> 2.0.0 (breaking changes)
 
-# Bumper et push (déclenche TOUTES les releases)
+# Bump and push (triggers all releases)
 python scripts/bump_version.py patch --push
 ```
 
 **Actions**:
-- Met à jour `pyproject.toml` (source unique de vérité)
-- Met à jour `bcd_kids/export_presets.cfg` (synchronisé avec pyproject.toml)
-- Crée commit `chore: bump version to X.X.X`
-- Crée DEUX tags annotés:
-  - `vX.X.X` → déclenche releases API (Windows + Linux)
-  - `godot-vX.X.X` → déclenche release Kids client (Windows + Linux)
-- (Avec `--push`) Push commit + tags → déclenche workflows:
+- Updates `pyproject.toml` (the single source of truth)
+- Updates `bcd_kids/export_presets.cfg` to match `pyproject.toml`
+- Creates a `chore: bump version to X.X.X` commit
+- Creates two annotated tags:
+  - `vX.X.X` → triggers API releases (Windows + Linux)
+  - `godot-vX.X.X` → triggers Kids client releases (Windows + Linux)
+- With `--push`, pushes the commit and tags to trigger these workflows:
   - `.github/workflows/release-windows.yml`
   - `.github/workflows/release-linux.yml`
   - `.github/workflows/release-godot.yml`
 
 **Options**:
-- `--current` — Affiche la version actuelle
-- `--push` — Push automatiquement après création des tags
-- `--no-commit` — Seulement mettre à jour les fichiers, pas de commit/tags
+- `--current` — Show the current version
+- `--push` — Push automatically after creating the tags
+- `--no-commit` — Update files only; do not create a commit or tags
 
-**Important**: Une seule version pour tout le projet! Le script maintient API et Kids client synchronisés.
+**Important**: The entire project uses a single version. The script keeps the API and Kids client versions in sync.
 
-## Workflow de Release
+## Release Workflow
 
-### Backend Python
+### Python Backend
 
-1. Vérifier les tests (les commandes sont explicites : aucun filtre global ne masque les tests non marqués):
+1. Run the tests (the commands are explicit; no global filter hides unmarked tests):
    ```bash
    pytest tests -m "not external and not e2e and not slow"  # fast phase with coverage gate
    pytest tests -m "slow or external or e2e"                # remaining phase, exactly once
    ```
 
-2. Bumper version et push:
+2. Bump the version and push:
    ```bash
    python scripts/bump_version.py patch --push
    ```
 
 3. GitHub Actions:
-   - Build portable Windows (PyInstaller)
-   - Build portable Linux (PyInstaller)
-   - Crée GitHub Release avec binaires + checksums
+   - Build the portable Windows application with PyInstaller
+   - Build the portable Linux application with PyInstaller
+   - Create a GitHub Release with binaries and checksums
    - Upload artifacts
 
-### Client Kids
+### Kids Client
 
-1. Tester le client:
+1. Test the client:
    ```bash
-   # Ouvrir bcd_kids/project.godot dans Kids 4.6
-   # Lancer avec F5, tester les fonctionnalités
+   # Open bcd_kids/project.godot in Godot 4.6
+   # Press F5 and test the features
    ```
 
-2. Bumper version et push:
+2. Bump the version and push:
    ```bash
    python scripts/bump_godot_version.py patch --push
    ```
 
 3. GitHub Actions:
-   - Build Windows (Kids export)
-   - Build Linux (Kids export)
-   - Crée GitHub Release avec binaires + checksums
+   - Build the Windows client
+   - Build the Linux client
+   - Create a GitHub Release with binaries and checksums
    - Upload artifacts
 
 ## Versioning Scheme
 
-Les deux projets suivent [Semantic Versioning](https://semver.org/):
+Both projects follow [Semantic Versioning](https://semver.org/):
 
-- **MAJOR**: Breaking changes (incompatibilités API/fonctionnalités)
-- **MINOR**: Nouvelles fonctionnalités (rétro-compatibles)
-- **PATCH**: Bug fixes (rétro-compatibles)
+- **MAJOR**: Breaking changes (incompatible API or features)
+- **MINOR**: New backward-compatible features
+- **PATCH**: Backward-compatible bug fixes
 
-### Exemples
+### Examples
 
 **Backend**:
-- `1.0.0 → 1.0.1` — Correction bug dans l'API de recherche
-- `1.0.1 → 1.1.0` — Ajout endpoint API pour statistiques
-- `1.1.0 → 2.0.0` — Refonte complète du modèle de données
+- `1.0.0 → 1.0.1` — Fix a bug in the search API
+- `1.0.1 → 1.1.0` — Add a statistics API endpoint
+- `1.1.0 → 2.0.0` — Completely redesign the data model
 
 **Kids Client**:
-- `1.0.0 → 1.0.1` — Fix crash lors de la recherche
-- `1.0.1 → 1.1.0` — Ajout écran de statistiques
-- `1.1.0 → 2.0.0` — Changement d'architecture (incompatible API v1)
+- `1.0.0 → 1.0.1` — Fix a search crash
+- `1.0.1 → 1.1.0` — Add a statistics screen
+- `1.1.0 → 2.0.0` — Change the architecture (incompatible with API v1)
 
-## Autres Scripts
+## Other Scripts
 
 ### reset_and_simulate.py
 
-Réinitialise la BDD et simule 9 mois d'activité:
+Reset the database and simulate nine months of activity:
 ```bash
 python reset_and_simulate.py
 ```
 
-Utile pour:
-- Tests de performance
-- Démo
-- Développement avec données réalistes
+Useful for:
+- Performance testing
+- Demonstrations
+- Development with realistic data
 
 ### build_web.mjs
 
-Compile le Web UI de production pour Vite :
+Build the production Web UI with Vite:
 ```bash
 node scripts/build_web.mjs
 ```
 
 ### verify_web_build.mjs
 
-Compile puis vérifie l'intégrité structurelle du Web UI :
+Build the Web UI and verify its structural integrity:
 ```bash
 npm run verify:web-build
 ```
 
 ### web_ui.py
 
-Commande unique pour compiler, vérifier, tester et empaqueter le Web UI :
+A single command to build, verify, test, and package the Web UI:
 ```bash
-npm run web                         # compile et vérifie build/web/
-npm run web -- --manual             # sert build/web/ avec FastAPI pour un test manuel
-npm run web -- --e2e                # lance le smoke test Playwright
-npm run web -- --portable            # crée le package PyInstaller
-npm run web -- --portable --manual   # crée puis lance le vrai exécutable portable
-npm run web -- --e2e --portable      # smoke test, puis package portable
+npm run web                         # build and verify build/web/
+npm run web -- --manual             # serve build/web/ with FastAPI for manual testing
+npm run web -- --client-only        # launch Kids client-only with the local mDNS proxy
+npm run web -- --e2e                 # run the Playwright smoke test
+npm run web -- --portable            # create the PyInstaller package
+npm run web -- --portable --manual   # create and launch the portable executable
+npm run web -- --e2e --portable      # run the smoke test, then create the portable package
 ```
 
-`--manual` bloque jusqu'à l'arrêt du serveur ou la fermeture de l'exécutable. Utiliser
-`--host` et `--port` pour choisir son adresse (par défaut `127.0.0.1:8000`).
+`--manual` blocks until the server stops or the executable is closed. Use `--host` and
+`--port` to configure its address (default: `127.0.0.1:8888`). `--client-only` launches
+the Kids client directly without rebuilding the Web UI when `KIDS_CLIENT_PATH` points to
+an existing executable. If the path is missing or invalid, the script displays a warning
+and runs only the small mDNS discovery proxy on `127.0.0.1:<port>` (default port 8888)
+until interrupted. It does not start the BCD API or database. The mDNS discovery lets the
+Kids client find BCD servers on the network.
 
 ### take_screenshots.py
 
-Génère les screenshots pour la documentation:
+Generate screenshots for the documentation:
 ```bash
 python scripts/take_screenshots.py
 ```
 
 ### generate_help_screenshots.py
 
-Génère les screenshots pour l'aide contextuelle:
+Generate screenshots for the contextual help:
 ```bash
 python scripts/generate_help_screenshots.py
 ```
 
 ### enrich_bibliopuce.py
 
-Enrichit un export BiblioPuce avec des données BNF:
+Enrich a BiblioPuce export with BNF data:
 ```bash
 python scripts/enrich_bibliopuce.py input.csv output.csv
 ```
 
 ## Notes
 
-- Tous les scripts Python utilisent `#!/usr/bin/env python3`
-- Les scripts de version nécessitent un dépôt git propre (pas de changes non-committés)
-- Les scripts de version demandent confirmation avant de procéder
-- Les tags créés sont annotés (avec message descriptif)
-- Les workflows GitHub Actions sont déclenchés automatiquement par les tags
+- All Python scripts use `#!/usr/bin/env python3`
+- Version scripts require a clean Git working tree (no uncommitted changes)
+- Version scripts ask for confirmation before proceeding
+- Created tags are annotated with a descriptive message
+- GitHub Actions workflows are triggered automatically by tags

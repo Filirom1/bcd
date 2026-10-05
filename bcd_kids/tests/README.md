@@ -57,20 +57,18 @@ Reports are written to the ignored `coverage-godot/` directory:
 - `coverage.lcov` — LCOV-compatible function records
 - `coverage.html` — browsable summary
 
-The discovery parser is covered with synthetic DNS-SD packets and the discovery
-screen is tested offline; neither suite requires multicast or a running server.
-This report is separate from Python and JavaScript coverage.
+The discovery screen is tested offline and does not require multicast or a
+running server. This report is separate from Python and JavaScript coverage.
 
 A separate live integration test starts a real Python zeroconf advertiser and
-then checks the standalone/native Godot path (without the Python CLIENT_ONLY
-proxy), as well as the proxy path:
+checks Python peer discovery and the CLIENT_ONLY proxy:
 
 ```bash
 pytest tests/integration/test_mdns_live.py -m external -v --no-cov
 ```
 
 It is intentionally not part of the deterministic Godot runner because it
-requires a multicast-capable IPv4 interface and a local Godot executable.
+requires a multicast-capable IPv4 interface.
 
 ## Test files
 
@@ -83,8 +81,6 @@ requires a multicast-capable IPv4 interface and a local Godot executable.
 | `screens_test.gd` | Screen scene contracts and rendered states |
 | `behavior_test.gd` | Navigation, keyboard/input, fallback, and action paths |
 | `main_behavior_test.gd` | Quit dialog and close-request behavior |
-| `mdns_test.gd` | DNS-SD query encoding, packet parsing, validation, and peer building |
-| `mdns_live_integration.gd` | Optional live multicast discovery check |
 | `server_discovery_test.gd` | Offline discovery-screen helpers, cards, auth, and splash states |
 | `discovery_branches_test.gd` | Proxy, health, auth, and peer-merging response branches |
 | `api_transport_test.gd` | Real loopback HTTP status, method, body, and auth handling |
@@ -101,6 +97,6 @@ requires a multicast-capable IPv4 interface and a local Godot executable.
 - Wait one frame after adding/removing nodes because `@onready` setup and
   `queue_free()` are deferred.
 - Keep the normal Godot tests deterministic: do not use a real server or
-  multicast discovery. The explicit live mDNS check is in
+  multicast discovery. The explicit Python/proxy mDNS check is in
   `tests/integration/test_mdns_live.py` instead.
 - Restore global `GS`, `Settings`, and theme state before finishing.

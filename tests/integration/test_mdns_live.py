@@ -1,7 +1,7 @@
-"""Live mDNS integration tests for the Python and standalone Godot clients.
+"""Live mDNS integration tests for Python discovery and the Kids proxy.
 
 These tests intentionally use a real zeroconf advertisement rather than a
-synthetic DNS packet.  They are marked ``external`` because multicast can be
+synthetic DNS packet. They are marked ``external`` because multicast can be
 disabled by a CI runner or a developer's network namespace.
 """
 
@@ -9,13 +9,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-import shutil
 import socket
-import subprocess
 import time
 import uuid
-from pathlib import Path
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -24,8 +20,6 @@ from zeroconf import ServiceInfo, Zeroconf
 
 from src.bcd_api.core import mdns
 from src.bcd_api.core.runner import _start_mdns_proxy_thread
-
-ROOT = Path(__file__).resolve().parents[2]
 
 
 class _LiveMdnsAdvertiser:
@@ -80,7 +74,7 @@ class _LiveMdnsAdvertiser:
 
 
 def _select_multicast_address() -> str:
-    """Return a non-loopback IPv4 address usable by both clients."""
+    """Return a non-loopback IPv4 address usable for live mDNS testing."""
     try:
         address = mdns.get_local_ip()
     except OSError as exc:
@@ -189,66 +183,3 @@ def _find_loopback_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         probe.bind(("127.0.0.1", 0))
         return int(probe.getsockname()[1])
-
-
-def _find_godot() -> str | None:
-    configured = os.environ.get("GODOT_BIN")
-    if configured:
-        return configured if Path(configured).is_file() else shutil.which(configured)
-    return shutil.which("godot") or shutil.which("godot4")
-
-
-@pytest.mark.integration
-@pytest.mark.external
-@pytest.mark.slow
-def test_standalone_godot_detects_real_mdns_advertisement(live_mdns_advertiser, tmp_path):
-    """Pure Godot discovery sees a live advertisement without the Python proxy."""
-    godot = _find_godot()
-    if godot is None:
-        pytest.skip("Godot is not installed; standalone live discovery is opt-in")
-
-    env = os.environ.copy()
-    env["BCD_GODOT_TESTS"] = "1"
-    env["BCD_MDNS_EXPECTED_LIBRARY"] = live_mdns_advertiser.library_code
-    env["BCD_MDNS_EXPECTED_URL"] = live_mdns_advertiser.url
-    # The native test must not accidentally use the CLIENT_ONLY proxy path.
-    env.pop("BCD_MDNS_PROXY_PORT", None)
-    env.setdefault("GODOT_SILENCE_ROOT_WARNING", "1")
-    for variable in (
-        "HOME",
-        "XDG_DATA_HOME",
-        "XDG_CONFIG_HOME",
-        "XDG_CACHE_HOME",
-        "XDG_STATE_HOME",
-    ):
-        directory = tmp_path / variable.lower()
-        directory.mkdir()
-        env[variable] = str(directory)
-
-    command = [
-        godot,
-        "--headless",
-        "--path",
-        str(ROOT / "bcd_kids"),
-        "--script",
-        "res://tests/mdns_live_integration.gd",
-    ]
-    try:
-        result = subprocess.run(
-            command,
-            cwd=ROOT,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=20,
-            check=False,
-        )
-    except subprocess.TimeoutExpired as exc:
-        pytest.fail(f"Godot live mDNS test timed out: {exc}")
-
-    output = (result.stdout or "") + (result.stderr or "")
-    assert result.returncode == 0, (
-        "Standalone Godot did not detect the live mDNS advertisement "
-        f"(exit {result.returncode}):\n{output}"
-    )
-    assert "Godot detected the live mDNS advertiser" in output

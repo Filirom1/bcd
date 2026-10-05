@@ -3,7 +3,7 @@
  * Scanner input for checkout/return with <200ms feedback and autocomplete
  */
 
-const { defineComponent, ref, onMounted, nextTick, watch } = Vue;
+const { defineComponent, ref, computed, onMounted, nextTick, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
@@ -43,6 +43,9 @@ export default defineComponent({
         const itemBarcode = ref('');
         const autocompleteRef = ref(null);
         const scanning = ref(false);
+        const autoSubmitOnScanner = computed(() =>
+            props.mode === 'checkout' && Boolean(props.borrower) && !props.disabled
+        );
 
         // Fetch items from API for autocomplete
         const fetchItems = async (query, signal) => {
@@ -137,7 +140,7 @@ export default defineComponent({
         };
 
         const scanItem = async (barcode) => {
-            if (!barcode || scanning.value) {
+            if (!barcode || scanning.value || props.disabled) {
                 return;
             }
 
@@ -175,12 +178,46 @@ export default defineComponent({
         };
 
         // Pre-fill the scanner when circulation was opened from an item detail.
-        // The checkout page still owns the actual checkout operation; this only
-        // carries the selected copy into its existing scanner workflow.
-        const applyInitialItem = () => {
-            if (props.initialItemId && !itemBarcode.value) {
-                itemBarcode.value = props.initialItemId;
+        // If a borrower is already selected, the copy can be checked out
+        // immediately instead of requiring another submit action.
+        let autoSubmittedInitialItemId = null;
+        let initialItemAutoCheckoutPending = false;
+        const autoSubmitInitialItem = () => {
+            const itemId = String(props.initialItemId || '').trim();
+            if (
+                !initialItemAutoCheckoutPending ||
+                props.mode !== 'checkout' ||
+                !props.borrower ||
+                props.disabled ||
+                !itemId ||
+                itemBarcode.value.trim() !== itemId ||
+                autoSubmittedInitialItemId === itemId
+            ) {
+                return;
             }
+
+            initialItemAutoCheckoutPending = false;
+            autoSubmittedInitialItemId = itemId;
+            void scanItem(itemId);
+        };
+
+        const applyInitialItem = (initialItemId = props.initialItemId) => {
+            const itemId = String(initialItemId || '').trim();
+            if (!itemId) {
+                initialItemAutoCheckoutPending = false;
+                return;
+            }
+
+            if (!itemBarcode.value) {
+                itemBarcode.value = itemId;
+            }
+
+            // Only arm automatic checkout if the borrower was already selected
+            // when this initial item ID arrived. A URL prefill must not trigger
+            // later merely because someone chooses a borrower.
+            initialItemAutoCheckoutPending =
+                props.mode === 'checkout' && Boolean(props.borrower) && itemBarcode.value.trim() === itemId;
+            autoSubmitInitialItem();
         };
 
         // Auto-focus when component mounts
@@ -189,7 +226,17 @@ export default defineComponent({
             focusInput();
         });
 
-        watch(() => props.initialItemId, applyInitialItem);
+        watch(() => props.initialItemId, (initialItemId, previousItemId) => {
+            if (initialItemId !== previousItemId) {
+                autoSubmittedInitialItemId = null;
+            }
+            applyInitialItem(initialItemId);
+        });
+
+        // If the borrower was already selected when the item arrived, wait for
+        // settings to finish loading before submitting the prefilled item.
+        // Do not re-arm it when a borrower is selected after a URL prefill.
+        watch(() => props.disabled, autoSubmitInitialItem);
 
         // Re-focus when mode changes, borrower loads, or input becomes enabled
         watch([() => props.mode, () => props.borrower, () => props.disabled], () => {
@@ -202,6 +249,7 @@ export default defineComponent({
             itemBarcode,
             autocompleteRef,
             scanning,
+            autoSubmitOnScanner,
             fetchItems,
             formatItemResult,
             handleItemSelect,
@@ -227,6 +275,7 @@ export default defineComponent({
                             :fetchResults="fetchItems"
                             :formatResult="formatItemResult"
                             :disabled="disabled || scanning"
+                            :auto-submit-on-scanner="autoSubmitOnScanner"
                             inputmode="text"
                             :minChars="2"
                             :autoSelectFirst="true"

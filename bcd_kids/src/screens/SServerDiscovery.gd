@@ -1,10 +1,8 @@
-# Screen 0: Server Discovery (mDNS)
+# Screen 0: Server Discovery
 extends Control
 
 const SERVER_CARD = preload("res://src/components/ServerCard.tscn")
-const MDNS_DISCOVERY = preload("res://src/utils/MdnsDiscovery.gd")
 const ERROR_MESSAGES = preload("res://src/utils/ErrorMessages.gd")
-const MDNS_TIMEOUT_SECONDS := 2.0
 const DEFAULT_SERVER_URL := "http://localhost:8888"
 const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
 @onready var _title_lbl: Label = %TitleLabel
@@ -56,11 +54,11 @@ func _ready() -> void:
 
 	_settings_btn.pressed.connect(func(): Mgr.push("settings"))
 	_fr_btn.pressed.connect(func():
-		I18n.set_locale("fr")
+		Settings.set_language("fr")
 		_refresh_ui()
 	)
 	_en_btn.pressed.connect(func():
-		I18n.set_locale("en")
+		Settings.set_language("en")
 		_refresh_ui()
 	)
 
@@ -86,6 +84,8 @@ func _ready() -> void:
 	_clear_auth_btn.text = I18n.t("auth.clear")
 	_clear_auth_btn.pressed.connect(_on_clear_auth)
 
+	if bool(GS.take_nav_param("skip_reading_intro", false)):
+		_reading_intro.skip_intro()
 	_discover_servers()
 
 func _last_server_base_url() -> String:
@@ -142,26 +142,19 @@ func _discover_servers() -> void:
 	var manual_port := _get_port()
 	var proxy_port := _get_client_only_proxy_port(manual_port)
 
-	# CLIENT_ONLY launched by the Python portable runner exposes a tiny
-	# loopback mDNS snapshot endpoint. It is optional: standalone Kids falls
-	# back to its own PacketPeerUDP DNS-SD client below.
-	var mdns_peers: Array = await _fetch_client_only_mdns_peers(proxy_port)
+	# CLIENT_ONLY launched by the Python portable runner exposes a loopback
+	# peer snapshot endpoint. Standalone Kids relies on local probes or manual
+	# address entry instead of performing native mDNS discovery.
+	var peers: Array = await _fetch_client_only_mdns_peers(proxy_port)
 	if discovery_id != _discovery_id or not is_inside_tree():
 		return
-	if mdns_peers.is_empty():
-		var mdns := MDNS_DISCOVERY.new()
-		mdns_peers = await mdns.discover(MDNS_TIMEOUT_SECONDS)
-		if discovery_id != _discovery_id or not is_inside_tree():
-			return
 
 	var working_locals := await _find_working_locals(manual_port, 0.8)
 	if discovery_id != _discovery_id or not is_inside_tree():
 		return
 
 	# If a local BCD server is available, also use its peer registry. This keeps
-	# discovery compatible with existing servers and finds peers missed by the
-	# direct multicast query.
-	var peers: Array = mdns_peers
+	# discovery compatible with existing servers and supplements the proxy list.
 	if not working_locals.is_empty():
 		var peer_api_url := str(working_locals[0].get("url", "")).rstrip("/") + "/api/v1"
 		peers = _merge_peers(peers, await _fetch_peers(peer_api_url))

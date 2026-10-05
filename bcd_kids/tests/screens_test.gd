@@ -224,6 +224,7 @@ func _test_search_screen() -> void:
 	_test.equal(int(screen.call("_find_hold_id_for_biblio", 12)), 7, "Search finds a hold by bibliographic record")
 	_test.equal(int(screen.call("_find_hold_id_for_biblio", 99)), 0, "Search returns no hold for an unrelated record")
 	var results: GridContainer = screen.get_node("MainMargin/Root/ResultsScroll/ResultsGrid")
+	_test.equal(results.columns, 3, "Search always displays results in three columns")
 	screen.call("_display_results", [])
 	await _test.wait_frames(self)
 	_test.equal(results.get_child_count(), 1, "Search displays an empty-results message")

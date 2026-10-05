@@ -76,8 +76,12 @@ export default defineComponent({
                 // Reload RecordDetail by toggling the ID
                 closeRecord();
                 Vue.nextTick(() => openRecord(currentRecordId));
-                // Signal CatalogPage to refresh its search results
+                // Refresh the open catalog search, checkout roster and the
+                // selected borrower's loan summary when this return originated
+                // from the global record modal.
                 events.emit('catalog:refresh');
+                events.emit('circulation:roster-refresh');
+                events.emit('circulation:borrower-refresh');
             } catch (err) {
                 showError(getLocalizedErrorMessage(err, t, 'common.error'));
             }

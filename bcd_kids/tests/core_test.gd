@@ -73,6 +73,9 @@ func _test_circulation_helper() -> void:
 	)
 	_test.equal(CIRCULATION.hold_ready_payload({"title": "Book"}), {}, "Circulation helper ignores returns without a ready hold")
 	_test.equal(DATA.text({"publisher": null}, "publisher", "Unknown"), "Unknown", "Data helper handles a null text field")
+	_test.equal(DATA.display_value(1.0), "1", "Data helper removes decimal suffix from whole numbers")
+	_test.equal(DATA.display_value(1.5), "1.5", "Data helper preserves fractional values")
+	_test.equal(DATA.text({"count": 1.0}, "count"), "1", "Data helper formats whole-number API values cleanly")
 	_test.equal(DATA.display_title({"display_title": null, "title": "Fallback"}), "Fallback", "Data helper falls back from a null display title")
 	_test.equal(DATA.integer({"count": null}, "count", 3), 3, "Data helper handles a null integer field")
 	_test.equal(DATA.boolean({"flag": null}, "flag", true), true, "Data helper handles a null boolean field")
@@ -92,6 +95,11 @@ func _test_i18n() -> void:
 		i18n.t("search.results_count", {"count": 4}),
 		"4 résultats",
 		"I18n interpolates French parameters"
+	)
+	_test.equal(
+		i18n.t("main_menu.books_count", {"current": 1.0, "limit": 1.0}),
+		"1/1 livres",
+		"I18n formats whole-number counters without decimal suffixes"
 	)
 	i18n.set_locale("en")
 	_test.expect(i18n.t("server_discovery.title") != "server_discovery.title", "I18n resolves English keys")

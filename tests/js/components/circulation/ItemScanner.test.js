@@ -47,6 +47,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
 });
 
@@ -98,6 +99,70 @@ describe('ItemScanner', () => {
 
         expect(wrapper.emitted('item-scanned')).toEqual([['.I-001']]);
         expect(wrapper.vm.itemBarcode).toBe('');
+    });
+
+    it('auto-checks out rapid scanner input in checkout without Enter', async () => {
+        vi.useFakeTimers();
+        const wrapper = mount(ItemScanner, {
+            props: { mode: 'checkout', borrower: { id: 1 } }
+        });
+        const autocomplete = wrapper.findComponent({ name: 'AutocompleteInput' });
+
+        autocomplete.vm.handleInput({ target: { value: '7' } });
+        autocomplete.vm.handleInput({ target: { value: '78' } });
+        autocomplete.vm.handleInput({ target: { value: '785' } });
+        expect(wrapper.emitted('item-scanned')).toBeUndefined();
+
+        await vi.advanceTimersByTimeAsync(120);
+        expect(wrapper.emitted('item-scanned')).toEqual([['785']]);
+        expect(wrapper.vm.itemBarcode).toBe('');
+        wrapper.unmount();
+    });
+
+    it('auto-submits a prefilled copy only in checkout after a borrower is selected', async () => {
+        const wrapper = mount(ItemScanner, {
+            props: {
+                mode: 'checkout',
+                initialItemId: '.I-003'
+            }
+        });
+        await flushPromises();
+
+        expect(wrapper.vm.itemBarcode).toBe('.I-003');
+        expect(wrapper.emitted('item-scanned')).toBeUndefined();
+        expect(wrapper.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(false);
+
+        await wrapper.setProps({ borrower: { id: 1 } });
+        await flushPromises();
+
+        expect(wrapper.emitted('item-scanned')).toEqual([['.I-003']]);
+        expect(wrapper.vm.itemBarcode).toBe('');
+        expect(wrapper.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(true);
+    });
+
+    it('does not auto-submit a prefilled copy outside checkout or while disabled', async () => {
+        const returnScanner = mount(ItemScanner, {
+            props: { mode: 'return', initialItemId: 'I-004' }
+        });
+        await flushPromises();
+        expect(returnScanner.emitted('item-scanned')).toBeUndefined();
+        expect(returnScanner.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(false);
+
+        const disabledCheckout = mount(ItemScanner, {
+            props: {
+                mode: 'checkout',
+                borrower: { id: 1 },
+                disabled: true,
+                initialItemId: 'I-005'
+            }
+        });
+        await flushPromises();
+        expect(disabledCheckout.emitted('item-scanned')).toBeUndefined();
+        expect(disabledCheckout.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(false);
+
+        await disabledCheckout.setProps({ disabled: false });
+        await flushPromises();
+        expect(disabledCheckout.emitted('item-scanned')).toEqual([['I-005']]);
     });
 
     it('filters return suggestions to copies that are currently on loan', async () => {

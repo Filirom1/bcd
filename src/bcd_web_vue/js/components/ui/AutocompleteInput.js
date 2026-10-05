@@ -41,6 +41,10 @@ export default defineComponent({
             type: Boolean,
             default: false
         },
+        autoSubmitOnScanner: {
+            type: Boolean,
+            default: false
+        },
         inputmode: {
             type: String,
             default: 'text'
@@ -75,6 +79,7 @@ export default defineComponent({
 
         // Debounce and scanner detection
         let abortController = null;
+        let scannerAutoSubmitTimeout = null;
         // AbortController is advisory: a fetcher may still resolve after abort.
         // Use a generation as well so an obsolete response can never overwrite
         // the results of a newer query or reopen a closed dropdown.
@@ -120,6 +125,13 @@ export default defineComponent({
         const isScannerSubmit = () => {
             const timeSinceLastKey = Date.now() - lastKeystrokeTime;
             return timeSinceLastKey < 200 && isRapidInput();
+        };
+
+        const clearScannerAutoSubmit = () => {
+            if (scannerAutoSubmitTimeout !== null) {
+                clearTimeout(scannerAutoSubmitTimeout);
+                scannerAutoSubmitTimeout = null;
+            }
         };
 
         // Fetch autocomplete results
@@ -184,6 +196,25 @@ export default defineComponent({
 
             // Trigger debounced search
             debouncedSearch();
+
+            // Some barcode readers type the code but do not send Enter. In
+            // checkout mode, submit a rapid scan after a short idle period.
+            // Ordinary typing remains in the autocomplete flow.
+            clearScannerAutoSubmit();
+            const scannedValue = inputValue.value.trim();
+            if (props.autoSubmitOnScanner && scannedValue && isRapidInput()) {
+                scannerAutoSubmitTimeout = setTimeout(() => {
+                    scannerAutoSubmitTimeout = null;
+                    if (
+                        props.autoSubmitOnScanner &&
+                        !props.disabled &&
+                        inputValue.value.trim() === scannedValue
+                    ) {
+                        closeDropdown();
+                        handleSubmit();
+                    }
+                }, 120);
+            }
         };
 
         // Handle keyboard navigation
@@ -271,6 +302,7 @@ export default defineComponent({
 
         // Close dropdown
         const closeDropdown = () => {
+            clearScannerAutoSubmit();
             showDropdown.value = false;
             selectedIndex.value = -1;
             searchGeneration += 1;
@@ -287,6 +319,7 @@ export default defineComponent({
 
         // Handle submit (Enter or button click)
         const handleSubmit = () => {
+            clearScannerAutoSubmit();
             emit('submit', inputValue.value);
         };
 
@@ -309,6 +342,10 @@ export default defineComponent({
             if (newValue !== inputValue.value) {
                 inputValue.value = newValue;
             }
+        });
+
+        watch(() => [props.autoSubmitOnScanner, props.disabled], ([enabled, disabled]) => {
+            if (!enabled || disabled) clearScannerAutoSubmit();
         });
 
         // Lifecycle

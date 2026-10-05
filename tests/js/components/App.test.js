@@ -82,6 +82,8 @@ describe('App', () => {
             returned_by: 'web-ui'
         });
         expect(emit).toHaveBeenCalledWith('catalog:refresh');
+        expect(emit).toHaveBeenCalledWith('circulation:roster-refresh');
+        expect(emit).toHaveBeenCalledWith('circulation:borrower-refresh');
         expect(globalRecordId.value).toBe(42);
         expect(useNotification().notifications.value).toEqual([
             expect.objectContaining({ type: 'success' })

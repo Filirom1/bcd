@@ -82,6 +82,35 @@ describe('BorrowerDetail', () => {
         expect(wrapper.get('[data-testid="borrower-edit-modal"]').exists()).toBe(true);
     });
 
+    it('quick-returns a current loan from borrower details and refreshes circulation data', async () => {
+        const borrowerWithLoans = {
+            ...borrower,
+            current_loans: [
+                { item_id: 'I-001', title: 'The Little Prince', bibliographic_record_id: 42, due_date: '2030-01-15' }
+            ]
+        };
+        mockBorrowerApi(borrowerWithLoans);
+        const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValue({
+            items: [{ item_id: 'I-001', title: 'The Little Prince', shelf_location: 'A1' }]
+        });
+        const refreshSpy = vi.spyOn(events, 'emit');
+        const wrapper = mountDetail({ borrower: borrowerWithLoans, initialMode: 'view' });
+        await flushPromises();
+
+        await wrapper.get('[data-testid="quick-return-I-001"]').trigger('click');
+        await flushPromises();
+
+        expect(postSpy).toHaveBeenCalledWith('/circulation/return', {
+            item_ids: ['I-001'],
+            returned_by: 'web-ui'
+        });
+        expect(wrapper.vm.returningItemId).toBeNull();
+        expect(refreshSpy).toHaveBeenCalledWith('borrowers:refresh');
+        expect(refreshSpy).toHaveBeenCalledWith('catalog:refresh');
+        expect(refreshSpy).toHaveBeenCalledWith('circulation:roster-refresh');
+        expect(refreshSpy).toHaveBeenCalledWith('circulation:borrower-refresh');
+    });
+
     it('displays full borrower info and lists current loans in view mode', async () => {
         const borrowerWithLoans = {
             ...borrower,

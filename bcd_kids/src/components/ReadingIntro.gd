@@ -50,6 +50,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_i18n.locale_changed.connect(_on_locale_changed)
 	await get_tree().process_frame
+	if _hidden:
+		return
 	_capture_layout_positions()
 	_refresh_text()
 	_popular_books = POPULAR_BOOKS_CACHE.load_books()
@@ -174,9 +176,8 @@ func _on_locale_changed(_locale: String) -> void:
 		_reveal_quote(true)
 
 func start_intro() -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or _hidden:
 		return
-	_hidden = false
 	_started = true
 	visible = true
 	_splash_panel.modulate = Color.WHITE
@@ -337,6 +338,15 @@ func _start_idle_animation() -> void:
 	_idle_tween.parallel().tween_property(_splash_runner, "position:y", RUNNER_TRACK_Y - 4.0, 0.55).set_trans(Tween.TRANS_SINE)
 	_idle_tween.tween_property(_portal_glow, "modulate:a", 0.35, 0.75).set_trans(Tween.TRANS_SINE)
 	_idle_tween.parallel().tween_property(_splash_runner, "position:y", RUNNER_TRACK_Y, 0.55).set_trans(Tween.TRANS_SINE)
+
+func skip_intro() -> void:
+	_hidden = true
+	_started = false
+	if _intro_tween != null:
+		_intro_tween.kill()
+	if _idle_tween != null:
+		_idle_tween.kill()
+	visible = false
 
 func hide_intro() -> void:
 	if _hidden:

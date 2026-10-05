@@ -34,5 +34,7 @@ func _go_back() -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_accept"):
+		var viewport := get_viewport()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		_go_back()
-		get_viewport().set_input_as_handled()

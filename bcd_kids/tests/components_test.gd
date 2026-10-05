@@ -164,27 +164,74 @@ func _test_book_card() -> void:
 		"id": 5,
 		"title": "The Dragon",
 		"authors": ["A. Writer", "B. Artist"],
+		"collection": "Dragon Chronicles",
+		"series_number": 3,
 		"available_copies": 2,
 		"shelf_location": "Romans",
 		"call_number": "843",
 	}
 	available.setup(book, "Reserve", Color("#123456"))
-	_test.equal(available.get_node("Content/TitleLabel").text, "The Dragon", "Book card displays the title")
-	_test.equal(available.get_node("Content/AuthorsLabel").text, "A. Writer, B. Artist", "Book card joins authors")
-	_test.equal(available.get_node("Content/StatusRow/StatusLabel").text, "🟢", "Book card marks available books")
-	var nullable_book: Control = load("res://src/components/BookCard.tscn").instantiate()
 	var i18n: Node = get_root().get_node("I18n")
+	_test.expect(available.get_node("Content") is HBoxContainer, "Book card places its cover and text side by side")
+	_test.expect(available.get_node_or_null("Content/Info") is VBoxContainer, "Book card groups its metadata to the right of the cover")
+	var series_label := available.get_node_or_null("Content/Info/SeriesLabel") as Label
+	_test.expect(series_label != null, "Book card has a series label")
+	if series_label != null:
+		_test.equal(
+			series_label.text,
+			i18n.call("t", "search.series_with_number", {"series": "Dragon Chronicles", "number": "3"}),
+			"Book card displays the series and volume"
+		)
+		_test.expect(series_label.visible, "Book card shows a populated series")
+		available.call("_set_series_text", {"collection": "Adventure Series"})
+		_test.equal(
+			series_label.text,
+			i18n.call("t", "search.series", {"series": "Adventure Series"}),
+			"Book card displays a series without a volume number"
+		)
+		available.call("_set_series_text", {"series_number": 2})
+		_test.equal(
+			series_label.text,
+			i18n.call("t", "search.series_number_only", {"number": "2"}),
+			"Book card displays a volume number without a series name"
+		)
+	var cover_placeholder := available.get_node_or_null("Content/CoverZone/CoverContent/CoverPlaceholder") as Label
+	_test.expect(cover_placeholder != null, "Book card has a missing-cover placeholder")
+	if cover_placeholder != null:
+		_test.expect(cover_placeholder.visible, "Book card shows the placeholder without a cover")
+		var cover_image: CoverImage = available.get_node("Content/CoverZone/CoverContent/CoverImage")
+		available.call("_on_cover_texture_loaded", ImageTexture.new())
+		_test.expect(cover_image.visible, "Book card shows a successfully loaded cover")
+		_test.expect(not cover_placeholder.visible, "Book card hides the placeholder after loading a cover")
+		available.call("_on_cover_failed")
+		_test.expect(not cover_image.visible, "Book card hides a failed cover")
+		_test.expect(cover_placeholder.visible, "Book card restores the placeholder after a cover failure")
+	_test.equal(available.get_node("Content/Info/TitleLabel").text, "The Dragon", "Book card displays the title")
+	_test.equal(available.get_node("Content/Info/AuthorsLabel").text, "A. Writer, B. Artist", "Book card joins authors")
+	_test.equal(
+		available.get_node("Content/Info/StatusRow/StatusLabel").text,
+		"🟢 " + str(i18n.call("t", "search.status_available")),
+		"Book card labels available books"
+	)
+	var original_locale := str(i18n.get("current_locale"))
+	i18n.call("set_locale", "en")
+	available.call("_set_series_text", book)
+	_test.equal(series_label.text, "Series: Dragon Chronicles · vol. 3", "Book card translates series metadata to English")
+	i18n.call("set_locale", original_locale)
+	available.call("_set_series_text", book)
+	var nullable_book: Control = load("res://src/components/BookCard.tscn").instantiate()
 	get_root().add_child(nullable_book)
 	await _test.wait_frames(self)
 	nullable_book.setup({"title": null, "publisher": null, "authors": [], "available_copies": 0}, "", Color.WHITE)
-	_test.equal(nullable_book.get_node("Content/TitleLabel").text, i18n.call("t", "common.unknown_title"), "Book card handles a null title")
-	_test.equal(nullable_book.get_node("Content/AuthorsLabel").text, "", "Book card handles a null publisher")
+	_test.equal(nullable_book.get_node("Content/Info/TitleLabel").text, i18n.call("t", "common.unknown_title"), "Book card handles a null title")
+	_test.equal(nullable_book.get_node("Content/Info/AuthorsLabel").text, "", "Book card handles a null publisher")
+	_test.expect(not nullable_book.get_node("Content/Info/SeriesLabel").visible, "Book card hides a missing series")
 	nullable_book.queue_free()
 	await _test.wait_frames(self)
-	_test.expect(available.get_node("Content/BtnRow/ActionBtn").visible, "Book card shows a non-empty action")
+	_test.expect(available.get_node("Content/Info/BtnRow/ActionBtn").visible, "Book card shows a non-empty action")
 	available.call("grab_first_focus")
-	available.get_node("Content/BtnRow/ActionBtn").pressed.emit()
-	available.get_node("Content/BtnRow/DetailBtn").pressed.emit()
+	available.get_node("Content/Info/BtnRow/ActionBtn").pressed.emit()
+	available.get_node("Content/Info/BtnRow/DetailBtn").pressed.emit()
 	_test.equal(actions, [book], "Book card emits action data")
 	_test.equal(details, [book], "Book card emits detail data")
 	available.queue_free()
@@ -195,9 +242,13 @@ func _test_book_card() -> void:
 	await _test.wait_frames(self)
 	held.setup({"title": "Held", "authors": [], "publisher": "Publisher", "available_copies": 0, "active_holds_count": 2}, "", Color.WHITE)
 	held.call("grab_first_focus")
-	_test.equal(held.get_node("Content/AuthorsLabel").text, "Publisher", "Book card falls back to publisher")
-	_test.equal(held.get_node("Content/StatusRow/StatusLabel").text, "🟡", "Book card marks books with holds")
-	_test.expect(not held.get_node("Content/BtnRow/ActionBtn").visible, "Book card hides an empty action")
+	_test.equal(held.get_node("Content/Info/AuthorsLabel").text, "Publisher", "Book card falls back to publisher")
+	_test.equal(
+		held.get_node("Content/Info/StatusRow/StatusLabel").text,
+		"🟡 " + str(i18n.call("t", "search.status_reserved")),
+		"Book card labels books with holds"
+	)
+	_test.expect(not held.get_node("Content/Info/BtnRow/ActionBtn").visible, "Book card hides an empty action")
 	held.queue_free()
 	await _test.wait_frames(self)
 
@@ -205,7 +256,11 @@ func _test_book_card() -> void:
 	get_root().add_child(unavailable)
 	await _test.wait_frames(self)
 	unavailable.setup({"title": "Unavailable", "authors": [], "available_copies": 0}, "", Color.WHITE)
-	_test.equal(unavailable.get_node("Content/StatusRow/StatusLabel").text, "🔴", "Book card marks unavailable books")
+	_test.equal(
+		unavailable.get_node("Content/Info/StatusRow/StatusLabel").text,
+		"🔴 " + str(i18n.call("t", "search.status_on_loan")),
+		"Book card labels unavailable books"
+	)
 	unavailable.queue_free()
 	await _test.wait_frames(self)
 

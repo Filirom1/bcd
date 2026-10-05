@@ -133,10 +133,9 @@ Keep the normal Godot tests deterministic:
 - Clean up nodes and restore global `GS`, `Settings`, and theme state.
 - Keep user-facing strings in locale files; test translation keys in both `fr`
   and `en` where relevant.
-- Test mDNS parsing with synthetic DNS-SD packets in the deterministic suite.
-  The separate live test `tests/integration/test_mdns_live.py` starts a real
-  zeroconf advertiser and checks both the Python CLIENT_ONLY proxy and the
-  standalone/native Godot client.
+- The separate live test `tests/integration/test_mdns_live.py` starts a real
+  zeroconf advertiser and checks Python peer discovery and the CLIENT_ONLY
+  proxy; the Godot suite does not depend on multicast.
 
 Current suites:
 
@@ -147,7 +146,6 @@ Current suites:
 | `components_test.gd` | Reusable component scenes, display states, and signals |
 | `screens_test.gd` | Screen scene contracts and rendered empty/populated states |
 | `behavior_test.gd` | Navigation, keyboard/empty input, fallback and action paths |
-| `mdns_test.gd` | DNS-SD query encoding, packet parsing, validation, and peer building |
 | `server_discovery_test.gd` | Offline discovery helpers, cards, authentication, and splash states |
 | `api_transport_test.gd` | Real HTTP response matrix, auth headers, digest retry, methods, and bodies |
 | `workflows_test.gd` | Successful checkout/return/search/hold/name/class and main-menu workflows |
@@ -220,7 +218,7 @@ migration.
 
 | # | Scene | Description |
 |---|---|---|
-| 0 | `SServerDiscovery` | mDNS server discovery + manual connection fallback |
+| 0 | `SServerDiscovery` | Proxy/local server discovery + manual connection fallback |
 | 1 | `SClassSelect` | Class selection and teacher quick-return scan |
 | 2 | `SNameInput` | First-name search and duplicate-name selection |
 | 3 | `SMainMenu` | Borrower menu and current loans |
@@ -231,40 +229,24 @@ migration.
 | 8 | `SBookDetail` | Bibliographic details and cover |
 | 9 | `SHoldReady` | Teacher notification when a returned hold is ready |
 
-## Server Discovery (mDNS)
-
-The client starts with a discovery screen that:
-1. Queries `_bcd._tcp.local.` directly with the Godot `PacketPeerUDP` API
-2. Parses DNS-SD PTR, SRV, TXT and IPv4 A records
-3. Builds HTTP URLs from the returned IPv4 address and port
-4. Lists found servers with their library name
-5. Allows the user to select a server
-
-Discovery does not depend on resolving the advertised `.local` hostname through
-Avahi/NSS. This is important on school machines where `avahi-browse` can see a
-service but applications cannot resolve `*.local`.
+## Server Discovery
 
 When BCD is launched in `CLIENT_ONLY` mode with the Kids client, the Python
-launcher runs an optional loopback proxy that uses the existing `zeroconf`
-implementation. It does not start the normal BCD API or the database; it
-only exposes the existing peer snapshot endpoint to Kids. If Kids is launched directly without the Python
-launcher, it uses its native `PacketPeerUDP` implementation instead. Python and
-Avahi are therefore not mandatory client dependencies.
+launcher runs a loopback proxy that uses the existing `zeroconf` implementation
+and exposes its peer snapshot endpoint to Kids. It does not start the normal
+BCD API or database. The Godot client does not perform native mDNS discovery.
 
-The BCD server must have `library_code` set in its configuration to be
-advertised. The client also probes `127.0.0.1` and `::1` so a server bound only
-to loopback still works when mDNS is disabled. Manual URL entry remains
-available as a final fallback.
-
-The direct implementation currently targets IPv4 because the BCD server
-advertises IPv4 addresses.
+Without the proxy, Kids probes `127.0.0.1` and `::1` using the configured server
+port, and can discover peers from a reachable local BCD server. Remote servers
+can still be selected by entering their address manually. This avoids relying
+on Godot's UDP/multicast support while retaining the proxy's network discovery.
 
 The 🌐 button on `SClassSelect` returns to `SServerDiscovery` at any time.
 
 ## Settings Storage
 
-User settings (resolution, quality, server selection, and optionally scoped
-credentials) are persisted to:
+User settings (resolution, quality, theme/background, language, server selection,
+and optionally scoped credentials) are persisted to:
 
 ```
 user://bcd_settings.cfg

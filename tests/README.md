@@ -78,16 +78,14 @@ regression investigations, but are not part of the default test path.
 ### Live mDNS integration
 
 The mDNS integration boundary uses a real `zeroconf.ServiceInfo` advertiser.
-It verifies the Python peer browser, the `CLIENT_ONLY` proxy, and the
-standalone Godot client (without the Python proxy):
+It verifies the Python peer browser and the `CLIENT_ONLY` proxy used by Kids:
 
 ```bash
 pytest tests/integration/test_mdns_live.py -m external -v --no-cov
 ```
 
-It requires a multicast-capable IPv4 interface and Godot on `PATH` (or
-`GODOT_BIN`); the Godot case is skipped when Godot is not installed. The
-normal `--fast` suite intentionally excludes these live tests.
+It requires a multicast-capable IPv4 interface. The normal `--fast` suite
+intentionally excludes these live tests.
 
 ### Targeted categories
 

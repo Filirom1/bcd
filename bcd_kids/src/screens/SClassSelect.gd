@@ -23,15 +23,18 @@ func _ready() -> void:
 	_title_lbl.text = I18n.t("class_select.title")
 	_update_server_button()
 
-	_server_btn.pressed.connect(func(): Mgr.replace("server_discovery"))
+	_server_btn.pressed.connect(func():
+		GS.set_nav_param("skip_reading_intro", true)
+		Mgr.replace("server_discovery")
+	)
 	_settings_btn.pressed.connect(func(): Mgr.push("settings"))
 
 	_fr_btn.pressed.connect(func():
-		I18n.set_locale("fr")
+		Settings.set_language("fr")
 		_refresh_ui()
 	)
 	_en_btn.pressed.connect(func():
-		I18n.set_locale("en")
+		Settings.set_language("en")
 		_refresh_ui()
 	)
 

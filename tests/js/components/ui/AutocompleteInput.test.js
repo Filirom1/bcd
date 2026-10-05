@@ -109,6 +109,46 @@ describe('AutocompleteInput', () => {
         expect(wrapper.emitted('select')).toEqual([[{ id: 1, name: 'Result 1' }]]);
     });
 
+    it('auto-submits rapid barcode input without Enter when explicitly enabled', async () => {
+        const wrapper = mount(AutocompleteInput, {
+            props: {
+                modelValue: '',
+                fetchResults: fetchSpy,
+                formatResult,
+                autoSubmitOnScanner: true
+            },
+            global: { mocks: { $t: key => key } }
+        });
+
+        wrapper.vm.handleInput({ target: { value: '7' } });
+        wrapper.vm.handleInput({ target: { value: '78' } });
+        wrapper.vm.handleInput({ target: { value: '785' } });
+
+        expect(wrapper.emitted('submit')).toBeUndefined();
+        await vi.advanceTimersByTimeAsync(120);
+
+        expect(wrapper.emitted('submit')).toEqual([['785']]);
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not auto-submit rapid input when scanner auto-submit is disabled', async () => {
+        const wrapper = mount(AutocompleteInput, {
+            props: {
+                modelValue: '',
+                fetchResults: fetchSpy,
+                formatResult
+            },
+            global: { mocks: { $t: key => key } }
+        });
+
+        wrapper.vm.handleInput({ target: { value: '7' } });
+        wrapper.vm.handleInput({ target: { value: '78' } });
+        wrapper.vm.handleInput({ target: { value: '785' } });
+        await vi.advanceTimersByTimeAsync(120);
+
+        expect(wrapper.emitted('submit')).toBeUndefined();
+    });
+
     it('bypasses autocomplete fetch when rapid keystrokes simulate barcode scanner input', async () => {
         vi.useRealTimers();
 

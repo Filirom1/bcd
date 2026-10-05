@@ -21,7 +21,7 @@ func _test_focus_styles() -> void:
 	var card = load("res://src/components/BookCard.tscn").instantiate()
 	get_root().add_child(card)
 	await _test.wait_frames(self, 2)
-	var action: Button = card.get_node("Content/BtnRow/ActionBtn")
+	var action: Button = card.get_node("Content/Info/BtnRow/ActionBtn")
 	action.focus_entered.emit()
 	_test.expect(action.has_theme_stylebox_override("normal"), "Book card applies its focus style on focus enter")
 	action.focus_exited.emit()
@@ -52,8 +52,8 @@ func _test_repeated_setup_signals() -> void:
 	var second_book := {"id": 2, "title": "Second", "available_copies": 1}
 	book_card.setup(first_book, "Reserve", Color.WHITE)
 	book_card.setup(second_book, "Reserve", Color.WHITE)
-	book_card.get_node("Content/BtnRow/ActionBtn").pressed.emit()
-	book_card.get_node("Content/BtnRow/DetailBtn").pressed.emit()
+	book_card.get_node("Content/Info/BtnRow/ActionBtn").pressed.emit()
+	book_card.get_node("Content/Info/BtnRow/DetailBtn").pressed.emit()
 	_test.equal(book_events.size(), 2, "Book card setup does not duplicate action or detail signal handlers")
 	if book_events.size() == 2:
 		_test.equal(book_events[0], second_book, "Book card action uses the most recent setup data")

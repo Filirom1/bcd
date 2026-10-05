@@ -13,6 +13,7 @@ import CirculationPage from '../../../../src/bcd_web_vue/js/pages/CirculationPag
 import { events } from '../../../../src/bcd_web_vue/js/utils/events.js';
 
 const borrower = makeBorrower();
+const mountedWrappers = [];
 
 function mockBorrowerRequests() {
     return vi.spyOn(apiClient, 'get').mockImplementation(async endpoint => {
@@ -36,7 +37,7 @@ function mockBorrowerRequests() {
 }
 
 function mountCirculationPage(mode = 'checkout') {
-    return shallowMount(CirculationPage, {
+    const wrapper = shallowMount(CirculationPage, {
         props: { mode },
         global: {
             stubs: {
@@ -47,13 +48,15 @@ function mountCirculationPage(mode = 'checkout') {
             }
         }
     });
+    mountedWrappers.push(wrapper);
+    return wrapper;
 }
 
 // Keep the scanner and borrower card real for the boundary tests below.  The
 // roster/help panel are unrelated to circulation actions and remain stubbed so
 // these tests exercise the actual DOM contract of both action components.
 function mountRealCirculationPage(mode = 'checkout') {
-    return mount(CirculationPage, {
+    const wrapper = mount(CirculationPage, {
         props: { mode },
         global: {
             stubs: {
@@ -62,6 +65,8 @@ function mountRealCirculationPage(mode = 'checkout') {
             }
         }
     });
+    mountedWrappers.push(wrapper);
+    return wrapper;
 }
 
 const clearHoldReadyQueue = () => {
@@ -79,6 +84,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    mountedWrappers.splice(0).forEach(wrapper => wrapper.unmount());
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     clearHoldReadyQueue();
@@ -125,6 +131,41 @@ describe('CirculationPage', () => {
             title: 'The Little Prince',
             checked_out: true
         })]);
+    });
+
+    it('refreshes the selected borrower loan count and table after checkout', async () => {
+        useAppState().clearStorage();
+        let borrowerLoads = 0;
+        const loan = { item_id: 'I-001', title: 'The Little Prince' };
+        vi.spyOn(apiClient, 'get').mockImplementation(async endpoint => {
+            if (endpoint === '/admin/settings') return { borrower_barcode_prefix: '%', item_barcode_prefix: '.' };
+            if (endpoint === '/borrowers/B-101') {
+                borrowerLoads += 1;
+                return makeBorrower({ current_loans_count: borrowerLoads === 1 ? 0 : 1 });
+            }
+            if (endpoint === '/circulation/borrower/B-101/items') {
+                return { loans: borrowerLoads === 1 ? [] : [loan] };
+            }
+            if (endpoint === '/holds/borrower/1') return [];
+            throw new Error(`Unexpected GET request: ${endpoint}`);
+        });
+        const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
+            transactions: [{ item_id: 'I-001', title: 'The Little Prince', due_date: '2030-01-15' }]
+        });
+        const emit = vi.spyOn(events, 'emit');
+        const wrapper = mountCirculationPage();
+        await flushPromises();
+        await wrapper.vm.loadBorrower('B-101');
+
+        expect(wrapper.vm.borrower.current_loans_count).toBe(0);
+        await wrapper.vm.handleItemScanned('.I-001');
+
+        expect(post).toHaveBeenCalledWith('/circulation/checkout', expect.objectContaining({
+            borrower_id: 'B-101', item_ids: ['I-001']
+        }));
+        expect(wrapper.vm.borrower.current_loans_count).toBe(1);
+        expect(wrapper.vm.borrower.current_loans).toEqual([loan]);
+        expect(emit).toHaveBeenCalledWith('circulation:roster-refresh');
     });
 
     it('checks out multiple scanned items in sequence', async () => {
@@ -468,6 +509,36 @@ describe('CirculationPage', () => {
         expect(useNotification().notifications.value).toEqual([
             expect.objectContaining({ type: 'success' })
         ]);
+    });
+
+    it('reloads the selected borrower after a quick return from the global book detail', async () => {
+        useAppState().clearStorage();
+        let borrowerLoads = 0;
+        const loan = { item_id: 'I-007', title: 'Le Petit Prince' };
+        vi.spyOn(apiClient, 'get').mockImplementation(async endpoint => {
+            if (endpoint === '/admin/settings') return { borrower_barcode_prefix: '%', item_barcode_prefix: '.' };
+            if (endpoint === '/borrowers/B-101') {
+                borrowerLoads += 1;
+                return makeBorrower({ current_loans_count: borrowerLoads === 1 ? 1 : 0 });
+            }
+            if (endpoint === '/circulation/borrower/B-101/items') {
+                return { loans: borrowerLoads === 1 ? [loan] : [] };
+            }
+            if (endpoint === '/holds/borrower/1') return [];
+            throw new Error(`Unexpected GET request: ${endpoint}`);
+        });
+        const wrapper = mountCirculationPage();
+        await flushPromises();
+        await wrapper.vm.loadBorrower('B-101');
+
+        expect(wrapper.vm.borrower.current_loans_count).toBe(1);
+        expect(wrapper.vm.borrower.current_loans).toEqual([loan]);
+
+        events.emit('circulation:borrower-refresh');
+        await flushPromises();
+
+        expect(wrapper.vm.borrower.current_loans_count).toBe(0);
+        expect(wrapper.vm.borrower.current_loans).toEqual([]);
     });
 
     it('cancels holds, checks out an available held item, and opens record details', async () => {
@@ -1009,6 +1080,5 @@ describe('CirculationPage', () => {
             item_ids: ['I-600'], returned_by: 'web-ui'
         });
         expect(get).toHaveBeenCalledWith('/borrowers/B-101');
-        wrapper.unmount();
     });
 });

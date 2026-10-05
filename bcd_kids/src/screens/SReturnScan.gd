@@ -149,5 +149,7 @@ func _add_to_history(
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
+		var viewport := get_viewport()
+		if viewport != null:
+			viewport.set_input_as_handled()
 		Mgr.pop()
-		get_viewport().set_input_as_handled()

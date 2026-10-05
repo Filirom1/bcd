@@ -10,6 +10,8 @@ Code and comment in english
 
 **L'UI doit être minimaliste et fonctionnelle.** Pas de fioritures, pas d'animations complexes, pas de mise en page élaborée. Le propriétaire du projet ajuste lui-même les tailles, marges, couleurs et positionnements dans l'éditeur Godot. Claude fournit une base propre et sobre — rien de plus.
 
+**Exception — page d'introduction animée :** la page d'introduction (`ReadingIntro`) est une exception volontaire aux règles générales de sobriété et de construction de l'UI. Elle peut utiliser des animations et une mise en scène plus élaborée pour rendre l'accueil vivant. Cette exception est limitée à cette page ; les autres écrans et composants restent soumis aux règles ci-dessous.
+
 Le propriétaire du projet ajuste le positionnement, les tailles et les marges directement dans l'éditeur Godot. Si un composant n'existe qu'en GDScript procédural, il est impossible à ajuster visuellement.
 
 ### Ce que ça implique concrètement
