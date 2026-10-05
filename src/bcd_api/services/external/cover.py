@@ -2,16 +2,18 @@
 
 Downloads book cover images from multiple providers in cascade:
 
-  1. Amazon         -- direct URL (ISBN-10 = ASIN, best for French books)
-  2. Open Library   -- covers.openlibrary.org (prefers ISBN-13)
-  3. Google Books   -- googleapis.com/books (requires GOOGLE_BOOKS_API_KEY in .env)
-  4. geobib         -- couverture.geobib.fr (BNF proxy, ISBN-13)
+  1. Configured ISBN URL pattern (optional, configured in .env)
+  2. Amazon         -- direct URL (ISBN-10 = ASIN, best for French books)
+  3. Open Library   -- covers.openlibrary.org (prefers ISBN-13)
+  4. Google Books   -- googleapis.com/books (requires GOOGLE_BOOKS_API_KEY in .env)
+  5. geobib         -- couverture.geobib.fr (BNF proxy, ISBN-13)
 
 Returns the cached filename (e.g. '9782070368228.jpg') on success, None on failure.
 Idempotent: if the file already exists in data/covers/, returns immediately.
 """
 
 import logging
+import re
 from pathlib import Path
 from typing import Optional
 
@@ -213,6 +215,65 @@ def _try_geobib(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
     return _fetch(url, client)
 
 
+def _expand_isbn_url_pattern(pattern: str, isbn13: str) -> str:
+    """Expand whole-ISBN and arbitrary Python-style index/slice fields.
+
+    Examples include ``{isbn[-1]}``, ``{isbn[-2:]}``, and
+    ``{isbn[3:7]}``. Indexes and slice bounds can select any number of digits.
+    """
+    field_pattern = re.compile(r"\{isbn(?:\[([^\]]+)\])?\}")
+
+    def replace_field(match: re.Match) -> str:
+        expression = match.group(1)
+        if expression is None:
+            return isbn13
+
+        if ":" not in expression:
+            if not re.fullmatch(r"[+-]?\d+", expression):
+                raise ValueError(f"Invalid ISBN index: {expression}")
+            return isbn13[int(expression)]
+
+        parts = expression.split(":")
+        if len(parts) > 3 or any(part and not re.fullmatch(r"[+-]?\d+", part) for part in parts):
+            raise ValueError(f"Invalid ISBN slice: {expression}")
+        bounds = [int(part) if part else None for part in parts]
+        return isbn13[slice(*bounds)]
+
+    url = field_pattern.sub(replace_field, pattern)
+    if "{" in url or "}" in url:
+        raise ValueError("Unsupported field in cover image URL pattern")
+    return url
+
+
+def _try_configured_url(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
+    """Try an optional URL template configured through ``.env``.
+
+    Templates support ``{isbn}`` and arbitrary Python-style ISBN indexes and
+    slices, such as ``{isbn[-1]}`` or ``{isbn[-2:]}``. Only numeric ISBN-13
+    values are used.
+    """
+    if not isbn13 or len(isbn13) != 13 or not isbn13.isdigit():
+        return None
+
+    from src.bcd_api.core.config import settings
+
+    pattern = settings.cover_image_url_pattern.strip()
+    if not pattern:
+        return None
+
+    try:
+        url = _expand_isbn_url_pattern(pattern, isbn13)
+    except (IndexError, ValueError) as exc:
+        logger.warning("Invalid cover image URL pattern: %s", exc)
+        return None
+
+    if not url.startswith(("http://", "https://")):
+        logger.warning("Cover image URL pattern must produce an HTTP(S) URL")
+        return None
+
+    return _fetch(url, client)
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -282,6 +343,7 @@ def download_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str
         return dest.name
 
     providers = [
+        ("configured_url", lambda c: _try_configured_url(isbn13, c)),
         ("amazon", lambda c: _try_amazon(isbn10, c)),
         ("openlibrary", lambda c: _try_openlibrary(isbn10, isbn13, c)),
         ("google_api", lambda c: _try_google_api(isbn13, c)),

@@ -16,6 +16,7 @@ from src.bcd_api.services.external.cover import (
     _isbn13_to_isbn10,
     _normalize,
     _try_amazon,
+    _try_configured_url,
     _try_geobib,
     _try_google_api,
     _try_openlibrary,
@@ -44,6 +45,14 @@ def _make_client(content: bytes = b"", status: int = 200, content_type: str = "i
 def _image(size: int = 10_000) -> bytes:
     """Fake image bytes large enough to pass the MIN_BYTES check."""
     return b"\xff\xd8\xff" + b"X" * size  # JPEG magic + padding
+
+
+@pytest.fixture(autouse=True)
+def clear_cover_url_pattern(monkeypatch):
+    """Keep tests independent of deployment-specific .env configuration."""
+    from src.bcd_api.core.config import settings
+
+    monkeypatch.setattr(settings, "cover_image_url_pattern", "")
 
 
 # ---------------------------------------------------------------------------
@@ -344,6 +353,82 @@ class TestTryGoogleApi:
 # ---------------------------------------------------------------------------
 
 
+class TestTryConfiguredUrl:
+    def test_expands_isbn_suffix_fields(self, monkeypatch):
+        from src.bcd_api.core.config import settings
+
+        monkeypatch.setattr(
+            settings,
+            "cover_image_url_pattern",
+            "https://covers.example/{isbn[-1]}/{isbn[-2:]}/{isbn}.jpg",
+        )
+        data = _image()
+        client = MagicMock()
+
+        with patch("src.bcd_api.services.external.cover._fetch", return_value=data) as fetch:
+            result = _try_configured_url("9782244404639", client)
+
+        assert result == data
+        fetch.assert_called_once_with("https://covers.example/9/39/9782244404639.jpg", client)
+
+    def test_supports_arbitrary_index_and_slice_lengths(self, monkeypatch):
+        from src.bcd_api.core.config import settings
+
+        monkeypatch.setattr(
+            settings,
+            "cover_image_url_pattern",
+            "https://covers.example/{isbn[-1]}/{isbn[-2:]}/{isbn[-4:]}/{isbn[0:3]}/{isbn}.jpg",
+        )
+        client = MagicMock()
+
+        with patch("src.bcd_api.services.external.cover._fetch", return_value=_image()) as fetch:
+            _try_configured_url("9782244404639", client)
+
+        fetch.assert_called_once_with(
+            "https://covers.example/9/39/4639/978/9782244404639.jpg", client
+        )
+
+    def test_download_uses_isbn13_for_isbn10_records(self, monkeypatch, tmp_path):
+        from src.bcd_api.core.config import settings
+
+        monkeypatch.setattr(
+            settings,
+            "cover_image_url_pattern",
+            "https://covers.example/{isbn[-1]}/{isbn[-2:]}/{isbn}.jpg",
+        )
+        data = _image()
+        with (
+            patch("src.bcd_api.services.external.cover._fetch", return_value=data) as fetch,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
+            result = download_cover("isbn:2244404633", covers_dir=tmp_path / "covers")
+
+        assert result == "9782244404639.jpg"
+        assert fetch.call_args.args[0] == "https://covers.example/9/39/9782244404639.jpg"
+
+    def test_skips_missing_or_invalid_isbn(self, monkeypatch):
+        from src.bcd_api.core.config import settings
+
+        monkeypatch.setattr(settings, "cover_image_url_pattern", "https://example.org/{isbn}")
+        with patch("src.bcd_api.services.external.cover._fetch") as fetch:
+            assert _try_configured_url(None, MagicMock()) is None
+            assert _try_configured_url("not-an-isbn!", MagicMock()) is None
+        fetch.assert_not_called()
+
+    def test_skips_when_pattern_is_not_configured(self):
+        with patch("src.bcd_api.services.external.cover._fetch") as fetch:
+            assert _try_configured_url("9782244404639", MagicMock()) is None
+        fetch.assert_not_called()
+
+    def test_invalid_pattern_falls_through_without_request(self, monkeypatch):
+        from src.bcd_api.core.config import settings
+
+        monkeypatch.setattr(settings, "cover_image_url_pattern", "ftp://example.org/{isbn[bad]}")
+        with patch("src.bcd_api.services.external.cover._fetch") as fetch:
+            assert _try_configured_url("9782244404639", MagicMock()) is None
+        fetch.assert_not_called()
+
+
 class TestTryGeobib:
     def test_returns_bytes_on_success(self):
         data = _image()
@@ -382,10 +467,16 @@ class TestDownloadCover:
 
     def _patch_providers(self, results: dict):
         """
-        Patch all four provider functions. results maps provider name to
+        Patch all five provider functions. results maps provider name to
         bytes (hit) or None (miss). Unspecified providers default to None.
         """
-        defaults = {"amazon": None, "openlibrary": None, "google_api": None, "geobib": None}
+        defaults = {
+            "configured_url": None,
+            "amazon": None,
+            "openlibrary": None,
+            "google_api": None,
+            "geobib": None,
+        }
         defaults.update(results)
         patches = {}
         for name, retval in defaults.items():
@@ -414,9 +505,27 @@ class TestDownloadCover:
         result = download_cover("2211056466", covers_dir=self.covers)
         assert result == "9782211056465.jpg"
 
+    def test_cascade_stops_at_configured_url(self):
+        data = _image()
+        with (
+            patch("src.bcd_api.services.external.cover._try_configured_url", return_value=data),
+            patch("src.bcd_api.services.external.cover._try_amazon") as mock_amazon,
+            patch("src.bcd_api.services.external.cover._try_openlibrary") as mock_ol,
+            patch("src.bcd_api.services.external.cover._try_google_api") as mock_g,
+            patch("src.bcd_api.services.external.cover._try_geobib") as mock_geo,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
+            result = download_cover("9782244404639", covers_dir=self.covers)
+        assert result == "9782244404639.jpg"
+        mock_amazon.assert_not_called()
+        mock_ol.assert_not_called()
+        mock_g.assert_not_called()
+        mock_geo.assert_not_called()
+
     def test_cascade_stops_at_amazon(self):
         data = _image()
         with (
+            patch("src.bcd_api.services.external.cover._try_configured_url", return_value=None),
             patch("src.bcd_api.services.external.cover._try_amazon", return_value=data),
             patch("src.bcd_api.services.external.cover._try_openlibrary") as mock_ol,
             patch("src.bcd_api.services.external.cover._try_google_api") as mock_g,

@@ -915,7 +915,7 @@
     "covers_backfill_button": "Associer les couvertures existantes",
     "covers_backfill_done": "{count} couverture(s) associée(s), {cleaned} lien(s) cassé(s) nettoyé(s)",
     "covers_backfill_result": "{updated} couverture(s) associée(s), {cleaned} lien(s) cassé(s) nettoyé(s) sur {scanned} notices scannées",
-    "covers_download_help": "Télécharge automatiquement les couvertures manquantes sur internet (Amazon, Open Library, Google Books, GeoBib) pour toutes les notices ayant un ISBN sans couverture.",
+    "covers_download_help": "Télécharge automatiquement les couvertures manquantes à partir du modèle d’URL configuré dans .env (si défini), d’Amazon, d’Open Library, de Google Books ou de GeoBib pour les notices ayant un ISBN sans couverture.",
     "covers_download_button": "Télécharger les couvertures manquantes",
     "covers_download_running": "Téléchargement en cours : {processed} / {total} notices ({found} trouvées)...",
     "covers_download_eta": "Temps estimé restant : {eta}",

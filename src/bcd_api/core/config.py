@@ -96,6 +96,10 @@ class Settings(BaseSettings):
     google_books_api_key: str = ""  # optional — empty = no key (~1 000 req/day)
     google_books_rate_limit: int = 1  # requests per second
 
+    # Optional ISBN-based cover URL template; supports {isbn} and arbitrary
+    # Python-style indexes/slices, such as {isbn[-1]} and {isbn[-2:]}.
+    cover_image_url_pattern: str = ""
+
     # SUDOC API — French university library catalog (fallback for periodicals)
     sudoc_api_url: str = "https://www.sudoc.abes.fr/cbs/sru/"
     sudoc_rate_limit: int = 1  # requests per second

@@ -914,7 +914,7 @@
     "covers_backfill_button": "Associate existing covers",
     "covers_backfill_done": "{count} cover(s) associated, {cleaned} broken reference(s) cleaned",
     "covers_backfill_result": "{updated} cover(s) associated, {cleaned} broken reference(s) cleaned out of {scanned} records scanned",
-    "covers_download_help": "Automatically download missing covers from the internet (Amazon, Open Library, Google Books, GeoBib) for all catalog records with an ISBN and no cover.",
+    "covers_download_help": "Automatically download missing covers using the URL pattern configured in .env (if set), Amazon, Open Library, Google Books, or GeoBib for catalog records with an ISBN and no cover.",
     "covers_download_button": "Download missing covers",
     "covers_download_running": "Downloading: {processed} / {total} records ({found} found)...",
     "covers_download_eta": "Estimated time remaining: {eta}",

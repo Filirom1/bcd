@@ -17,11 +17,16 @@ from src.bcd_api.services.external.cover import configure, download_cover
 
 
 @pytest.fixture(autouse=True)
-def reset_config():
-    """Ensure cover_service global state is clean between tests."""
+def reset_config(monkeypatch):
+    """Ensure deployment-specific cover settings do not leak into these tests."""
     original_key = cover_service._google_api_key
+    from src.bcd_api.core.config import settings
+
+    original_pattern = settings.cover_image_url_pattern
+    monkeypatch.setattr(settings, "cover_image_url_pattern", "")
     yield
     cover_service._google_api_key = original_key
+    settings.cover_image_url_pattern = original_pattern
 
 
 @pytest.fixture
