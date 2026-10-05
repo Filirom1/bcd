@@ -178,8 +178,8 @@ export default defineComponent({
         };
 
         // Pre-fill the scanner when circulation was opened from an item detail.
-        // If a borrower is already selected, the copy can be checked out
-        // immediately instead of requiring another submit action.
+        // In checkout mode, keep the prefill pending until a borrower is selected
+        // and the scanner is enabled, then submit it automatically.
         let autoSubmittedInitialItemId = null;
         let initialItemAutoCheckoutPending = false;
         const autoSubmitInitialItem = () => {
@@ -212,11 +212,10 @@ export default defineComponent({
                 itemBarcode.value = itemId;
             }
 
-            // Only arm automatic checkout if the borrower was already selected
-            // when this initial item ID arrived. A URL prefill must not trigger
-            // later merely because someone chooses a borrower.
+            // Keep the URL prefill pending while checkout prerequisites load.
+            // The auto-submit guard below also verifies the value is unchanged.
             initialItemAutoCheckoutPending =
-                props.mode === 'checkout' && Boolean(props.borrower) && itemBarcode.value.trim() === itemId;
+                props.mode === 'checkout' && itemBarcode.value.trim() === itemId;
             autoSubmitInitialItem();
         };
 
@@ -240,6 +239,7 @@ export default defineComponent({
 
         // Re-focus when mode changes, borrower loads, or input becomes enabled
         watch([() => props.mode, () => props.borrower, () => props.disabled], () => {
+            autoSubmitInitialItem();
             if (!props.disabled) {
                 focusInput();
             }
