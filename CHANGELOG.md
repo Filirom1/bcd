@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.6.0]
+
 - Added a Settings page for viewing recent application logs with a manual refresh button.
 - Added an optional configurable ISBN-based cover URL pattern, tried before other cover providers.
 - Checkout borrower search is scoped to the selected class, or searches all classes when none is selected.
