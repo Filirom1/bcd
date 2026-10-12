@@ -156,7 +156,7 @@ describe('Navigation components', () => {
         const navItems = mount(NavigationMenu, { global: { stubs: { NavLink: true } } }).vm.navItems;
         expect(navItems).toHaveLength(10);
         expect(navItems.find(item => item.to === '/cataloging')).toBeTruthy();
-        expect(navItems.find(item => item.to === '/settings').submenu).toHaveLength(7);
+        expect(navItems.find(item => item.to === '/settings').submenu).toHaveLength(8);
         vi.spyOn(apiClient, 'get').mockResolvedValue({ version: '2.0.0' });
         useAppState().saveSettings({ library_code: 'BCD' });
         const wrapper = mount(SidebarNav, { global: { stubs: { NavigationMenu: true, LanguageSwitcher: true } } });

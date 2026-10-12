@@ -126,6 +126,17 @@ describe('SettingsPage', () => {
         expect(wrapper.vm.isSettingsForm).toBe(false);
     });
 
+    it('selects the logs section from the route', async () => {
+        globalThis.__testRoute.params.section = 'logs';
+        mockSettingsApi();
+
+        const wrapper = mountSettingsPage();
+        await flushPromises();
+
+        expect(wrapper.vm.activeSection).toBe('logs');
+        expect(wrapper.vm.isSettingsForm).toBe(false);
+    });
+
     it('keeps the page usable when settings cannot be loaded', async () => {
         vi.spyOn(apiClient, 'get').mockRejectedValue(ApiError.networkError(new Error('offline')));
 

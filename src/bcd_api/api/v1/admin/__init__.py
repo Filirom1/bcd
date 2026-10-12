@@ -20,7 +20,7 @@ from ....services import (
 from ....services.admin import archive as archive_service
 from ....services.admin import backup as backup_service
 from ....services.admin import settings as settings_service
-from . import archive, backups, bulk, covers, maintenance, settings, shelf_suggestion
+from . import archive, backups, bulk, covers, logs, maintenance, settings, shelf_suggestion
 from .archive import (
     archive_transactions,
     get_archive_stats,
@@ -56,6 +56,7 @@ from .covers import (
     get_download_missing_covers_status,
     start_download_missing_covers,
 )
+from .logs import get_logs
 from .maintenance import set_acquisition_dates_from_publication_year
 from .settings import (
     SettingsUpdate,
@@ -74,6 +75,7 @@ router.include_router(archive.router)
 router.include_router(bulk.router)
 router.include_router(covers.router)
 router.include_router(maintenance.router)
+router.include_router(logs.router)
 router.include_router(shelf_suggestion.router)
 
 __all__ = [
@@ -122,6 +124,7 @@ __all__ = [
     "get_download_missing_covers_status",
     "cancel_download_missing_covers",
     "set_acquisition_dates_from_publication_year",
+    "get_logs",
     "get_shelf_suggestion_status",
     "train_shelf_suggestion",
 ]

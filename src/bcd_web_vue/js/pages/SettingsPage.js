@@ -18,15 +18,16 @@ import BackupSection from '../components/settings/BackupSection.js';
 import CoverSection from '../components/settings/CoverSection.js';
 import EnvSection from '../components/settings/EnvSection.js';
 import DataMaintenanceSection from '../components/settings/DataMaintenanceSection.js';
+import LogsSection from '../components/settings/LogsSection.js';
 
-const VALID_SECTIONS = ['general', 'catalog', 'backup', 'covers', 'maintenance', 'env', 'external-sources'];
+const VALID_SECTIONS = ['general', 'catalog', 'backup', 'covers', 'maintenance', 'env', 'logs', 'external-sources'];
 
 export default defineComponent({
     name: 'SettingsPage',
 
     components: {
         LoadingSpinner, HelpPanel, SettingsForm,
-        BackupSection, CoverSection, EnvSection, DataMaintenanceSection
+        BackupSection, CoverSection, EnvSection, DataMaintenanceSection, LogsSection
     },
 
     setup() {
@@ -160,6 +161,7 @@ export default defineComponent({
                 <cover-section v-else-if="activeSection === 'covers'" />
                 <data-maintenance-section v-else-if="activeSection === 'maintenance'" />
                 <env-section v-else-if="activeSection === 'env'" />
+                <logs-section v-else-if="activeSection === 'logs'" />
                 <div v-if="appVersion" class="mt-3 text-muted small text-end">
                     {{ t('settings.app_version') }} v{{ appVersion }} &mdash;
                     <a href="https://github.com/Filirom1/bcd" target="_blank" rel="noopener">{{ t('settings.open_source') }}</a>

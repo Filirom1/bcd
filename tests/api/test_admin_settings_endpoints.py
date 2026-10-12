@@ -27,6 +27,19 @@ def test_reset_settings_delegates_to_service(monkeypatch):
     assert admin.reset_settings(db=object()) is expected
 
 
+def test_get_logs_returns_current_log_tail(monkeypatch, tmp_path):
+    log_file = tmp_path / "bcd.log"
+    log_file.write_text("first\nsecond\n", encoding="utf-8")
+    monkeypatch.setattr(admin.logs, "_get_log_dir", lambda: tmp_path)
+
+    result = admin.get_logs()
+
+    assert result["filename"] == "bcd.log"
+    assert result["content"] == "first\nsecond\n"
+    assert result["truncated"] is False
+    assert result["updated_at"] is not None
+
+
 @pytest.mark.asyncio
 async def test_update_settings_restarts_mdns_when_library_code_changes(monkeypatch):
     settings = SimpleNamespace(library_code="NEW")
