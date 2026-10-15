@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Fixed Kids server discovery so the CLIENT_ONLY mDNS proxy is not listed as a library server.
+
 ## [1.6.0]
 
 - Added a Settings page for viewing recent application logs with a manual refresh button.

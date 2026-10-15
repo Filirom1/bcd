@@ -262,7 +262,7 @@ func _extract_port(text: String, default_port: int = 8888) -> int:
 			return port
 	return default_port
 
-func _probe_url(url: String, timeout: float) -> bool:
+func _probe_url(url: String, timeout: float, ignore_client_only_proxy: bool = false) -> bool:
 	var http := HTTPRequest.new()
 	http.timeout = timeout
 	add_child(http)
@@ -274,13 +274,19 @@ func _probe_url(url: String, timeout: float) -> bool:
 	http.queue_free()
 	# 401/403 still prove that the endpoint exists and needs credentials;
 	# 404/5xx do not count as a working BCD API or proxy.
-	return (response[1] >= 200 and response[1] < 300) or response[1] in [401, 403]
+	var reachable: bool = (response[1] >= 200 and response[1] < 300) or response[1] in [401, 403]
+	if not reachable or not ignore_client_only_proxy:
+		return reachable
+	var health := JSON.new()
+	if health.parse(response[3].get_string_from_utf8()) == OK and health.data is Dictionary:
+		return str(health.data.get("mode", "")) != "client-only"
+	return true
 
 func _find_working_locals(port: int, timeout: float) -> Array:
 	var result := []
 	for candidate in _LOCAL_CANDIDATES:
 		var base_url := "http://%s:%d" % [candidate.addr, port]
-		if await _probe_url(base_url + "/health", timeout):
+		if await _probe_url(base_url + "/health", timeout, true):
 			result.append({"url": base_url, "host": candidate.host})
 	return result
 

@@ -156,6 +156,28 @@ func _test_health_response_branches() -> void:
 			not await _screen.call("_probe_url", "http://127.0.0.1:%d/health" % int(_server.get("port")), 1.0),
 			"Discovery rejects health status %d" % status_code
 		)
+	_clear_fixture()
+	_server.call("enqueue", "/health", 200, JSON.stringify({"status": "healthy", "mode": "client-only"}))
+	_test.expect(
+		not await _screen.call(
+			"_probe_url",
+			"http://127.0.0.1:%d/health" % int(_server.get("port")),
+			1.0,
+			true
+		),
+		"Discovery does not treat the client-only proxy as a local server"
+	)
+	_clear_fixture()
+	_server.call("enqueue", "/health", 200, JSON.stringify({"status": "healthy"}))
+	_test.expect(
+		await _screen.call(
+			"_probe_url",
+			"http://127.0.0.1:%d/health" % int(_server.get("port")),
+			1.0,
+			true
+		),
+		"Discovery still accepts a real local server health response"
+	)
 
 
 func _test_auth_connection_branches() -> void:
