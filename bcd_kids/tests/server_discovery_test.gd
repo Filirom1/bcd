@@ -271,6 +271,8 @@ func _test_splash_states() -> void:
 	_test.expect(is_instance_valid(_screen), "Server discovery remains mounted during the reading intro")
 	_screen.call("_hide_splash")
 	await create_timer(0.45).timeout
+	_test.expect(intro.visible, "Reading intro stays visible long enough to read book titles")
+	await create_timer(3.0).timeout
 	_test.expect(not intro.visible, "Server discovery hides the dedicated reading intro")
 
 

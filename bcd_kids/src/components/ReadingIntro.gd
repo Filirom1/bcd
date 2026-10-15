@@ -8,6 +8,7 @@ extends Control
 const BOOK_START_SCALE := Vector2(0.82, 0.82)
 const RUNNER_START_OFFSET := Vector2(-28.0, 14.0)
 const RUNNER_TRACK_Y := 374.0
+const MIN_INTRO_DISPLAY_SECONDS := 3.0
 const POPULAR_BOOKS_CACHE = preload("res://src/utils/PopularBooksCache.gd")
 
 @onready var _i18n: Node = get_node("/root/I18n")
@@ -39,6 +40,8 @@ var _quote_entry: Dictionary = {}
 var _popular_books: Array[String] = []
 var _hidden := false
 var _started := false
+var _hide_pending := false
+var _intro_started_at_msec := 0
 var _shelf_home := Vector2.ZERO
 var _title_home := Vector2.ZERO
 var _quote_home := Vector2.ZERO
@@ -179,6 +182,7 @@ func start_intro() -> void:
 	if not is_inside_tree() or _hidden:
 		return
 	_started = true
+	_intro_started_at_msec = Time.get_ticks_msec()
 	visible = true
 	_splash_panel.modulate = Color.WHITE
 	_page_turn.visible = false
@@ -349,8 +353,17 @@ func skip_intro() -> void:
 	visible = false
 
 func hide_intro() -> void:
-	if _hidden:
+	if _hidden or _hide_pending:
 		return
+	_hide_pending = true
+	if _started and _intro_started_at_msec > 0:
+		var elapsed := float(Time.get_ticks_msec() - _intro_started_at_msec) / 1000.0
+		var remaining := MIN_INTRO_DISPLAY_SECONDS - elapsed
+		if remaining > 0.0:
+			await get_tree().create_timer(remaining).timeout
+	if _hidden or not is_inside_tree():
+		return
+	_hide_pending = false
 	_hidden = true
 	_started = false
 	if _intro_tween != null:
