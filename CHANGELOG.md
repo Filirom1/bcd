@@ -2,8 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.6.1]
+## [Unreleased]
 
+- Added a Kids checkout button to end a student's session and return to class selection.
 - Fixed Kids server discovery so the CLIENT_ONLY mDNS proxy is not listed as a library server.
 - Fixed the Kids reading intro to remain visible for at least three seconds so book titles can be read.
 

@@ -18,6 +18,7 @@ const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
 @onready var _error_lbl: Label = %ErrorLabel
 @onready var _loans_list: VBoxContainer = %LoansList
 @onready var _validate_btn: Button = %ValidateBtn
+@onready var _done_btn: Button = %DoneBtn
 
 var _busy := false
 
@@ -29,8 +30,10 @@ func _ready() -> void:
 	_barcode_input.placeholder_text = I18n.t("common.barcode_placeholder")
 	_back_btn.text = "← " + I18n.t("common.back")
 	_validate_btn.text = "✓ " + I18n.t("common.validate")
+	_done_btn.text = I18n.t("checkout.done")
 
 	_back_btn.pressed.connect(func(): Mgr.pop())
+	_done_btn.pressed.connect(_finish_session)
 
 	_breadcrumb.crumb_clicked.connect(func(screen):
 		if screen == "class_select": GS.reset_borrower()
@@ -53,6 +56,7 @@ func on_enter() -> void:
 	_barcode_input.placeholder_text = I18n.t("common.barcode_placeholder")
 	_back_btn.text = "← " + I18n.t("common.back")
 	_validate_btn.text = "✓ " + I18n.t("common.validate")
+	_done_btn.text = I18n.t("checkout.done")
 	_update_breadcrumb()
 	_update_counter()
 	_refresh_list()
@@ -130,6 +134,10 @@ func _do_checkout() -> void:
 
 func _handle_error(result: Dictionary) -> void:
 	_error_lbl.text = ERROR_MESSAGES.message(result, ERROR_MESSAGES.CHECKOUT)
+
+func _finish_session() -> void:
+	GS.reset_borrower()
+	Mgr.replace("class_select")
 
 func _update_breadcrumb() -> void:
 	_breadcrumb.set_path(CIRCULATION.borrower_breadcrumb(I18n.t("checkout.title")))

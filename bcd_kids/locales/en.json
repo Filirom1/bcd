@@ -41,6 +41,7 @@
 	},
 	"checkout": {
 		"title": "Checkout",
+		"done": "✅ I'm done — let another student use this",
 		"label": "Book number:",
 		"no_loans": "No books borrowed",
 		"success": "Book borrowed!",

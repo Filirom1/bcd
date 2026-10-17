@@ -41,6 +41,7 @@
 	},
 	"checkout": {
 		"title": "Emprunter",
+		"done": "✅ J’ai fini, je laisse ma place",
 		"label": "Numéro du livre:",
 		"no_loans": "Aucun livre emprunté",
 		"success": "Livre emprunté !",

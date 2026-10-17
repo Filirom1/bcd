@@ -63,6 +63,10 @@ custom_minimum_size = Vector2(280, 48)
 unique_name_in_owner = true
 custom_minimum_size = Vector2(130, 60)
 
+[node name="DoneBtn" type="Button" parent="MainMargin/Root"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+
 [node name="ErrorLabel" type="Label" parent="MainMargin/Root"]
 unique_name_in_owner = true
 horizontal_alignment = 1
