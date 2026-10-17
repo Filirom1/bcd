@@ -99,7 +99,9 @@ func _quick_return(item_id: String) -> void:
 	var items = result.get("items", []) if result is Dictionary else []
 	var title: String = ""
 	if items.size() > 0 and items[0] is Dictionary:
-		title = CIRCULATION.display_title(items[0])
+		var returned_item: Dictionary = items[0]
+		title = CIRCULATION.display_title(returned_item)
+		Mgr.show_book_action(returned_item, "return")
 
 	if title.is_empty():
 		Mgr.notify(I18n.t("return.success"), "success")

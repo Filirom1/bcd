@@ -85,9 +85,7 @@ describe('App', () => {
         expect(emit).toHaveBeenCalledWith('circulation:roster-refresh');
         expect(emit).toHaveBeenCalledWith('circulation:borrower-refresh');
         expect(globalRecordId.value).toBe(42);
-        expect(useNotification().notifications.value).toEqual([
-            expect.objectContaining({ type: 'success' })
-        ]);
+        expect(useNotification().notifications.value).toEqual([]);
     });
 
     it('opens the shared blocking alert after a quick return from the catalog', async () => {
@@ -116,9 +114,7 @@ describe('App', () => {
             class_name: 'CE2',
             expiration_date: '2030-02-01'
         });
-        expect(useNotification().notifications.value).toEqual([
-            expect.objectContaining({ type: 'success' })
-        ]);
+        expect(useNotification().notifications.value).toEqual([]);
     });
 
     it('cross-navigates between global record and borrower modals', () => {

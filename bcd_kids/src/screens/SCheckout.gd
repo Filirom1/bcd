@@ -95,7 +95,9 @@ func _do_checkout() -> void:
 		var transactions := DATA.array(result, "transactions")
 		var title: String = ""
 		if transactions.size() > 0 and transactions[0] is Dictionary:
-			title = DATA.display_title(transactions[0])
+			var transaction: Dictionary = transactions[0]
+			title = DATA.display_title(transaction)
+			Mgr.show_book_action(transaction, "checkout")
 
 		# Refresh loans count first
 		var loans_result = await CIRCULATION.refresh_loans(GS.current_borrower.get("borrower_id", ""))

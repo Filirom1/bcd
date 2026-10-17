@@ -97,6 +97,7 @@ func _do_return() -> void:
 		var pending_hold_ready: Dictionary = {}
 		if items.size() > 0 and items[0] is Dictionary:
 			var item := items[0] as Dictionary
+			Mgr.show_book_action(item, "return")
 			var was_overdue := DATA.boolean(item, "was_overdue")
 			var days_overdue := DATA.integer(item, "days_overdue")
 			var borrower_name := DATA.text(item, "borrower_name")

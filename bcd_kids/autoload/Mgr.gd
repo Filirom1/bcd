@@ -9,6 +9,7 @@ const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
 var _stack: Array = []
 var _notif_box: VBoxContainer
 var _bg_tex_rect: TextureRect
+var _book_action_feedback: Node
 
 # Incremented whenever navigation starts. Screens use it to ignore results from
 # requests that began before the current screen/session became active.
@@ -56,6 +57,7 @@ func _build_notif_layer() -> void:
 	var notification_layer := MANAGER_NOTIFICATIONS.instantiate()
 	add_child(notification_layer)
 	_notif_box = notification_layer.get_node("Root/NotificationBox") as VBoxContainer
+	_book_action_feedback = notification_layer.get_node("Root/BookActionFeedback")
 
 # ============================================================================
 # Navigation (Screen Stack)
@@ -195,3 +197,10 @@ func notify(text: String, type: String = "success") -> void:
 	tw.tween_interval(2.4)
 	tw.tween_property(notif, "modulate:a", 0.0, 0.45)
 	tw.tween_callback(notif.queue_free)
+
+
+func show_book_action(book: Dictionary, action: String) -> void:
+	if not is_instance_valid(_book_action_feedback):
+		push_error("Book action feedback is not available.")
+		return
+	_book_action_feedback.call("show_action", book, action)

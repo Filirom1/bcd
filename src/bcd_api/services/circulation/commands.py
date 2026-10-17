@@ -36,6 +36,7 @@ from ...schemas.circulation import (
     RenewResponse,
     ReturnResponse,
 )
+from ...utils.serialization import parse_json_list
 from ..holds import commands as hold_commands
 from ._presentation import display_title
 from .policy import (
@@ -249,6 +250,8 @@ def checkout_items(
                 "display_title": display_title(t.bibliographic_record.title),
                 "due_date": t.due_date,
                 "cover_image": t.bibliographic_record.cover_image,
+                "authors": parse_json_list(t.bibliographic_record.authors),
+                "illustrators": parse_json_list(t.bibliographic_record.illustrators),
             }
             for t in transactions
         ],
@@ -325,6 +328,13 @@ def return_items(
                     "display_title": display_title(
                         transaction.bibliographic_record.title, item.shelf_location
                     ),
+                    "authors": parse_json_list(
+                        transaction.bibliographic_record.authors
+                    ),
+                    "illustrators": parse_json_list(
+                        transaction.bibliographic_record.illustrators
+                    ),
+                    "cover_image": transaction.bibliographic_record.cover_image,
                     "borrower_id": transaction.borrower.borrower_id,
                     "borrower_name": transaction.borrower.full_name,
                     "checkout_date": transaction.checkout_date,

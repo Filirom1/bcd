@@ -506,9 +506,7 @@ describe('CirculationPage', () => {
             returned_by: 'web-ui'
         });
         expect(emit).toHaveBeenCalledWith('circulation:roster-refresh');
-        expect(useNotification().notifications.value).toEqual([
-            expect.objectContaining({ type: 'success' })
-        ]);
+        expect(useNotification().notifications.value).toEqual([]);
     });
 
     it('reloads the selected borrower after a quick return from the global book detail', async () => {
@@ -554,7 +552,9 @@ describe('CirculationPage', () => {
             }
             throw new Error(`Unexpected GET request: ${endpoint}`);
         });
-        const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ transactions: [] });
+        const post = vi.spyOn(apiClient, 'post').mockResolvedValue({
+            transactions: [{ item_id: 'I-020', title: 'Le Petit Prince' }]
+        });
         const remove = vi.spyOn(apiClient, 'delete').mockResolvedValue(null);
         const wrapper = mountCirculationPage();
         await flushPromises();
@@ -570,6 +570,9 @@ describe('CirculationPage', () => {
         expect(post).toHaveBeenCalledWith('/circulation/checkout', {
             borrower_id: 'B-101', item_ids: ['I-020'], checked_out_by: 'web-ui'
         });
+        expect(useNotification().notifications.value).toEqual([
+            expect.objectContaining({ type: 'success', message: 'holds.hold_cancelled' })
+        ]);
 
         await wrapper.vm.checkoutHold({ bibliographic_record_id: 20, title: 'Unavailable' });
         expect(useNotification().notifications.value.at(-1)).toEqual(
@@ -715,9 +718,9 @@ describe('CirculationPage', () => {
         expect(useNotification().notifications.value.at(-1)).toEqual(expect.objectContaining({ type: 'error' }));
 
         post.mockResolvedValueOnce({ items: [{ item_id: 'I-X' }] });
+        useNotification().clear();
         await wrapper.vm.quickReturn('I-X');
-        expect(useNotification().notifications.value.at(-1).message).toContain('I-X');
-        expect(useNotification().notifications.value.at(-1).message).toContain('circulation.ranger');
+        expect(useNotification().notifications.value).toEqual([]);
     });
 
     it('handles a borrower reload failure after quick-return', async () => {

@@ -72,6 +72,34 @@ class TestCheckoutScenarios:
         assert transaction.return_date is None
         assert transaction.status == "active"
 
+    def test_checkout_and_return_include_book_artists_and_cover(
+        self, db_session, test_borrower_student, test_item_available
+    ):
+        import json
+
+        record = test_item_available.bibliographic_record
+        record.authors = json.dumps(["A. Auteur"])
+        record.illustrators = json.dumps(["I. Illustratrice"])
+        record.cover_image = "cover.jpg"
+        db_session.flush()
+
+        checkout = circulation_service.checkout_items(
+            db=db_session,
+            borrower_id=test_borrower_student.borrower_id,
+            item_ids=[test_item_available.item_id],
+        )
+        checkout_item = checkout.transactions[0]
+        assert checkout_item["authors"] == ["A. Auteur"]
+        assert checkout_item["illustrators"] == ["I. Illustratrice"]
+        assert checkout_item["cover_image"] == "cover.jpg"
+
+        returned = circulation_service.return_items(
+            db=db_session, item_ids=[test_item_available.item_id]
+        ).items[0]
+        assert returned["authors"] == ["A. Auteur"]
+        assert returned["illustrators"] == ["I. Illustratrice"]
+        assert returned["cover_image"] == "cover.jpg"
+
     def test_checkout_success_multiple_items(
         self, db_session, test_borrower_student, test_item_available, test_item_available_2
     ):

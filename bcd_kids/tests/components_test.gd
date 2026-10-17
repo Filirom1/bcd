@@ -18,6 +18,7 @@ func _run() -> void:
 	await _test_notification()
 	await _test_server_card()
 	await _test_book_card()
+	await _test_book_action_feedback()
 	await _test_hold_card()
 	await _test_loan_card()
 	_test.finish(self)
@@ -264,6 +265,50 @@ func _test_book_card() -> void:
 	unavailable.queue_free()
 	await _test.wait_frames(self)
 
+
+func _test_book_action_feedback() -> void:
+	var theme_manager: Node = get_root().get_node("ThemeManager")
+	var previous_theme: String = theme_manager.get("current_theme_name")
+	theme_manager.call("set_theme", "lego")
+	var feedback = load("res://src/components/BookActionFeedback.tscn").instantiate()
+	get_root().add_child(feedback)
+	await _test.wait_frames(self)
+	feedback.show_action({
+		"title": "The Dragon",
+		"authors": ["A. Writer"],
+		"illustrators": ["B. Artist"],
+		"cover_image": "dragon.jpg",
+	}, "checkout")
+	await _test.wait_frames(self)
+
+	var cover: CoverImage = feedback.get_node("Center/Card/Content/CoverFrame/CoverSlot/CoverImage")
+	var placeholder: Label = feedback.get_node("Center/Card/Content/CoverFrame/CoverSlot/CoverPlaceholder")
+	_test.expect(placeholder.visible, "Book action feedback keeps its placeholder until the cover loads")
+	var image := Image.create(2, 2, false, Image.FORMAT_RGBA8)
+	cover.cover_loaded.emit(ImageTexture.create_from_image(image))
+	await _test.wait_frames(self)
+	_test.expect(cover.visible, "Book action feedback displays a successfully loaded cover")
+	_test.expect(not placeholder.visible, "Book action feedback hides the placeholder after the cover loads")
+	_test.equal(
+		feedback.get_node("Center/Card/Content/Details/BookTitle").text,
+		"The Dragon",
+		"Book action feedback displays the book title"
+	)
+	var checkout_style := feedback.get_node("Center/Card").get_theme_stylebox("panel") as StyleBoxFlat
+	_test.equal(checkout_style.border_color, theme_manager.get("ACCENT"), "Checkout feedback uses the active theme accent")
+	feedback.queue_free()
+	await _test.wait_frames(self)
+
+	var return_feedback = load("res://src/components/BookActionFeedback.tscn").instantiate()
+	get_root().add_child(return_feedback)
+	await _test.wait_frames(self)
+	return_feedback.show_action({"title": "The Dragon"}, "return")
+	await _test.wait_frames(self)
+	var return_style := return_feedback.get_node("Center/Card").get_theme_stylebox("panel") as StyleBoxFlat
+	_test.equal(return_style.border_color, theme_manager.get("PRIMARY"), "Return feedback uses the active theme primary colour")
+	return_feedback.queue_free()
+	await _test.wait_frames(self)
+	theme_manager.call("set_theme", previous_theme)
 
 func _test_hold_card() -> void:
 	var ready = load("res://src/components/HoldCard.tscn").instantiate()

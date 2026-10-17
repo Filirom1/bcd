@@ -16,6 +16,7 @@ import { useGlobalModal } from '../composables/useGlobalModal.js';
 import { useHoldReadyModal } from '../composables/useHoldReadyModal.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useItemBadge } from '../composables/useItemBadge.js';
+import { showBookActionFeedback } from '../composables/useBookActionFeedback.js';
 import { events } from '../utils/events.js';
 import BorrowerCard from '../components/circulation/BorrowerCard.js';
 import ItemScanner from '../components/circulation/ItemScanner.js';
@@ -197,6 +198,7 @@ export default defineComponent({
                 if (!transaction) {
                     throw new Error(t('circulation.error_checkout_failed'));
                 }
+                showBookActionFeedback(transaction, 'checkout');
 
                 // Add to scanned items list
                 scannedItems.value.push({
@@ -321,6 +323,7 @@ export default defineComponent({
                 if (!transaction) {
                     throw new Error(t('circulation.error_return_failed'));
                 }
+                showBookActionFeedback(transaction, 'return');
 
                 // Add to scanned items list
                 scannedItems.value.push({
@@ -466,12 +469,17 @@ export default defineComponent({
                     showError(t('holds.no_available_item'));
                     return;
                 }
-                await apiClient.post('/circulation/checkout', {
+                const result = await apiClient.post('/circulation/checkout', {
                     borrower_id: borrower.value.borrower_id,
                     item_ids: [availableItem.item_id],
                     checked_out_by: 'web-ui'
                 });
-                success(`${hold.title} — ${t('circulation.checkout_success', { count: 1 })}`);
+                const transaction = result?.transactions?.[0];
+                if (transaction) {
+                    showBookActionFeedback(transaction, 'checkout');
+                } else {
+                    success(`${hold.title} — ${t('circulation.checkout_success', { count: 1 })}`);
+                }
                 await loadBorrower(borrower.value.borrower_id);
                 events.emit('circulation:roster-refresh');
             } catch (err) {
@@ -497,15 +505,11 @@ export default defineComponent({
                 });
 
                 const returned = result.items?.[0];
-                const titleDisplay = returned?.display_title || returned?.title || itemId;
-                
-                let locationParts = [];
-                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
-                if (returned?.call_number) locationParts.push(returned.call_number);
-                
-                const locationText = locationParts.length > 0 ? locationParts.join(' / ') : '-';
-                const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
-                success(`✓ ${titleDisplay}${shelfInfo}`);
+                if (returned) {
+                    showBookActionFeedback(returned, 'return');
+                } else {
+                    success(`✓ ${itemId} — ${t('circulation.ranger')} : -`);
+                }
 
                 if (returned?.hold_ready) {
                     showHoldReady(returned.hold_ready, returned);

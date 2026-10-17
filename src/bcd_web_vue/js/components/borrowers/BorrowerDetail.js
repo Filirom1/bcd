@@ -17,6 +17,7 @@ import { getLocalizedErrorMessage } from '../../models/error.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useHoldReadyModal } from '../../composables/useHoldReadyModal.js';
+import { showBookActionFeedback } from '../../composables/useBookActionFeedback.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import { events } from '../../utils/events.js';
 
@@ -654,12 +655,12 @@ export default {
                     returned_by: 'web-ui'
                 });
                 const returned = result.items?.[0];
-                const titleDisplay = returned?.display_title || returned?.title || loan.title || loan.item_id;
-                const locationParts = [];
-                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
-                if (returned?.call_number) locationParts.push(returned.call_number);
-                const locationText = locationParts.length ? locationParts.join(' / ') : '-';
-                success(`✓ ${titleDisplay} — ${t('circulation.ranger')} : ${locationText}`);
+                if (returned) {
+                    showBookActionFeedback(returned, 'return');
+                } else {
+                    const titleDisplay = loan.title || loan.item_id;
+                    success(`✓ ${titleDisplay} — ${t('circulation.ranger')} : -`);
+                }
 
                 if (returned?.hold_ready) {
                     showHoldReady(returned.hold_ready, returned);

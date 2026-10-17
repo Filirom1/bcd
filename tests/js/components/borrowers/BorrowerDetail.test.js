@@ -6,6 +6,7 @@ import BorrowerActions from '../../../../src/bcd_web_vue/js/components/borrowers
 import Pagination from '../../../../src/bcd_web_vue/js/components/ui/Pagination.js';
 import { apiClient } from '../../../../src/bcd_web_vue/js/api/client.js';
 import { events } from '../../../../src/bcd_web_vue/js/utils/events.js';
+import { useNotification } from '../../../../src/bcd_web_vue/js/composables/useNotification.js';
 import { makeBorrower } from '../../fixtures/borrowers.js';
 
 const borrower = makeBorrower({
@@ -40,6 +41,7 @@ function mountDetail(props = {}, options = {}) {
 }
 
 beforeEach(() => {
+    useNotification().clear();
     const fetchMock = vi.fn().mockImplementation(async (url) => {
         if (url.includes('/api/v1/borrowers/')) {
             return new Response(JSON.stringify(borrower), {
@@ -67,6 +69,7 @@ beforeEach(() => {
 afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    useNotification().clear();
 });
 
 describe('BorrowerDetail', () => {
@@ -109,6 +112,7 @@ describe('BorrowerDetail', () => {
         expect(refreshSpy).toHaveBeenCalledWith('catalog:refresh');
         expect(refreshSpy).toHaveBeenCalledWith('circulation:roster-refresh');
         expect(refreshSpy).toHaveBeenCalledWith('circulation:borrower-refresh');
+        expect(useNotification().notifications.value).toEqual([]);
     });
 
     it('displays full borrower info and lists current loans in view mode', async () => {

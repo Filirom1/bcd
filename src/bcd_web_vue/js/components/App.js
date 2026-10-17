@@ -13,6 +13,8 @@ import NotificationContainer from './ui/NotificationContainer.js';
 import RecordDetail from './catalog/RecordDetail.js';
 import BorrowerDetail from './borrowers/BorrowerDetail.js';
 import HoldReadyModal from './circulation/HoldReadyModal.js';
+import BookActionFeedback from './circulation/BookActionFeedback.js';
+import { showBookActionFeedback } from '../composables/useBookActionFeedback.js';
 import { useAppState } from '../composables/useAppState.js';
 import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts.js';
 import { useGlobalModal } from '../composables/useGlobalModal.js';
@@ -31,6 +33,7 @@ export default defineComponent({
         RecordDetail,
         BorrowerDetail,
         HoldReadyModal,
+        BookActionFeedback,
     },
 
     setup() {
@@ -61,15 +64,12 @@ export default defineComponent({
                     returned_by: 'web-ui',
                 });
                 const returned = result.items?.[0];
-                const titleDisplay = returned?.display_title || returned?.title || itemId;
-                
-                let locationParts = [];
-                if (returned?.shelf_location) locationParts.push(returned.shelf_location);
-                if (returned?.call_number) locationParts.push(returned.call_number);
-                
-                const locationText = locationParts.length > 0 ? locationParts.join(' / ') : '-';
-                const shelfInfo = ` — ${t('circulation.ranger')} : ${locationText}`;
-                success(`✓ ${titleDisplay}${shelfInfo}`);
+                if (returned) {
+                    showBookActionFeedback(returned, 'return');
+                } else {
+                    const titleDisplay = itemId;
+                    success(`✓ ${titleDisplay} — ${t('circulation.ranger')} : -`);
+                }
                 if (returned?.hold_ready) {
                     showHoldReady(returned.hold_ready, returned);
                 }
@@ -169,6 +169,7 @@ export default defineComponent({
 
             <!-- Blocking hold-ready notice shared by every item-return workflow -->
             <hold-ready-modal />
+            <book-action-feedback />
         </div>
     `
 });
