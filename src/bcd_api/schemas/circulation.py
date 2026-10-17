@@ -1,7 +1,7 @@
 """Pydantic schemas for CirculationTransaction model."""
 
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -197,6 +197,32 @@ class CirculationTransactionResponse(TimestampMixin):
     days_overdue: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CirculationActionEvent(BaseModel):
+    """A single student checkout or return action for the activity timeline."""
+
+    id: str
+    transaction_id: int
+    action: Literal["checkout", "return"]
+    occurred_at: datetime
+    borrower_id: str
+    borrower_name: str
+    class_id: Optional[int]
+    class_name: Optional[str]
+    homeroom_teacher: Optional[str]
+    item_id: str
+    title: str
+
+
+class CirculationActivityDay(BaseModel):
+    """A calendar day containing student checkout or return actions."""
+
+    activity_date: date
+    checkout_count: int
+    return_count: int
+    first_action_at: datetime
+    last_action_at: datetime
 
 
 class CurrentLoanResponse(BaseModel):

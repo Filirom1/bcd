@@ -33,6 +33,7 @@ describe('application router', () => {
             '/',
             '/checkout',
             '/return',
+            '/activity',
             '/catalog',
             '/cataloging',
             '/borrowers',

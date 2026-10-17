@@ -21,6 +21,7 @@ export default defineComponent({
         const navItems = computed(() => [
             { to: '/checkout', icon: 'bi-book', label: t('navigation.checkout'), shortcut: 'A' },
             { to: '/return', icon: 'bi-arrow-return-left', label: t('navigation.return'), shortcut: 'R' },
+            { to: '/activity', icon: 'bi-activity', label: t('navigation.activityTimeline') },
             { to: '/catalog', icon: 'bi-search', label: t('navigation.catalog'), shortcut: 'C' },
             { to: '/cataloging', icon: 'bi-journal-plus', label: t('navigation.cataloging') },
             { to: '/borrowers', icon: 'bi-people', label: t('navigation.borrowers'), shortcut: 'L' },

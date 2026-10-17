@@ -9,6 +9,8 @@ from .circulation.commands import (  # noqa: F401
 from .circulation.queries import (  # noqa: F401
     get_borrower_circulation_history,
     get_borrower_current_loans,
+    get_circulation_actions,
+    get_circulation_activity_days,
     get_item_circulation_history,
 )
 
@@ -19,4 +21,6 @@ __all__ = [
     "get_borrower_current_loans",
     "get_item_circulation_history",
     "get_borrower_circulation_history",
+    "get_circulation_activity_days",
+    "get_circulation_actions",
 ]

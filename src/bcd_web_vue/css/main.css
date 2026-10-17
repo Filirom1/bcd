@@ -84,6 +84,278 @@ h6 { font-size: 0.875rem; }
     font-weight: 600;
 }
 
+.activity-timeline-page {
+    padding-bottom: 2rem;
+}
+
+.activity-live-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--bcd-text-muted);
+    font-size: 0.875rem;
+}
+
+.activity-live-status.is-live {
+    color: var(--bcd-success);
+}
+
+.activity-live-dot,
+.activity-legend-dot {
+    display: inline-block;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: var(--bcd-text-muted);
+}
+
+.activity-live-status.is-live .activity-live-dot,
+.activity-legend-dot.is-return {
+    background: var(--bcd-success);
+}
+
+.activity-legend-dot.is-checkout {
+    background: var(--bcd-primary);
+}
+
+.activity-controls .card-body,
+.activity-control-group,
+.activity-legend {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.activity-controls .card-body {
+    justify-content: space-between;
+}
+
+.activity-control-group {
+    min-width: 0;
+}
+
+.activity-range-input {
+    width: 220px;
+}
+
+.activity-day-select {
+    width: min(330px, 100%);
+}
+
+.activity-class-filter {
+    width: min(260px, 100%);
+}
+
+.activity-zoom-label {
+    color: var(--bcd-text-muted);
+    font-size: 0.875rem;
+    margin: 0 0.25rem 0 0.5rem;
+}
+
+.activity-legend {
+    color: var(--bcd-text-muted);
+    font-size: 0.8rem;
+}
+
+.activity-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.activity-timeline-viewport {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+.activity-timeline-svg {
+    display: block;
+    width: 100%;
+    min-width: 900px;
+    height: auto;
+    touch-action: pan-y;
+    cursor: grab;
+    user-select: none;
+}
+
+.activity-timeline-svg:active {
+    cursor: grabbing;
+}
+
+.activity-timeline-axis {
+    stroke: var(--bcd-border);
+    stroke-width: 3;
+}
+
+.activity-timeline-tick line {
+    stroke: var(--bcd-border);
+    stroke-width: 1;
+}
+
+.activity-timeline-tick text {
+    fill: var(--bcd-text-muted);
+    font-size: 12px;
+}
+
+.activity-timeline-tick .activity-timeline-date {
+    font-size: 10px;
+}
+
+.activity-group-bracket,
+.activity-group-cap {
+    stroke: var(--bcd-border);
+    stroke-width: 1.5;
+}
+
+.activity-group-label-bg {
+    fill: var(--bcd-surface);
+    stroke: var(--bcd-border);
+    stroke-width: 1;
+}
+
+.activity-group-label {
+    fill: var(--bcd-text-main);
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.activity-timeline-group {
+    cursor: pointer;
+}
+
+.activity-timeline-group.is-selected .activity-group-label-bg {
+    fill: var(--bcd-primary-subtle);
+    stroke: var(--bcd-primary);
+    stroke-width: 2;
+}
+
+.activity-timeline-group.is-selected .activity-group-bracket,
+.activity-timeline-group.is-selected .activity-group-cap {
+    stroke: var(--bcd-primary);
+    stroke-width: 2;
+}
+
+.activity-timeline-event {
+    cursor: pointer;
+}
+
+.activity-timeline-event line {
+    stroke-width: 3;
+    stroke-linecap: round;
+}
+
+.activity-timeline-event.is-return line {
+    stroke: var(--bcd-success);
+}
+
+.activity-timeline-event.is-checkout line {
+    stroke: var(--bcd-primary);
+}
+
+.activity-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem 1rem 0;
+}
+
+.activity-count-return {
+    background: var(--bcd-success-subtle);
+    color: #065f46;
+}
+
+.activity-count-checkout {
+    background: var(--bcd-primary-subtle);
+    color: #075985;
+}
+
+.activity-student-table-viewport {
+    overflow-x: auto;
+}
+
+.activity-student-table {
+    min-width: 680px;
+    table-layout: fixed;
+}
+
+.activity-student-table th,
+.activity-student-table td {
+    padding: 0.65rem 1rem;
+    vertical-align: top;
+}
+
+.activity-student-table thead th {
+    border-bottom: 2px solid var(--bcd-border);
+    color: var(--bcd-text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.activity-student-table th:first-child {
+    width: 22%;
+}
+
+.activity-student-table tbody tr + tr {
+    border-top: 1px solid var(--bcd-border);
+}
+
+.activity-student-table .activity-student-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.activity-book-column.is-return {
+    color: #065f46;
+}
+
+.activity-book-column.is-checkout {
+    color: #075985;
+}
+
+.activity-book-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.activity-book-list li + li {
+    margin-top: 0.35rem;
+}
+
+.activity-book-list li {
+    font-size: 0.875rem;
+}
+
+.activity-book-list small {
+    display: block;
+    font-size: 0.75rem;
+}
+
+.activity-spinning {
+    animation: activity-spin 1s linear infinite;
+}
+
+@keyframes activity-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767.98px) {
+    .activity-controls .card-body {
+        align-items: stretch;
+    }
+
+    .activity-control-group {
+        width: 100%;
+    }
+
+    .activity-range-input {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
 /* Layout */
 .app-container {
     display: flex;

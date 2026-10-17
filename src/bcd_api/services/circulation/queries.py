@@ -7,7 +7,7 @@ import math
 from datetime import date, datetime
 from typing import List, Optional
 
-from sqlalchemy import and_
+from sqlalchemy import and_, func, literal, or_
 from sqlalchemy.orm import Session, joinedload
 
 from ...core.exceptions import ItemNotFoundException, NotFoundException
@@ -18,6 +18,8 @@ from ...models.item import Item
 from ...schemas.circulation import (
     BorrowerHistoryItem,
     BorrowerHistoryResponse,
+    CirculationActionEvent,
+    CirculationActivityDay,
     ItemHistoryItem,
     ItemHistoryResponse,
     PaginationMeta,
@@ -26,6 +28,148 @@ from ...utils.serialization import deserialize_json_list
 from ._presentation import display_title
 from .policy import is_overdue, overdue_days, was_returned_late
 from .query_filters import active_loan_predicate
+
+
+def get_circulation_actions(
+    db: Session,
+    start: datetime,
+    end: datetime,
+    class_id: Optional[int] = None,
+) -> List[CirculationActionEvent]:
+    """Return student checkout and return actions in a half-open time range."""
+    if end <= start:
+        raise ValueError("end must be later than start")
+
+    query = (
+        db.query(CirculationTransaction)
+        .join(CirculationTransaction.borrower)
+        .filter(
+            Borrower.role == "student",
+            or_(
+                and_(
+                    CirculationTransaction.checkout_date >= start,
+                    CirculationTransaction.checkout_date < end,
+                ),
+                and_(
+                    CirculationTransaction.return_date >= start,
+                    CirculationTransaction.return_date < end,
+                ),
+            ),
+        )
+        .options(
+            joinedload(CirculationTransaction.borrower).joinedload(Borrower.class_),
+            joinedload(CirculationTransaction.item),
+            joinedload(CirculationTransaction.bibliographic_record),
+        )
+    )
+    if class_id is not None:
+        query = query.filter(Borrower.class_id == class_id)
+
+    actions = []
+    for transaction in query.all():
+        borrower = transaction.borrower
+        class_obj = borrower.class_
+        shared = {
+            "transaction_id": transaction.id,
+            "borrower_id": borrower.borrower_id,
+            "borrower_name": borrower.full_name,
+            "class_id": borrower.class_id,
+            "class_name": class_obj.name if class_obj else None,
+            "homeroom_teacher": class_obj.homeroom_teacher if class_obj else None,
+            "item_id": transaction.item.item_id,
+            "title": transaction.bibliographic_record.title,
+        }
+        if start <= transaction.checkout_date < end:
+            actions.append(
+                CirculationActionEvent(
+                    id=f"{transaction.id}:checkout",
+                    action="checkout",
+                    occurred_at=transaction.checkout_date,
+                    **shared,
+                )
+            )
+        if transaction.return_date and start <= transaction.return_date < end:
+            actions.append(
+                CirculationActionEvent(
+                    id=f"{transaction.id}:return",
+                    action="return",
+                    occurred_at=transaction.return_date,
+                    **shared,
+                )
+            )
+
+    return sorted(
+        actions,
+        key=lambda action: (
+            action.occurred_at,
+            0 if action.action == "return" else 1,
+            action.id,
+        ),
+    )
+
+
+def get_circulation_activity_days(
+    db: Session,
+    class_id: Optional[int] = None,
+    no_class: bool = False,
+) -> List[CirculationActivityDay]:
+    """Return dates with student circulation activity and per-action counts."""
+    borrower_filter = [Borrower.role == "student"]
+    if class_id is not None:
+        borrower_filter.append(Borrower.class_id == class_id)
+    elif no_class:
+        borrower_filter.append(Borrower.class_id.is_(None))
+
+    checkout_days = (
+        db.query(
+            func.date(CirculationTransaction.checkout_date).label("activity_date"),
+            func.count(CirculationTransaction.id).label("checkout_count"),
+            literal(0).label("return_count"),
+            func.min(CirculationTransaction.checkout_date).label("first_action_at"),
+            func.max(CirculationTransaction.checkout_date).label("last_action_at"),
+        )
+        .join(CirculationTransaction.borrower)
+        .filter(*borrower_filter)
+        .group_by(func.date(CirculationTransaction.checkout_date))
+    )
+    return_days = (
+        db.query(
+            func.date(CirculationTransaction.return_date).label("activity_date"),
+            literal(0).label("checkout_count"),
+            func.count(CirculationTransaction.id).label("return_count"),
+            func.min(CirculationTransaction.return_date).label("first_action_at"),
+            func.max(CirculationTransaction.return_date).label("last_action_at"),
+        )
+        .join(CirculationTransaction.borrower)
+        .filter(
+            *borrower_filter,
+            CirculationTransaction.return_date.is_not(None),
+        )
+        .group_by(func.date(CirculationTransaction.return_date))
+    )
+    combined_days = checkout_days.union_all(return_days).subquery()
+    rows = (
+        db.query(
+            combined_days.c.activity_date,
+            func.sum(combined_days.c.checkout_count).label("checkout_count"),
+            func.sum(combined_days.c.return_count).label("return_count"),
+            func.min(combined_days.c.first_action_at).label("first_action_at"),
+            func.max(combined_days.c.last_action_at).label("last_action_at"),
+        )
+        .group_by(combined_days.c.activity_date)
+        .order_by(combined_days.c.activity_date.desc())
+        .all()
+    )
+    return [
+        CirculationActivityDay(
+            activity_date=row.activity_date,
+            checkout_count=row.checkout_count,
+            return_count=row.return_count,
+            first_action_at=row.first_action_at,
+            last_action_at=row.last_action_at,
+        )
+        for row in rows
+    ]
 
 
 def get_active_loan_for_item(db: Session, item_db_id: int) -> Optional[CirculationTransaction]:

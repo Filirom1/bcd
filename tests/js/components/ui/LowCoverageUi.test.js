@@ -154,7 +154,8 @@ describe('Navigation components', () => {
 
     it('builds the complete navigation and sidebar health footer', async () => {
         const navItems = mount(NavigationMenu, { global: { stubs: { NavLink: true } } }).vm.navItems;
-        expect(navItems).toHaveLength(10);
+        expect(navItems).toHaveLength(11);
+        expect(navItems.find(item => item.to === '/activity')).toBeTruthy();
         expect(navItems.find(item => item.to === '/cataloging')).toBeTruthy();
         expect(navItems.find(item => item.to === '/settings').submenu).toHaveLength(8);
         vi.spyOn(apiClient, 'get').mockResolvedValue({ version: '2.0.0' });

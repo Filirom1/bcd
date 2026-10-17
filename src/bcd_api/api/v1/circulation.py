@@ -5,16 +5,18 @@ Provides REST API endpoints for checkout, return, and renewal operations.
 """
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ...core.deps import get_db
 from ...schemas.circulation import (
     BorrowerHistoryResponse,
     CheckoutRequest,
+    CirculationActionEvent,
+    CirculationActivityDay,
     ItemHistoryResponse,
     RenewRequest,
     RenewResponse,
@@ -25,6 +27,45 @@ from ...services import circulation_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/circulation", tags=["circulation"])
+
+
+@router.get("/activity-days", response_model=list[CirculationActivityDay])
+def get_circulation_activity_days(
+    class_id: Optional[int] = Query(None, ge=1, description="Filter by class ID"),
+    no_class: bool = Query(False, description="Only include students without a class"),
+    db: Session = Depends(get_db),
+):
+    """Get student activity dates and action counts for timeline navigation."""
+    if class_id is not None and no_class:
+        raise HTTPException(status_code=422, detail="class_id and no_class cannot be combined")
+    return circulation_service.get_circulation_activity_days(
+        db=db,
+        class_id=class_id,
+        no_class=no_class,
+    )
+
+
+@router.get("/actions", response_model=list[CirculationActionEvent])
+def get_circulation_actions(
+    start: datetime = Query(..., description="Inclusive local datetime"),
+    end: datetime = Query(..., description="Exclusive local datetime"),
+    class_id: Optional[int] = Query(None, ge=1, description="Filter by class ID"),
+    db: Session = Depends(get_db),
+):
+    """Get student checkout and return actions in a time range."""
+    if start.tzinfo is not None:
+        start = start.astimezone().replace(tzinfo=None)
+    if end.tzinfo is not None:
+        end = end.astimezone().replace(tzinfo=None)
+    if end <= start:
+        raise HTTPException(status_code=422, detail="end must be later than start")
+
+    return circulation_service.get_circulation_actions(
+        db=db,
+        start=start,
+        end=end,
+        class_id=class_id,
+    )
 
 
 @router.post("/checkout", status_code=status.HTTP_201_CREATED)

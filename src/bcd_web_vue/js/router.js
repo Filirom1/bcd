@@ -22,6 +22,7 @@ const PrintBorrowerReference = () => import('./pages/PrintBorrowerReference.js')
 const PrintStudentCards = () => import('./pages/PrintStudentCards.js');
 const PrintItemLabels = () => import('./pages/PrintItemLabels.js');
 const InventoryPage = () => import('./pages/InventoryPage.js');
+const ActivityTimelinePage = () => import('./pages/ActivityTimelinePage.js');
 const OverdueNotices = () => import('./components/reports/OverdueNotices.js');
 
 // Route definitions
@@ -42,6 +43,12 @@ const routes = [
         component: CirculationPage,
         props: { mode: 'return' },
         meta: { titleKey: 'navigation.return' }
+    },
+    {
+        path: '/activity',
+        name: 'activity-timeline',
+        component: ActivityTimelinePage,
+        meta: { titleKey: 'navigation.activityTimeline' }
     },
     {
         path: '/catalog',
