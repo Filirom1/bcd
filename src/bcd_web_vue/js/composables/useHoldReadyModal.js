@@ -19,6 +19,7 @@ const pendingHoldReady = [];
  * @property {string} borrower_id
  * @property {string} class_name
  * @property {string} expiration_date
+ * @property {string} cover_image
  */
 
 /** @param {unknown} value */
@@ -35,6 +36,7 @@ const normalizeHoldReady = (hold, item = {}) => {
     return {
         title: asText(itemData.display_title || itemData.title || itemData.item_id),
         item_id: asText(itemData.item_id),
+        cover_image: asText(itemData.cover_image),
         borrower_name: asText(holdData.borrower_name),
         borrower_id: asText(holdData.borrower_id),
         class_name: asText(holdData.class_name || holdData.borrower_id),

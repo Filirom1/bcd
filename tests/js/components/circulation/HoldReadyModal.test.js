@@ -19,7 +19,7 @@ describe('HoldReadyModal', () => {
             : key);
         useHoldReadyModal().showHoldReady(
             { borrower_name: 'Lina Martin', borrower_id: 'B-9', class_name: 'CE2', expiration_date: '2030-02-01' },
-            { item_id: 'I-12', title: 'Le Petit Nicolas' }
+            { item_id: 'I-12', title: 'Le Petit Nicolas', cover_image: 'little-prince.jpg' }
         );
         const wrapper = mount(HoldReadyModal);
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -31,6 +31,9 @@ describe('HoldReadyModal', () => {
         expect(document.body.textContent).toContain('Le Petit Nicolas');
         expect(document.body.textContent).toContain('Lina Martin');
         expect(document.body.textContent).toContain('I-12');
+        expect(document.body.querySelector('.hold-ready-modal')).not.toBeNull();
+        expect(document.body.querySelector('.hold-ready-book-card')).not.toBeNull();
+        expect(document.body.querySelector('.hold-ready-cover')?.getAttribute('src')).toBe('/covers/little-prince.jpg');
         expect(document.body.querySelector('.btn-close')).toBeNull();
         expect(document.activeElement).toBe(acknowledge);
 

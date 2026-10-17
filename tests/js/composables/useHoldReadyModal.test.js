@@ -15,7 +15,7 @@ describe('useHoldReadyModal', () => {
 
         modal.showHoldReady(
             { borrower_name: 'Lina Martin', borrower_id: 'B-9', class_name: 'CE2', expiration_date: '2030-02-01' },
-            { item_id: 'I-1', display_title: 'Le Petit Nicolas' }
+            { item_id: 'I-1', display_title: 'Le Petit Nicolas', cover_image: 'little-prince.jpg' }
         );
         modal.showHoldReady(
             { borrower_name: 'Noé Dupont', borrower_id: 'B-10' },
@@ -25,6 +25,7 @@ describe('useHoldReadyModal', () => {
         expect(modal.holdReady.value).toEqual({
             title: 'Le Petit Nicolas',
             item_id: 'I-1',
+            cover_image: 'little-prince.jpg',
             borrower_name: 'Lina Martin',
             borrower_id: 'B-9',
             class_name: 'CE2',
@@ -35,6 +36,7 @@ describe('useHoldReadyModal', () => {
         expect(modal.holdReady.value).toEqual({
             title: 'Matilda',
             item_id: 'I-2',
+            cover_image: '',
             borrower_name: 'Noé Dupont',
             borrower_id: 'B-10',
             class_name: 'B-10',

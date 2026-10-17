@@ -5,6 +5,7 @@
  *   show     (Boolean) — controls visibility
  *   title    (String)  — header title, overridden by slot#header
  *   size     (String)  — sm | md | lg | xl  (default: md)
+ *   contentClass (String) — optional class applied to the modal content
  *   static   (Boolean) — if true, backdrop click and ESC don't close (default: false)
  *   centered (Boolean) — vertically centered dialog (default: false)
  *   scrollable (Boolean) — scrollable body (default: false)
@@ -32,6 +33,10 @@ export default defineComponent({
             type: String,
             default: 'md',
             validator: (v) => ['sm', 'md', 'lg', 'xl'].includes(v)
+        },
+        contentClass: {
+            type: String,
+            default: ''
         },
         static: {
             type: Boolean,
@@ -82,7 +87,7 @@ export default defineComponent({
                             scrollable && 'modal-dialog-scrollable'
                         ]"
                     >
-                        <div class="modal-content">
+                        <div :class="['modal-content', contentClass]">
                             <!-- Header -->
                             <div class="modal-header">
                                 <h5 class="modal-title">
