@@ -86,7 +86,7 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 custom_minimum_size = Vector2(130, 60)
 layout_mode = 2
-theme_type_variation = &"LabelSmall"
+theme_type_variation = &"ButtonSmall"
 
 [node name="ServersLabel" type="Label" parent="MainMargin/Root" unique_id=1712634694]
 unique_name_in_owner = true
@@ -123,7 +123,7 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(110, 60)
 layout_mode = 2
-theme_type_variation = &"LabelSmall"
+theme_type_variation = &"ButtonSmall"
 
 [node name="AuthPanel" type="PanelContainer" parent="MainMargin/Root" unique_id=1868105289]
 unique_name_in_owner = true
@@ -189,13 +189,13 @@ size_flags_horizontal = 3
 unique_name_in_owner = true
 custom_minimum_size = Vector2(110, 60)
 layout_mode = 2
-theme_type_variation = &"LabelSmall"
+theme_type_variation = &"ButtonSmall"
 
 [node name="ClearAuthBtn" type="Button" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=632013538]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 60)
 layout_mode = 2
-theme_type_variation = &"LabelSmall"
+theme_type_variation = &"ButtonSmall"
 
 [node name="ReadingIntro" parent="." instance=ExtResource("2_reading_intro")]
 unique_name_in_owner = true

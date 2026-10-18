@@ -4,23 +4,20 @@
 
 [node name="FilterPanel" type="VBoxContainer"]
 script = ExtResource("1_scr")
-theme_override_constants/separation = 6
 
 [node name="FiltersRow" type="HBoxContainer" parent="."]
 size_flags_horizontal = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
-[node name="TypeGroup" type="VBoxContainer" parent="FiltersRow"]
-theme_override_constants/separation = 2
-
-[node name="TypeLabel" type="Label" parent="FiltersRow/TypeGroup"]
+[node name="TypeLabel" type="Label" parent="FiltersRow"]
 unique_name_in_owner = true
 theme_type_variation = "LabelSmall"
 
-[node name="TypeOption" type="OptionButton" parent="FiltersRow/TypeGroup"]
+[node name="TypeOption" type="OptionButton" parent="FiltersRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 60)
+custom_minimum_size = Vector2(150, 52)
 
-[node name="AvailableCheckbox" type="CheckBox" parent="."]
+[node name="AvailableCheckbox" type="CheckBox" parent="FiltersRow"]
 unique_name_in_owner = true
-theme_type_variation = "LabelSmall"
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 52)

@@ -5,9 +5,11 @@ const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
+import DataTable from '../ui/DataTable.js';
 
 export default defineComponent({
     name: 'ExternalCatalogSourcesSection',
+    components: { DataTable },
 
     props: {
         settings: { type: Object, required: true }
@@ -59,40 +61,41 @@ export default defineComponent({
             <h4 class="border-bottom pb-2 mb-3"><i class="bi bi-cloud-download me-1"></i>{{ t('settings.external_catalog_sources') }}</h4>
             <p class="text-muted small">{{ t('settings.external_catalog_sources_help') }}</p>
             <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>{{ t('settings.external_source') }}</th>
-                            <th>{{ t('settings.external_source_enabled') }}</th>
-                            <th style="width:12rem">{{ t('settings.external_source_timeout') }}</th>
-                            <th style="width:8rem">{{ t('settings.external_source_test') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="source in sources" :key="source.key">
-                            <td class="fw-semibold">{{ t(source.labelKey) }}</td>
-                            <td>
-                                <div class="form-check form-switch mb-0">
-                                    <input :id="source.key + '-enabled'" v-model="settings[source.enabledKey]" type="checkbox" class="form-check-input" />
-                                    <label class="form-check-label" :for="source.key + '-enabled'">{{ settings[source.enabledKey] ? t('common.yes') : t('common.no') }}</label>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="input-group input-group-sm">
-                                    <input :id="source.key + '-timeout'" v-model.number="settings[source.timeoutKey]" type="number" min="1" max="60" class="form-control" />
-                                    <span class="input-group-text">{{ t('settings.seconds') }}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-outline-primary" :disabled="testing === source.key" @click="testSource(source)">
-                                    <span v-if="testing === source.key" class="spinner-border spinner-border-sm"></span>
-                                    <span v-else>{{ t('settings.test') }}</span>
-                                </button>
-                                <div v-if="testStatus[source.key]" class="small text-muted mt-1">{{ t('settings.external_source_status_' + testStatus[source.key].status) }}</div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <data-table
+                    :columns="[
+                        { key: 'source', label: t('settings.external_source') },
+                        { key: 'enabled', label: t('settings.external_source_enabled') },
+                        { key: 'timeout', label: t('settings.external_source_timeout'), width: '12rem' },
+                        { key: 'test', label: t('settings.external_source_test'), width: '8rem' },
+                    ]"
+                    :rows="sources"
+                    row-key="key"
+                    table-class="table-sm align-middle"
+                    bare
+                >
+                    <template #row="{ row: source }">
+                        <td class="fw-semibold">{{ t(source.labelKey) }}</td>
+                        <td>
+                            <div class="form-check form-switch mb-0">
+                                <input :id="source.key + '-enabled'" v-model="settings[source.enabledKey]" type="checkbox" class="form-check-input" />
+                                <label class="form-check-label" :for="source.key + '-enabled'">{{ settings[source.enabledKey] ? t('common.yes') : t('common.no') }}</label>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input :id="source.key + '-timeout'" v-model.number="settings[source.timeoutKey]" type="number" min="1" max="60" class="form-control" />
+                                <span class="input-group-text">{{ t('settings.seconds') }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary" :disabled="testing === source.key" @click="testSource(source)">
+                                <span v-if="testing === source.key" class="spinner-border spinner-border-sm"></span>
+                                <span v-else>{{ t('settings.test') }}</span>
+                            </button>
+                            <div v-if="testStatus[source.key]" class="small text-muted mt-1">{{ t('settings.external_source_status_' + testStatus[source.key].status) }}</div>
+                        </td>
+                    </template>
+                </data-table>
             </div>
         </div>
     `

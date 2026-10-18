@@ -17,10 +17,13 @@ import { apiClient } from '../api/client.js';
 const { defineComponent, ref, onMounted } = Vue;
 const { useI18n } = VueI18n;
 
+import PageHeader from '../components/ui/PageHeader.js';
+
 export default defineComponent({
     name: 'ClassesPage',
 
     components: {
+        PageHeader,
         ClassList,
         ClassForm,
         ClassDeleteDialog,
@@ -28,17 +31,17 @@ export default defineComponent({
     },
 
     template: `
-        <div class="classes-page container-fluid">
+        <div class="classes-page">
             <!-- Page Header -->
-            <div class="page-header">
-                <div>
+            <page-header>
+                <template #heading>
                     <h1 class="page-title">
                         <i class="bi bi-diagram-3 me-2"></i>
                         {{ t('admin.class_management') }}
                     </h1>
-                    <p class="text-muted mb-0">{{ t('admin.class_management_subtitle', 'Manage school classes and grade levels') }}</p>
-                </div>
-                <div class="d-flex gap-2">
+                </template>
+                <template #actions>
+                    <div class="d-flex gap-2">
                     <button
                         type="button"
                         class="btn btn-primary"
@@ -50,15 +53,9 @@ export default defineComponent({
                         <kbd v-else class="admin-shortcut ms-2" style="visibility: hidden;">N</kbd>
                     </button>
                     <help-panel section="classes" />
-                </div>
-            </div>
-
-            <!-- Results Summary -->
-            <div v-if="!loading && classes.length > 0" class="mb-3">
-                <div class="text-muted">
-                    {{ t('admin.total_classes', { count: classes.length }, '{count} classes') }}
-                </div>
-            </div>
+                    </div>
+                </template>
+            </page-header>
 
             <!-- Class List -->
             <class-list

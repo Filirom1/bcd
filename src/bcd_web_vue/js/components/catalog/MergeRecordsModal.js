@@ -3,6 +3,7 @@ const { useI18n } = VueI18n;
 import Modal from '../ui/Modal.js';
 import DeweyPicker from '../ui/DeweyPicker.js';
 import ShelfLocationPicker from '../ui/ShelfLocationPicker.js';
+import DataTable from '../ui/DataTable.js';
 import { apiClient } from '../../api/client.js';
 import { getLocalizedErrorMessage } from '../../models/error.js';
 import { useAppState } from '../../composables/useAppState.js';
@@ -12,7 +13,7 @@ import { computeCallNumber } from '../../utils/callNumber.js';
 export default defineComponent({
     name: 'MergeRecordsModal',
 
-    components: { Modal, DeweyPicker, ShelfLocationPicker },
+    components: { Modal, DeweyPicker, ShelfLocationPicker, DataTable },
 
     props: {
         show: {
@@ -319,42 +320,43 @@ export default defineComponent({
                         {{ t('admin.merge_records_no_copies') }}
                     </div>
                     <div v-else class="table-responsive">
-                        <table class="table table-sm align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>{{ t('catalog.item_id') }}</th>
-                                    <th>{{ t('catalog.shelf_location') }}</th>
-                                    <th>{{ t('catalog.call_number') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="item in items" :key="item.id">
-                                    <td>
-                                        <code>{{ item.item_id || item.barcode }}</code>
-                                        <div class="small text-muted">{{ item.record_title }}</div>
-                                    </td>
-                                    <td>
-                                        <shelf-location-picker
-                                            :model-value="item.shelf_location || ''"
-                                            :locations="shelfLocationOptions"
-                                            input-class="form-control-sm"
-                                            :placeholder="t('catalog.shelf_location_placeholder')"
-                                            @update:model-value="handleShelfLocationChange(item, $event)"
-                                        />
-                                    </td>
-                                    <td>
-                                        <dewey-picker
-                                            :model-value="item.call_number || ''"
-                                            :colors="deweyColors"
-                                            :enabled="deweyEnabled"
-                                            input-class="form-control-sm"
-                                            :placeholder="t('catalog.call_number')"
-                                            @update:model-value="handleCallNumberChange(item, $event)"
-                                        />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <data-table
+                            :columns="[
+                                { key: 'item_id', label: t('catalog.item_id') },
+                                { key: 'shelf_location', label: t('catalog.shelf_location') },
+                                { key: 'call_number', label: t('catalog.call_number') },
+                            ]"
+                            :rows="items"
+                            row-key="id"
+                            table-class="table-sm align-middle"
+                            bare
+                        >
+                            <template #row="{ row: item }">
+                                <td>
+                                    <code>{{ item.item_id || item.barcode }}</code>
+                                    <div class="small text-muted">{{ item.record_title }}</div>
+                                </td>
+                                <td>
+                                    <shelf-location-picker
+                                        :model-value="item.shelf_location || ''"
+                                        :locations="shelfLocationOptions"
+                                        input-class="form-control-sm"
+                                        :placeholder="t('catalog.shelf_location_placeholder')"
+                                        @update:model-value="handleShelfLocationChange(item, $event)"
+                                    />
+                                </td>
+                                <td>
+                                    <dewey-picker
+                                        :model-value="item.call_number || ''"
+                                        :colors="deweyColors"
+                                        :enabled="deweyEnabled"
+                                        input-class="form-control-sm"
+                                        :placeholder="t('catalog.call_number')"
+                                        @update:model-value="handleCallNumberChange(item, $event)"
+                                    />
+                                </td>
+                            </template>
+                        </data-table>
                     </div>
                 </div>
             </div>

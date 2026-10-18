@@ -162,9 +162,17 @@ export function createAppRouter(i18n) {
         }
     };
 
-    // Update document title on route change
-    router.afterEach((to) => {
+    // Keep page content aligned at the top when the persistent main scroller
+    // changes routes. Vue Router's default scroll restoration only targets window.
+    router.afterEach((to, from, failure) => {
+        if (failure) return;
+
         updateTitle(to);
+
+        if (to.path !== from.path) {
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) mainContent.scrollTop = 0;
+        }
     });
 
     // Update document title on language change

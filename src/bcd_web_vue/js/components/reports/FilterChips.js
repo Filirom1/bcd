@@ -23,18 +23,18 @@ export default defineComponent({
     template: `
         <div v-if="chips.length"
              class="d-flex align-items-center gap-2 flex-wrap mb-2 px-2 py-2"
-             style="background:#eef4ff;border:1px solid #c9d9f5;border-radius:8px;">
+             style="background:var(--bcd-primary-subtle);border:1px solid var(--bcd-border);border-radius:var(--bcd-radius-md);">
             <i class="bi bi-funnel-fill text-primary ms-1"></i>
             <span v-for="chip in chips" :key="chip.key"
                   class="badge d-inline-flex align-items-center gap-1"
-                  style="background:#4D99F2;font-weight:500;font-size:12px;padding:4px 10px;border-radius:20px;">
+                  style="background:var(--bcd-primary);font-weight:500;font-size:var(--bcd-font-size-xs);padding:4px 10px;border-radius:var(--bcd-radius-sm);">
                 {{ chip.label }} : <strong>{{ chip.value }}</strong>
                 <button
                     @click="$emit('clear', chip.key)"
-                    style="background:rgba(255,255,255,.25);border:none;color:#fff;border-radius:50%;width:16px;height:16px;padding:0;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"
+                    style="background:var(--bcd-white-overlay);border:none;color:var(--bcd-white);border-radius:50%;width:16px;height:16px;padding:0;font-size:var(--bcd-font-size-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"
                 >×</button>
             </span>
-            <button class="btn btn-sm btn-link text-danger p-0 ms-2" style="font-size:12px;" @click="$emit('clear-all')">
+            <button class="btn btn-sm btn-link text-danger p-0 ms-2" style="font-size:var(--bcd-font-size-xs);" @click="$emit('clear-all')">
                 {{ t('reports.clearAll') }}
             </button>
         </div>

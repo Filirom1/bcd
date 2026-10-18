@@ -86,5 +86,6 @@ class HoldWithDetails(HoldResponse):
     borrower_class: Optional[str] = None
     title: Optional[str] = None
     authors: Optional[str] = None
+    cover_image: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

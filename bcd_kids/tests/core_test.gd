@@ -246,6 +246,15 @@ func _test_theme_manager() -> void:
 		manager.call("set_theme", theme_name)
 		_test.equal(str(manager.get("current_theme_name")), theme_name, "Theme manager activates " + theme_name)
 		_test.expect(manager.get("background_texture") != null, "Theme has a background texture: " + theme_name)
+		var theme_data: Dictionary = THEME_MANAGER_SCRIPT.THEMES[theme_name]
+		var theme_resource := load(str(theme_data["tres"])) as Theme
+		if theme_name == "minecraft":
+			_test.equal(theme_resource.get_font_size("font_size", "Button"), 13, "Minecraft keeps its compact pixel typography")
+		else:
+			_test.equal(theme_resource.get_font_size("font_size", "Button"), 18, "Theme buttons share a consistent base size: " + theme_name)
+			_test.equal(theme_resource.get_font_size("font_size", "LineEdit"), 18, "Theme text fields share a consistent size: " + theme_name)
+			_test.equal(theme_resource.get_font_size("font_size", "OptionButton"), 16, "Theme dropdowns share a consistent size: " + theme_name)
+			_test.equal(theme_resource.get_font_size("font_size", "CheckBox"), 16, "Theme checkboxes share a consistent size: " + theme_name)
 
 	var before_invalid: String = str(manager.get("current_theme_name"))
 	manager.call("set_theme", "does-not-exist")

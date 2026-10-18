@@ -6,13 +6,12 @@
  * based on the current system settings (catalog_shelf_locations, dewey_colors).
  *
  * Badge shape convention:
- *   - Shelf location : border-radius 4px  (square)
- *   - Call number    : border-radius 20px (rounded pill)
+ *   - Shelf location and call number use the shared compact radius.
  *
  * Color logic for shelf badge:
  *   - label found in catalog_shelf_locations AND color is a non-null hex → colored badge
  *   - label found but color is null → neutral gray (bg-light, border)
- *   - label NOT in the list          → Bootstrap secondary gray (#6c757d)
+ *   - label NOT in the list          → transparent badge with a neutral outline
  *
  * Usage:
  *   const { getShelfBadge, getCoteBadge } = useItemBadge(settings);
@@ -23,6 +22,13 @@ import { autoTextColor } from '../utils/colors.js';
 
 const { computed } = Vue;
 import { parseJsonSetting } from '../utils/domain.js';
+
+const baseBadgeStyle = {
+    borderRadius: 'var(--bcd-radius-sm)',
+    fontSize: 'var(--bcd-font-size-xs)',
+    fontWeight: '600',
+    display: 'inline-block'
+};
 
 /**
  * @param {import('vue').Ref} settings - ref to the SystemSettings object (may be null)
@@ -43,7 +49,7 @@ export function useItemBadge(settings) {
      * @returns {Record<string, string>|null}
      */
     function getShelfBadge(label) {
-        const base = { borderRadius: '4px', padding: '2px 6px', fontSize: '.75rem', fontWeight: '600', display: 'inline-block' };
+        const base = { ...baseBadgeStyle, padding: '2px 6px' };
         if (!label) return null;
 
         const entry = shelfLocations.value.find(e => e.label === label);
@@ -69,7 +75,7 @@ export function useItemBadge(settings) {
      * @returns {Record<string, string>|null}
      */
     function getCoteBadge(callNumber) {
-        const base = { borderRadius: '20px', padding: '2px 8px', fontSize: '.75rem', fontWeight: '600', display: 'inline-block' };
+        const base = { ...baseBadgeStyle, padding: '2px 8px' };
         if (!callNumber) return null;
 
         const firstChar = callNumber.trim()[0];
@@ -79,7 +85,7 @@ export function useItemBadge(settings) {
             const idx = parseInt(firstChar);
             const hex = colors[idx] || null;
             if (!hex) return { ...base, background: 'transparent', color: 'inherit', border: '1px solid currentColor' };
-            const outline = (hex === '#ffffff' || hex === '#fff') ? '1px solid #ddd' : 'none';
+            const outline = (hex === '#ffffff' || hex === '#fff') ? '1px solid var(--bcd-border)' : 'none';
             return { ...base, background: hex, color: autoTextColor(hex), outline };
         }
 

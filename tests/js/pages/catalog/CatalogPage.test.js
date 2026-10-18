@@ -263,10 +263,10 @@ describe('CatalogPage', () => {
         ]);
     });
 
-    it('exports the catalog, reports export failures, and builds the print route', async () => {
+    it('exports the catalog, reports export failures, and opens labels in a new tab', async () => {
         mockCatalogApi();
         const download = vi.spyOn(apiClient, 'download').mockResolvedValue();
-        const push = vi.spyOn(globalThis.__testRouter, 'push');
+        const open = vi.spyOn(window, 'open').mockReturnValue(null);
         const wrapper = mountCatalogPage();
         await flushPromises();
 
@@ -287,6 +287,6 @@ describe('CatalogPage', () => {
         );
 
         await wrapper.vm.handlePrintLabels();
-        expect(push).toHaveBeenCalledWith({ name: 'print-item-labels' });
+        expect(open).toHaveBeenCalledWith('#/print/catalog/labels', '_blank');
     });
 });

@@ -22,10 +22,13 @@ import LogsSection from '../components/settings/LogsSection.js';
 
 const VALID_SECTIONS = ['general', 'catalog', 'backup', 'covers', 'maintenance', 'env', 'logs', 'external-sources'];
 
+import PageHeader from '../components/ui/PageHeader.js';
+
 export default defineComponent({
     name: 'SettingsPage',
 
     components: {
+        PageHeader,
         LoadingSpinner, HelpPanel, SettingsForm,
         BackupSection, CoverSection, EnvSection, DataMaintenanceSection, LogsSection
     },
@@ -137,12 +140,14 @@ export default defineComponent({
 
     template: `
         <div class="page-container">
-            <div class="page-header">
-                <h1 class="page-title"><i class="bi bi-gear me-2"></i>{{ t('navigation.settings') }}</h1>
-                <div class="d-flex gap-2 align-items-center">
+            <page-header>
+                <template #heading>
+                    <h1 class="page-title"><i class="bi bi-gear me-2"></i>{{ t('navigation.settings') }}</h1>
+                </template>
+                <template #actions>
                     <help-panel section="settings" />
-                </div>
-            </div>
+                </template>
+            </page-header>
 
             <loading-spinner v-if="loading" />
             <template v-else>

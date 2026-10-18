@@ -118,7 +118,7 @@ export default defineComponent({
     template: `
         <div class="search-results-compact">
             <!-- Header with select all -->
-            <div class="d-flex align-items-center mb-2 px-2 py-1 bg-light" style="border-radius: 4px;">
+            <div class="d-flex align-items-center mb-2 px-2 py-1 bg-light" style="border-radius: var(--bcd-radius-sm);">
                 <input
                     ref="headerCheckboxRef"
                     type="checkbox"
@@ -142,7 +142,7 @@ export default defineComponent({
                     :key="item.item_id"
                     class="search-result-item mb-2 p-2"
                     :class="{ 'selected': isSelected(item.item_id) }"
-                    style="border: 1px solid var(--bcd-border); border-radius: 4px; cursor: pointer;"
+                    style="border: 1px solid var(--bcd-border); border-radius: var(--bcd-radius-sm); cursor: pointer;"
                     @click="handleRowCheckbox(item.item_id)"
                 >
                     <div class="d-flex align-items-start gap-2">
@@ -153,16 +153,16 @@ export default defineComponent({
                             @click.stop="handleRowCheckbox(item.item_id)"
                         >
                         <div class="flex-grow-1" style="min-width: 0;">
-                            <div class="font-monospace text-primary mb-1" style="font-size: 0.8rem;">
+                            <div class="font-monospace text-primary mb-1" style="font-size: var(--bcd-font-size-sm);">
                                 {{ item.item_id }}
                             </div>
-                            <div class="mb-1" style="font-size: 0.85rem;" :title="item.title">
+                            <div class="mb-1" style="font-size: var(--bcd-font-size-base);" :title="item.title">
                                 {{ truncateTitle(item.title, 35) }}
                             </div>
                             <div class="d-flex gap-2 align-items-center">
                                 <span
                                     class="badge"
-                                    style="font-size: 0.7rem;"
+                                    style="font-size: var(--bcd-font-size-xs);"
                                     :class="{
                                         'bg-success': item.condition === 'good',
                                         'bg-warning text-dark': item.condition === 'damaged'

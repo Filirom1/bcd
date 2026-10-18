@@ -114,7 +114,7 @@ export default defineComponent({
         <div>
             <!-- Trigger button — placed inline in the page header -->
             <button
-                class="btn btn-outline-secondary btn-sm"
+                class="btn btn-outline-secondary"
                 type="button"
                 data-bs-toggle="offcanvas"
                 :data-bs-target="'#' + offcanvasId"

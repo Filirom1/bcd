@@ -186,7 +186,7 @@ export default {
     };
   },
   template: `
-    <div v-if="show" class="modal fade show d-block" data-testid="borrower-add-modal" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div v-if="show" class="modal fade show d-block" data-testid="borrower-add-modal" tabindex="-1" style="background-color: var(--bcd-overlay-backdrop);">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">

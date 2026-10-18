@@ -10,12 +10,20 @@ const { useI18n } = VueI18n;
 import { Chart, BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip } from 'chart.js';
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
-import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { usePagination } from '../../composables/usePagination.js';
 import { formatAuthors } from '../../utils/domain.js';
+import {
+    getThemeFontSize,
+    getThemeRadius,
+    getThemeRgbColor,
+    getThemeRgbaColor,
+    getThemeToken
+} from '../../utils/colors.js';
 import ReportHeader from '../ui/ReportHeader.js';
+import RecordCell from '../catalog/RecordCell.js';
+import DataTable from '../ui/DataTable.js';
 import { getJSON, setJSON } from '../../utils/storage.js';
 import Pagination from '../ui/Pagination.js';
 import FilterChips from './FilterChips.js';
@@ -27,13 +35,12 @@ const HIDDEN_PANELS_KEY = 'collection_hidden_panels';
 export default defineComponent({
     name: 'CollectionReport',
 
-    components: { ReportHeader, Pagination, FilterChips, TauxRotationPanel },
+    components: { ReportHeader, Pagination, FilterChips, TauxRotationPanel, RecordCell, DataTable },
 
     setup() {
         const { t } = useI18n();
         const { settings } = useAppState();
         const { error: showError } = useNotification();
-        const { openRecord } = useGlobalModal();
 
         const pubChartRef = ref(null);
         const acqChartRef = ref(null);
@@ -137,7 +144,9 @@ export default defineComponent({
         });
         const scoreHistMax  = computed(() => Math.max(...scoreHistogram.value.map(b => b.count), 1));
         const scoreRange    = computed(() => ({ min: 0, max: scoreHistogram.value.length ? scoreHistogram.value[scoreHistogram.value.length - 1].score : 8 }));
-        const scoreBarColor = score => score >= 5 ? '#F24D66' : score >= 3 ? '#F2BF33' : '#33CC66';
+        const scoreBarColor = score => score >= 5
+            ? 'var(--bcd-danger)'
+            : score >= 3 ? 'var(--bcd-warning)' : 'var(--bcd-success)';
         const isScoreInRange = score => {
             const sc = crewScoreFilter.value;
             if (sc.min === null && sc.max === null) return true;
@@ -517,7 +526,19 @@ export default defineComponent({
         };
 
         // ── Chart.js integration ───────────────────────────────────────────────
-        const COLORS = { primary: '#4D99F2', warning: '#F2BF33', danger: '#F24D66', muted: '#adb5bd' };
+        const COLORS = {
+            primary: getThemeRgbColor('primary'),
+            success: getThemeRgbColor('success'),
+            warning: getThemeRgbColor('warning'),
+            danger: getThemeRgbColor('danger'),
+            muted: getThemeToken('chart-muted'),
+            grid: getThemeToken('border'),
+            tickSize: getThemeFontSize('chart'),
+            radius: getThemeRadius('sm'),
+            primaryMuted: getThemeRgbaColor('primary', 0.27),
+            warningMuted: getThemeRgbaColor('warning', 0.27),
+            dangerMuted: getThemeRgbaColor('danger', 0.27)
+        };
 
         const isInPubRange = year => {
             const min = crossFilters.value.pub_year_min;
@@ -540,9 +561,8 @@ export default defineComponent({
         const pubBarColor = year => {
             const y = parseInt(year);
             const hasRange = crossFilters.value.pub_year_min !== null || crossFilters.value.pub_year_max !== null;
-            let base = y <= curYear - 20 ? COLORS.danger : y <= curYear - 10 ? COLORS.warning : COLORS.primary;
-            if (hasRange && !isInPubRange(y)) base += '44';
-            return base;
+            const color = y <= curYear - 20 ? 'danger' : y <= curYear - 10 ? 'warning' : 'primary';
+            return hasRange && !isInPubRange(y) ? COLORS[`${color}Muted`] : COLORS[color];
         };
 
         const destroyCharts = () => {
@@ -566,7 +586,7 @@ export default defineComponent({
                             label: t('reports.collectionReport.chartItems'),
                             data: data.map(r => r.count),
                             backgroundColor: data.map(r => pubBarColor(r.year)),
-                            borderRadius: 3,
+                            borderRadius: COLORS.radius,
                         }],
                     },
                     options: {
@@ -579,8 +599,8 @@ export default defineComponent({
                             }},
                         },
                         scales: {
-                            x: { ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
-                            y: { ticks: { font: { size: 10 } }, grid: { color: '#f0f0f0' } },
+                            x: { ticks: { font: { size: COLORS.tickSize }, maxRotation: 45 }, grid: { display: false } },
+                            y: { ticks: { font: { size: COLORS.tickSize } }, grid: { color: COLORS.grid } },
                         },
                     },
                 });
@@ -598,9 +618,9 @@ export default defineComponent({
                             label: t('reports.collectionReport.chartItems'),
                             data: data.map(r => r.count),
                             backgroundColor: data.map(r =>
-                                hasRange && !isInAcqRange(r.year) ? COLORS.primary + '44' : COLORS.primary
+                                hasRange && !isInAcqRange(r.year) ? COLORS.primaryMuted : COLORS.primary
                             ),
-                            borderRadius: 4,
+                            borderRadius: COLORS.radius,
                         }],
                     },
                     options: {
@@ -613,8 +633,8 @@ export default defineComponent({
                             }},
                         },
                         scales: {
-                            x: { ticks: { font: { size: 11 } }, grid: { display: false } },
-                            y: { ticks: { font: { size: 11 } }, grid: { color: '#f0f0f0' } },
+                            x: { ticks: { font: { size: COLORS.tickSize } }, grid: { display: false } },
+                            y: { ticks: { font: { size: COLORS.tickSize } }, grid: { color: COLORS.grid } },
                         },
                     },
                 });
@@ -622,7 +642,11 @@ export default defineComponent({
         };
 
         // ── Breakdown bar helpers ──────────────────────────────────────────────
-        const BREAKDOWN_COLORS = [COLORS.primary, '#1abc9c', '#e67e22', '#9b59b6', COLORS.warning, '#2ecc71', COLORS.muted];
+        const BREAKDOWN_COLORS = [
+            'var(--bcd-chart-1)', 'var(--bcd-chart-2)', 'var(--bcd-chart-3)',
+            'var(--bcd-chart-4)', 'var(--bcd-chart-5)', 'var(--bcd-chart-6)',
+            'var(--bcd-chart-muted)'
+        ];
 
         const breakdownMax = rows => Math.max(...rows.map(r => r.count), 1);
 
@@ -665,16 +689,17 @@ export default defineComponent({
         };
 
         const allColsCrew = computed(() => [
-            { key: 'crew_score',      label: t('reports.crew.score')              },
-            { key: 'item_id',         label: t('item.item_id')                    },
-            { key: 'title',           label: t('reports.neverBorrowed.bookTitle') },
-            { key: 'condition',       label: t('item.condition')                  },
-            { key: 'shelf_location',  label: t('item.shelf_location')             },
-            { key: 'age_days',        label: t('reports.crew.ageInCollection')    },
-            { key: 'publication_year',label: t('reports.crew.pubYear')            },
-            { key: 'total_copies',    label: t('reports.mostBorrowed.copies')     },
-            { key: 'taux_rotation',   label: t('reports.tauxRotation.label')      },
+            { key: 'crew_score',       label: t('reports.crew.score'),              width: '80px',  sortable: true },
+            { key: 'item_id',          label: t('item.item_id'),                    width: '110px' },
+            { key: 'title',            label: t('reports.neverBorrowed.bookTitle'),                 sortable: true },
+            { key: 'condition',        label: t('item.condition'),                  width: '95px' },
+            { key: 'shelf_location',   label: t('item.shelf_location'),             width: '120px' },
+            { key: 'age_days',         label: t('reports.crew.ageInCollection'),    width: '100px', sortable: true },
+            { key: 'publication_year', label: t('reports.crew.pubYear'),            width: '90px',  sortable: true },
+            { key: 'total_copies',     label: t('reports.mostBorrowed.copies'),     width: '80px',  sortable: true },
+            { key: 'taux_rotation',    label: t('reports.tauxRotation.label'),     width: '170px', sortable: true },
         ]);
+        const tableColumns = computed(() => allColsCrew.value.filter(column => isColVisible(column.key)));
 
         // ── Per-title copies + taux max ────────────────────────────────────────
         const copiesPerTitle = computed(() => {
@@ -701,12 +726,11 @@ export default defineComponent({
             clampPubMin, clampPubMax, clampAcqMin, clampAcqMax,
             applyPubRange, applyAcqRange,
             stats, statsLoading,
-            BREAKDOWN_COLORS, breakdownMax, audienceLabel, conditionLabel,
+            COLORS, BREAKDOWN_COLORS, breakdownMax, audienceLabel, conditionLabel,
             allItems, tableLoading, paginatedData, totalItems, totalPages,
             currentPage, pageSize, sortColumn, sortDirection,
             handleSort, goToPage, setPageSize,
-            openRecord,
-            COL_IDS_CREW, allColsCrew, visibleCols, showColDropdown, isColVisible, toggleCol, resetCols,
+            COL_IDS_CREW, allColsCrew, tableColumns, visibleCols, showColDropdown, isColVisible, toggleCol, resetCols,
             copiesPerTitle, tauxMax,
             scoreHistogram, scoreHistMax, scoreRange, scoreBarColor, isScoreInRange,
             sliderScoreMin, sliderScoreMax, scoreFillStyle, clampScoreMin, clampScoreMax, applyScoreRange,
@@ -742,7 +766,7 @@ export default defineComponent({
                              style="position:absolute;right:0;top:calc(100% + 4px);min-width:200px;z-index:1050;" @click.stop>
                             <h6 class="dropdown-header py-1">Colonnes</h6>
                             <div class="dropdown-divider my-1"></div>
-                            <div v-for="col in allColsCrew" :key="col.key" class="form-check px-3 py-1">
+                            <div v-for="col in allColsCrew" :key="col.key" class="dropdown-checkbox-option">
                                 <input type="checkbox" class="form-check-input" :id="'col-crew-' + col.key"
                                        :checked="isColVisible(col.key)" @change="toggleCol(col.key)">
                                 <label class="form-check-label small" :for="'col-crew-' + col.key" style="cursor:pointer;">{{ col.label }}</label>
@@ -764,7 +788,7 @@ export default defineComponent({
                              style="position:absolute;right:0;top:calc(100% + 4px);min-width:200px;z-index:1050;" @click.stop>
                             <h6 class="dropdown-header py-1">{{ t('reports.collectionReport.selectPanels') }}</h6>
                             <div class="dropdown-divider my-1"></div>
-                            <div v-for="id in PANEL_IDS" :key="id" class="form-check px-3 py-1">
+                            <div v-for="id in PANEL_IDS" :key="id" class="dropdown-checkbox-option">
                                 <input type="checkbox" class="form-check-input" :id="'panel-' + id"
                                        :checked="isPanelVisible(id)" @change="togglePanel(id)">
                                 <label class="form-check-label small" :for="'panel-' + id" style="cursor:pointer;">{{ PANEL_LABELS[id] }}</label>
@@ -791,7 +815,7 @@ export default defineComponent({
         <div class="col-6 col-md-4" v-if="isPanelVisible('crew_score') && allItems.length">
             <div class="card h-100">
                 <div class="card-body p-3">
-                    <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                    <div class="text-uppercase fw-bold mb-2" style="font-size:var(--bcd-font-size-xs);letter-spacing:.8px;color:var(--bcd-text-muted);">
                         {{ t('reports.crew.scoreHistogram') }}
                     </div>
                     <div v-if="!scoreHistogram.length" class="text-muted small">—</div>
@@ -801,14 +825,14 @@ export default defineComponent({
                             <div :style="{
                                 width:'100%', height: (b.count / scoreHistMax * 80) + 'px',
                                 background: scoreBarColor(b.score),
-                                borderRadius: '2px 2px 0 0',
+                                borderRadius: COLORS.radius,
                                 opacity: isScoreInRange(b.score) ? 1 : 0.25,
                                 transition: 'opacity 0.2s'
                             }" :title="b.score + ': ' + b.count + ' ' + t('reports.collectionReport.chartItems')"></div>
                         </div>
                     </div>
                     <div v-if="scoreHistogram.length" class="d-flex mb-1" style="gap:2px;">
-                        <div v-for="b in scoreHistogram" :key="'lbl-' + b.score" style="flex:1;text-align:center;font-size:10px;color:#999;">{{ b.score }}</div>
+                        <div v-for="b in scoreHistogram" :key="'lbl-' + b.score" style="flex:1;text-align:center;font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);">{{ b.score }}</div>
                     </div>
                     <div class="range-slider-container" v-if="scoreHistogram.length">
                         <div class="range-slider-track"></div>
@@ -822,12 +846,12 @@ export default defineComponent({
                                v-model.number="sliderScoreMax"
                                @input="clampScoreMax" @change="applyScoreRange">
                     </div>
-                    <div class="d-flex justify-content-between" style="font-size:11px;color:#888;margin-top:2px;">
+                    <div class="d-flex justify-content-between" style="font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);margin-top:2px;">
                         <span>{{ sliderScoreMin }}</span>
                         <span>{{ sliderScoreMax }}</span>
                     </div>
-                    <div class="mt-1" style="font-size:11px;color:#aaa;">
-                        <i class="bi bi-square-fill me-1" style="color:#33CC66;"></i>0–2 &nbsp;
+                    <div class="mt-1" style="font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);">
+                        <i class="bi bi-square-fill me-1" style="color:var(--bcd-success);"></i>0–2 &nbsp;
                         <i class="bi bi-square-fill text-warning me-1"></i>3–4 &nbsp;
                         <i class="bi bi-square-fill text-danger me-1"></i>≥5
                     </div>
@@ -839,7 +863,7 @@ export default defineComponent({
         <div class="col-6 col-md-4" v-if="isPanelVisible('medium_type')">
             <div class="card h-100">
                 <div class="card-body p-3">
-                    <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                    <div class="text-uppercase fw-bold mb-2" style="font-size:var(--bcd-font-size-xs);letter-spacing:.8px;color:var(--bcd-text-muted);">
                         {{ t('reports.collectionReport.bySupport') }}
                         <span class="fw-normal text-muted ms-1" style="text-transform:none;letter-spacing:0;">· {{ t('reports.collectionReport.clickToFilter') }}</span>
                     </div>
@@ -848,13 +872,13 @@ export default defineComponent({
                          @click="toggleBreakdown('medium_type', row.value)"
                          class="d-flex align-items-center gap-2 mb-1 px-1 py-1 rounded"
                          style="cursor:pointer;"
-                         :style="crossFilters.medium_type === row.value ? 'background:#ddeeff;outline:2px solid #4D99F2;' : ''">
-                        <span style="min-width:90px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ row.value }}</span>
-                        <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
-                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.medium_type)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'3px'}"></div>
+                         :style="crossFilters.medium_type === row.value ? 'background:var(--bcd-selection);outline:2px solid var(--bcd-primary);' : ''">
+                        <span style="min-width:90px;font-size:var(--bcd-font-size-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ row.value }}</span>
+                        <div style="flex:1;background:var(--bcd-chart-track);border-radius:var(--bcd-radius-sm);height:7px;overflow:hidden;">
+                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.medium_type)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'var(--bcd-radius-sm)'}"></div>
                         </div>
-                        <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
-                        <span style="min-width:34px;font-size:11px;color:#999;">{{ Math.round(row.count/stats.total_count*100) }}%</span>
+                        <span style="min-width:28px;font-size:var(--bcd-font-size-xs);font-weight:600;text-align:right;">{{ row.count }}</span>
+                        <span style="min-width:34px;font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);">{{ Math.round(row.count/stats.total_count*100) }}%</span>
                     </div>
                 </div>
             </div>
@@ -864,7 +888,7 @@ export default defineComponent({
         <div class="col-6 col-md-4" v-if="isPanelVisible('target_audience')">
             <div class="card h-100">
                 <div class="card-body p-3">
-                    <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                    <div class="text-uppercase fw-bold mb-2" style="font-size:var(--bcd-font-size-xs);letter-spacing:.8px;color:var(--bcd-text-muted);">
                         {{ t('reports.collectionReport.byAudience') }}
                         <span class="fw-normal text-muted ms-1" style="text-transform:none;letter-spacing:0;">· {{ t('reports.collectionReport.clickToFilter') }}</span>
                     </div>
@@ -873,13 +897,13 @@ export default defineComponent({
                          @click="toggleBreakdown('target_audience', row.value)"
                          class="d-flex align-items-center gap-2 mb-1 px-1 py-1 rounded"
                          style="cursor:pointer;"
-                         :style="crossFilters.target_audience === row.value ? 'background:#ddeeff;outline:2px solid #4D99F2;' : ''">
-                        <span style="min-width:90px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ audienceLabel(row.value) }}</span>
-                        <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
-                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.target_audience)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'3px'}"></div>
+                         :style="crossFilters.target_audience === row.value ? 'background:var(--bcd-selection);outline:2px solid var(--bcd-primary);' : ''">
+                        <span style="min-width:90px;font-size:var(--bcd-font-size-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">{{ audienceLabel(row.value) }}</span>
+                        <div style="flex:1;background:var(--bcd-chart-track);border-radius:var(--bcd-radius-sm);height:7px;overflow:hidden;">
+                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.target_audience)*100)+'%', background: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length], height:'100%', borderRadius:'var(--bcd-radius-sm)'}"></div>
                         </div>
-                        <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
-                        <span style="min-width:34px;font-size:11px;color:#999;">{{ Math.round(row.count/stats.total_count*100) }}%</span>
+                        <span style="min-width:28px;font-size:var(--bcd-font-size-xs);font-weight:600;text-align:right;">{{ row.count }}</span>
+                        <span style="min-width:34px;font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);">{{ Math.round(row.count/stats.total_count*100) }}%</span>
                     </div>
                 </div>
             </div>
@@ -889,7 +913,7 @@ export default defineComponent({
         <div class="col-6 col-md-4" v-if="isPanelVisible('condition')">
             <div class="card h-100">
                 <div class="card-body p-3">
-                    <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                    <div class="text-uppercase fw-bold mb-2" style="font-size:var(--bcd-font-size-chart);letter-spacing:.8px;color:var(--bcd-text-muted);">
                         {{ t('reports.collectionReport.byCondition') }}
                         <span class="fw-normal text-muted ms-1" style="text-transform:none;letter-spacing:0;">· {{ t('reports.collectionReport.clickToFilter') }}</span>
                     </div>
@@ -898,13 +922,13 @@ export default defineComponent({
                          @click="toggleBreakdown('condition', row.value)"
                          class="d-flex align-items-center gap-2 mb-1 px-1 py-1 rounded"
                          style="cursor:pointer;"
-                         :style="crossFilters.condition === row.value ? 'background:#ddeeff;outline:2px solid #4D99F2;' : ''">
-                        <span style="min-width:70px;font-size:12px;">{{ conditionLabel(row.value) }}</span>
-                        <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
-                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.condition)*100)+'%', background: row.value === 'damaged' ? '#F2BF33' : '#33CC66', height:'100%', borderRadius:'3px'}"></div>
+                         :style="crossFilters.condition === row.value ? 'background:var(--bcd-selection);outline:2px solid var(--bcd-primary);' : ''">
+                        <span style="min-width:70px;font-size:var(--bcd-font-size-xs);">{{ conditionLabel(row.value) }}</span>
+                        <div style="flex:1;background:var(--bcd-chart-track);border-radius:var(--bcd-radius-sm);height:7px;overflow:hidden;">
+                            <div :style="{width: Math.round(row.count/breakdownMax(stats.breakdowns.condition)*100)+'%', background: row.value === 'damaged' ? COLORS.warning : COLORS.success, height:'100%', borderRadius:'var(--bcd-radius-sm)'}"></div>
                         </div>
-                        <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
-                        <span style="min-width:34px;font-size:11px;color:#999;">{{ Math.round(row.count/stats.total_count*100) }}%</span>
+                        <span style="min-width:28px;font-size:var(--bcd-font-size-xs);font-weight:600;text-align:right;">{{ row.count }}</span>
+                        <span style="min-width:34px;font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);">{{ Math.round(row.count/stats.total_count*100) }}%</span>
                     </div>
                 </div>
             </div>
@@ -914,7 +938,7 @@ export default defineComponent({
         <div class="col-6 col-md-4" v-if="isPanelVisible('pub_year')">
             <div class="card h-100">
                 <div class="card-body p-3">
-                    <div class="text-uppercase fw-bold mb-1" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                    <div class="text-uppercase fw-bold mb-1" style="font-size:var(--bcd-font-size-xs);letter-spacing:.8px;color:var(--bcd-text-muted);">
                         {{ t('reports.collectionReport.histoPubYear') }}
                     </div>
                     <div style="position:relative;height:160px;">
@@ -934,15 +958,15 @@ export default defineComponent({
                                    v-model.number="sliderPubMax"
                                    @input="clampPubMax" @change="applyPubRange">
                         </div>
-                        <div class="d-flex justify-content-between" style="font-size:11px;color:#888;margin-top:2px;">
+                        <div class="d-flex justify-content-between" style="font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);margin-top:2px;">
                             <span>{{ sliderPubMin }}</span>
                             <span>{{ sliderPubMax }}</span>
                         </div>
                     </div>
-                    <div class="mt-1" style="font-size:11px;color:#aaa;">
+                    <div class="mt-1" style="font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);">
                         <i class="bi bi-square-fill text-danger me-1"></i>{{ t('reports.pubYear.ageOld') }} &nbsp;
                         <i class="bi bi-square-fill text-warning me-1"></i>{{ t('reports.pubYear.ageMid') }} &nbsp;
-                        <i class="bi bi-square-fill me-1" style="color:#4D99F2;"></i>{{ t('reports.pubYear.ageNew') }}
+                        <i class="bi bi-square-fill me-1" style="color:var(--bcd-primary);"></i>{{ t('reports.pubYear.ageNew') }}
                     </div>
                 </div>
             </div>
@@ -964,7 +988,7 @@ export default defineComponent({
         <div class="col-6 col-md-4" v-if="isPanelVisible('acq_year')">
             <div class="card h-100">
                 <div class="card-body p-3">
-                    <div class="text-uppercase fw-bold mb-1" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                    <div class="text-uppercase fw-bold mb-1" style="font-size:var(--bcd-font-size-xs);letter-spacing:.8px;color:var(--bcd-text-muted);">
                         {{ t('reports.collectionReport.histoAcqYear') }}
                     </div>
                     <div style="position:relative;height:160px;">
@@ -984,7 +1008,7 @@ export default defineComponent({
                                    v-model.number="sliderAcqMax"
                                    @input="clampAcqMax" @change="applyAcqRange">
                         </div>
-                        <div class="d-flex justify-content-between" style="font-size:11px;color:#888;margin-top:2px;">
+                        <div class="d-flex justify-content-between" style="font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);margin-top:2px;">
                             <span>{{ sliderAcqMin }}</span>
                             <span>{{ sliderAcqMax }}</span>
                         </div>
@@ -1006,98 +1030,77 @@ export default defineComponent({
     </div>
 
     <!-- Table -->
-    <div class="card" v-if="!tableLoading && totalItems > 0">
+    <div class="card data-table-card" v-if="!tableLoading && totalItems > 0">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0">
-                    <thead>
-                        <tr>
-                            <th v-if="isColVisible('crew_score')" @click="handleSort('crew_score')" style="width:80px;cursor:pointer;">
-                                {{ t('reports.crew.score') }}
-                                <i v-if="sortColumn==='crew_score'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('item_id')" style="width:110px;">{{ t('item.item_id') }}</th>
-                            <th v-if="isColVisible('title')" @click="handleSort('title')" style="cursor:pointer;">
-                                {{ t('reports.neverBorrowed.bookTitle') }}
-                                <i v-if="sortColumn==='title'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('condition')" style="width:95px;">{{ t('item.condition') }}</th>
-                            <th v-if="isColVisible('shelf_location')" style="width:120px;">{{ t('item.shelf_location') }}</th>
-                            <th v-if="isColVisible('age_days')" @click="handleSort('age_days')" style="width:100px;cursor:pointer;">
-                                {{ t('reports.crew.ageInCollection') }}
-                                <i v-if="sortColumn==='age_days'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('publication_year')" @click="handleSort('publication_year')" style="width:90px;cursor:pointer;">
-                                {{ t('reports.crew.pubYear') }}
-                                <i v-if="sortColumn==='publication_year'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('total_copies')" @click="handleSort('total_copies')" style="width:80px;cursor:pointer;">
-                                {{ t('reports.mostBorrowed.copies') }}
-                                <i v-if="sortColumn==='total_copies'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('taux_rotation')" @click="handleSort('taux_rotation')" style="width:170px;cursor:pointer;">
-                                {{ t('reports.tauxRotation.label') }}
-                                <i v-if="sortColumn==='taux_rotation'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="item in paginatedData" :key="item.item_id">
-                            <td v-if="isColVisible('crew_score')" class="text-center">
-                                <span class="badge fs-6"
-                                    :class="item.crew_score>=5?'bg-danger':item.crew_score>=3?'bg-warning text-dark':'bg-success'">
-                                    {{ item.crew_score }}
-                                </span>
-                                <div v-if="item.crew_reasons && item.crew_reasons.length" class="mt-1">
-                                    <small v-for="(r, i) in item.crew_reasons" :key="i" class="d-block text-muted">{{ r }}</small>
-                                </div>
-                            </td>
-                            <td v-if="isColVisible('item_id')" class="font-monospace small">{{ item.item_id }}</td>
-                            <td v-if="isColVisible('title')">
-                                <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">{{ item.title }}</a>
-                                <div v-if="item.authors && item.authors.length" class="text-muted small">
-                                    {{ formatAuthors(item.authors) }}
-                                </div>
-                            </td>
-                            <td v-if="isColVisible('condition')">
-                                <span class="badge" :class="item.condition==='good'?'bg-success':'bg-warning text-dark'">
-                                    {{ t('item.condition_' + item.condition) }}
-                                </span>
-                            </td>
-                            <td v-if="isColVisible('shelf_location')"><small>{{ item.shelf_location || '—' }}</small></td>
-                            <td v-if="isColVisible('age_days')" class="text-end">
-                                <span v-if="item.age_days != null"
-                                    :class="item.age_days>1095?'text-danger':item.age_days>730?'text-warning':''">
-                                    {{ Math.floor(item.age_days/365) }} {{ t('reports.crew.years') }}
-                                </span>
-                                <span v-else class="text-muted">—</span>
-                            </td>
-                            <td v-if="isColVisible('publication_year')" class="text-center">
-                                <span v-if="item.publication_year"
-                                    :class="item.publication_year<new Date().getFullYear()-20?'text-danger':item.publication_year<new Date().getFullYear()-10?'text-warning':''">
-                                    {{ item.publication_year }}
-                                </span>
-                                <span v-else class="text-muted">—</span>
-                            </td>
-                            <td v-if="isColVisible('total_copies')" class="text-center">
-                                <span :class="(copiesPerTitle[item.bibliographic_record_id] ?? 1) <= 1 ? 'text-danger' : ''">
-                                    {{ copiesPerTitle[item.bibliographic_record_id] ?? 1 }}
-                                </span>
-                            </td>
-                            <td v-if="isColVisible('taux_rotation')">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height:16px;">
-                                        <div class="progress-bar"
-                                             :class="(item.taux_rotation ?? 0) >= 8 ? 'bg-danger' : (item.taux_rotation ?? 0) >= 4 ? 'bg-warning' : (item.taux_rotation ?? 0) === 0 ? 'bg-secondary' : 'bg-success'"
-                                             :style="{ width: Math.max((item.taux_rotation ?? 0) / tauxMax * 100, 4) + '%' }">
-                                            {{ item.taux_rotation ?? 0 }}
-                                        </div>
+                <data-table
+                    :columns="tableColumns"
+                    :rows="paginatedData"
+                    row-key="item_id"
+                    :sort-column="sortColumn"
+                    :sort-direction="sortDirection"
+                    :framed="false"
+                    bare
+                    @sort="handleSort"
+                >
+                    <template #row="{ row: item }">
+                        <td v-if="isColVisible('crew_score')" class="text-center">
+                            <span class="badge fs-6"
+                                :class="item.crew_score >= 5 ? 'bg-danger' : item.crew_score >= 3 ? 'bg-warning text-dark' : 'bg-success'">
+                                {{ item.crew_score }}
+                            </span>
+                            <div v-if="item.crew_reasons && item.crew_reasons.length" class="mt-1">
+                                <small v-for="(r, i) in item.crew_reasons" :key="i" class="d-block text-muted">{{ r }}</small>
+                            </div>
+                        </td>
+                        <td v-if="isColVisible('item_id')" class="font-monospace small">{{ item.item_id }}</td>
+                        <record-cell
+                            v-if="isColVisible('title')"
+                            :record-id="item.bibliographic_record_id"
+                            :title="item.title"
+                            :subtitle="item.subtitle"
+                            :collection="item.collection"
+                            :series-number="item.series_number"
+                            :authors="formatAuthors(item.authors)"
+                        />
+                        <td v-if="isColVisible('condition')">
+                            <span class="badge" :class="item.condition === 'good' ? 'bg-success' : 'bg-warning text-dark'">
+                                {{ t('item.condition_' + item.condition) }}
+                            </span>
+                        </td>
+                        <td v-if="isColVisible('shelf_location')"><small>{{ item.shelf_location || '—' }}</small></td>
+                        <td v-if="isColVisible('age_days')" class="text-end">
+                            <span v-if="item.age_days != null"
+                                :class="item.age_days > 1095 ? 'text-danger' : item.age_days > 730 ? 'text-warning' : ''">
+                                {{ Math.floor(item.age_days / 365) }} {{ t('reports.crew.years') }}
+                            </span>
+                            <span v-else class="text-muted">—</span>
+                        </td>
+                        <td v-if="isColVisible('publication_year')" class="text-center">
+                            <span v-if="item.publication_year"
+                                :class="item.publication_year < new Date().getFullYear() - 20 ? 'text-danger' : item.publication_year < new Date().getFullYear() - 10 ? 'text-warning' : ''">
+                                {{ item.publication_year }}
+                            </span>
+                            <span v-else class="text-muted">—</span>
+                        </td>
+                        <td v-if="isColVisible('total_copies')" class="text-center">
+                            <span :class="(copiesPerTitle[item.bibliographic_record_id] ?? 1) <= 1 ? 'text-danger' : ''">
+                                {{ copiesPerTitle[item.bibliographic_record_id] ?? 1 }}
+                            </span>
+                        </td>
+                        <td v-if="isColVisible('taux_rotation')">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:16px;">
+                                    <div class="progress-bar"
+                                         :class="(item.taux_rotation ?? 0) >= 8 ? 'bg-danger' : (item.taux_rotation ?? 0) >= 4 ? 'bg-warning' : (item.taux_rotation ?? 0) === 0 ? 'bg-secondary' : 'bg-success'"
+                                         :style="{ width: Math.max((item.taux_rotation ?? 0) / tauxMax * 100, 4) + '%' }">
+                                        {{ item.taux_rotation ?? 0 }}
                                     </div>
                                 </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+                        </td>
+                    </template>
+                </data-table>
             </div>
         </div>
     </div>

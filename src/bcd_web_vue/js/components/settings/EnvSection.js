@@ -67,7 +67,7 @@ export default defineComponent({
             </div>
 
             <div class="col-12 mb-3">
-                <div class="card shadow-sm">
+                <div class="card">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <span class="text-muted small font-monospace">.env</span>
                         <button 
@@ -87,7 +87,7 @@ export default defineComponent({
                             v-else
                             v-model="content" 
                             class="form-control font-monospace border-0 p-3" 
-                            style="min-height: 250px; font-size: 0.85rem; resize: vertical; background-color: #fafbfc;"
+                            style="min-height: 250px; font-size: var(--bcd-font-size-base); resize: vertical; background-color: var(--bcd-surface-soft);"
                             placeholder="# Configuration"
                         ></textarea>
                     </div>

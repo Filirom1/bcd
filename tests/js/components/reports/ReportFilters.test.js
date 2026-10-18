@@ -37,6 +37,9 @@ describe('ReportFilters', () => {
         expect(wrapper.findAll('select')).toHaveLength(4);
 
         const selects = wrapper.findAll('select');
+        expect(wrapper.findAll('label')).toHaveLength(3);
+        expect(selects[2].attributes('aria-label')).toBeTruthy();
+
         await selects[0].setValue('week');
         await selects[1].setValue('50');
         await selects[2].setValue('CM2');

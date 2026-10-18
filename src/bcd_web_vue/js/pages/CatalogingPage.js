@@ -12,10 +12,13 @@ import ItemBarcodeInput from '../components/cataloging/ItemBarcodeInput.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import { apiClient } from '../api/client.js';
 
+import PageHeader from '../components/ui/PageHeader.js';
+
 export default defineComponent({
     name: 'CatalogingPage',
 
     components: {
+        PageHeader,
         FindNotice,
         BibliographicForm,
         ItemBarcodeInput,
@@ -263,17 +266,15 @@ export default defineComponent({
     template: `
         <div class="cataloging-page">
             <!-- Page Header -->
-            <div class="page-header">
-                <div>
+            <page-header>
+                <template #heading>
                     <h1 class="page-title">
                         <i class="bi bi-pencil-square me-2"></i>
                         {{ pageTitle }}
                     </h1>
-                    <p class="text-muted mb-0">
-                        {{ $t('cataloging.page_subtitle') }}
-                    </p>
-                </div>
-                <div class="d-flex gap-2 align-items-center">
+                </template>
+                <template #actions>
+                    <div class="d-flex gap-2 align-items-center">
                     <button
                         v-if="showBackButton"
                         type="button"
@@ -284,8 +285,9 @@ export default defineComponent({
                         {{ state === 'item-creation' ? $t('cataloging.catalog_another') : $t('cataloging.start_over') }}
                     </button>
                     <help-panel section="cataloging" />
-                </div>
-            </div>
+                    </div>
+                </template>
+            </page-header>
 
             <!-- Workflow Steps -->
             <div class="card">

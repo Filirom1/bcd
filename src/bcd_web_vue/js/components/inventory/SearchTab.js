@@ -499,11 +499,11 @@ export default defineComponent({
                     {{ t('inventory.search.results_title') }}
                 </h6>
 
-                <div v-if="capped" class="alert alert-warning py-2 px-2 mb-2" style="font-size: 0.8rem;">
+                <div v-if="capped" class="alert alert-warning py-2 px-2 mb-2" style="font-size: var(--bcd-font-size-sm);">
                     <i class="bi bi-exclamation-triangle"></i>
                     {{ t('inventory.search.results_capped', { displayed: displayedCount, total: totalCount }) }}
                 </div>
-                <div v-else class="text-muted mb-2" style="font-size: 0.8rem;">
+                <div v-else class="text-muted mb-2" style="font-size: var(--bcd-font-size-sm);">
                     {{ t('inventory.search.results_count', { count: displayedCount }) }}
                 </div>
 
@@ -529,7 +529,7 @@ export default defineComponent({
 
                 <div v-if="searchResults.length === 0" class="text-center text-muted py-4">
                     <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                    <p class="mt-2 mb-0" style="font-size: 0.85rem;">{{ t('inventory.search.no_results') }}</p>
+                    <p class="mt-2 mb-0" style="font-size: var(--bcd-font-size-base);">{{ t('inventory.search.no_results') }}</p>
                 </div>
             </div>
         </div>

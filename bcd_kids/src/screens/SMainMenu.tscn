@@ -84,22 +84,22 @@ theme_override_constants/v_separation = 12
 unique_name_in_owner = true
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 60)
-theme_type_variation = "LabelSubtitle"
+theme_type_variation = "Button"
 
 [node name="SearchBtn" type="Button" parent="MainMargin/Scroll/Root/ActionsGrid"]
 unique_name_in_owner = true
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 60)
-theme_type_variation = "LabelSubtitle"
+theme_type_variation = "Button"
 
 [node name="ReturnBtn" type="Button" parent="MainMargin/Scroll/Root/ActionsGrid"]
 unique_name_in_owner = true
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 60)
-theme_type_variation = "LabelSubtitle"
+theme_type_variation = "Button"
 
 [node name="HoldsBtn" type="Button" parent="MainMargin/Scroll/Root/ActionsGrid"]
 unique_name_in_owner = true
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(0, 60)
-theme_type_variation = "LabelSubtitle"
+theme_type_variation = "Button"

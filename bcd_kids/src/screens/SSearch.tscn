@@ -64,9 +64,8 @@ layout_mode = 2
 
 [node name="SearchBtn" type="Button" parent="MainMargin/Root/SearchRow" unique_id=1456491524]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 60)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
-theme_type_variation = "LabelTitle"
 text = "🔍"
 
 [node name="FilterPanel" parent="MainMargin/Root" unique_id=132058743 instance=ExtResource("4_fp")]

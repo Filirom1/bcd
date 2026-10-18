@@ -8,12 +8,14 @@ const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
 import AutocompleteInput from '../ui/AutocompleteInput.js';
+import PanelCard from '../ui/PanelCard.js';
 
 export default defineComponent({
     name: 'ItemScanner',
 
     components: {
-        AutocompleteInput
+        AutocompleteInput,
+        PanelCard
     },
 
     props: {
@@ -261,9 +263,8 @@ export default defineComponent({
     },
 
     template: `
-        <div class="card">
-            <div class="card-body">
-                <form @submit.prevent="handleSubmit(itemBarcode)">
+        <panel-card>
+            <form @submit.prevent="handleSubmit(itemBarcode)">
                     <div class="input-group input-group-lg">
                         <span class="input-group-text">
                             <i class="bi bi-upc-scan"></i>
@@ -296,11 +297,10 @@ export default defineComponent({
                     </div>
                 </form>
 
-                <div v-if="disabled && mode === 'checkout' && !borrower" class="alert alert-info mt-3 mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    {{ t('circulation.scan_borrower_first') }}
-                </div>
+            <div v-if="disabled && mode === 'checkout' && !borrower" class="alert alert-info mt-3 mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                {{ t('circulation.scan_borrower_first') }}
             </div>
-        </div>
+        </panel-card>
     `
 });

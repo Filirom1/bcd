@@ -228,8 +228,11 @@ func _test_return_successes() -> void:
 	_test.expect(_last_notification_text() == _i18n.call("t", "return.success_with_title", {"title": "Returned Book"}), "Return success includes the title")
 	_test.expect(history.get_child_count() >= 1, "Return success adds an item to return history")
 	if history.get_child_count() > 0:
-		var entry: VBoxContainer = history.get_child(history.get_child_count() - 1)
-		_test.expect(entry.get_child_count() >= 2, "Return history renders location badges when shelf data exists")
+		var entry := history.get_child(history.get_child_count() - 1) as VBoxContainer
+		_test.expect(
+			entry.get_node("Row/Info/LocationRow/Badges").get_child_count() >= 1,
+			"Return history renders location badges when shelf data exists"
+		)
 
 	_clear_fixture()
 	_enqueue_json("/api/v1/circulation/return", 200, {

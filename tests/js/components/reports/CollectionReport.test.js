@@ -806,9 +806,9 @@ describe('CollectionReport', () => {
 
         expect(wrapper.vm.allItems).toHaveLength(3);
         expect(wrapper.vm.scoreHistogram.length).toBeGreaterThanOrEqual(10);
-        expect(wrapper.vm.scoreBarColor(2)).toBe('#33CC66');
-        expect(wrapper.vm.scoreBarColor(4)).toBe('#F2BF33');
-        expect(wrapper.vm.scoreBarColor(5)).toBe('#F24D66');
+        expect(wrapper.vm.scoreBarColor(2)).toBe('var(--bcd-success)');
+        expect(wrapper.vm.scoreBarColor(4)).toBe('var(--bcd-warning)');
+        expect(wrapper.vm.scoreBarColor(5)).toBe('var(--bcd-danger)');
         expect(wrapper.vm.copiesPerTitle).toEqual({ 1: 2, 2: 1 });
         expect(wrapper.vm.tauxMax).toBe(4);
         expect(wrapper.vm.breakdownMax([{ count: 2 }, { count: 5 }])).toBe(5);

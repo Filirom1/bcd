@@ -54,6 +54,7 @@ export default defineComponent({
                 size="lg"
                 :static="true"
                 :show-close="false"
+                :priority="true"
                 centered
                 @close="dismissHoldReady"
         >

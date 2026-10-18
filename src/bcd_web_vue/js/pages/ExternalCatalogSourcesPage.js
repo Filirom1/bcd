@@ -16,10 +16,13 @@ const SOURCE_FIELDS = [
     'sudoc_enabled', 'sudoc_timeout'
 ];
 
+import PageHeader from '../components/ui/PageHeader.js';
+
 export default defineComponent({
     name: 'ExternalCatalogSourcesPage',
 
     components: {
+        PageHeader,
         LoadingSpinner,
         HelpPanel,
         ExternalCatalogSourcesSection
@@ -96,20 +99,17 @@ export default defineComponent({
 
     template: `
         <div class="page-container">
-            <div class="page-header">
-                <div>
+            <page-header>
+                <template #heading>
                     <h1 class="page-title">
                         <i class="bi bi-cloud-download me-2"></i>
                         {{ t('settings.external_catalog_sources') }}
                     </h1>
-                    <p class="text-muted mb-0">
-                        {{ t('settings.external_catalog_sources_page_help') }}
-                    </p>
-                </div>
-                <div class="d-flex gap-2 align-items-center">
+                </template>
+                <template #actions>
                     <help-panel section="settings" />
-                </div>
-            </div>
+                </template>
+            </page-header>
 
             <loading-spinner v-if="loading" />
             <form v-else @submit.prevent="saveSettings">

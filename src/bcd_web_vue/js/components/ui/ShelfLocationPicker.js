@@ -79,7 +79,7 @@ export default defineComponent({
                     textColor: hex ? autoTextColor(hex) : 'inherit',
                     style: hex
                         ? { background: hex, color: autoTextColor(hex), border: '2px solid transparent' }
-                        : { background: '#f8f9fa', color: 'inherit', border: '2px solid #dee2e6' }
+                        : { background: 'var(--bcd-surface-soft)', color: 'inherit', border: '2px solid var(--bcd-border)' }
                 };
             })
         );
@@ -118,7 +118,7 @@ export default defineComponent({
 <div class="shelf-picker-wrap">
   <!-- Input row -->
   <div class="d-flex gap-2 align-items-stretch">
-    <div class="d-flex flex-grow-1 align-items-stretch" style="border:1.5px solid #ccc; border-radius:6px; overflow:hidden; transition:border-color .15s;">
+    <div class="d-flex flex-grow-1 align-items-stretch" style="border:1.5px solid var(--bcd-border-strong); border-radius:var(--bcd-radius-sm); overflow:hidden; transition:border-color .15s;">
       <!-- Colored strip -->
       <div
         class="flex-shrink-0"

@@ -79,7 +79,7 @@ export default defineComponent({
             if (badgeClass.value === null) return { background: 'transparent', color: 'inherit' };
             const hex = resolvedColors.value[badgeClass.value];
             if (!hex) return { background: 'transparent', color: 'inherit' };
-            const outline = (hex === '#ffffff' || hex === '#fff') ? '1px solid #ddd' : 'none';
+            const outline = (hex === '#ffffff' || hex === '#fff') ? '1px solid var(--bcd-border)' : 'none';
             return { background: hex, color: autoTextColor(hex), outline };
         });
 
@@ -93,7 +93,7 @@ export default defineComponent({
                 n,
                 hex: hex || '#cccccc',
                 textColor: hex ? autoTextColor(hex) : '#ffffff',
-                border: (!hex || hex === '#ffffff' || hex === '#fff') ? '2px solid #ccc' : '2px solid transparent',
+                border: (!hex || hex === '#ffffff' || hex === '#fff') ? '2px solid var(--bcd-border-strong)' : '2px solid transparent',
                 label: t(`dewey.class.${n}`),
                 selected: selectedClass.value === n
             }))
@@ -181,7 +181,7 @@ export default defineComponent({
 <div class="dewey-picker-wrap">
   <!-- Input row -->
   <div class="d-flex gap-2 align-items-stretch">
-    <div class="dewey-input-group d-flex flex-grow-1" style="border:1.5px solid #ccc; border-radius:6px; overflow:hidden; transition:border-color .15s;">
+    <div class="dewey-input-group d-flex flex-grow-1" style="border:1.5px solid var(--bcd-border-strong); border-radius:var(--bcd-radius-sm); overflow:hidden; transition:border-color .15s;">
       <!-- Badge coloré -->
       <div
         v-if="showBadge"
@@ -222,28 +222,28 @@ export default defineComponent({
           background: cls.hex,
           color: cls.textColor,
           border: cls.border + ' !important',
-          fontSize: '.65rem',
+          fontSize: 'var(--bcd-font-size-chart)',
           fontWeight: '700',
           lineHeight: '1.2',
-          outline: cls.selected ? '2px solid #1a1a1a' : 'none',
+          outline: cls.selected ? '2px solid var(--bcd-text-main)' : 'none',
           outlineOffset: '-2px'
         }"
         @click.stop="selectClass(cls.n)"
       >
-        <span style="display:block; font-size:.75rem;">{{ cls.n }}</span>
-        <span style="display:block; font-size:.55rem; font-weight:400;">{{ cls.label }}</span>
+        <span style="display:block; font-size:var(--bcd-font-size-xs);">{{ cls.n }}</span>
+        <span style="display:block; font-size:var(--bcd-font-size-chart); font-weight:400;">{{ cls.label }}</span>
       </button>
     </div>
 
     <!-- Niveau 2 : subdivisions -->
     <div v-if="selectedClass !== null" class="mt-2 pt-2 border-top">
-      <div class="text-muted mb-1" style="font-size:.72rem; font-weight:500;">{{ subdivHeader }}</div>
+      <div class="text-muted mb-1" style="font-size:var(--bcd-font-size-xs); font-weight:500;">{{ subdivHeader }}</div>
       <div class="row g-1">
         <div v-for="sub in subdivisionButtons" :key="sub.code" class="col-6">
           <button
             type="button"
             class="btn btn-sm w-100 text-start border py-1 px-2"
-            style="font-size:.75rem; background:#f9f9f9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+            style="font-size:var(--bcd-font-size-xs); background:var(--bcd-surface-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
             :style="{'border-left': '3px solid ' + sub.borderColor + ' !important'}"
             :title="sub.code + ' · ' + sub.label"
             @click.stop="insert(sub.code)"

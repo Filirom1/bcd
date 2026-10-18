@@ -34,10 +34,15 @@ import ConfirmDialog from '../components/admin/ConfirmDialog.js';
 import ItemEditForm from '../components/catalog/ItemEditForm.js';
 import RecordDetail from '../components/catalog/RecordDetail.js';
 
+import PageHeader from '../components/ui/PageHeader.js';
+import PanelCard from '../components/ui/PanelCard.js';
+
 export default defineComponent({
     name: 'InventoryPage',
 
     components: {
+        PageHeader,
+        PanelCard,
         ScanTab,
         FileTab,
         SearchTab,
@@ -504,35 +509,38 @@ export default defineComponent({
 
     template: `
         <div>
-            <div class="page-header">
-                <h1 class="page-title">
-                    <i class="bi bi-box-seam me-2"></i>
-                    {{ t('inventory.title') }}
-                </h1>
-                <div class="d-flex gap-2">
-                    <admin-dropdown
-                        :selected-count="selectedCount"
-                        page="inventory"
-                        @import="handleImport"
-                        @export="handleExport"
-                        @cleanup-orphans="handleCleanupOrphans"
-                    />
-                    <help-panel section="inventory" />
-                </div>
-            </div>
+            <page-header>
+                <template #heading>
+                    <h1 class="page-title">
+                        <i class="bi bi-box-seam me-2"></i>
+                        {{ t('inventory.title') }}
+                    </h1>
+                </template>
+                <template #actions>
+                    <div class="d-flex gap-2">
+                        <admin-dropdown
+                            :selected-count="selectedCount"
+                            page="inventory"
+                            @import="handleImport"
+                            @export="handleExport"
+                            @cleanup-orphans="handleCleanupOrphans"
+                        />
+                        <help-panel section="inventory" />
+                    </div>
+                </template>
+            </page-header>
 
             <div class="inventory-page">
                 <div class="inventory-workspace">
                     <!-- Left panel: Scanner + Bulk Edit -->
                     <div class="left-panel">
                         <!-- Scanner card -->
-                        <div class="card shadow-sm mb-3">
-                            <div class="card-header">
+                        <panel-card class="mb-3">
+                            <template #header>
                                 <h6 class="mb-0 text-uppercase small">
                                     {{ t('inventory.add_items.title') }}
                                 </h6>
-                            </div>
-                            <div class="card-body">
+                            </template>
                                 <!-- Tab Navigation -->
                                 <ul class="nav nav-pills mb-3" role="tablist">
                                     <li class="nav-item" role="presentation">
@@ -588,27 +596,26 @@ export default defineComponent({
                                         />
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                        </panel-card>
 
                         <!-- Bulk Edit card -->
-                        <div class="card shadow-sm">
-                            <div class="card-header">
+                        <panel-card :body="false">
+                            <template #header>
                                 <h6 class="mb-0 text-uppercase small">
                                     {{ t('inventory.bulk_edit.panel_title') }}
                                 </h6>
-                            </div>
+                            </template>
                             <BulkEditPanel
                                 :selected-count="selectedCount"
                                 :settings="settings"
                                 @apply="handleBulkApply"
                                 @delete="handleBulkDelete"
                             />
-                        </div>
+                        </panel-card>
                     </div>
 
                     <!-- Right panel: Working table -->
-                    <div class="working-table-panel card shadow-sm">
+                    <panel-card class="working-table-panel" :body="false">
                         <WorkingTableToolbar
                             :selected-count="selectedCount"
                             :total-count="inventoryTable.items.value.length"
@@ -636,7 +643,7 @@ export default defineComponent({
                                 @edit-record="handleEditRecord"
                             />
                         </div>
-                    </div>
+                    </panel-card>
                 </div>
             </div>
 

@@ -32,6 +32,8 @@ describe('HoldReadyModal', () => {
         expect(document.body.textContent).toContain('Lina Martin');
         expect(document.body.textContent).toContain('I-12');
         expect(document.body.querySelector('.hold-ready-modal')).not.toBeNull();
+        expect(document.body.querySelector('.modal-priority')).not.toBeNull();
+        expect(document.body.querySelector('.modal-priority-backdrop')).not.toBeNull();
         expect(document.body.querySelector('.hold-ready-book-card')).not.toBeNull();
         expect(document.body.querySelector('.hold-ready-cover')?.getAttribute('src')).toBe('/covers/little-prince.jpg');
         expect(document.body.querySelector('.btn-close')).toBeNull();

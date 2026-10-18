@@ -7,6 +7,7 @@ const { defineComponent, computed } = Vue;
 const { useI18n } = VueI18n;
 import { formatAuthors, parseJsonSetting } from '../../utils/domain.js';
 import DataTable from '../ui/DataTable.js';
+import RecordCell from './RecordCell.js';
 import { useAppState } from '../../composables/useAppState.js';
 import { useItemBadge } from '../../composables/useItemBadge.js';
 
@@ -14,7 +15,8 @@ export default defineComponent({
     name: 'SearchResults',
 
     components: {
-        DataTable
+        DataTable,
+        RecordCell
     },
 
     props: {
@@ -224,19 +226,18 @@ export default defineComponent({
                     </td>
 
                     <!-- Basic Information -->
-                    <td v-if="isColumnVisible('title')">
-                        <span class="link-entity fw-bold">{{ record.title }}</span>
-                        <div v-if="record.subtitle" class="small text-muted">
-                            {{ record.subtitle }}
-                        </div>
-                        <div v-if="record.first_item_id || record.shelf_location || record.call_number" class="mt-1 d-flex flex-wrap align-items-center gap-1">
-                            <span v-if="record.first_item_id" class="small text-muted me-1">
-                                <i class="bi bi-upc"></i> {{ record.first_item_id }}
-                            </span>
-                            <span v-if="record.shelf_location && getShelfBadge(record.shelf_location)" :style="getShelfBadge(record.shelf_location)">{{ record.shelf_location }}</span>
-                            <span v-if="record.call_number && getCoteBadge(record.call_number)" :style="getCoteBadge(record.call_number)">{{ record.call_number }}</span>
-                        </div>
-                    </td>
+                    <record-cell
+                        v-if="isColumnVisible('title')"
+                        :record-id="record.id"
+                        :title="record.title"
+                        :subtitle="record.subtitle"
+                        :collection="isColumnVisible('collection') ? '' : record.collection"
+                        :series-number="isColumnVisible('series_number') ? '' : record.series_number"
+                        :open-on-click="false"
+                        :item-id="record.first_item_id"
+                        :shelf-location="record.shelf_location"
+                        :call-number="record.call_number"
+                    />
                     <td v-if="isColumnVisible('author')">{{ getAuthors(record) }}</td>
                     <td v-if="isColumnVisible('isbn')">
                         <code v-if="record.isbn" class="small">{{ record.isbn_value }}</code>
@@ -297,7 +298,7 @@ export default defineComponent({
                             :src="'/covers/' + record.cover_image"
                             :alt="record.title"
                             class="card-img-top"
-                            style="height: 160px; object-fit: contain; background: #f8f9fa; padding: 8px;"
+                            style="height: 160px; object-fit: contain; background: var(--bcd-surface-soft); padding: 8px;"
                             @error="$event.target.style.display = 'none'"
                         />
                         <div v-else class="text-center py-3 bg-light" style="height: 100px;">

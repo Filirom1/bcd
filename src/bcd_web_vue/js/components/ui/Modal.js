@@ -10,6 +10,7 @@
  *   centered (Boolean) — vertically centered dialog (default: false)
  *   scrollable (Boolean) — scrollable body (default: false)
  *   showClose (Boolean) — show the header close button (default: true)
+ *   priority (Boolean) — render above regular modals (default: false)
  *
  * Emits: close
  * Slots: header, default (body), footer
@@ -53,6 +54,10 @@ export default defineComponent({
         showClose: {
             type: Boolean,
             default: true
+        },
+        priority: {
+            type: Boolean,
+            default: false
         }
     },
 
@@ -73,7 +78,7 @@ export default defineComponent({
         <teleport to="body">
             <div v-if="show">
                 <div
-                    class="modal fade show d-block"
+                    :class="['modal', 'fade', 'show', 'd-block', priority && 'modal-priority']"
                     tabindex="-1"
                     role="dialog"
                     aria-modal="true"
@@ -114,7 +119,7 @@ export default defineComponent({
                         </div>
                     </div>
                 </div>
-                <div class="modal-backdrop fade show"></div>
+                <div :class="['modal-backdrop', 'fade', 'show', priority && 'modal-priority-backdrop']"></div>
             </div>
         </teleport>
     `

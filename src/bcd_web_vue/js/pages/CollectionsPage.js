@@ -8,10 +8,13 @@ const { useI18n } = VueI18n;
 import { apiClient } from '../api/client.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 
+import PageHeader from '../components/ui/PageHeader.js';
+
 export default defineComponent({
     name: 'CollectionsPage',
 
     components: {
+        PageHeader,
         HelpPanel
     },
 
@@ -63,14 +66,18 @@ export default defineComponent({
     },
 
     template: `
-        <div class="container-fluid py-4">
-            <div class="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                    <h1 class="mb-2">{{ t('collections.title') }}</h1>
-                    <p class="text-muted mb-0">{{ t('collections.subtitle') }}</p>
-                </div>
-                <help-panel section="collections" />
-            </div>
+        <div>
+            <page-header>
+                <template #heading>
+                    <h1 class="page-title">
+                        <i class="bi bi-collection me-2"></i>
+                        {{ t('collections.title') }}
+                    </h1>
+                </template>
+                <template #actions>
+                    <help-panel section="collections" />
+                </template>
+            </page-header>
 
             <!-- This Collection (Local) -->
             <div class="card mb-4 border-success">

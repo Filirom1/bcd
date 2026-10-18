@@ -38,6 +38,7 @@ describe('ReportsPage', () => {
         const wrapper = mountReportsPage();
         expect(wrapper.vm.activeTab).toBe('overdue');
         expect(wrapper.find('overdue-report-stub').exists()).toBe(true);
+        expect(wrapper.find('.page-header').exists()).toBe(false);
     });
 
     it('renders the report requested by the route and reacts to later route changes', async () => {

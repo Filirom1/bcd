@@ -183,10 +183,10 @@ export default defineComponent({
                         <span class="align-middle">
                             {{ t('settings.covers_download_running', { processed: downloadStatus.processed, total: downloadStatus.total, found: downloadStatus.found }) }}
                         </span>
-                        <span v-if="downloadStatus.last_processed_isbn" class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+                        <span v-if="downloadStatus.last_processed_isbn" class="text-muted d-block mt-1" style="font-size: var(--bcd-font-size-sm);">
                             ISBN: {{ downloadStatus.last_processed_isbn }}
                         </span>
-                        <span v-if="eta" class="text-muted d-block mt-1" style="font-size: 0.8rem;">
+                        <span v-if="eta" class="text-muted d-block mt-1" style="font-size: var(--bcd-font-size-sm);">
                             <i class="bi bi-clock me-1"></i>{{ t('settings.covers_download_eta', { eta: eta }) }}
                         </span>
                     </div>

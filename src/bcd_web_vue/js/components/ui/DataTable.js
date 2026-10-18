@@ -45,19 +45,43 @@ export default defineComponent({
             type: Boolean,
             default: false
         },
-        // Bare mode: just table, no wrappers (for use inside existing cards)
+        // Bare mode: no card wrapper; the table can still have its shared frame.
         bare: {
             type: Boolean,
             default: false
         },
+        // Draw the shared outer border. Disable when a parent card already provides it.
+        framed: {
+            type: Boolean,
+            default: true
+        },
         // Row key property (for v-for key)
         rowKey: {
-            type: String,
+            type: [String, Function],
             default: 'id'
+        },
+        // Additional table classes for contextual sizing or specialized layouts
+        tableClass: {
+            type: [String, Array, Object],
+            default: ''
+        },
+        // Optional row-class string or (row, index) callback
+        rowClass: {
+            type: [String, Function],
+            default: ''
+        },
+        // Sort indicator state for sortable columns
+        sortColumn: {
+            type: String,
+            default: ''
+        },
+        sortDirection: {
+            type: String,
+            default: 'asc'
         }
     },
 
-    emits: ['row-click'],
+    emits: ['row-click', 'sort'],
 
     setup(props, { emit }) {
         const { t } = useI18n();
@@ -70,10 +94,26 @@ export default defineComponent({
             }
         };
 
+        const handleSort = (column) => {
+            if (column.sortable) {
+                emit('sort', column.key);
+            }
+        };
+
+        const getRowKey = (row, index) => typeof props.rowKey === 'function'
+            ? props.rowKey(row, index)
+            : (row[props.rowKey] ?? index);
+        const getRowClass = (row, index) => typeof props.rowClass === 'function'
+            ? props.rowClass(row, index)
+            : props.rowClass;
+
         return {
             t,
             hasRows,
-            handleRowClick
+            handleRowClick,
+            handleSort,
+            getRowKey,
+            getRowClass
         };
     },
 
@@ -91,59 +131,81 @@ export default defineComponent({
                 {{ emptyMessage || t('common.no_data') }}
             </div>
 
-            <!-- Bare Table (no wrapper, for use inside cards) -->
-            <table v-else-if="bare" class="table table-hover table-striped mb-0">
+            <!-- Bare Table (no card wrapper) -->
+            <div v-else-if="bare" :class="['data-table-frame', { 'data-table-frame--bordered': framed }]">
+                <table :class="['table table-hover table-striped mb-0', tableClass]">
                 <thead>
                     <tr>
                         <th
                             v-for="column in columns"
                             :key="column.key"
+                            :class="[column.headerClass, { 'data-table-sortable': column.sortable }]"
                             :style="column.width ? { width: column.width } : {}"
+                            :aria-sort="column.sortable && sortColumn === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null"
+                            @click="handleSort(column)"
                         >
                             <slot :name="'header-' + column.key">{{ column.label }}</slot>
+                            <i
+                                v-if="column.sortable && sortColumn === column.key"
+                                class="bi ms-1"
+                                :class="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"
+                                aria-hidden="true"
+                            ></i>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr
-                        v-for="row in rows"
-                        :key="row[rowKey]"
+                        v-for="(row, index) in rows"
+                        :key="getRowKey(row, index)"
                         @click="handleRowClick(row)"
+                        :class="getRowClass(row, index)"
                         :style="clickable ? { cursor: 'pointer' } : {}"
                     >
-                        <slot name="row" :row="row" :columns="columns">
+                        <slot name="row" :row="row" :columns="columns" :index="index">
                             <td v-for="column in columns" :key="column.key">
                                 {{ row[column.key] }}
                             </td>
                         </slot>
                     </tr>
                 </tbody>
-            </table>
+                </table>
+            </div>
 
             <!-- Table with Card Wrapper -->
-            <div v-else-if="card" class="card">
+            <div v-else-if="card" :class="['card', { 'data-table-frame--bordered': framed }]">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover table-striped mb-0">
+                        <table :class="['table table-hover table-striped mb-0', tableClass]">
                             <thead>
                                 <tr>
                                     <th
                                         v-for="column in columns"
                                         :key="column.key"
+                                        :class="[column.headerClass, { 'data-table-sortable': column.sortable }]"
                                         :style="column.width ? { width: column.width } : {}"
+                                        :aria-sort="column.sortable && sortColumn === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null"
+                                        @click="handleSort(column)"
                                     >
                                         <slot :name="'header-' + column.key">{{ column.label }}</slot>
+                                        <i
+                                            v-if="column.sortable && sortColumn === column.key"
+                                            class="bi ms-1"
+                                            :class="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"
+                                            aria-hidden="true"
+                                        ></i>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr
-                                    v-for="row in rows"
-                                    :key="row[rowKey]"
+                                    v-for="(row, index) in rows"
+                                    :key="getRowKey(row, index)"
                                     @click="handleRowClick(row)"
+                                    :class="getRowClass(row, index)"
                                     :style="clickable ? { cursor: 'pointer' } : {}"
                                 >
-                                    <slot name="row" :row="row" :columns="columns">
+                                    <slot name="row" :row="row" :columns="columns" :index="index">
                                         <td v-for="column in columns" :key="column.key">
                                             {{ row[column.key] }}
                                         </td>
@@ -156,27 +218,37 @@ export default defineComponent({
             </div>
 
             <!-- Table without Card -->
-            <div v-else class="table-responsive">
-                <table class="table table-hover table-striped">
+            <div v-else :class="['table-responsive', 'data-table-frame', { 'data-table-frame--bordered': framed }]">
+                <table :class="['table table-hover table-striped mb-0', tableClass]">
                     <thead>
                         <tr>
                             <th
                                 v-for="column in columns"
                                 :key="column.key"
+                                :class="[column.headerClass, { 'data-table-sortable': column.sortable }]"
                                 :style="column.width ? { width: column.width } : {}"
+                                :aria-sort="column.sortable && sortColumn === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : null"
+                                @click="handleSort(column)"
                             >
                                 <slot :name="'header-' + column.key">{{ column.label }}</slot>
+                                <i
+                                    v-if="column.sortable && sortColumn === column.key"
+                                    class="bi ms-1"
+                                    :class="sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down'"
+                                    aria-hidden="true"
+                                ></i>
                             </th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr
-                            v-for="row in rows"
-                            :key="row[rowKey]"
+                            v-for="(row, index) in rows"
+                            :key="getRowKey(row, index)"
                             @click="handleRowClick(row)"
+                            :class="getRowClass(row, index)"
                             :style="clickable ? { cursor: 'pointer' } : {}"
                         >
-                            <slot name="row" :row="row" :columns="columns">
+                            <slot name="row" :row="row" :columns="columns" :index="index">
                                 <td v-for="column in columns" :key="column.key">
                                     {{ row[column.key] }}
                                 </td>

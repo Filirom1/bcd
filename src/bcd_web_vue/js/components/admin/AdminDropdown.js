@@ -149,21 +149,21 @@ export default defineComponent({
                 {{ t('admin.menu_title') }}
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
-                <!-- Import / export are page-specific operations. -->
-                <template>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center" href="#" data-testid="admin-menu-import" @click.prevent="handleImport">
-                            <i class="bi bi-upload me-2"></i><span class="flex-grow-1">{{ importLabel }}</span>
-                            <kbd v-if="altHeld" class="admin-shortcut ms-2">I</kbd>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center" href="#" data-testid="admin-menu-export" @click.prevent="handleExport">
-                            <i class="bi bi-download me-2"></i><span class="flex-grow-1">{{ exportLabel }}</span>
-                            <kbd v-if="altHeld" class="admin-shortcut ms-2">X</kbd>
-                        </a>
-                    </li>
-                </template>
+                <!-- Import / export are page-specific operations. Keep these as direct list
+                     children: a plain <template> wrapper is not rendered by the native ESM
+                     runtime compiler used by the source web UI. -->
+                <li>
+                    <a class="dropdown-item d-flex align-items-center" href="#" data-testid="admin-menu-import" @click.prevent="handleImport">
+                        <i class="bi bi-upload me-2"></i><span class="flex-grow-1">{{ importLabel }}</span>
+                        <kbd v-if="altHeld" class="admin-shortcut ms-2">I</kbd>
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item d-flex align-items-center" href="#" data-testid="admin-menu-export" @click.prevent="handleExport">
+                        <i class="bi bi-download me-2"></i><span class="flex-grow-1">{{ exportLabel }}</span>
+                        <kbd v-if="altHeld" class="admin-shortcut ms-2">X</kbd>
+                    </a>
+                </li>
 
                 <!-- Edit/Bulk operations (only for borrowers and catalog) -->
                 <template v-if="page !== 'inventory'">

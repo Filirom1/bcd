@@ -13,7 +13,9 @@ const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
 @onready var _breadcrumb: Breadcrumb = %Breadcrumb
 @onready var _title_lbl: Label = %TitleLabel
 @onready var _count_lbl: Label = %CountLabel
+@onready var _scan_title_lbl: Label = %ScanTitle
 @onready var _input_lbl: Label = %InputLabel
+@onready var _loans_title_lbl: Label = %LoansTitle
 @onready var _barcode_input: LineEdit = %BarcodeInput
 @onready var _error_lbl: Label = %ErrorLabel
 @onready var _loans_list: VBoxContainer = %LoansList
@@ -26,10 +28,12 @@ func _ready() -> void:
 	_bg.color = ThemeManager.BG
 
 	_title_lbl.text = I18n.t("checkout.title")
-	_input_lbl.text = I18n.t("checkout.label")
+	_scan_title_lbl.text = I18n.t("checkout.scan_title")
+	_input_lbl.text = I18n.t("checkout.scan_instruction")
+	_loans_title_lbl.text = I18n.t("checkout.loans_title")
 	_barcode_input.placeholder_text = I18n.t("common.barcode_placeholder")
 	_back_btn.text = "← " + I18n.t("common.back")
-	_validate_btn.text = "✓ " + I18n.t("common.validate")
+	_validate_btn.text = "✓ " + I18n.t("checkout.scan_button")
 	_done_btn.text = I18n.t("checkout.done")
 
 	_back_btn.pressed.connect(func(): Mgr.pop())
@@ -52,10 +56,12 @@ func _ready() -> void:
 # Called when returning to this screen from another stack entry.
 func on_enter() -> void:
 	_title_lbl.text = I18n.t("checkout.title")
-	_input_lbl.text = I18n.t("checkout.label")
+	_scan_title_lbl.text = I18n.t("checkout.scan_title")
+	_input_lbl.text = I18n.t("checkout.scan_instruction")
+	_loans_title_lbl.text = I18n.t("checkout.loans_title")
 	_barcode_input.placeholder_text = I18n.t("common.barcode_placeholder")
 	_back_btn.text = "← " + I18n.t("common.back")
-	_validate_btn.text = "✓ " + I18n.t("common.validate")
+	_validate_btn.text = "✓ " + I18n.t("checkout.scan_button")
 	_done_btn.text = I18n.t("checkout.done")
 	_update_breadcrumb()
 	_update_counter()

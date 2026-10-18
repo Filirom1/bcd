@@ -4,14 +4,12 @@
  */
 
 const { defineComponent, ref, watch } = Vue;
-const { useI18n } = VueI18n;
 const { useRoute } = VueRouter;
 import OverdueReport from '../components/reports/OverdueReport.js';
 import MostBorrowedReport from '../components/reports/MostBorrowedReport.js';
 import CollectionReport from '../components/reports/CollectionReport.js';
 import HoldsReport from '../components/reports/HoldsReport.js';
 import ActiveLoansReport from '../components/reports/ActiveLoansReport.js';
-import HelpPanel from '../components/ui/HelpPanel.js';
 
 export default defineComponent({
     name: 'ReportsPage',
@@ -21,12 +19,10 @@ export default defineComponent({
         MostBorrowedReport,
         CollectionReport,
         HoldsReport,
-        ActiveLoansReport,
-        HelpPanel
+        ActiveLoansReport
     },
 
     setup() {
-        const { t } = useI18n();
         const route = useRoute();
         const activeTab = ref(route.params.type || 'overdue');
 
@@ -38,22 +34,12 @@ export default defineComponent({
         });
 
         return {
-            t,
             activeTab
         };
     },
 
     template: `
-        <div class="container-fluid">
-            <div class="page-header">
-                <h1 class="page-title">
-                    <i class="bi bi-bar-chart me-2"></i>
-                    {{ t('navigation.reports') }}
-                </h1>
-                <div class="d-flex gap-2">
-                    <help-panel section="reports" />
-                </div>
-            </div>
+        <div>
             <!-- Report Content -->
             <overdue-report v-if="activeTab === 'overdue'" />
             <most-borrowed-report v-else-if="activeTab === 'most-borrowed'" />

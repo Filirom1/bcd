@@ -10,6 +10,7 @@ function mountCatalogingPage(query = {}) {
     globalThis.__testRoute.query = query;
     const wrapper = shallowMount(CatalogingPage, {
         global: {
+            stubs: { PageHeader: false },
             mocks: {
                 $t: key => key
             }

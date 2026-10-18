@@ -41,13 +41,44 @@ describe('DataTable', () => {
         const slot = {
             row: ({ row: value }) => h('td', { 'data-testid': 'custom-cell' }, value.code)
         };
-        const bare = mountTable({ rows: [row], rowKey: 'code', bare: true }, slot);
+        const bare = mountTable({
+            rows: [row],
+            rowKey: value => value.code,
+            rowClass: () => 'custom-row',
+            tableClass: 'table-sm',
+            bare: true
+        }, slot);
         expect(bare.find('table').classes()).toContain('mb-0');
+        expect(bare.find('table').classes()).toContain('table-sm');
+        expect(bare.get('.data-table-frame').classes()).toContain('data-table-frame--bordered');
+        expect(bare.get('tbody tr').classes()).toContain('custom-row');
+
+        const unframed = mountTable({ rows: [row], bare: true, framed: false });
+        expect(unframed.get('.data-table-frame').classes()).not.toContain('data-table-frame--bordered');
         expect(bare.get('[data-testid="custom-cell"]').text()).toBe('A-1');
 
         const card = mountTable({ rows: [row], card: true });
         expect(card.find('.card').exists()).toBe(true);
         expect(card.find('table').exists()).toBe(true);
+    });
+
+    it('emits sort events for sortable columns and exposes row indices to slots', async () => {
+        const wrapper = mountTable({
+            rows: [{ id: 1, name: 'First' }, { id: 2, name: 'Second' }],
+            columns: [{ key: 'name', label: 'Name', sortable: true }],
+            sortColumn: 'name',
+            sortDirection: 'desc'
+        }, {
+            row: ({ row, index }) => h('td', { 'data-testid': `row-${index}` }, row.name)
+        });
+
+        const header = wrapper.get('th');
+        expect(header.classes()).toContain('data-table-sortable');
+        expect(header.attributes('aria-sort')).toBe('descending');
+        expect(wrapper.get('[data-testid="row-1"]').text()).toBe('Second');
+
+        await header.trigger('click');
+        expect(wrapper.emitted('sort')).toEqual([['name']]);
     });
 
     it('emits a row click only when rows are clickable', async () => {

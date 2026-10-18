@@ -22,6 +22,8 @@ Voir [`bcd_kids/README.md`](bcd_kids/README_FR.md) pour les détails.
 
 L'interface web principale s'exécute dans le navigateur et offre toutes les fonctionnalités de gestion de bibliothèque pour les bibliothécaires et le personnel.
 
+**Charte graphique** : [`docs/charte-graphique-web.md`](docs/charte-graphique-web.md)
+
 ### BCD Kids (enfants)
 
 Application conçue pour les élèves de primaire (6-11 ans) :

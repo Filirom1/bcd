@@ -4,6 +4,7 @@
 // 1. Order of CSS imports matching original index.html exactly
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import "../css/theme.css";
 import "../css/main.css";
 import "../css/loading.css";
 import "../css/print-labels.css";

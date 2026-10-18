@@ -58,9 +58,9 @@ describe('PubYearPanel', () => {
         expect(wrapper.vm.histogram[1]).toEqual({ bin: currentYear - 11, count: 0 });
         expect(wrapper.vm.dataRange).toEqual({ min: currentYear - 12, max: currentYear - 2 });
         expect(wrapper.vm.maxCount).toBe(2);
-        expect(wrapper.vm.barColor(currentYear - 12)).toBe('#F24D66');
-        expect(wrapper.vm.barColor(currentYear - 7)).toBe('#F2BF33');
-        expect(wrapper.vm.barColor(currentYear - 2)).toBe('#4D99F2');
+        expect(wrapper.vm.barColor(currentYear - 12)).toBe('var(--bcd-danger)');
+        expect(wrapper.vm.barColor(currentYear - 7)).toBe('var(--bcd-warning)');
+        expect(wrapper.vm.barColor(currentYear - 2)).toBe('var(--bcd-primary)');
 
         wrapper.vm.sliderMin = currentYear - 8;
         wrapper.vm.sliderMax = currentYear - 2;
@@ -110,9 +110,9 @@ describe('TauxRotationPanel', () => {
         expect(wrapper.vm.histogram[4]).toEqual({ bin: 4, count: 1 });
         expect(wrapper.vm.histogram[8]).toEqual({ bin: 8, count: 1 });
         expect(wrapper.vm.dataRange).toEqual({ min: 0, max: 8 });
-        expect(wrapper.vm.barColor(3)).toBe('#4D99F2');
-        expect(wrapper.vm.barColor(4)).toBe('#F2BF33');
-        expect(wrapper.vm.barColor(8)).toBe('#F24D66');
+        expect(wrapper.vm.barColor(3)).toBe('var(--bcd-primary)');
+        expect(wrapper.vm.barColor(4)).toBe('var(--bcd-warning)');
+        expect(wrapper.vm.barColor(8)).toBe('var(--bcd-danger)');
 
         wrapper.vm.sliderMin = 2;
         wrapper.vm.sliderMax = 6;

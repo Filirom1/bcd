@@ -260,7 +260,7 @@ export default {
                                     <div
                                         class="rounded-circle d-flex align-items-center justify-content-center me-2"
                                         :class="currentStep >= 1 ? 'bg-primary text-white' : 'bg-secondary text-white'"
-                                        style="width: 32px; height: 32px; font-size: 14px;"
+                                        style="width: 32px; height: 32px; font-size: var(--bcd-font-size-base);"
                                     >
                                         1
                                     </div>
@@ -268,12 +268,12 @@ export default {
                                         {{ t('admin.select_operation') }}
                                     </span>
                                 </div>
-                                <div class="flex-grow-1 mx-2" style="height: 2px; background-color: #dee2e6;"></div>
+                                <div class="flex-grow-1 mx-2" style="height: 2px; background-color: var(--bcd-border);"></div>
                                 <div class="d-flex align-items-center">
                                     <div
                                         class="rounded-circle d-flex align-items-center justify-content-center me-2"
                                         :class="currentStep >= 2 ? 'bg-primary text-white' : 'bg-secondary text-white'"
-                                        style="width: 32px; height: 32px; font-size: 14px;"
+                                        style="width: 32px; height: 32px; font-size: var(--bcd-font-size-base);"
                                     >
                                         2
                                     </div>
@@ -281,12 +281,12 @@ export default {
                                         {{ t('admin.configure_operation') }}
                                     </span>
                                 </div>
-                                <div class="flex-grow-1 mx-2" style="height: 2px; background-color: #dee2e6;"></div>
+                                <div class="flex-grow-1 mx-2" style="height: 2px; background-color: var(--bcd-border);"></div>
                                 <div class="d-flex align-items-center">
                                     <div
                                         class="rounded-circle d-flex align-items-center justify-content-center me-2"
                                         :class="currentStep >= 3 ? 'bg-primary text-white' : 'bg-secondary text-white'"
-                                        style="width: 32px; height: 32px; font-size: 14px;"
+                                        style="width: 32px; height: 32px; font-size: var(--bcd-font-size-base);"
                                     >
                                         3
                                     </div>

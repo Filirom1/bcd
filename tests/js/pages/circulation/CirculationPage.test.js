@@ -98,6 +98,7 @@ describe('CirculationPage', () => {
         await flushPromises();
 
         expect(wrapper.vm.scannerDisabled).toBe(true);
+        expect(wrapper.find('.no-borrower-placeholder').exists()).toBe(false);
 
         await wrapper.vm.loadBorrower('B-101');
 

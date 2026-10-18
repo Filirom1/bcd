@@ -35,7 +35,7 @@ export default {
             <button
                 v-if="borrower.active"
                 type="button"
-                class="btn btn-danger rounded-pill me-2"
+                class="btn btn-danger me-2"
                 @click="openBlockModal"
             >
                 <i class="bi bi-lock"></i>
@@ -44,7 +44,7 @@ export default {
             <button
                 v-else
                 type="button"
-                class="btn btn-success rounded-pill me-2"
+                class="btn btn-success me-2"
                 @click="openUnblockModal"
             >
                 <i class="bi bi-unlock"></i>
@@ -55,7 +55,7 @@ export default {
             <button
                 v-if="borrower.current_loans_count > 0"
                 type="button"
-                class="btn btn-primary rounded-pill me-2"
+                class="btn btn-primary me-2"
                 @click="renewAll"
                 :disabled="renewLoading"
             >

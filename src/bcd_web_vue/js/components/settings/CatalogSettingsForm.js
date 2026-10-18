@@ -4,9 +4,11 @@
 
 const { defineComponent } = Vue;
 const { useI18n } = VueI18n;
+import DataTable from '../ui/DataTable.js';
 
 export default defineComponent({
     name: 'CatalogSettingsForm',
+    components: { DataTable },
 
 
     props: {
@@ -104,18 +106,32 @@ export default defineComponent({
             </div>
             <div class="col-12">
                 <div class="table-responsive">
-                    <table class="table table-sm table-borderless align-middle">
-                        <thead><tr><th style="width:100px">{{ t('settings.rule_order') }}</th><th>{{ t('settings.rule_if_medium') }}</th><th>{{ t('catalog.shelf_location') }}</th><th>{{ t('settings.rule_then_pattern') }}</th><th style="width:50px"></th></tr></thead>
-                        <tbody>
-                            <tr v-for="(rule, idx) in localRules" :key="idx">
-                                <td><div class="btn-group btn-group-sm"><button type="button" class="btn btn-outline-secondary" :disabled="idx === 0" @click="$emit('move-call-number-rule-up', idx)"><i class="bi bi-arrow-up"></i></button><button type="button" class="btn btn-outline-secondary" :disabled="idx === localRules.length - 1" @click="$emit('move-call-number-rule-down', idx)"><i class="bi bi-arrow-down"></i></button></div></td>
-                                <td><input v-model="rule.medium_type" type="text" class="form-control form-control-sm" list="settings-medium-suggestions" :placeholder="t('settings.all_any')" /></td>
-                                <td><input v-model="rule.shelf_location" type="text" class="form-control form-control-sm" list="settings-shelf-suggestions" :placeholder="t('settings.all_any')" /></td>
-                                <td><input v-model="rule.pattern" type="text" class="form-control form-control-sm" :placeholder="t('settings.manual_entry_placeholder')" /></td>
-                                <td><button type="button" class="btn btn-sm btn-outline-danger" @click="$emit('remove-call-number-rule', idx)"><i class="bi bi-trash"></i></button></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <data-table
+                        :columns="[
+                            { key: 'order', label: t('settings.rule_order'), width: '100px' },
+                            { key: 'medium_type', label: t('settings.rule_if_medium') },
+                            { key: 'shelf_location', label: t('catalog.shelf_location') },
+                            { key: 'pattern', label: t('settings.rule_then_pattern') },
+                            { key: 'actions', label: '', width: '50px' },
+                        ]"
+                        :rows="localRules"
+                        :row-key="(rule, index) => index"
+                        table-class="table-sm align-middle"
+                        bare
+                    >
+                        <template #row="{ row: rule, index: idx }">
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-secondary" :disabled="idx === 0" @click="$emit('move-call-number-rule-up', idx)"><i class="bi bi-arrow-up"></i></button>
+                                    <button type="button" class="btn btn-outline-secondary" :disabled="idx === localRules.length - 1" @click="$emit('move-call-number-rule-down', idx)"><i class="bi bi-arrow-down"></i></button>
+                                </div>
+                            </td>
+                            <td><input v-model="rule.medium_type" type="text" class="form-control form-control-sm" list="settings-medium-suggestions" :placeholder="t('settings.all_any')" /></td>
+                            <td><input v-model="rule.shelf_location" type="text" class="form-control form-control-sm" list="settings-shelf-suggestions" :placeholder="t('settings.all_any')" /></td>
+                            <td><input v-model="rule.pattern" type="text" class="form-control form-control-sm" :placeholder="t('settings.manual_entry_placeholder')" /></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger" @click="$emit('remove-call-number-rule', idx)"><i class="bi bi-trash"></i></button></td>
+                        </template>
+                    </data-table>
                     <datalist id="settings-shelf-suggestions"><option v-for="s in shelfLocationLabels" :key="s" :value="s">{{ s }}</option></datalist>
                     <datalist id="settings-medium-suggestions"><option v-for="m in mediumTypesOptions" :key="m" :value="m">{{ m }}</option></datalist>
                 </div>

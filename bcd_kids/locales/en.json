@@ -43,7 +43,12 @@
 		"title": "Checkout",
 		"done": "✅ I'm done — let another student use this",
 		"label": "Book number:",
-		"no_loans": "No books borrowed",
+		"scan_title": "📚 Scan a book",
+		"scan_instruction": "Scan the book's barcode",
+		"scan_button": "Borrow book",
+		"loans_title": "My borrowed books",
+		"due_date": "Return by {date}",
+		"no_loans": "No books borrowed yet. Scan a book to get started!",
 		"success": "Book borrowed!",
 		"success_with_title": "{title} — Book borrowed!",
 		"success_warning": "Book borrowed! Warning, you have a lot of books.",
@@ -61,6 +66,9 @@
 	"return": {
 		"title": "Return",
 		"label": "Book number:",
+		"scan_title": "📚 Scan a book",
+		"scan_instruction": "Scan the barcode of the book to return",
+		"scan_button": "Return book",
 		"success": "Book returned!",
 		"success_with_title": "{title} — Book returned!",
 		"shelve_at": "shelve at: {location}",
@@ -76,8 +84,9 @@
 		"shelf_label": "Shelf:",
 		"call_num_label": "Call Number:",
 		"returned_today": "Books returned today:",
-		"scan_books_placeholder": "Scan books...",
-		"ranger_a": "shelve at"
+		"scan_books_placeholder": "Returned books will appear here. Scan a book's barcode to get started.",
+		"returned_by": "Returned by {name}",
+		"ranger_a": "Shelve at"
 	},
 	"search": {
 		"title": "Search",

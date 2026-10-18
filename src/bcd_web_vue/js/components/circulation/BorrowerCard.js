@@ -7,9 +7,11 @@ const { defineComponent, computed } = Vue;
 const { useI18n } = VueI18n;
 import { useBlockReasonTranslation } from '../../composables/useBlockReasonTranslation.js';
 import { formatCivilDate } from '../../utils/date.js';
+import DataTable from '../ui/DataTable.js';
 
 export default defineComponent({
     name: 'BorrowerCard',
+    components: { DataTable },
 
     props: {
         borrower: {
@@ -125,7 +127,7 @@ export default defineComponent({
     },
 
     template: `
-        <div class="card shadow-sm">
+        <div class="card">
             <div v-if="!compact" class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">{{ borrower.first_name }} {{ borrower.last_name }}</h5>
                 <button
@@ -210,67 +212,63 @@ export default defineComponent({
                         </button>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead>
-                                <tr>
-                                    <th>{{ t('catalog.inventory_number') }}</th>
-                                    <th>{{ t('catalog.title') }}</th>
-                                    <th>{{ t('circulation.due_date') }}</th>
-                                    <th>{{ t('circulation.status') }}</th>
-                                    <th>{{ t('common.actions') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="loan in borrower.current_loans" :key="loan.item_id">
-                                    <td>
-                                        <code>{{ loan.item_id }}</code>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <img
-                                                v-if="loan.cover_image"
-                                                :src="'/covers/' + loan.cover_image"
-                                                style="width:28px; height:40px; object-fit:contain; flex-shrink:0;"
-                                                @error="$event.target.style.display='none'"
-                                            />
-                                            <div>
-                                                <a
-                                                    href="#"
-                                                    @click.prevent="$emit('view-item', loan.bibliographic_record_id)"
-                                                    class="link-entity fw-bold"
-                                                >
-                                                    {{ loan.display_title || loan.title }}
-                                                </a>
-                                                <div v-if="loan.author" class="text-muted small">{{ loan.author }}</div>
-                                            </div>
+                        <data-table
+                            :columns="[
+                                { key: 'item_id', label: t('catalog.inventory_number') },
+                                { key: 'title', label: t('catalog.title') },
+                                { key: 'due_date', label: t('circulation.due_date') },
+                                { key: 'status', label: t('circulation.status') },
+                                { key: 'actions', label: t('common.actions') },
+                            ]"
+                            :rows="borrower.current_loans"
+                            row-key="item_id"
+                            table-class="table-sm"
+                            bare
+                        >
+                            <template #row="{ row: loan }">
+                                <td><code>{{ loan.item_id }}</code></td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img
+                                            v-if="loan.cover_image"
+                                            :src="'/covers/' + loan.cover_image"
+                                            style="width:28px; height:40px; object-fit:contain; flex-shrink:0;"
+                                            @error="$event.target.style.display='none'"
+                                        />
+                                        <div>
+                                            <a
+                                                href="#"
+                                                @click.prevent="$emit('view-item', loan.bibliographic_record_id)"
+                                                class="link-entity fw-bold"
+                                            >{{ loan.display_title || loan.title }}</a>
+                                            <div v-if="loan.author" class="text-muted small">{{ loan.author }}</div>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <div>{{ formatDate(loan.due_date) }}</div>
-                                        <small v-if="isOverdue(loan.due_date)" class="text-danger">
-                                            <i class="bi bi-exclamation-triangle"></i>
-                                            {{ t('circulation.overdue_by_days', { days: daysOverdue(loan.due_date) }) }}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <span v-if="isOverdue(loan.due_date)" class="badge bg-danger">
-                                            {{ t('circulation.overdue_label') }}
-                                        </span>
-                                        <span v-else class="badge bg-success">
-                                            {{ t('circulation.on_loan') }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button
-                                            class="btn btn-sm btn-outline-primary"
-                                            @click="$emit('quick-return', loan.item_id)"
-                                            :title="t('circulation.return')">
-                                            <i class="bi bi-arrow-return-left"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>{{ formatDate(loan.due_date) }}</div>
+                                    <small v-if="isOverdue(loan.due_date)" class="text-danger">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        {{ t('circulation.overdue_by_days', { days: daysOverdue(loan.due_date) }) }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <span v-if="isOverdue(loan.due_date)" class="badge bg-danger">
+                                        {{ t('circulation.overdue_label') }}
+                                    </span>
+                                    <span v-else class="badge bg-success">{{ t('circulation.on_loan') }}</span>
+                                </td>
+                                <td>
+                                    <button
+                                        class="btn btn-sm btn-outline-primary"
+                                        @click="$emit('quick-return', loan.item_id)"
+                                        :title="t('circulation.return')"
+                                    >
+                                        <i class="bi bi-arrow-return-left"></i>
+                                    </button>
+                                </td>
+                            </template>
+                        </data-table>
                     </div>
                 </div>
 
@@ -282,44 +280,52 @@ export default defineComponent({
                         <span class="badge bg-secondary ms-1">{{ holds.length }}</span>
                     </h6>
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <tbody>
-                                <tr v-for="hold in holds" :key="hold.id">
-                                    <td>
-                                        <a
-                                            href="#"
-                                            @click.prevent="$emit('view-item', hold.bibliographic_record_id)"
-                                            class="link-entity fw-bold"
-                                        >{{ hold.title || hold.bibliographic_record_title }}</a>
-                                    </td>
-                                    <td>
-                                        <span v-if="hold.status === 'ready'" class="badge bg-success">
-                                            <i class="bi bi-check-circle me-1"></i>{{ t('holds.status.ready') }}
-                                        </span>
-                                        <span v-else class="badge bg-secondary">
-                                            #{{ hold.queue_position }} {{ t('holds.status.waiting') }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button
-                                            v-if="canCheckoutHolds"
-                                            :class="hold.status === 'ready' ? 'btn btn-sm btn-success me-1' : 'btn btn-sm btn-outline-success me-1'"
-                                            @click="$emit('checkout-hold', hold)"
-                                            :title="t('holds.checkout_hold')"
-                                        >
-                                            <i class="bi bi-box-arrow-in-right me-1"></i>{{ t('holds.checkout_hold') }}
-                                        </button>
-                                        <button
-                                            class="btn btn-sm btn-outline-danger"
-                                            @click="$emit('cancel-hold', hold.id)"
-                                            :title="t('holds.cancel')"
-                                        >
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <data-table
+                            :columns="[
+                                { key: 'title', label: t('catalog.title') },
+                                { key: 'status', label: t('circulation.status') },
+                                { key: 'actions', label: t('common.actions'), headerClass: 'text-end' },
+                            ]"
+                            :rows="holds"
+                            row-key="id"
+                            table-class="table-sm"
+                            bare
+                        >
+                            <template #row="{ row: hold }">
+                                <td>
+                                    <a
+                                        href="#"
+                                        @click.prevent="$emit('view-item', hold.bibliographic_record_id)"
+                                        class="link-entity fw-bold"
+                                    >{{ hold.title || hold.bibliographic_record_title }}</a>
+                                </td>
+                                <td>
+                                    <span v-if="hold.status === 'ready'" class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>{{ t('holds.status.ready') }}
+                                    </span>
+                                    <span v-else class="badge bg-secondary">
+                                        #{{ hold.queue_position }} {{ t('holds.status.waiting') }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <button
+                                        v-if="canCheckoutHolds"
+                                        :class="hold.status === 'ready' ? 'btn btn-sm btn-success me-1' : 'btn btn-sm btn-outline-success me-1'"
+                                        @click="$emit('checkout-hold', hold)"
+                                        :title="t('holds.checkout_hold')"
+                                    >
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>{{ t('holds.checkout_hold') }}
+                                    </button>
+                                    <button
+                                        class="btn btn-sm btn-outline-danger"
+                                        @click="$emit('cancel-hold', hold.id)"
+                                        :title="t('holds.cancel')"
+                                    >
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </td>
+                            </template>
+                        </data-table>
                     </div>
                 </div>
 

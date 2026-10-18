@@ -129,9 +129,9 @@ export default defineComponent({
     template: `
         <div class="card mb-3">
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-3 catalog-filter-controls">
                     <!-- Availability Filter -->
-                    <div class="col-md-4">
+                    <div class="col-md-4 availability-filter">
                         <label class="form-label">{{ t('catalog.filter_availability') }}</label>
                         <filter-select
                             :model-value="filters.availability"
@@ -143,7 +143,7 @@ export default defineComponent({
 
                     <!-- Advanced Filters Toggle & View Mode -->
                     <div class="col-md-8 d-flex align-items-end justify-content-between">
-                        <div>
+                        <div class="catalog-filter-actions">
                             <button
                                 type="button"
                                 class="btn btn-outline-primary me-2"

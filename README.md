@@ -22,6 +22,8 @@
 
 The main web interface runs in your browser and provides full library management capabilities for librarians and staff.
 
+**Visual charter**: [`docs/charte-graphique-web.md`](docs/charte-graphique-web.md)
+
 ### BCD Kids
 
 A colorful, Desktop application designed for elementary school students (ages 6-11):

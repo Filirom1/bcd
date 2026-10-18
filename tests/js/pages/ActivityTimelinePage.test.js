@@ -21,7 +21,9 @@ const action = (id, actionType, occurredAt, title) => ({
 });
 
 function mountPage() {
-    const wrapper = shallowMount(ActivityTimelinePage);
+    const wrapper = shallowMount(ActivityTimelinePage, {
+        global: { stubs: { DataTable: false } }
+    });
     mountedWrappers.push(wrapper);
     return wrapper;
 }

@@ -11,11 +11,12 @@ const { useI18n } = VueI18n;
 import { useItemBadge } from '../../composables/useItemBadge.js';
 import { usePagination } from '../../composables/usePagination.js';
 import Pagination from '../ui/Pagination.js';
+import DataTable from '../ui/DataTable.js';
 import { getItemStatusBadge, getItemConditionLabel } from '../../utils/itemPresentation.js';
 
 export default defineComponent({
     name: 'CopiesList',
-    components: { Pagination },
+    components: { Pagination, DataTable },
 
     props: {
         items: {
@@ -73,6 +74,18 @@ export default defineComponent({
     setup(props, { emit }) {
         const { t } = useI18n();
         const settingsRef = computed(() => props.settings);
+        const columns = computed(() => [
+            { key: 'item_id', label: t('catalog.item_id') },
+            ...(props.periodical ? [{ key: 'issue', label: t('periodical.issue_number') }] : []),
+            { key: 'location', label: t('catalog.shelf_location_call_number') },
+            { key: 'status', label: t('catalog.status') },
+            ...(props.showCurrentLoan
+                ? [{ key: 'current_loan', label: t('catalog.due_date_borrower') }]
+                : props.showCondition ? [{ key: 'condition', label: t('catalog.condition') }] : []),
+            ...((props.editable || props.showQuickReturn || props.showCheckout)
+                ? [{ key: 'actions', label: t('common.actions') }] : [])
+        ]);
+        const itemRowKey = item => item.id || item.item_id;
         const { getShelfBadge, getCoteBadge } = useItemBadge(settingsRef);
         const {
             currentPage,
@@ -107,6 +120,8 @@ export default defineComponent({
             getStatusBadge: status => getItemStatusBadge(t, status),
             getConditionLabel: condition => getItemConditionLabel(t, condition),
             displayIssue,
+            columns,
+            itemRowKey,
             pagedItems,
             currentPage,
             pageSize,
@@ -130,115 +145,108 @@ export default defineComponent({
             </div>
 
             <div v-else class="table-responsive">
-                <table :class="['table', dense ? 'table-sm' : '', 'table-hover']">
-                    <thead>
-                        <tr>
-                            <th>{{ t('catalog.item_id') }}</th>
-                            <th v-if="periodical">{{ t('periodical.issue_number') }}</th>
-                            <th>{{ t('catalog.shelf_location_call_number') }}</th>
-                            <th>{{ t('catalog.status') }}</th>
-                            <th v-if="showCurrentLoan">{{ t('catalog.due_date_borrower') }}</th>
-                            <th v-else-if="showCondition">{{ t('catalog.condition') }}</th>
-                            <th v-if="editable || showQuickReturn || showCheckout">{{ t('common.actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="item in pagedItems" :key="item.id || item.item_id">
-                            <td class="font-monospace">{{ item.item_id || item.barcode }}</td>
-                            <td v-if="periodical" class="text-muted">{{ displayIssue(item) }}</td>
-                            <td>
-                                <div class="d-flex flex-wrap align-items-center gap-1">
-                                    <span
-                                        v-if="item.shelf_location && getShelfBadge(item.shelf_location)"
-                                        :style="getShelfBadge(item.shelf_location)"
-                                    >{{ item.shelf_location }}</span>
-                                    <span
-                                        v-if="!periodical && item.call_number && getCoteBadge(item.call_number)"
-                                        :style="getCoteBadge(item.call_number)"
-                                    >{{ item.call_number }}</span>
-                                    <span v-if="!item.shelf_location && (periodical || !item.call_number)" class="text-muted">&mdash;</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="d-flex flex-wrap gap-1">
-                                    <span :class="['badge', getStatusBadge(item.status).class]">
-                                        <i :class="getStatusBadge(item.status).icon"></i>
-                                        {{ getStatusBadge(item.status).text }}
+                <data-table
+                    :columns="columns"
+                    :rows="pagedItems"
+                    :row-key="itemRowKey"
+                    :table-class="dense ? 'table-sm' : ''"
+                    bare
+                >
+                    <template #row="{ row: item }">
+                        <td class="font-monospace">{{ item.item_id || item.barcode }}</td>
+                        <td v-if="periodical" class="text-muted">{{ displayIssue(item) }}</td>
+                        <td>
+                            <div class="d-flex flex-wrap align-items-center gap-1">
+                                <span
+                                    v-if="item.shelf_location && getShelfBadge(item.shelf_location)"
+                                    :style="getShelfBadge(item.shelf_location)"
+                                >{{ item.shelf_location }}</span>
+                                <span
+                                    v-if="!periodical && item.call_number && getCoteBadge(item.call_number)"
+                                    :style="getCoteBadge(item.call_number)"
+                                >{{ item.call_number }}</span>
+                                <span v-if="!item.shelf_location && (periodical || !item.call_number)" class="text-muted">&mdash;</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span :class="['badge', getStatusBadge(item.status).class]">
+                                    <i :class="getStatusBadge(item.status).icon"></i>
+                                    {{ getStatusBadge(item.status).text }}
+                                </span>
+                                <span v-if="item.condition === 'damaged'" class="badge bg-warning text-dark">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    {{ t('item.condition_damaged') }}
+                                </span>
+                                <span v-if="item.loanable === false" class="badge bg-secondary">
+                                    <i class="bi bi-lock"></i>
+                                    {{ t('item.status_not_loanable') || t('catalog.loanable') }}
+                                </span>
+                            </div>
+                        </td>
+                        <td v-if="showCurrentLoan">
+                            <div v-if="item.current_loan">
+                                <div class="mb-1">
+                                    {{ formatDate(item.current_loan.due_date) }}
+                                    <span v-if="item.current_loan.is_overdue" class="badge bg-danger ms-1">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        {{ t('catalog.overdue') }}
                                     </span>
-                                    <span v-if="item.condition === 'damaged'" class="badge bg-warning text-dark">
-                                        <i class="bi bi-exclamation-triangle"></i>
-                                        {{ t('item.condition_damaged') }}
-                                    </span>
-                                    <span v-if="item.loanable === false" class="badge bg-secondary">
-                                        <i class="bi bi-lock"></i>
-                                        {{ t('item.status_not_loanable') || t('catalog.loanable') }}
-                                    </span>
                                 </div>
-                            </td>
-                            <td v-if="showCurrentLoan">
-                                <div v-if="item.current_loan">
-                                    <div class="mb-1">
-                                        {{ formatDate(item.current_loan.due_date) }}
-                                        <span v-if="item.current_loan.is_overdue" class="badge bg-danger ms-1">
-                                            <i class="bi bi-exclamation-circle"></i>
-                                            {{ t('catalog.overdue') }}
-                                        </span>
-                                    </div>
-                                    <a
-                                        href="#"
-                                        class="link-entity fw-bold"
-                                        @click.prevent="emitViewBorrower(item.current_loan.borrower_id)"
-                                    >{{ item.current_loan.borrower_name || item.current_loan.borrower_id }}</a>
-                                </div>
-                                <span v-else class="text-muted">—</span>
-                            </td>
-                            <td v-else-if="showCondition">{{ getConditionLabel(item.condition) }}</td>
-                            <td v-if="editable || showQuickReturn || showCheckout">
-                                <button
-                                    v-if="showCheckout && item.status === 'available' && item.loanable !== false"
-                                    type="button"
-                                    class="btn btn-sm btn-outline-success me-1"
-                                    :title="t('catalog.checkout_item')"
-                                    :aria-label="t('catalog.checkout_item')"
-                                    @click="emitCheckout(item)"
-                                >
-                                    <i class="bi bi-box-arrow-right"></i>
-                                    {{ t('circulation.checkout') }}
-                                </button>
-                                <button
-                                    v-if="showQuickReturn && (item.status === 'on_loan' || item.status === 'overdue')"
-                                    type="button"
-                                    class="btn btn-sm btn-outline-primary me-1"
-                                    @click="emitQuickReturn(item.item_id)"
-                                >
-                                    <i class="bi bi-arrow-return-left"></i>
-                                    {{ t('catalog.quick_return') }}
-                                </button>
-                                <button
-                                    v-if="editable"
-                                    type="button"
-                                    class="btn btn-sm btn-outline-primary me-1"
-                                    :title="t('common.edit')"
-                                    :aria-label="t('common.edit')"
-                                    @click="emitEdit(item)"
-                                >
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button
-                                    v-if="allowDelete"
-                                    type="button"
-                                    class="btn btn-sm btn-outline-danger"
-                                    :title="t('common.delete')"
-                                    :aria-label="t('common.delete')"
-                                    @click="emitDelete(item)"
-                                >
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                                <span v-if="!editable && !(showCheckout && item.status === 'available' && item.loanable !== false) && !(showQuickReturn && (item.status === 'on_loan' || item.status === 'overdue'))" class="text-muted">—</span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                <a
+                                    href="#"
+                                    class="link-entity fw-bold"
+                                    @click.prevent="emitViewBorrower(item.current_loan.borrower_id)"
+                                >{{ item.current_loan.borrower_name || item.current_loan.borrower_id }}</a>
+                            </div>
+                            <span v-else class="text-muted">—</span>
+                        </td>
+                        <td v-else-if="showCondition">{{ getConditionLabel(item.condition) }}</td>
+                        <td v-if="editable || showQuickReturn || showCheckout">
+                            <button
+                                v-if="showCheckout && item.status === 'available' && item.loanable !== false"
+                                type="button"
+                                class="btn btn-sm btn-outline-success me-1"
+                                :title="t('catalog.checkout_item')"
+                                :aria-label="t('catalog.checkout_item')"
+                                @click="emitCheckout(item)"
+                            >
+                                <i class="bi bi-box-arrow-right"></i>
+                                {{ t('circulation.checkout') }}
+                            </button>
+                            <button
+                                v-if="showQuickReturn && (item.status === 'on_loan' || item.status === 'overdue')"
+                                type="button"
+                                class="btn btn-sm btn-outline-primary me-1"
+                                @click="emitQuickReturn(item.item_id)"
+                            >
+                                <i class="bi bi-arrow-return-left"></i>
+                                {{ t('catalog.quick_return') }}
+                            </button>
+                            <button
+                                v-if="editable"
+                                type="button"
+                                class="btn btn-sm btn-outline-primary me-1"
+                                :title="t('common.edit')"
+                                :aria-label="t('common.edit')"
+                                @click="emitEdit(item)"
+                            >
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button
+                                v-if="allowDelete"
+                                type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                :title="t('common.delete')"
+                                :aria-label="t('common.delete')"
+                                @click="emitDelete(item)"
+                            >
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            <span v-if="!editable && !(showCheckout && item.status === 'available' && item.loanable !== false) && !(showQuickReturn && (item.status === 'on_loan' || item.status === 'overdue'))" class="text-muted">—</span>
+                        </td>
+                    </template>
+                </data-table>
             </div>
 
             <pagination

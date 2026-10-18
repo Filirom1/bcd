@@ -10,6 +10,7 @@ import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import ReportHeader from '../ui/ReportHeader.js';
 import ReportFilters from './ReportFilters.js';
 import DataTable from '../ui/DataTable.js';
+import RecordCell from '../catalog/RecordCell.js';
 
 export default defineComponent({
     name: 'ActiveLoansReport',
@@ -17,13 +18,14 @@ export default defineComponent({
     components: {
         ReportHeader,
         ReportFilters,
-        DataTable
+        DataTable,
+        RecordCell
     },
 
     setup() {
         const { t, d } = useI18n();
         const { data, loading, classFilter, loadReport, printReport } = useReport('active-loans');
-        const { openRecord, openBorrower } = useGlobalModal();
+        const { openBorrower } = useGlobalModal();
 
         // Define table columns
         const columns = computed(() => [
@@ -64,7 +66,6 @@ export default defineComponent({
             loadReport,
             printReport,
             getDaysUntilDueBadge,
-            openRecord,
             openBorrower
         };
     },
@@ -94,7 +95,7 @@ export default defineComponent({
             </div>
 
             <div v-else>
-                <div v-for="(items, className) in groupedData" :key="className" class="card mb-3 print-page-break">
+                <div v-for="(items, className) in groupedData" :key="className" class="card data-table-card mb-3 print-page-break">
                     <div class="card-header bg-light">
                         <h5 class="mb-0">
                             {{ className }}
@@ -102,38 +103,46 @@ export default defineComponent({
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <data-table
-                            :columns="columns"
-                            :rows="items"
-                            row-key="circulation_id"
-                            bare
-                        >
-                            <template #row="{ row: item }">
-                                <td>
-                                    <a href="#" @click.prevent="openBorrower(item.borrower_id)" class="link-entity fw-bold">
-                                        {{ item.borrower_name }}
-                                    </a>
-                                </td>
-                                <td>
-                                    <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">
-                                        {{ item.title }}
-                                    </a>
-                                    <div v-if="item.authors" class="small text-muted">{{ item.authors }}</div>
-                                </td>
-                                <td>{{ d(new Date(item.checkout_date), 'short') }}</td>
-                                <td>{{ d(new Date(item.due_date), 'short') }}</td>
-                                <td>
-                                    <span class="badge" :class="getDaysUntilDueBadge(item.days_until_due, item.is_overdue)">
-                                        <span v-if="item.is_overdue">
-                                            {{ Math.abs(item.days_until_due) }} {{ t('reports.activeLoans.daysLate') }}
+                        <div class="table-responsive">
+                            <data-table
+                                :columns="columns"
+                                :rows="items"
+                                row-key="circulation_id"
+                                :framed="false"
+                                bare
+                            >
+                                <template #row="{ row: item }">
+                                    <td>
+                                        <a href="#" @click.prevent="openBorrower(item.borrower_id)" class="link-entity fw-bold">
+                                            {{ item.borrower_name }}
+                                        </a>
+                                    </td>
+                                    <record-cell
+                                        :record-id="item.bibliographic_record_id"
+                                        :title="item.title"
+                                        :subtitle="item.subtitle"
+                                        :collection="item.collection"
+                                        :series-number="item.series_number"
+                                        :authors="item.authors"
+                                        :item-id="item.item_id"
+                                        :shelf-location="item.shelf_location"
+                                        :call-number="item.call_number"
+                                    />
+                                    <td>{{ d(new Date(item.checkout_date), 'short') }}</td>
+                                    <td>{{ d(new Date(item.due_date), 'short') }}</td>
+                                    <td>
+                                        <span class="badge" :class="getDaysUntilDueBadge(item.days_until_due, item.is_overdue)">
+                                            <span v-if="item.is_overdue">
+                                                {{ Math.abs(item.days_until_due) }} {{ t('reports.activeLoans.daysLate') }}
+                                            </span>
+                                            <span v-else>
+                                                {{ item.days_until_due }} {{ t('reports.activeLoans.daysRemaining') }}
+                                            </span>
                                         </span>
-                                        <span v-else>
-                                            {{ item.days_until_due }} {{ t('reports.activeLoans.daysRemaining') }}
-                                        </span>
-                                    </span>
-                                </td>
-                            </template>
-                        </data-table>
+                                    </td>
+                                </template>
+                            </data-table>
+                        </div>
                     </div>
                 </div>
             </div>

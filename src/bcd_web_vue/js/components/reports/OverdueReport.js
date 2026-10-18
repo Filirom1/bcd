@@ -10,6 +10,7 @@ import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import ReportHeader from '../ui/ReportHeader.js';
 import ReportFilters from './ReportFilters.js';
 import DataTable from '../ui/DataTable.js';
+import RecordCell from '../catalog/RecordCell.js';
 
 export default defineComponent({
     name: 'OverdueReport',
@@ -17,13 +18,14 @@ export default defineComponent({
     components: {
         ReportHeader,
         ReportFilters,
-        DataTable
+        DataTable,
+        RecordCell
     },
 
     setup() {
         const { t, d } = useI18n();
         const { data, loading, classFilter, loadReport, printReport } = useReport('overdue');
-        const { openRecord, openBorrower } = useGlobalModal();
+        const { openBorrower } = useGlobalModal();
 
         // Define table columns
         const columns = computed(() => [
@@ -58,7 +60,6 @@ export default defineComponent({
             loadReport,
             printReport,
             printNotices,
-            openRecord,
             openBorrower
         };
     },
@@ -90,7 +91,7 @@ export default defineComponent({
             </div>
 
             <div v-else>
-                <div v-for="(items, className) in groupedData" :key="className" class="card mb-3 print-page-break">
+                <div v-for="(items, className) in groupedData" :key="className" class="card data-table-card mb-3 print-page-break">
                     <div class="card-header bg-light">
                         <h5 class="mb-0">
                             {{ className }}
@@ -98,31 +99,39 @@ export default defineComponent({
                         </h5>
                     </div>
                     <div class="card-body p-0">
-                        <data-table
-                            :columns="columns"
-                            :rows="items"
-                            row-key="item_id"
-                            bare
-                        >
-                            <template #row="{ row: item }">
-                                <td>
-                                    <a href="#" @click.prevent="openBorrower(item.borrower_id)" class="link-entity fw-bold">
-                                        {{ item.borrower_name }}
-                                    </a>
-                                </td>
-                                <td>
-                                    <a href="#" @click.prevent="openRecord(item.record_id)" class="link-entity fw-bold">
-                                        {{ item.title }}
-                                    </a>
-                                </td>
-                                <td>{{ d(new Date(item.due_date), 'short') }}</td>
-                                <td>
-                                    <span class="badge bg-danger">
-                                        {{ item.days_overdue }} {{ t('reports.overdue.days') }}
-                                    </span>
-                                </td>
-                            </template>
-                        </data-table>
+                        <div class="table-responsive">
+                            <data-table
+                                :columns="columns"
+                                :rows="items"
+                                row-key="item_id"
+                                :framed="false"
+                                bare
+                            >
+                                <template #row="{ row: item }">
+                                    <td>
+                                        <a href="#" @click.prevent="openBorrower(item.borrower_id)" class="link-entity fw-bold">
+                                            {{ item.borrower_name }}
+                                        </a>
+                                    </td>
+                                    <record-cell
+                                        :record-id="item.record_id"
+                                        :title="item.title"
+                                        :subtitle="item.subtitle"
+                                        :collection="item.collection"
+                                        :series-number="item.series_number"
+                                        :item-id="item.item_id"
+                                        :shelf-location="item.shelf_location"
+                                        :call-number="item.call_number"
+                                    />
+                                    <td>{{ d(new Date(item.due_date), 'short') }}</td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            {{ item.days_overdue }} {{ t('reports.overdue.days') }}
+                                        </span>
+                                    </td>
+                                </template>
+                            </data-table>
+                        </div>
                     </div>
                 </div>
             </div>

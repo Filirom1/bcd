@@ -83,8 +83,12 @@ function localStartOfDay(value) {
     return new Date(`${value}T00:00:00`);
 }
 
+import PageHeader from '../components/ui/PageHeader.js';
+import DataTable from '../components/ui/DataTable.js';
+
 export default defineComponent({
     name: 'ActivityTimelinePage',
+    components: { PageHeader, DataTable },
 
     setup() {
         const { t, locale } = useI18n();
@@ -563,25 +567,26 @@ export default defineComponent({
     },
 
     template: `
-        <div class="container-fluid activity-timeline-page">
-            <div class="page-header">
-                <div>
+        <div class="activity-timeline-page">
+            <page-header>
+                <template #heading>
                     <h1 class="page-title">
                         <i class="bi bi-activity me-2"></i>
                         {{ t('navigation.activityTimeline') }}
                     </h1>
-                    <p class="text-muted mb-0">{{ t('activityTimeline.subtitle') }}</p>
-                </div>
-                <div class="activity-live-status" :class="{ 'is-live': liveMode }" role="status" aria-live="polite">
-                    <span class="activity-live-dot" aria-hidden="true"></span>
-                    <span>{{ liveMode ? t('activityTimeline.live') : t('activityTimeline.paused') }}</span>
-                    <span v-if="lastUpdatedLabel" class="text-muted">
-                        · {{ t('activityTimeline.updatedAt', { time: lastUpdatedLabel }) }}
-                    </span>
-                </div>
-            </div>
+                </template>
+                <template #actions>
+                    <div class="activity-live-status" :class="{ 'is-live': liveMode }" role="status" aria-live="polite">
+                        <span class="activity-live-dot" aria-hidden="true"></span>
+                        <span>{{ liveMode ? t('activityTimeline.live') : t('activityTimeline.paused') }}</span>
+                        <span v-if="lastUpdatedLabel" class="text-muted">
+                            · {{ t('activityTimeline.updatedAt', { time: lastUpdatedLabel }) }}
+                        </span>
+                    </div>
+                </template>
+            </page-header>
 
-            <section class="activity-controls card shadow-sm mb-3" :aria-label="t('activityTimeline.controls')">
+            <section class="activity-controls card mb-3" :aria-label="t('activityTimeline.controls')">
                 <div class="card-body">
                     <div class="activity-control-group">
                         <button
@@ -636,27 +641,6 @@ export default defineComponent({
                                 {{ classOption.name }}<template v-if="classOption.teacher"> · {{ classOption.teacher }}</template>
                             </option>
                         </select>
-                        <span class="activity-zoom-label">{{ t('activityTimeline.windowLength', { hours: durationHours }) }}</span>
-                        <button
-                            class="btn btn-outline-secondary"
-                            type="button"
-                            :disabled="durationHours === 24"
-                            :aria-label="t('activityTimeline.zoomOut')"
-                            :title="t('activityTimeline.zoomOut')"
-                            @click="zoom(1)"
-                        >
-                            <i class="bi bi-dash-lg" aria-hidden="true"></i>
-                        </button>
-                        <button
-                            class="btn btn-outline-secondary"
-                            type="button"
-                            :disabled="durationHours === 1"
-                            :aria-label="t('activityTimeline.zoomIn')"
-                            :title="t('activityTimeline.zoomIn')"
-                            @click="zoom(-1)"
-                        >
-                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        </button>
                         <button
                             class="btn btn-outline-secondary"
                             type="button"
@@ -685,7 +669,7 @@ export default defineComponent({
                 </button>
             </div>
 
-            <section class="card shadow-sm mb-3 activity-details-card">
+            <section class="card mb-3 activity-details-card">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
                         <h2 class="h6 mb-1">{{ t('activityTimeline.details') }}</h2>
@@ -724,47 +708,50 @@ export default defineComponent({
                         {{ t('activityTimeline.noStudentActions') }}
                     </div>
                     <div v-else class="activity-student-table-viewport">
-                        <table class="table table-sm activity-student-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th scope="col">{{ t('activityTimeline.student') }}</th>
-                                    <th scope="col" class="activity-book-column is-return">
-                                        <i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>{{ t('activityTimeline.return') }}
-                                    </th>
-                                    <th scope="col" class="activity-book-column is-checkout">
-                                        <i class="bi bi-book-half me-1" aria-hidden="true"></i>{{ t('activityTimeline.checkout') }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="student in selectedGroup.students" :key="student.borrowerId">
-                                    <th scope="row" class="activity-student-name">{{ student.borrowerName }}</th>
-                                    <td>
-                                        <ul v-if="student.returns.length" class="activity-book-list">
-                                            <li v-for="item in student.returns" :key="item.id">
-                                                {{ item.title }}
-                                                <small class="text-muted">{{ item.item_id }} · {{ formatTime(item.occurred_at) }}</small>
-                                            </li>
-                                        </ul>
-                                        <span v-else class="text-muted">0</span>
-                                    </td>
-                                    <td>
-                                        <ul v-if="student.checkouts.length" class="activity-book-list">
-                                            <li v-for="item in student.checkouts" :key="item.id">
-                                                {{ item.title }}
-                                                <small class="text-muted">{{ item.item_id }} · {{ formatTime(item.occurred_at) }}</small>
-                                            </li>
-                                        </ul>
-                                        <span v-else class="text-muted">0</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <data-table
+                            :columns="[
+                                { key: 'student', label: t('activityTimeline.student') },
+                                { key: 'returns', label: t('activityTimeline.return'), headerClass: 'activity-book-column is-return' },
+                                { key: 'checkouts', label: t('activityTimeline.checkout'), headerClass: 'activity-book-column is-checkout' },
+                            ]"
+                            :rows="selectedGroup.students"
+                            :row-key="student => student.borrowerId"
+                            table-class="activity-student-table"
+                            bare
+                        >
+                            <template #header-returns>
+                                <i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>{{ t('activityTimeline.return') }}
+                            </template>
+                            <template #header-checkouts>
+                                <i class="bi bi-book-half me-1" aria-hidden="true"></i>{{ t('activityTimeline.checkout') }}
+                            </template>
+                            <template #row="{ row: student }">
+                                <th scope="row" class="activity-student-name">{{ student.borrowerName }}</th>
+                                <td>
+                                    <ul v-if="student.returns.length" class="activity-book-list">
+                                        <li v-for="item in student.returns" :key="item.id">
+                                            {{ item.title }}
+                                            <small class="text-muted">{{ item.item_id }} · {{ formatTime(item.occurred_at) }}</small>
+                                        </li>
+                                    </ul>
+                                    <span v-else class="text-muted">0</span>
+                                </td>
+                                <td>
+                                    <ul v-if="student.checkouts.length" class="activity-book-list">
+                                        <li v-for="item in student.checkouts" :key="item.id">
+                                            {{ item.title }}
+                                            <small class="text-muted">{{ item.item_id }} · {{ formatTime(item.occurred_at) }}</small>
+                                        </li>
+                                    </ul>
+                                    <span v-else class="text-muted">0</span>
+                                </td>
+                            </template>
+                        </data-table>
                     </div>
                 </template>
             </section>
 
-            <section class="card shadow-sm mb-3 activity-timeline-card" :aria-label="t('activityTimeline.timeline')">
+            <section class="card mb-3 activity-timeline-card" :aria-label="t('activityTimeline.timeline')">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="h6 mb-0">{{ t('activityTimeline.timeline') }}</h2>
                     <div class="activity-legend">

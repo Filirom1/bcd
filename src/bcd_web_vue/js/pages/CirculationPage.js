@@ -23,10 +23,17 @@ import ItemScanner from '../components/circulation/ItemScanner.js';
 import ClassRosterPanel from '../components/circulation/ClassRosterPanel.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 
+import PageHeader from '../components/ui/PageHeader.js';
+import PanelCard from '../components/ui/PanelCard.js';
+import DataTable from '../components/ui/DataTable.js';
+
 export default defineComponent({
     name: 'CirculationPage',
 
     components: {
+        PageHeader,
+        PanelCard,
+        DataTable,
         BorrowerCard,
         ItemScanner,
         ClassRosterPanel,
@@ -585,15 +592,17 @@ export default defineComponent({
                  Right: borrower strip + item scanner + loans table
             ══════════════════════════════════════════════════════ -->
             <template v-if="mode === 'checkout'">
-                <div class="page-header">
-                    <h1 class="page-title">
-                        <i class="bi bi-box-arrow-right me-2"></i>
-                        {{ t('navigation.checkout') }}
-                    </h1>
-                    <div class="d-flex gap-2">
+                <page-header>
+                    <template #heading>
+                        <h1 class="page-title">
+                            <i class="bi bi-box-arrow-right me-2"></i>
+                            {{ t('navigation.checkout') }}
+                        </h1>
+                    </template>
+                    <template #actions>
                         <help-panel :section="helpSection" />
-                    </div>
-                </div>
+                    </template>
+                </page-header>
 
                 <div class="checkout-page">
                     <div class="checkout-workspace">
@@ -634,10 +643,6 @@ export default defineComponent({
                                     </span>
                                 </div>
                             </div>
-                            <div v-else class="no-borrower-placeholder">
-                                <i class="bi bi-person-plus fs-4 d-block mb-2"></i>
-                                {{ t('circulation.no_borrower_selected') }}
-                            </div>
 
                             <!-- ② Item scanner -->
                             <item-scanner
@@ -672,15 +677,17 @@ export default defineComponent({
                  RETURN MODE — existing two-column layout (unchanged)
             ══════════════════════════════════════════════════════ -->
             <template v-else>
-                <div class="page-header">
-                    <h1 class="page-title">
-                        <i class="bi bi-box-arrow-in-left me-2"></i>
-                        {{ t('navigation.return') }}
-                    </h1>
-                    <div class="d-flex gap-2">
+                <page-header>
+                    <template #heading>
+                        <h1 class="page-title">
+                            <i class="bi bi-box-arrow-in-left me-2"></i>
+                            {{ t('navigation.return') }}
+                        </h1>
+                    </template>
+                    <template #actions>
                         <help-panel :section="helpSection" />
-                    </div>
-                </div>
+                    </template>
+                </page-header>
 
                 <div class="return-page">
                 <div class="return-workspace">
@@ -709,14 +716,16 @@ export default defineComponent({
 
                     <!-- Right panel: Session Returns List (always visible) -->
                     <div class="return-list-panel">
-                        <div class="card shadow-sm">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">
-                                    <i class="bi bi-box-arrow-in-left me-1"></i>
-                                    {{ t('circulation.returned_items') }}
-                                </h6>
-                                <span class="badge bg-primary ms-1">{{ scannedItems.length }}</span>
-                            </div>
+                        <panel-card :body="false">
+                            <template #header>
+                                <div class="d-flex justify-content-between align-items-center w-100">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-box-arrow-in-left me-1"></i>
+                                        {{ t('circulation.returned_items') }}
+                                    </h6>
+                                    <span class="badge bg-primary ms-1">{{ scannedItems.length }}</span>
+                                </div>
+                            </template>
 
                             <!-- Empty state -->
                             <div v-if="scannedItems.length === 0" class="card-body text-center py-5">
@@ -726,60 +735,58 @@ export default defineComponent({
 
                             <!-- Items table -->
                             <div v-else class="table-responsive">
-                                <table class="table table-sm table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="text-muted fw-normal" style="width: 2rem;">#</th>
-                                            <th class="text-muted fw-normal">{{ t('catalog.inventory_number') }}</th>
-                                            <th class="text-muted fw-normal">{{ t('catalog.title') }}</th>
-                                            <th class="text-muted fw-normal">{{ t('catalog.shelf_location_call_number') }}</th>
-                                            <th class="text-muted fw-normal">{{ t('circulation.returned_at') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="(item, index) in scannedItems.slice().reverse()"
-                                            :key="item.item_id || index"
-                                        >
-                                            <td class="text-muted small align-middle">{{ scannedItems.length - index }}</td>
-                                            <td class="align-middle"><code>{{ item.barcode || item.item_id }}</code></td>
-                                            <td class="align-middle">
-                                                <div class="fw-bold">{{ item.title }}</div>
-                                                <small v-if="item.author" class="text-muted">{{ item.author }}</small>
-                                                <span v-if="item.was_overdue" class="badge bg-danger ms-1">
-                                                    {{ t('circulation.overdue_label') }}
-                                                </span>
-                                                <div v-if="item.hold_ready" class="alert alert-warning mt-2 mb-0 py-2 px-3">
-                                                    <div class="d-flex align-items-center">
-                                                        <i class="bi bi-bookmark-star-fill fs-5 me-2"></i>
-                                                        <div>
-                                                            <strong class="d-block">{{ t('circulation.hold_ready_title') }}</strong>
-                                                            <span class="small">
-                                                                {{ t('circulation.hold_ready_message', {
-                                                                    name: item.hold_ready.borrower_name,
-                                                                    class: item.hold_ready.class_name || item.hold_ready.borrower_id
-                                                                }) }}
-                                                            </span>
-                                                            <div v-if="item.hold_ready.expiration_date" class="small text-muted">
-                                                                {{ t('circulation.hold_expires') }}: {{ formatDate(item.hold_ready.expiration_date) }}
-                                                            </div>
+                                <data-table
+                                    :columns="[
+                                        { key: 'position', label: '#', width: '2rem', headerClass: 'text-muted fw-normal' },
+                                        { key: 'item_id', label: t('catalog.inventory_number'), headerClass: 'text-muted fw-normal' },
+                                        { key: 'title', label: t('catalog.title'), headerClass: 'text-muted fw-normal' },
+                                        { key: 'location', label: t('catalog.shelf_location_call_number'), headerClass: 'text-muted fw-normal' },
+                                        { key: 'returned_at', label: t('circulation.returned_at'), headerClass: 'text-muted fw-normal' },
+                                    ]"
+                                    :rows="scannedItems.slice().reverse()"
+                                    :row-key="item => item.item_id"
+                                    table-class="table-sm"
+                                    bare
+                                >
+                                    <template #row="{ row: item, index }">
+                                        <td class="text-muted small align-middle">{{ scannedItems.length - index }}</td>
+                                        <td class="align-middle"><code>{{ item.barcode || item.item_id }}</code></td>
+                                        <td class="align-middle">
+                                            <div class="fw-bold">{{ item.title }}</div>
+                                            <small v-if="item.author" class="text-muted">{{ item.author }}</small>
+                                            <span v-if="item.was_overdue" class="badge bg-danger ms-1">
+                                                {{ t('circulation.overdue_label') }}
+                                            </span>
+                                            <div v-if="item.hold_ready" class="alert alert-warning mt-2 mb-0 py-2 px-3">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi bi-bookmark-star-fill fs-5 me-2"></i>
+                                                    <div>
+                                                        <strong class="d-block">{{ t('circulation.hold_ready_title') }}</strong>
+                                                        <span class="small">
+                                                            {{ t('circulation.hold_ready_message', {
+                                                                name: item.hold_ready.borrower_name,
+                                                                class: item.hold_ready.class_name || item.hold_ready.borrower_id
+                                                            }) }}
+                                                        </span>
+                                                        <div v-if="item.hold_ready.expiration_date" class="small text-muted">
+                                                            {{ t('circulation.hold_expires') }}: {{ formatDate(item.hold_ready.expiration_date) }}
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td class="align-middle">
-                                                <div v-if="item.shelf_location || item.call_number" class="d-flex flex-wrap align-items-center gap-1">
-                                                    <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
-                                                    <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
-                                                </div>
-                                                <span v-else class="text-muted small">-</span>
-                                            </td>
-                                            <td class="small text-muted align-middle">{{ formatReturnTime(item.returned_date) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                            </div>
+                                        </td>
+                                        <td class="align-middle">
+                                            <div v-if="item.shelf_location || item.call_number" class="d-flex flex-wrap align-items-center gap-1">
+                                                <span v-if="item.shelf_location && getShelfBadge(item.shelf_location)" :style="getShelfBadge(item.shelf_location)">{{ item.shelf_location }}</span>
+                                                <span v-if="item.call_number && getCoteBadge(item.call_number)" :style="getCoteBadge(item.call_number)">{{ item.call_number }}</span>
+                                            </div>
+                                            <span v-else class="text-muted small">-</span>
+                                        </td>
+                                        <td class="small text-muted align-middle">{{ formatReturnTime(item.returned_date) }}</td>
+                                    </template>
+                                </data-table>
                             </div>
-                        </div>
+                        </panel-card>
                     </div>
                 </div><!-- /return-workspace -->
                 </div><!-- /return-page -->

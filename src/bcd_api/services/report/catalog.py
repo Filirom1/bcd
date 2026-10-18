@@ -101,6 +101,9 @@ def get_never_borrowed_items(
                 "item_id": item.item_id,
                 "item_barcode": item.item_id,
                 "title": biblio.title,
+                "subtitle": biblio.subtitle,
+                "collection": biblio.collection,
+                "series_number": biblio.series_number,
                 "authors": _deserialize_authors(biblio.authors),
                 "publisher": biblio.publisher,
                 "level": biblio.level,
@@ -149,6 +152,9 @@ def get_most_borrowed_titles(
         db.query(
             BibliographicRecord.id,
             BibliographicRecord.title,
+            BibliographicRecord.subtitle,
+            BibliographicRecord.collection,
+            BibliographicRecord.series_number,
             BibliographicRecord.authors,
             BibliographicRecord.publisher,
             BibliographicRecord.publication_year,
@@ -172,6 +178,9 @@ def get_most_borrowed_titles(
     query = query.group_by(
         BibliographicRecord.id,
         BibliographicRecord.title,
+        BibliographicRecord.subtitle,
+        BibliographicRecord.collection,
+        BibliographicRecord.series_number,
         BibliographicRecord.authors,
         BibliographicRecord.publisher,
         BibliographicRecord.publication_year,
@@ -189,7 +198,19 @@ def get_most_borrowed_titles(
     results = query.all()
 
     most_borrowed = []
-    for biblio_id, title, authors, publisher, pub_year, med_type, audience_val, count in results:
+    for (
+        biblio_id,
+        title,
+        subtitle,
+        collection,
+        series_number,
+        authors,
+        publisher,
+        pub_year,
+        med_type,
+        audience_val,
+        count,
+    ) in results:
         total_copies = (
             db.query(func.count(Item.id)).filter(Item.bibliographic_record_id == biblio_id).scalar()
         )
@@ -198,6 +219,9 @@ def get_most_borrowed_titles(
             {
                 "bibliographic_record_id": biblio_id,
                 "title": title,
+                "subtitle": subtitle,
+                "collection": collection,
+                "series_number": series_number,
                 "author": _deserialize_authors(authors),
                 "publisher": publisher,
                 "publication_year": pub_year,

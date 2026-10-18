@@ -89,6 +89,11 @@ class Hold(Base):
         return self.bibliographic_record.authors if self.bibliographic_record else None
 
     @property
+    def cover_image(self):
+        """Cover image filename from the related bibliographic record."""
+        return self.bibliographic_record.cover_image if self.bibliographic_record else None
+
+    @property
     def borrower_name(self):
         """Full name of the borrower."""
         return self.borrower.full_name if self.borrower else None

@@ -23,9 +23,12 @@ import { normalizeCollection } from '../../models/pagination.js';
 import { useBarcodeUtils } from '../../composables/useBarcodeUtils.js';
 import { events } from '../../utils/events.js';
 import { useDebouncedAction } from '../../composables/useDebouncedAction.js';
+import PanelCard from '../ui/PanelCard.js';
 
 export default defineComponent({
     name: 'ClassRosterPanel',
+
+    components: { PanelCard },
 
     props: {
         settings: {
@@ -323,7 +326,7 @@ export default defineComponent({
     },
 
     template: `
-        <div class="who-panel">
+        <panel-card class="who-panel" :body="false">
 
             <!-- ── Header: class selector + filter input ── -->
             <div class="who-panel-header">
@@ -467,6 +470,6 @@ export default defineComponent({
                 </span>
             </div>
 
-        </div><!-- /who-panel -->
+        </panel-card>
     `
 });

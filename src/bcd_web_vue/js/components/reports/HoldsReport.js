@@ -10,6 +10,7 @@ import { useGlobalModal } from '../../composables/useGlobalModal.js';
 import ReportHeader from '../ui/ReportHeader.js';
 import ReportFilters from './ReportFilters.js';
 import DataTable from '../ui/DataTable.js';
+import RecordCell from '../catalog/RecordCell.js';
 
 export default defineComponent({
     name: 'HoldsReport',
@@ -17,13 +18,14 @@ export default defineComponent({
     components: {
         ReportHeader,
         ReportFilters,
-        DataTable
+        DataTable,
+        RecordCell
     },
 
     setup() {
         const { t, d } = useI18n();
         const { data, loading, classFilter, loadReport, printReport } = useReport('holds');
-        const { openBorrower, openRecord } = useGlobalModal();
+        const { openBorrower } = useGlobalModal();
 
         // Define table columns
         const columns = computed(() => [
@@ -72,8 +74,7 @@ export default defineComponent({
             printReport,
             getStatusBadgeClass,
             getStatusLabel,
-            openBorrower,
-            openRecord
+            openBorrower
         };
     },
 
@@ -101,48 +102,55 @@ export default defineComponent({
                 {{ t('reports.holds.noItems') }}
             </div>
 
-            <div v-else class="card">
+            <div v-else class="card data-table-card">
                 <div class="card-body p-0">
-                    <data-table
-                        :columns="columns"
-                        :rows="data"
-                        row-key="hold_id"
-                        bare
-                    >
-                        <template #row="{ row: item }">
-                            <td>
-                                <a href="#" @click.prevent="openBorrower(item.borrower_id)" class="link-entity fw-bold">
-                                    {{ item.borrower_name }}
-                                </a>
-                            </td>
-                            <td>{{ item.class_name || '-' }}</td>
-                            <td>
-                                <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">{{ item.title }}</a>
-                                <div v-if="item.authors" class="text-muted small">{{ item.authors }}</div>
-                            </td>
-                            <td>
-                                <span class="badge" :class="getStatusBadgeClass(item.status)">
-                                    {{ getStatusLabel(item.status) }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <span v-if="item.status === 'waiting'" class="badge bg-light text-dark">
-                                    #{{ item.queue_position }}
-                                </span>
-                                <span v-else>-</span>
-                            </td>
-                            <td>
-                                <span v-if="item.expiration_date">
-                                    {{ d(new Date(item.expiration_date), 'short') }}
-                                    <small v-if="item.days_until_expiration !== undefined" class="ms-1"
-                                        :class="item.days_until_expiration < 0 ? 'text-danger' : 'text-muted'">
-                                        ({{ item.days_until_expiration < 0 ? 'expiré' : item.days_until_expiration + 'j' }})
-                                    </small>
-                                </span>
-                                <span v-else>-</span>
-                            </td>
-                        </template>
-                    </data-table>
+                    <div class="table-responsive">
+                        <data-table
+                            :columns="columns"
+                            :rows="data"
+                            row-key="hold_id"
+                            :framed="false"
+                            bare
+                        >
+                            <template #row="{ row: item }">
+                                <td>
+                                    <a href="#" @click.prevent="openBorrower(item.borrower_id)" class="link-entity fw-bold">
+                                        {{ item.borrower_name }}
+                                    </a>
+                                </td>
+                                <td>{{ item.class_name || '-' }}</td>
+                                <record-cell
+                                    :record-id="item.bibliographic_record_id"
+                                    :title="item.title"
+                                    :subtitle="item.subtitle"
+                                    :collection="item.collection"
+                                    :series-number="item.series_number"
+                                    :authors="item.authors"
+                                />
+                                <td>
+                                    <span class="badge" :class="getStatusBadgeClass(item.status)">
+                                        {{ getStatusLabel(item.status) }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span v-if="item.status === 'waiting'" class="badge bg-light text-dark">
+                                        #{{ item.queue_position }}
+                                    </span>
+                                    <span v-else>-</span>
+                                </td>
+                                <td>
+                                    <span v-if="item.expiration_date">
+                                        {{ d(new Date(item.expiration_date), 'short') }}
+                                        <small v-if="item.days_until_expiration !== undefined" class="ms-1"
+                                            :class="item.days_until_expiration < 0 ? 'text-danger' : 'text-muted'">
+                                            ({{ item.days_until_expiration < 0 ? 'expiré' : item.days_until_expiration + 'j' }})
+                                        </small>
+                                    </span>
+                                    <span v-else>-</span>
+                                </td>
+                            </template>
+                        </data-table>
+                    </div>
                 </div>
             </div>
         </div>

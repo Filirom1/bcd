@@ -198,6 +198,9 @@ def test_search_with_rotation_filter(db_session: Session):
     record = BibliographicRecord(
         isbn="978-2070408504",
         title="Le Petit Prince",
+        subtitle="Aventure",
+        collection="Bibliothèque verte",
+        series_number="7",
         authors='["Antoine de Saint-Exupéry"]',
         publication_year=1943,
         medium_type="Livre",
@@ -291,6 +294,9 @@ def test_search_with_rotation_filter(db_session: Session):
 
     # Verify period_loan_count is included
     for item in result["items"]:
+        assert item["subtitle"] == "Aventure"
+        assert item["collection"] == "Bibliothèque verte"
+        assert item["series_number"] == "7"
         assert "period_loan_count" in item
         if item["item_id"] == "0001":
             assert item["period_loan_count"] == 0

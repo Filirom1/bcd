@@ -12,7 +12,8 @@ const { defineComponent, ref, computed, watch, onMounted } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
-import { useGlobalModal } from '../../composables/useGlobalModal.js';
+import RecordCell from '../catalog/RecordCell.js';
+import DataTable from '../ui/DataTable.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { usePagination } from '../../composables/usePagination.js';
 import { useReportFilters } from '../../composables/useReportFilters.js';
@@ -29,13 +30,11 @@ const HIDDEN_PANELS_KEY = 'most_borrowed_hidden_panels';
 
 export default defineComponent({
     name: 'MostBorrowedReport',
-    components: { ReportHeader, Pagination, BreakdownPanel, FilterChips, TauxRotationPanel, PubYearPanel },
+    components: { ReportHeader, Pagination, BreakdownPanel, FilterChips, TauxRotationPanel, PubYearPanel, RecordCell, DataTable },
 
     setup() {
         const { t } = useI18n();
         const { error: showError } = useNotification();
-        const { openRecord } = useGlobalModal();
-
         const audienceLabel = val => {
             const map = { child: t('bibliographic.audience_child'), youth: t('bibliographic.audience_youth'), adult: t('bibliographic.audience_adult') };
             return map[val] || val;
@@ -121,7 +120,11 @@ export default defineComponent({
         });
 
         // ── Breakdowns ─────────────────────────────────────────────────────────
-        const BREAKDOWN_COLORS = ['#4D99F2', '#1abc9c', '#e67e22', '#9b59b6', '#F2BF33', '#2ecc71', '#adb5bd'];
+        const BREAKDOWN_COLORS = [
+            'var(--bcd-chart-1)', 'var(--bcd-chart-2)', 'var(--bcd-chart-3)',
+            'var(--bcd-chart-4)', 'var(--bcd-chart-5)', 'var(--bcd-chart-6)',
+            'var(--bcd-chart-muted)'
+        ];
         const mediumTypeBreakdown = computed(() => buildBreakdown(methodBase.value, 'medium_type'));
         const audienceBreakdown   = computed(() => buildBreakdown(methodBase.value, 'target_audience'));
         // Items for breakdown histograms: filtered by all except the key itself
@@ -190,12 +193,21 @@ export default defineComponent({
             setJSON(COL_STORAGE_KEY_MB, visibleCols.value);
         };
         const allColsMB = computed(() => [
-            { key: 'rank',          label: '#' },
-            { key: 'title',         label: t('reports.mostBorrowed.bookTitle') },
-            { key: 'checkout_count',label: t('reports.mostBorrowed.checkouts') },
-            { key: 'total_copies',  label: t('reports.mostBorrowed.copies') },
-            { key: 'taux_rotation', label: t('reports.tauxRotation.label') },
+            { key: 'rank',           label: '#', width: '50px' },
+            { key: 'title',          label: t('reports.mostBorrowed.bookTitle'), sortable: true },
+            { key: 'checkout_count', label: t('reports.mostBorrowed.checkouts'), width: '220px', sortable: true },
+            { key: 'total_copies',   label: t('reports.mostBorrowed.copies'), width: '60px', headerClass: 'text-center', sortable: true },
+            { key: 'taux_rotation',  label: t('reports.tauxRotation.label'), width: '200px', sortable: true },
         ]);
+        const tableColumns = computed(() => allColsMB.value
+            .filter(column => isColVisible(column.key))
+            .map(column => ({
+                ...column,
+                headerClass: column.key === 'taux_rotation'
+                    && ['taux_rotation', 'scarce'].includes(investmentMethod.value)
+                    ? 'text-success fw-semibold'
+                    : column.headerClass,
+            })));
 
         const printReport = () => window.print();
 
@@ -213,11 +225,10 @@ export default defineComponent({
             currentPage, pageSize, sortColumn, sortDirection,
             handleSort, goToPage, setPageSize,
             maxCheckouts, maxTauxRotation,
-            openRecord,
             PANEL_IDS, PANEL_LABELS, hiddenPanels, visiblePanels, showPanelDropdown,
             isPanelVisible, togglePanel, resetPanels,
             pubYearItems, printReport,
-            COL_IDS_MB, allColsMB, visibleCols, showColDropdown, isColVisible, toggleCol, resetCols,
+            COL_IDS_MB, allColsMB, tableColumns, visibleCols, showColDropdown, isColVisible, toggleCol, resetCols,
         };
     },
 
@@ -248,7 +259,7 @@ export default defineComponent({
                              style="position:absolute;right:0;top:calc(100% + 4px);min-width:200px;z-index:1050;" @click.stop>
                             <h6 class="dropdown-header py-1">Colonnes</h6>
                             <div class="dropdown-divider my-1"></div>
-                            <div v-for="col in allColsMB" :key="col.key" class="form-check px-3 py-1">
+                            <div v-for="col in allColsMB" :key="col.key" class="dropdown-checkbox-option">
                                 <input type="checkbox" class="form-check-input" :id="'col-mb-' + col.key"
                                        :checked="isColVisible(col.key)" @change="toggleCol(col.key)">
                                 <label class="form-check-label small" :for="'col-mb-' + col.key" style="cursor:pointer;">{{ col.label }}</label>
@@ -270,7 +281,7 @@ export default defineComponent({
                              style="position:absolute;right:0;top:calc(100% + 4px);min-width:200px;z-index:1050;" @click.stop>
                             <h6 class="dropdown-header py-1">{{ t('reports.collectionReport.selectPanels') }}</h6>
                             <div class="dropdown-divider my-1"></div>
-                            <div v-for="id in PANEL_IDS" :key="id" class="form-check px-3 py-1">
+                            <div v-for="id in PANEL_IDS" :key="id" class="dropdown-checkbox-option">
                                 <input type="checkbox" class="form-check-input" :id="'panel-mb-' + id"
                                        :checked="isPanelVisible(id)" @change="togglePanel(id)">
                                 <label class="form-check-label small" :for="'panel-mb-' + id" style="cursor:pointer;">{{ PANEL_LABELS[id] }}</label>
@@ -344,72 +355,65 @@ export default defineComponent({
     </div>
 
     <!-- Table -->
-    <div class="card" v-if="!loading && totalItems > 0">
+    <div class="card data-table-card" v-if="!loading && totalItems > 0">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0">
-                    <thead>
-                        <tr>
-                            <th v-if="isColVisible('rank')" style="width:50px;">#</th>
-                            <th v-if="isColVisible('title')" @click="handleSort('title')" style="cursor:pointer;">
-                                {{ t('reports.mostBorrowed.bookTitle') }}
-                                <i v-if="sortColumn==='title'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('checkout_count')" @click="handleSort('checkout_count')" style="width:220px;cursor:pointer;">
-                                {{ t('reports.mostBorrowed.checkouts') }}
-                                <i v-if="sortColumn==='checkout_count'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('total_copies')" @click="handleSort('total_copies')" style="width:60px;cursor:pointer;text-align:center;">
-                                {{ t('reports.mostBorrowed.copies') }}
-                                <i v-if="sortColumn==='total_copies'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                            <th v-if="isColVisible('taux_rotation')" @click="handleSort('taux_rotation')" style="width:200px;cursor:pointer;"
-                                :class="investmentMethod==='taux_rotation'||investmentMethod==='scarce' ? 'text-success fw-semibold' : ''">
-                                {{ t('reports.tauxRotation.label') }}
-                                <i v-if="sortColumn==='taux_rotation'" class="bi ms-1" :class="sortDirection==='asc'?'bi-arrow-up':'bi-arrow-down'"></i>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(item, idx) in paginatedData" :key="item.bibliographic_record_id">
-                            <td v-if="isColVisible('rank')" class="text-center text-muted small">{{ (currentPage - 1) * pageSize + idx + 1 }}</td>
-                            <td v-if="isColVisible('title')">
-                                <a href="#" @click.prevent="openRecord(item.bibliographic_record_id)" class="link-entity fw-bold">
-                                    {{ item.title }}
-                                </a>
+                <data-table
+                    :columns="tableColumns"
+                    :rows="paginatedData"
+                    row-key="bibliographic_record_id"
+                    :sort-column="sortColumn"
+                    :sort-direction="sortDirection"
+                    :framed="false"
+                    bare
+                    @sort="handleSort"
+                >
+                    <template #row="{ row: item, index }">
+                        <td v-if="isColVisible('rank')" class="text-center text-muted small">
+                            {{ (currentPage - 1) * pageSize + index + 1 }}
+                        </td>
+                        <record-cell
+                            v-if="isColVisible('title')"
+                            :record-id="item.bibliographic_record_id"
+                            :title="item.title"
+                            :subtitle="item.subtitle"
+                            :collection="item.collection"
+                            :series-number="item.series_number"
+                            :authors="item.author || item.publisher"
+                        >
+                            <template v-if="item.medium_type" #details>
                                 <div class="text-muted small">
-                                    <span v-if="item.author || item.publisher">{{ item.author || item.publisher }}</span>
-                                    <span v-if="item.medium_type" class="ms-1 badge bg-light text-secondary border" style="font-size:10px;">{{ item.medium_type }}</span>
+                                    <span class="badge bg-light text-secondary border" style="font-size:var(--bcd-font-size-chart);">{{ item.medium_type }}</span>
                                 </div>
-                            </td>
-                            <td v-if="isColVisible('checkout_count')">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height:18px;">
-                                        <div class="progress-bar bg-primary" :style="{ width: (item.checkout_count / maxCheckouts * 100) + '%' }">
-                                            {{ item.checkout_count }}
-                                        </div>
+                            </template>
+                        </record-cell>
+                        <td v-if="isColVisible('checkout_count')">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:18px;">
+                                    <div class="progress-bar bg-primary" :style="{ width: (item.checkout_count / maxCheckouts * 100) + '%' }">
+                                        {{ item.checkout_count }}
                                     </div>
                                 </div>
-                            </td>
-                            <td v-if="isColVisible('total_copies')" class="text-center">
-                                <span :class="item.total_copies <= 1 ? 'text-danger fw-bold' : item.total_copies <= 2 ? 'text-warning fw-bold' : ''">
-                                    {{ item.total_copies }}
-                                </span>
-                            </td>
-                            <td v-if="isColVisible('taux_rotation')">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-grow-1" style="height:18px;">
-                                        <div class="progress-bar"
-                                             :class="item.taux_rotation >= 8 ? 'bg-danger' : item.taux_rotation >= 4 ? 'bg-warning' : 'bg-success'"
-                                             :style="{ width: (item.taux_rotation / maxTauxRotation * 100) + '%' }">
-                                            {{ item.taux_rotation.toFixed(1) }}
-                                        </div>
+                            </div>
+                        </td>
+                        <td v-if="isColVisible('total_copies')" class="text-center">
+                            <span :class="item.total_copies <= 1 ? 'text-danger fw-bold' : item.total_copies <= 2 ? 'text-warning fw-bold' : ''">
+                                {{ item.total_copies }}
+                            </span>
+                        </td>
+                        <td v-if="isColVisible('taux_rotation')">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:18px;">
+                                    <div class="progress-bar"
+                                         :class="item.taux_rotation >= 8 ? 'bg-danger' : item.taux_rotation >= 4 ? 'bg-warning' : 'bg-success'"
+                                         :style="{ width: (item.taux_rotation / maxTauxRotation * 100) + '%' }">
+                                        {{ item.taux_rotation.toFixed(1) }}
                                     </div>
                                 </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+                        </td>
+                    </template>
+                </data-table>
             </div>
         </div>
     </div>

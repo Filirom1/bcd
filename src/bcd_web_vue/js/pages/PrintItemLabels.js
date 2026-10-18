@@ -596,7 +596,7 @@ export default defineComponent({
 
             <!-- Empty State -->
             <div v-else-if="totalCount === 0" class="text-center py-5 no-print">
-                <i class="bi bi-printer" style="font-size: 4rem; color: #ccc;"></i>
+                <i class="bi bi-printer" style="font-size: 4rem; color: var(--bcd-text-light);"></i>
                 <h4 class="mt-3">{{ t('print_labels.no_labels') }}</h4>
                 <p class="text-muted">{{ t('print_labels.no_labels_message') }}</p>
             </div>

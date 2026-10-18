@@ -88,7 +88,7 @@ export default defineComponent({
             return { left: left + '%', right: right + '%' };
         });
 
-        const barColor = bin => bin >= 8 ? '#F24D66' : bin >= 4 ? '#F2BF33' : '#4D99F2';
+        const barColor = bin => bin >= 8 ? 'var(--bcd-danger)' : bin >= 4 ? 'var(--bcd-warning)' : 'var(--bcd-primary)';
 
         return { t, panelTitle, histogram, dataRange, maxCount, sliderMin, sliderMax, clampMin, clampMax, applyRange, isInRange, fillStyle, barColor };
     },
@@ -96,7 +96,7 @@ export default defineComponent({
     template: `
         <div class="card h-100">
             <div class="card-body p-3">
-                <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                <div class="text-uppercase fw-bold mb-2" style="font-size:var(--bcd-font-size-xs);letter-spacing:.8px;color:var(--bcd-text-muted);">
                     {{ panelTitle }}
                 </div>
 
@@ -110,7 +110,7 @@ export default defineComponent({
                         <div :style="{
                             height: (b.count / maxCount * 100) + '%',
                             background: barColor(b.bin),
-                            borderRadius: '2px 2px 0 0',
+                            borderRadius: 'var(--bcd-radius-sm)',
                             opacity: isInRange(b.bin) ? 1 : 0.25,
                             transition: 'opacity 0.2s'
                         }"></div>
@@ -130,14 +130,14 @@ export default defineComponent({
                            v-model.number="sliderMax"
                            @input="clampMax" @change="applyRange">
                 </div>
-                <div class="d-flex justify-content-between" style="font-size:11px;color:#888;margin-top:2px;">
+                <div class="d-flex justify-content-between" style="font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);margin-top:2px;">
                     <span>{{ sliderMin }}</span>
                     <span>{{ sliderMax }}</span>
                 </div>
 
                 <!-- Legend -->
-                <div class="mt-1" style="font-size:11px;color:#aaa;">
-                    <i class="bi bi-square-fill me-1" style="color:#4D99F2;"></i>&lt;4 &nbsp;
+                <div class="mt-1" style="font-size:var(--bcd-font-size-chart);color:var(--bcd-text-muted);">
+                    <i class="bi bi-square-fill me-1" style="color:var(--bcd-primary);"></i>&lt;4 &nbsp;
                     <i class="bi bi-square-fill text-warning me-1"></i>4–8 &nbsp;
                     <i class="bi bi-square-fill text-danger me-1"></i>≥8
                 </div>

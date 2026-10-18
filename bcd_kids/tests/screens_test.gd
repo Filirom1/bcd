@@ -164,10 +164,10 @@ func _test_checkout_screen() -> void:
 
 	gs.set("current_borrower", {"current_loans_count": 2, "loan_limit": 3, "loan_limit_warning": 2})
 	screen.call("_update_counter")
-	_test.equal(screen.get_node("MainMargin/Root/CountLabel").get_theme_color("font_color"), theme_manager.get("WARNING"), "Checkout uses warning colour at the soft limit")
+	_test.equal(screen.get_node("MainMargin/Root/PageHeading/CountLabel").get_theme_color("font_color"), theme_manager.get("WARNING"), "Checkout uses warning colour at the soft limit")
 	gs.set("current_borrower", {"current_loans_count": 3, "loan_limit": 3, "loan_limit_warning": 2})
 	screen.call("_update_counter")
-	_test.equal(screen.get_node("MainMargin/Root/CountLabel").get_theme_color("font_color"), theme_manager.get("ERROR"), "Checkout uses error colour at the hard limit")
+	_test.equal(screen.get_node("MainMargin/Root/PageHeading/CountLabel").get_theme_color("font_color"), theme_manager.get("ERROR"), "Checkout uses error colour at the hard limit")
 	gs.set("current_loans", [])
 	screen.call("_refresh_list")
 	await _test.wait_frames(self)
@@ -190,12 +190,22 @@ func _test_return_screen() -> void:
 
 	var history: VBoxContainer = screen.get_node("MainMargin/Root/HistoryScroll/HistoryContainer")
 	var initial_count := history.get_child_count()
-	screen.call("_add_to_history", "Returned Book", "Alice Reader", false, 0, "Romans", "843")
+	screen.call("_add_to_history", {
+		"display_title": "Returned Book",
+		"borrower_name": "Alice Reader",
+		"shelf_location": "Romans",
+		"call_number": "843",
+	})
 	await _test.wait_frames(self)
-	_test.expect(history.get_child_count() >= 1 and history.get_child(0) is VBoxContainer, "Return adds an on-time item to history")
-	screen.call("_add_to_history", "Late Book", "Bob Reader", true, 4, "", "")
+	_test.expect(history.get_child_count() >= 1 and history.get_child(0) is VBoxContainer, "Return adds an on-time item row to history")
+	screen.call("_add_to_history", {
+		"display_title": "Late Book",
+		"borrower_name": "Bob Reader",
+		"was_overdue": true,
+		"days_overdue": 4,
+	})
 	await _test.wait_frames(self)
-	_test.expect(history.get_child_count() >= 2, "Return adds an overdue item to history")
+	_test.expect(history.get_child_count() >= 2, "Return adds an overdue item card to history")
 
 
 func _test_name_input_screen() -> void:

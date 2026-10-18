@@ -117,6 +117,7 @@ def render_spa_html(
     <link rel="stylesheet" href="/node_modules/bootstrap-icons/font/bootstrap-icons.min.css">
 
     <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/theme.css">
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/loading.css">
     <link rel="stylesheet" href="/static/css/print-labels.css">

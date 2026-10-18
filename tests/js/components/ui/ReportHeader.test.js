@@ -6,7 +6,8 @@ import ReportHeader from '../../../../src/bcd_web_vue/js/components/ui/ReportHea
 describe('ReportHeader', () => {
     it('renders the title and delegates print actions', async () => {
         const wrapper = mount(ReportHeader, {
-            props: { title: 'Overdue books', showNotices: true }
+            props: { title: 'Overdue books', showNotices: true },
+            global: { stubs: { HelpPanel: true } }
         });
 
         expect(wrapper.text()).toContain('Overdue books');
@@ -19,7 +20,10 @@ describe('ReportHeader', () => {
     });
 
     it('hides the notices action when it is not requested', () => {
-        const wrapper = mount(ReportHeader, { props: { title: 'Collection' } });
+        const wrapper = mount(ReportHeader, {
+            props: { title: 'Collection' },
+            global: { stubs: { HelpPanel: true } }
+        });
         expect(wrapper.findAll('button')).toHaveLength(1);
     });
 });

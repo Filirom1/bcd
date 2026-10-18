@@ -31,10 +31,13 @@ import RecordDetail from '../components/catalog/RecordDetail.js';
 import ProgressIndicator from '../components/admin/ProgressIndicator.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 
+import PageHeader from '../components/ui/PageHeader.js';
+
 export default defineComponent({
     name: 'CatalogPage',
 
     components: {
+        PageHeader,
         SearchBar,
         AdvancedFilters,
         SearchResults,
@@ -589,10 +592,10 @@ export default defineComponent({
             }
         };
 
-        // Handle print item labels (from admin dropdown). Keep the workflow in
-        // the current tab; browser back returns to the catalog.
+        // Handle print item labels (from admin dropdown) in a separate tab,
+        // matching the borrower printing workflows.
         const handlePrintLabels = () => {
-            router.push({ name: 'print-item-labels' });
+            window.open('#/print/catalog/labels', '_blank');
         };
 
         useAdminShortcuts({ N: () => { window.location.hash = '/cataloging'; } });
@@ -655,12 +658,15 @@ export default defineComponent({
 
     template: `
         <div>
-            <div class="page-header">
-                <h1 class="page-title">
-                    <i class="bi bi-book me-2"></i>
-                    {{ t('navigation.catalog') }}
-                </h1>
-                <div class="d-flex gap-2">
+            <page-header>
+                <template #heading>
+                    <h1 class="page-title">
+                        <i class="bi bi-book me-2"></i>
+                        {{ t('navigation.catalog') }}
+                    </h1>
+                </template>
+                <template #actions>
+                    <div class="d-flex gap-2">
                     <!-- Add Book button (remains separate) -->
                     <a href="#/cataloging" class="btn btn-primary">
                         <i class="bi bi-plus-circle me-1"></i>
@@ -681,8 +687,9 @@ export default defineComponent({
                         @print-labels="handlePrintLabels"
                     ></admin-dropdown>
                     <help-panel section="catalog" />
-                </div>
-            </div>
+                    </div>
+                </template>
+            </page-header>
 
             <!-- Search Bar -->
             <search-bar

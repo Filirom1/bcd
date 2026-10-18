@@ -65,7 +65,7 @@ export default defineComponent({
         <div class="dropdown position-relative">
             <button
                 type="button"
-                class="btn btn-outline-secondary btn-sm"
+                class="btn btn-outline-secondary"
                 @click="toggleDropdown"
                 :title="t('catalog.select_columns') || 'Select columns'"
             >
@@ -86,7 +86,7 @@ export default defineComponent({
                 <div
                     v-for="column in AVAILABLE_COLUMNS"
                     :key="column.id"
-                    class="form-check px-3 py-1"
+                    class="dropdown-checkbox-option"
                 >
                     <input
                         type="checkbox"

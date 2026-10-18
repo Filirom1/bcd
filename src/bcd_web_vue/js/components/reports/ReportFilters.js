@@ -112,8 +112,7 @@ export default defineComponent({
 
             <!-- Class Filter -->
             <div v-if="showClass" class="col-md-3">
-                <label class="form-label">{{ t('reports.class') }}</label>
-                <select class="form-select" :value="classFilter" @change="updateClass($event.target.value)">
+                <select class="form-select" :aria-label="t('reports.class')" :value="classFilter" @change="updateClass($event.target.value)">
                     <option value="">{{ t('reports.allClasses') }}</option>
                     <option v-for="cls in classes" :key="cls" :value="cls">{{ cls }}</option>
                 </select>

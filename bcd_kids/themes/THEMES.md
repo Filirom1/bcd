@@ -17,6 +17,22 @@ Each theme should have a font that reinforces its visual identity. When creating
 5. **Keep inputs on Nunito Regular** (`LineEdit/fonts/font = ExtResource("1_regular")`) unless the display font is also readable at small sizes when typed.
 6. **Always add `LineEdit/styles/normal` and `LineEdit/styles/focus`** explicitly in the `[resource]` section — otherwise Godot falls back to its default dark style.
 
+### Shared typography scale
+
+All themes use the same semantic font sizes so switching a display font does not also resize the UI. Keep these values synchronized in each theme resource:
+
+| Theme token | Size |
+|---|---:|
+| `Button` / `Label` | 18 px |
+| `ButtonLarge` / `LabelLarge` | 22 px |
+| `LabelTitle` | 24 px |
+| `LabelMedium` / `LabelSubtitle` | 16 px |
+| `ButtonSmall` / `ButtonBreadcrumb` / `LabelSmall` | 14 px |
+| `OptionButton` / `CheckBox` | 16 px |
+| `LineEdit` | 18 px |
+
+`minecraft.tres` is the deliberate exception: Press Start 2P needs its smaller pixel scale. Screens should choose semantic `Button*` and `Label*` variations rather than setting per-node font-size overrides. Keep form control heights aligned in their scenes.
+
 ### Font ideas by theme type
 
 | Theme style | Suggested fonts |

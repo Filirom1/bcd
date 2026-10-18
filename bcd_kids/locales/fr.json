@@ -43,7 +43,12 @@
 		"title": "Emprunter",
 		"done": "✅ J’ai fini, je laisse ma place",
 		"label": "Numéro du livre:",
-		"no_loans": "Aucun livre emprunté",
+		"scan_title": "📚 Scanner un livre",
+		"scan_instruction": "Scanne le code-barres du livre",
+		"scan_button": "Emprunter",
+		"loans_title": "Mes livres empruntés",
+		"due_date": "À rendre le {date}",
+		"no_loans": "Aucun livre emprunté pour le moment. Scanne un livre pour commencer !",
 		"success": "Livre emprunté !",
 		"success_with_title": "{title} — Livre emprunté !",
 		"success_warning": "Livre emprunté ! Attention, tu as beaucoup de livres.",
@@ -61,6 +66,9 @@
 	"return": {
 		"title": "Rendre",
 		"label": "Numéro du livre:",
+		"scan_title": "📚 Scanner un livre",
+		"scan_instruction": "Scanne le code-barres du livre à rendre",
+		"scan_button": "Rendre le livre",
 		"success": "Livre rendu !",
 		"success_with_title": "{title} — Livre rendu !",
 		"shelve_at": "ranger à : {location}",
@@ -76,8 +84,9 @@
 		"shelf_label": "Étagère :",
 		"call_num_label": "Cote :",
 		"returned_today": "Livres rendus aujourd'hui:",
-		"scan_books_placeholder": "Scannez des livres...",
-		"ranger_a": "ranger à"
+		"scan_books_placeholder": "Les livres rendus apparaîtront ici. Scanne le code-barres d’un livre pour commencer.",
+		"returned_by": "Rendu par {name}",
+		"ranger_a": "À ranger à"
 	},
 	"search": {
 		"title": "Rechercher",

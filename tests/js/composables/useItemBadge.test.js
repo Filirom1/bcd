@@ -22,12 +22,14 @@ describe('useItemBadge', () => {
         expect(badges.getShelfBadge('Romans')).toMatchObject({
             background: '#ffffff',
             color: '#000000',
-            borderRadius: '4px'
+            borderRadius: 'var(--bcd-radius-sm)',
+            fontSize: 'var(--bcd-font-size-xs)'
         });
         expect(badges.getShelfBadge('Albums')).toMatchObject({
             background: '#003366',
             color: '#ffffff',
-            borderRadius: '4px'
+            borderRadius: 'var(--bcd-radius-sm)',
+            fontSize: 'var(--bcd-font-size-xs)'
         });
     });
 
@@ -58,8 +60,9 @@ describe('useItemBadge', () => {
         expect(badges.getCoteBadge('  012.3 VER')).toMatchObject({
             background: '#ffffff',
             color: '#000000',
-            outline: '1px solid #ddd',
-            borderRadius: '20px'
+            outline: '1px solid var(--bcd-border)',
+            borderRadius: 'var(--bcd-radius-sm)',
+            fontSize: 'var(--bcd-font-size-xs)'
         });
         expect(badges.getCoteBadge('812.4 HUG')).toMatchObject({
             background: '#888888',

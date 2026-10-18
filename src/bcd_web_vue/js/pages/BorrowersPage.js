@@ -36,10 +36,13 @@ import { events } from '../utils/events.js';
 const { defineComponent } = Vue;
 const { useI18n } = VueI18n;
 
+import PageHeader from '../components/ui/PageHeader.js';
+
 export default defineComponent({
     name: 'BorrowersPage',
 
     components: {
+        PageHeader,
         BorrowerFilters,
         BorrowerList,
         BorrowerImport,
@@ -52,17 +55,17 @@ export default defineComponent({
     },
 
     template: `
-        <div class="borrowers-page container-fluid">
+        <div class="borrowers-page">
             <!-- Page Header -->
-            <div class="page-header">
-                <div>
+            <page-header>
+                <template #heading>
                     <h1 class="page-title">
                         <i class="bi bi-people me-2"></i>
                         {{ t('borrowers.title') }}
                     </h1>
-                    <p class="text-muted mb-0">{{ t('borrowers.subtitle') }}</p>
-                </div>
-                <div class="d-flex gap-2 align-items-center">
+                </template>
+                <template #actions>
+                    <div class="d-flex gap-2 align-items-center">
                 <!-- Add Borrower Button -->
                 <button
                     class="btn btn-primary"
@@ -86,9 +89,10 @@ export default defineComponent({
                     @print-reference="handlePrintReference"
                     @print-cards="handlePrintCards"
                 ></admin-dropdown>
-                <help-panel section="borrowers" />
-                </div>
-            </div>
+                    <help-panel section="borrowers" />
+                    </div>
+                </template>
+            </page-header>
 
             <!-- Filters -->
             <borrower-filters

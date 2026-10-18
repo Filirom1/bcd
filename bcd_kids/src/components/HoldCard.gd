@@ -6,6 +6,8 @@ const DATA = preload("res://src/utils/DataHelper.gd")
 
 signal cancel_clicked(hold_id: int)
 
+@onready var _cover_img: CoverImage = %CoverImage
+@onready var _cover_placeholder: Label = %CoverPlaceholder
 @onready var _title_lbl: Label = %TitleLabel
 @onready var _authors_lbl: Label = %AuthorsLabel
 @onready var _status_lbl: Label = %StatusLabel
@@ -16,6 +18,8 @@ var _hold_id := 0
 var _cancel_signal_connected := false
 
 func _ready() -> void:
+	_cover_img.cover_loaded.connect(_on_cover_loaded)
+	_cover_img.cover_failed.connect(_on_cover_failed)
 	_cancel_btn.focus_entered.connect(func():
 		ThemeManager.apply_focus_style(_cancel_btn)
 	)
@@ -32,6 +36,13 @@ func setup(hold: Dictionary) -> void:
 	var status: String = DATA.text(hold, "status")
 
 	_title_lbl.text = DATA.text(hold, "title")
+	_cover_img.cancel()
+	_cover_img.texture = null
+	_cover_img.visible = false
+	_cover_placeholder.visible = true
+	var cover_file := DATA.text(hold, "cover_image").strip_edges()
+	if not cover_file.is_empty():
+		_cover_img.load_cover(cover_file)
 
 	var authors = hold.get("authors", [])
 	_authors_lbl.text = ", ".join(authors) if authors is Array and not authors.is_empty() else ""
@@ -59,3 +70,11 @@ func setup(hold: Dictionary) -> void:
 	if not _cancel_signal_connected:
 		_cancel_btn.pressed.connect(func(): cancel_clicked.emit(_hold_id))
 		_cancel_signal_connected = true
+
+func _on_cover_loaded(_texture: Texture2D) -> void:
+	_cover_img.visible = true
+	_cover_placeholder.visible = false
+
+func _on_cover_failed() -> void:
+	_cover_img.visible = false
+	_cover_placeholder.visible = true

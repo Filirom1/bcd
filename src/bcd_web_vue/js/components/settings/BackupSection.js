@@ -11,9 +11,11 @@ import { formatDateTime } from '../../utils/date.js';
 import { formatCivilDate } from '../../utils/date.js';
 import { useNotification } from '../../composables/useNotification.js';
 import { useErrorHandler } from '../../composables/useErrorHandler.js';
+import DataTable from '../ui/DataTable.js';
 
 export default defineComponent({
     name: 'BackupSection',
+    components: { DataTable },
 
     setup() {
         const { t, locale } = useI18n();
@@ -256,50 +258,51 @@ export default defineComponent({
             <!-- Backup table -->
             <div class="col-12" v-if="!loadingList && backups.length > 0">
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th><i class="bi bi-file-earmark"></i> {{ t('settings.backup_filename') }}</th>
-                                <th>{{ t('settings.backup_size') }}</th>
-                                <th>{{ t('settings.backup_date') }}</th>
-                                <th>{{ t('settings.backup_age') }}</th>
-                                <th>{{ t('settings.backup_actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="backup in backups" :key="backup.filename">
-                                <td><code class="small">{{ backup.filename }}</code></td>
-                                <td class="text-nowrap">{{ backup.size_mb }} MB</td>
-                                <td class="text-nowrap">{{ formatDate(backup.created_at) }}</td>
-                                <td>
-                                    <span :class="['badge', ageBadgeClass(backup.age_days)]">
-                                        {{ backup.age_days === 0 ? t('settings.backup_today') : t('settings.backup_days_ago', { days: backup.age_days }) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="d-flex gap-1">
-                                        <button
-                                            class="btn btn-sm btn-outline-primary"
-                                            @click="downloadBackup(backup)"
-                                            :disabled="restoring !== null || creating || importing"
-                                        >
-                                            <i class="bi bi-download me-1"></i>
-                                            {{ t('settings.backup_download') }}
-                                        </button>
-                                        <button
-                                            class="btn btn-sm btn-outline-warning"
-                                            @click="restoreBackup(backup)"
-                                            :disabled="restoring !== null || creating || importing"
-                                        >
-                                            <span v-if="restoring === backup.filename" class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                            <i v-else class="bi bi-arrow-counterclockwise me-1"></i>
-                                            {{ restoring === backup.filename ? t('settings.backup_restoring') : t('settings.backup_restore') }}
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <data-table
+                        :columns="[
+                            { key: 'filename', label: t('settings.backup_filename') },
+                            { key: 'size_mb', label: t('settings.backup_size') },
+                            { key: 'created_at', label: t('settings.backup_date') },
+                            { key: 'age_days', label: t('settings.backup_age') },
+                            { key: 'actions', label: t('settings.backup_actions') },
+                        ]"
+                        :rows="backups"
+                        row-key="filename"
+                        table-class="table-sm align-middle"
+                        bare
+                    >
+                        <template #row="{ row: backup }">
+                            <td><code class="small">{{ backup.filename }}</code></td>
+                            <td class="text-nowrap">{{ backup.size_mb }} MB</td>
+                            <td class="text-nowrap">{{ formatDate(backup.created_at) }}</td>
+                            <td>
+                                <span :class="['badge', ageBadgeClass(backup.age_days)]">
+                                    {{ backup.age_days === 0 ? t('settings.backup_today') : t('settings.backup_days_ago', { days: backup.age_days }) }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <button
+                                        class="btn btn-sm btn-outline-primary"
+                                        @click="downloadBackup(backup)"
+                                        :disabled="restoring !== null || creating || importing"
+                                    >
+                                        <i class="bi bi-download me-1"></i>
+                                        {{ t('settings.backup_download') }}
+                                    </button>
+                                    <button
+                                        class="btn btn-sm btn-outline-warning"
+                                        @click="restoreBackup(backup)"
+                                        :disabled="restoring !== null || creating || importing"
+                                    >
+                                        <span v-if="restoring === backup.filename" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                        <i v-else class="bi bi-arrow-counterclockwise me-1"></i>
+                                        {{ restoring === backup.filename ? t('settings.backup_restoring') : t('settings.backup_restore') }}
+                                    </button>
+                                </div>
+                            </td>
+                        </template>
+                    </data-table>
                 </div>
             </div>
 

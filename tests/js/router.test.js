@@ -59,4 +59,23 @@ describe('application router', () => {
         await nextTick();
         expect(document.title).toBe('ECOLE-01 - en:navigation.catalog');
     });
+
+    it('resets the persistent main scroller when navigating to another page', async () => {
+        const router = createAppRouter(makeI18n());
+        await router.push('/catalog');
+
+        const mainContent = document.createElement('main');
+        mainContent.className = 'main-content';
+        document.body.append(mainContent);
+
+        mainContent.scrollTop = 240;
+        await router.push('/activity');
+        expect(mainContent.scrollTop).toBe(0);
+
+        mainContent.scrollTop = 120;
+        await router.push('/activity?view=recent');
+        expect(mainContent.scrollTop).toBe(120);
+
+        mainContent.remove();
+    });
 });

@@ -14,7 +14,11 @@ export default defineComponent({
         subtitle:    { type: String,   default: '' },
         rows:        { type: Array,    required: true },  // [{ value, count }]
         activeValue: { type: String,   default: null },
-        colors:      { type: Array,    default: () => ['#4D99F2', '#1abc9c', '#e67e22', '#9b59b6', '#F2BF33', '#2ecc71', '#adb5bd'] },
+        colors:      { type: Array,    default: () => [
+            'var(--bcd-chart-1)', 'var(--bcd-chart-2)', 'var(--bcd-chart-3)',
+            'var(--bcd-chart-4)', 'var(--bcd-chart-5)', 'var(--bcd-chart-6)',
+            'var(--bcd-chart-muted)'
+        ] },
         labelFn:     { type: Function, default: null },
         colorFn:     { type: Function, default: null },   // (row, index) => color string
     },
@@ -31,7 +35,7 @@ export default defineComponent({
     template: `
         <div class="card h-100">
             <div class="card-body p-3">
-                <div class="text-uppercase fw-bold mb-2" style="font-size:11px;letter-spacing:.8px;color:#6c757d;">
+                <div class="text-uppercase fw-bold mb-2" style="font-size:var(--bcd-font-size-xs);letter-spacing:.8px;color:var(--bcd-text-muted);">
                     {{ title }}
                     <span v-if="subtitle" class="fw-normal text-muted ms-1" style="text-transform:none;letter-spacing:0;">· {{ subtitle }}</span>
                 </div>
@@ -41,15 +45,15 @@ export default defineComponent({
                     @click="$emit('toggle', row.value)"
                     class="d-flex align-items-center gap-2 mb-1 px-1 py-1 rounded"
                     style="cursor:pointer;"
-                    :style="activeValue === row.value ? 'background:#ddeeff;outline:2px solid #4D99F2;' : ''"
+                    :style="activeValue === row.value ? 'background:var(--bcd-selection);outline:2px solid var(--bcd-primary);' : ''"
                 >
-                    <span style="min-width:90px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">
+                    <span style="min-width:90px;font-size:var(--bcd-font-size-xs);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="row.value">
                         {{ label(row.value) }}
                     </span>
-                    <div style="flex:1;background:#f0f0f0;border-radius:3px;height:7px;overflow:hidden;">
-                        <div :style="{ width: Math.round(row.count / max * 100) + '%', background: color(row, i), height: '100%', borderRadius: '3px' }"></div>
+                    <div style="flex:1;background:var(--bcd-chart-track);border-radius:var(--bcd-radius-sm);height:7px;overflow:hidden;">
+                        <div :style="{ width: Math.round(row.count / max * 100) + '%', background: color(row, i), height: '100%', borderRadius: 'var(--bcd-radius-sm)' }"></div>
                     </div>
-                    <span style="min-width:28px;font-size:12px;font-weight:600;text-align:right;">{{ row.count }}</span>
+                    <span style="min-width:28px;font-size:var(--bcd-font-size-xs);font-weight:600;text-align:right;">{{ row.count }}</span>
                 </div>
             </div>
         </div>

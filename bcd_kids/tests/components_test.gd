@@ -97,8 +97,8 @@ func _test_filter_panel() -> void:
 	var events: Array = []
 	panel.filters_changed.connect(func(filters): events.append(filters))
 	panel.setup(["Livre", "BD"])
-	var type_option: OptionButton = panel.get_node("FiltersRow/TypeGroup/TypeOption")
-	var available: CheckBox = panel.get_node("AvailableCheckbox")
+	var type_option: OptionButton = panel.get_node("FiltersRow/TypeOption")
+	var available: CheckBox = panel.get_node("FiltersRow/AvailableCheckbox")
 	_test.equal(type_option.item_count, 3, "Filter panel includes All and each medium type")
 	_test.equal(panel.get_filters(), {}, "Filter panel starts with no active filters")
 	type_option.select(2)

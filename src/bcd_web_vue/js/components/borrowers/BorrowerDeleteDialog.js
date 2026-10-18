@@ -8,9 +8,11 @@
 
 const { ref } = Vue;
 const { useI18n } = VueI18n;
+import Modal from '../ui/Modal.js';
 
 export default {
     name: 'BorrowerDeleteDialog',
+    components: { Modal },
 
     props: {
         show: {
@@ -54,34 +56,12 @@ export default {
     },
 
     template: `
-        <teleport to="body">
-            <div v-if="show">
-                <div
-                    class="modal fade show d-block"
-                    tabindex="-1"
-                    aria-labelledby="borrowerDeleteDialogLabel"
-                    aria-modal="true"
-                    role="dialog"
-                    @click.self="handleClose"
-                >
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <!-- Modal Header -->
-                            <div class="modal-header bg-danger text-white">
-                                <h5 class="modal-title" id="borrowerDeleteDialogLabel">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                    {{ t('admin.delete_borrower') }}
-                                </h5>
-                                <button
-                                    type="button"
-                                    class="btn-close btn-close-white"
-                                    @click="handleClose"
-                                    :aria-label="t('common.close')"
-                                ></button>
-                            </div>
+        <modal :show="show" centered scrollable @close="handleClose">
+            <template #header>
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                {{ t('admin.delete_borrower') }}
+            </template>
 
-                            <!-- Modal Body -->
-                            <div class="modal-body">
                                 <!-- Warning about circulation history -->
                                 <div class="alert alert-warning" role="alert">
                                     <i class="bi bi-exclamation-triangle me-2"></i>
@@ -130,10 +110,8 @@ export default {
                                     <i class="bi bi-exclamation-circle me-1"></i>
                                     <strong>{{ t('admin.delete_warning_irreversible') }}</strong>
                                 </p>
-                            </div>
 
-                            <!-- Modal Footer -->
-                            <div class="modal-footer">
+            <template #footer>
                                 <button
                                     type="button"
                                     class="btn btn-secondary"
@@ -151,14 +129,7 @@ export default {
                                     <span v-if="deleting" class="spinner-border spinner-border-sm me-1"></span>
                                     {{ deleting ? t('common.deleting') : t('common.delete') }}
                                 </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Modal Backdrop -->
-                <div class="modal-backdrop fade show"></div>
-            </div>
-        </teleport>
+            </template>
+        </modal>
     `
 };

@@ -176,4 +176,9 @@ def build_item_search_query(
     if never_borrowed:
         query = query.filter(Item.last_borrowed_at.is_(None))
 
+    query = query.add_columns(
+        BibliographicRecord.subtitle,
+        BibliographicRecord.collection,
+        BibliographicRecord.series_number,
+    )
     return query, period_loan_count_column

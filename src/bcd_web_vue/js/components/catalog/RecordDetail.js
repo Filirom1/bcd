@@ -12,6 +12,7 @@ import { formatCivilDate } from '../../utils/date.js';
 import LoadingSpinner from '../ui/LoadingSpinner.js';
 import AutocompleteInput from '../ui/AutocompleteInput.js';
 import Pagination from '../ui/Pagination.js';
+import DataTable from '../ui/DataTable.js';
 import ItemEditForm from './ItemEditForm.js';
 import CopiesList from './CopiesList.js';
 import RecordDeleteDialog from './RecordDeleteDialog.js';
@@ -35,6 +36,7 @@ export default defineComponent({
         LoadingSpinner,
         AutocompleteInput,
         Pagination,
+        DataTable,
         ItemEditForm,
         CopiesList,
         RecordDeleteDialog,
@@ -757,37 +759,38 @@ export default defineComponent({
                             {{ t('holds.no_holds') }}
                         </div>
                         <div v-else class="table-responsive">
-                            <table class="table table-hover table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>{{ t('borrowers.name') }}</th>
-                                        <th>{{ t('holds.queue_position') }}</th>
-                                        <th>{{ t('circulation.status') }}</th>
-                                        <th>{{ t('holds.hold_date') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="hold in holds" :key="hold.id">
-                                        <td>
-                                            <a
-                                                href="#"
-                                                @click.prevent="viewBorrower(hold.borrower_string_id)"
-                                                class="link-entity fw-bold"
-                                            >{{ hold.borrower_name || hold.borrower_string_id }}</a>
-                                        </td>
-                                        <td>#{{ hold.queue_position }}</td>
-                                        <td>
-                                            <span v-if="hold.status === 'ready'" class="badge bg-success">
-                                                <i class="bi bi-check-circle me-1"></i>{{ t('holds.status.ready') }}
-                                            </span>
-                                            <span v-else class="badge bg-secondary">
-                                                {{ t('holds.status.waiting') }}
-                                            </span>
-                                        </td>
-                                        <td>{{ formatDate(hold.created_at) }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <data-table
+                                :columns="[
+                                    { key: 'borrower_name', label: t('borrowers.name') },
+                                    { key: 'queue_position', label: t('holds.queue_position') },
+                                    { key: 'status', label: t('circulation.status') },
+                                    { key: 'created_at', label: t('holds.hold_date') },
+                                ]"
+                                :rows="holds"
+                                row-key="id"
+                                table-class="table-sm"
+                                bare
+                            >
+                                <template #row="{ row: hold }">
+                                    <td>
+                                        <a
+                                            href="#"
+                                            @click.prevent="viewBorrower(hold.borrower_string_id)"
+                                            class="link-entity fw-bold"
+                                        >{{ hold.borrower_name || hold.borrower_string_id }}</a>
+                                    </td>
+                                    <td>#{{ hold.queue_position }}</td>
+                                    <td>
+                                        <span v-if="hold.status === 'ready'" class="badge bg-success">
+                                            <i class="bi bi-check-circle me-1"></i>{{ t('holds.status.ready') }}
+                                        </span>
+                                        <span v-else class="badge bg-secondary">
+                                            {{ t('holds.status.waiting') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ formatDate(hold.created_at) }}</td>
+                                </template>
+                            </data-table>
                         </div>
                     </div>
 
@@ -821,39 +824,40 @@ export default defineComponent({
                         </div>
 
                         <div v-else class="table-responsive">
-                            <table class="table table-sm table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>{{ t('borrowers.name') }}</th>
-                                        <th>{{ t('circulation.checkout_date') }}</th>
-                                        <th>{{ t('circulation.return_date') }}</th>
-                                        <th>{{ t('catalog.status') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="entry in itemHistoryItems" :key="entry.borrower_name + entry.checkout_date">
-                                        <td>
-                                            <a
-                                                href="#"
-                                                @click.prevent="viewBorrower(entry.borrower_id)"
-                                                class="link-entity fw-bold"
-                                            >{{ entry.borrower_name }}</a>
-                                        </td>
-                                        <td>{{ formatDate(entry.checkout_date) }}</td>
-                                        <td>{{ formatDate(entry.return_date) }}</td>
-                                        <td>
-                                            <span v-if="entry.status === 'returned_late'" class="badge bg-warning text-dark">
-                                                <i class="bi bi-exclamation-circle"></i>
-                                                {{ t('circulation.history_returned_late') }}
-                                            </span>
-                                            <span v-else class="badge bg-success">
-                                                <i class="bi bi-check"></i>
-                                                {{ t('circulation.history_returned_on_time') }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <data-table
+                                :columns="[
+                                    { key: 'borrower_name', label: t('borrowers.name') },
+                                    { key: 'checkout_date', label: t('circulation.checkout_date') },
+                                    { key: 'return_date', label: t('circulation.return_date') },
+                                    { key: 'status', label: t('catalog.status') },
+                                ]"
+                                :rows="itemHistoryItems"
+                                :row-key="entry => entry.borrower_name + entry.checkout_date"
+                                table-class="table-sm"
+                                bare
+                            >
+                                <template #row="{ row: entry }">
+                                    <td>
+                                        <a
+                                            href="#"
+                                            @click.prevent="viewBorrower(entry.borrower_id)"
+                                            class="link-entity fw-bold"
+                                        >{{ entry.borrower_name }}</a>
+                                    </td>
+                                    <td>{{ formatDate(entry.checkout_date) }}</td>
+                                    <td>{{ formatDate(entry.return_date) }}</td>
+                                    <td>
+                                        <span v-if="entry.status === 'returned_late'" class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-circle"></i>
+                                            {{ t('circulation.history_returned_late') }}
+                                        </span>
+                                        <span v-else class="badge bg-success">
+                                            <i class="bi bi-check"></i>
+                                            {{ t('circulation.history_returned_on_time') }}
+                                        </span>
+                                    </td>
+                                </template>
+                            </data-table>
                         </div>
 
                         <pagination

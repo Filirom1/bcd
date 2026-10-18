@@ -7,9 +7,11 @@
 
 const { ref } = Vue;
 const { useI18n } = VueI18n;
+import Modal from '../ui/Modal.js';
 
 export default {
     name: 'ClassDeleteDialog',
+    components: { Modal },
 
     props: {
         show: {
@@ -53,33 +55,12 @@ export default {
     },
 
     template: `
-        <div
-            class="modal fade"
-            :class="{ show: show }"
-            :style="{ display: show ? 'block' : 'none' }"
-            tabindex="-1"
-            aria-labelledby="classDeleteDialogLabel"
-            :aria-hidden="!show"
-            @click.self="handleClose"
-        >
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <!-- Modal Header -->
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title" id="classDeleteDialogLabel">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            {{ t('admin.delete_class') }}
-                        </h5>
-                        <button
-                            type="button"
-                            class="btn-close btn-close-white"
-                            @click="handleClose"
-                            :aria-label="t('common.close')"
-                        ></button>
-                    </div>
+        <modal :show="show" centered scrollable @close="handleClose">
+            <template #header>
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                {{ t('admin.delete_class') }}
+            </template>
 
-                    <!-- Modal Body -->
-                    <div class="modal-body">
                         <!-- Warning -->
                         <div class="alert alert-warning" role="alert">
                             <i class="bi bi-exclamation-triangle me-2"></i>
@@ -115,10 +96,8 @@ export default {
                             <i class="bi bi-exclamation-circle me-1"></i>
                             <strong>{{ t('admin.delete_warning_irreversible', 'This action cannot be undone.') }}</strong>
                         </p>
-                    </div>
 
-                    <!-- Modal Footer -->
-                    <div class="modal-footer">
+            <template #footer>
                         <button
                             type="button"
                             class="btn btn-secondary"
@@ -136,15 +115,7 @@ export default {
                             <span v-if="deleting" class="spinner-border spinner-border-sm me-1"></span>
                             {{ deleting ? t('common.deleting') : t('common.delete') }}
                         </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Backdrop -->
-        <div
-            v-if="show"
-            class="modal-backdrop fade show"
-        ></div>
+            </template>
+        </modal>
     `
 };

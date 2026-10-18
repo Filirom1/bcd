@@ -1,0 +1,120 @@
+/* Adjust these tokens to change the shared visual style of the web UI. */
+:root {
+    --bcd-root-font-size: 16px;
+
+    --bcd-primary-rgb: 2, 132, 199;
+    --bcd-primary: rgb(var(--bcd-primary-rgb));
+    --bcd-primary-subtle: #e0f2fe;
+    --bcd-primary-hover: #0369a1;
+
+    --bcd-success-rgb: 16, 185, 129;
+    --bcd-success: rgb(var(--bcd-success-rgb));
+    --bcd-success-subtle: #d1fae5;
+    --bcd-warning-rgb: 245, 158, 11;
+    --bcd-warning: rgb(var(--bcd-warning-rgb));
+    --bcd-warning-subtle: #fef3c7;
+    --bcd-danger-rgb: 239, 68, 68;
+    --bcd-danger: rgb(var(--bcd-danger-rgb));
+    --bcd-danger-subtle: #fee2e2;
+    --bcd-info-rgb: 6, 182, 212;
+    --bcd-info: rgb(var(--bcd-info-rgb));
+    --bcd-info-subtle: #cffafe;
+    --bcd-white: #ffffff;
+    --bcd-white-overlay: rgba(255, 255, 255, 0.25);
+
+    --bcd-success-text: #065f46;
+    --bcd-warning-text: #92400e;
+    --bcd-danger-text: #991b1b;
+    --bcd-info-text: #155e75;
+    --bcd-neutral-strong: #374151;
+
+    --bcd-bg: #f7faff;
+    --bcd-sidebar: #ffffff;
+    --bcd-surface: #ffffff;
+    --bcd-surface-soft: #f8fafc;
+    --bcd-border-strong: #cbd5e1;
+    --bcd-selection: var(--bcd-primary-subtle);
+    --bcd-chart-grid: var(--bcd-border);
+    --bcd-chart-track: #f1f5f9;
+    --bcd-chart-1: var(--bcd-primary);
+    --bcd-chart-2: #14b8a6;
+    --bcd-chart-3: #f97316;
+    --bcd-chart-4: #8b5cf6;
+    --bcd-chart-5: var(--bcd-warning);
+    --bcd-chart-6: var(--bcd-success);
+    --bcd-chart-muted: #94a3b8;
+    --bcd-skeleton-start: #f0f0f0;
+    --bcd-skeleton-mid: #e0e0e0;
+    --bcd-surface-overlay: rgba(255, 255, 255, 0.9);
+    --bcd-overlay-backdrop: rgba(31, 41, 55, 0.5);
+
+    --bcd-text-main: #1f2937;
+    --bcd-text-muted: #6b7280;
+    --bcd-text-light: #9ca3af;
+
+    --bcd-border: #e5e7eb;
+    --bcd-border-focus: var(--bcd-primary);
+
+    --bcd-font-size-xs: 0.75rem;
+    --bcd-font-size-sm: 0.8125rem;
+    --bcd-font-size-base: 0.875rem;
+    --bcd-font-size-lg: 1rem;
+    --bcd-font-size-xl: 1.25rem;
+    --bcd-font-size-section-title: 1.5rem;
+    --bcd-font-size-subsection-title: 1.125rem;
+    --bcd-font-size-page-title: 1.75rem;
+    --bcd-font-size-brand-title: 2.5rem;
+    --bcd-font-size-chart: 0.6875rem;
+    --bcd-line-height-base: 1.6;
+    --bcd-font-size-modal-title: var(--bcd-font-size-lg);
+    --bcd-space-1: 0.25rem;
+    --bcd-space-2: 0.5rem;
+    --bcd-space-3: 0.75rem;
+    --bcd-space-4: 1rem;
+    --bcd-space-5: 1.25rem;
+    --bcd-space-6: 1.5rem;
+
+    --bcd-radius-sm: 0.25rem;
+    --bcd-radius-md: 0.375rem;
+    --bcd-radius-lg: 0.5rem;
+    --bcd-radius-pill: 999px;
+    --bcd-shadow-sm: 0 2px 5px rgba(31, 41, 55, 0.05);
+    --bcd-panel-shadow: var(--bcd-shadow-sm);
+    --bcd-shadow-md: 0 6px 16px rgba(31, 41, 55, 0.08);
+    --bcd-shadow-lg: 0 1rem 3rem rgba(31, 41, 55, 0.22);
+    --bcd-shadow-control: 0 1px 3px rgba(31, 41, 55, 0.3);
+    --bcd-shadow-overlay: 0 20px 80px rgba(31, 41, 55, 0.5);
+    --bcd-shadow-focus: 0 0 0 3px color-mix(in srgb, var(--bcd-primary) 10%, transparent);
+    --bcd-shadow-primary: 0 3px 9px color-mix(in srgb, var(--bcd-primary) 15%, transparent);
+
+    --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+
+    --sidebar-width: 220px;
+    --spacing-unit: 1rem;
+
+    --bs-primary: var(--bcd-primary);
+    --bs-primary-rgb: var(--bcd-primary-rgb);
+    --bs-success: var(--bcd-success);
+    --bs-success-rgb: var(--bcd-success-rgb);
+    --bs-warning: var(--bcd-warning);
+    --bs-warning-rgb: var(--bcd-warning-rgb);
+    --bs-danger: var(--bcd-danger);
+    --bs-danger-rgb: var(--bcd-danger-rgb);
+    --bs-info: var(--bcd-info);
+    --bs-info-rgb: var(--bcd-info-rgb);
+    --bs-body-color: var(--bcd-text-main);
+    --bs-body-bg: var(--bcd-bg);
+    --bs-body-font-family: var(--font-body);
+    --bs-body-font-size: var(--bcd-font-size-base);
+    --bs-btn-font-size: var(--bcd-font-size-base);
+    --bs-border-color: var(--bcd-border);
+    --bs-border-radius: var(--bcd-radius-sm);
+    --bs-border-radius-sm: var(--bcd-radius-sm);
+    --bs-border-radius-lg: var(--bcd-radius-md);
+    --bs-border-radius-xl: var(--bcd-radius-md);
+    --bs-link-color: var(--bcd-primary);
+    --bs-link-hover-color: var(--bcd-primary-hover);
+
+    font-size: var(--bcd-root-font-size);
+}

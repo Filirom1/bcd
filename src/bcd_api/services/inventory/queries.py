@@ -91,6 +91,8 @@ def search_items(
         medium_type = result[6]  # medium_type from BibliographicRecord
         publication_year = result[7]  # publication_year from BibliographicRecord
         circulation_count = result[8]  # all-time loan count (always present)
+        metadata_index = 10 if period_loan_count_column is not None else 9
+        subtitle, collection, series_number = result[metadata_index : metadata_index + 3]
 
         # Parse authors list
         authors_list = parse_authors(authors) if authors else None
@@ -114,6 +116,9 @@ def search_items(
             "last_inventoried_at": item.last_inventoried_at,
             # Record fields (for display in working table)
             "title": title,
+            "subtitle": subtitle,
+            "collection": collection,
+            "series_number": series_number,
             "authors": authors_list,
             "call_number": item.call_number,
             "level": level,

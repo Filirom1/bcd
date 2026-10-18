@@ -33,13 +33,22 @@ class TestOverdueReports:
         db_session.add(borrower)
         db_session.flush()
 
-        biblio = BibliographicRecord(title="Test Book", authors="Test Author", medium_type="Livre")
+        biblio = BibliographicRecord(
+            title="Test Book",
+            subtitle="Test Subtitle",
+            collection="Test Collection",
+            series_number="4",
+            authors="Test Author",
+            medium_type="Livre",
+        )
         db_session.add(biblio)
         db_session.flush()
 
         item = Item(
             item_id="785",
             bibliographic_record_id=biblio.id,
+            shelf_location="Romans",
+            call_number="800.000",
             status="on_loan",
             loanable=True,
         )
@@ -64,6 +73,11 @@ class TestOverdueReports:
         assert len(overdue) == 1
         assert total == 1
         assert overdue[0]["item_id"] == "785"
+        assert overdue[0]["shelf_location"] == "Romans"
+        assert overdue[0]["call_number"] == "800.000"
+        assert overdue[0]["subtitle"] == "Test Subtitle"
+        assert overdue[0]["collection"] == "Test Collection"
+        assert overdue[0]["series_number"] == "4"
         assert overdue[0]["days_overdue"] == 5
 
     def test_get_overdue_items_no_overdue(self, db_session):
@@ -214,6 +228,9 @@ class TestNeverBorrowedReport:
         """Test getting items that have never been borrowed."""
         biblio = BibliographicRecord(
             title="Never Borrowed Book",
+            subtitle="A subtitle",
+            collection="A collection",
+            series_number="3",
             authors="Test Author",
             medium_type="Livre",
             publication_year=2020,
@@ -236,6 +253,9 @@ class TestNeverBorrowedReport:
 
         assert len(never_borrowed) == 1
         assert never_borrowed[0]["item_id"] == "999"
+        assert never_borrowed[0]["subtitle"] == "A subtitle"
+        assert never_borrowed[0]["collection"] == "A collection"
+        assert never_borrowed[0]["series_number"] == "3"
 
 
 class TestMostBorrowedReport:
@@ -258,6 +278,9 @@ class TestMostBorrowedReport:
         for idx in [0, 1]:
             biblio = BibliographicRecord(
                 title=f"Book {idx}",
+                subtitle="Book subtitle" if idx == 0 else None,
+                collection="Book series" if idx == 0 else None,
+                series_number="1" if idx == 0 else None,
                 authors="Test Author",
                 medium_type="Livre",
                 publication_year=2020,
@@ -297,6 +320,9 @@ class TestMostBorrowedReport:
 
         assert len(most_borrowed) == 2
         assert most_borrowed[0]["title"] == "Book 0"
+        assert most_borrowed[0]["subtitle"] == "Book subtitle"
+        assert most_borrowed[0]["collection"] == "Book series"
+        assert most_borrowed[0]["series_number"] == "1"
         assert most_borrowed[0]["checkout_count"] == 3
         assert most_borrowed[1]["title"] == "Book 1"
         assert most_borrowed[1]["checkout_count"] == 1
@@ -462,7 +488,12 @@ class TestHoldsReport:
         db_session.flush()
 
         biblio = BibliographicRecord(
-            title="Reserved Book", authors="Test Author", medium_type="Livre"
+            title="Reserved Book",
+            subtitle="Reserved subtitle",
+            collection="Reserved series",
+            series_number="5",
+            authors="Test Author",
+            medium_type="Livre",
         )
         db_session.add(biblio)
         db_session.flush()
@@ -509,6 +540,9 @@ class TestHoldsReport:
         assert holds[0]["borrower_name"] == "Test User"
         assert holds[0]["class_name"] == "CP-A"
         assert holds[0]["title"] == "Reserved Book"
+        assert holds[0]["subtitle"] == "Reserved subtitle"
+        assert holds[0]["collection"] == "Reserved series"
+        assert holds[0]["series_number"] == "5"
         # Verify no fulfilled or cancelled in results
         statuses = [h["status"] for h in holds]
         assert "fulfilled" not in statuses
@@ -663,7 +697,12 @@ class TestActiveLoansReport:
 
         # Create active loan
         biblio = BibliographicRecord(
-            title="Checked Out Book", authors="Test Author", medium_type="Livre"
+            title="Checked Out Book",
+            subtitle="Book Subtitle",
+            collection="Books Collection",
+            series_number="2",
+            authors="Test Author",
+            medium_type="Livre",
         )
         db_session.add(biblio)
         db_session.flush()
@@ -671,6 +710,8 @@ class TestActiveLoansReport:
         item = Item(
             item_id="123",
             bibliographic_record_id=biblio.id,
+            shelf_location="Romans",
+            call_number="800.000",
             status="on_loan",
             loanable=True,
         )
@@ -693,6 +734,11 @@ class TestActiveLoansReport:
 
         assert len(active_loans) == 1
         assert active_loans[0]["item_id"] == "123"
+        assert active_loans[0]["shelf_location"] == "Romans"
+        assert active_loans[0]["call_number"] == "800.000"
+        assert active_loans[0]["subtitle"] == "Book Subtitle"
+        assert active_loans[0]["collection"] == "Books Collection"
+        assert active_loans[0]["series_number"] == "2"
         assert active_loans[0]["borrower_name"] == "Test User"
         assert active_loans[0]["class_name"] == "CP-A"
         assert active_loans[0]["title"] == "Checked Out Book"
