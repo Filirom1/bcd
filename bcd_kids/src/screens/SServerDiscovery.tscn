@@ -140,16 +140,6 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"LabelMedium"
 
-[node name="UseSavedAuth" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=1311754810]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-
-[node name="RememberAuth" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-
 [node name="CredsRow" type="HBoxContainer" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=643414786]
 layout_mode = 2
 theme_override_constants/separation = 6
@@ -170,16 +160,6 @@ secret = true
 [node name="AuthBottom" type="HBoxContainer" parent="MainMargin/Root/AuthPanel/AuthContent" unique_id=1704452446]
 layout_mode = 2
 theme_override_constants/separation = 8
-
-[node name="AuthSchemeBasic" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=1411072753]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Basic"
-
-[node name="AuthSchemeDigest" type="CheckBox" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=252246434]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Digest"
 
 [node name="AuthSpacer" type="Control" parent="MainMargin/Root/AuthPanel/AuthContent/AuthBottom" unique_id=1651772276]
 layout_mode = 2

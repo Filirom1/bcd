@@ -112,7 +112,8 @@ describe('App', () => {
             borrower_name: 'Lina Martin',
             borrower_id: 'B-9',
             class_name: 'CE2',
-            expiration_date: '2030-02-01'
+            expiration_date: '2030-02-01',
+            cover_image: ''
         });
         expect(useNotification().notifications.value).toEqual([]);
     });

@@ -170,12 +170,10 @@
 		"password": "Mot de passe",
 		"password_placeholder": "••••••••",
 		"admin": "Administration",
-		"scheme": "Méthode d'authentification",
 		"required": "Ce serveur nécessite une authentification",
 		"insecure_transport": "Les identifiants ne peuvent être envoyés qu'en HTTPS (sauf sur cet ordinateur).",
 		"unsupported_digest": "Cette méthode d'authentification n'est pas prise en charge.",
-		"remember": "Mémoriser les identifiants pour cette bibliothèque",
-		"use_saved": "Utiliser les identifiants sauvegardés ({username})",
+		"unsupported_scheme": "Ce serveur utilise une méthode d'authentification non prise en charge.",
 		"clear": "Effacer les identifiants",
 		"cleared": "Identifiants effacés"
 	},

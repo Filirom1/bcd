@@ -6,12 +6,14 @@ const COMMON := {
 	"network_error": "common.error_network",
 	"insecure_auth_transport": "auth.insecure_transport",
 	"unsupported_digest": "auth.unsupported_digest",
+	"unsupported_auth_scheme": "auth.unsupported_scheme",
 }
 
 const DISCOVERY := {
 	"auth_required": "auth.required",
 	"insecure_auth_transport": "auth.insecure_transport",
 	"unsupported_digest": "auth.unsupported_digest",
+	"unsupported_auth_scheme": "auth.unsupported_scheme",
 	"network_error": "server_discovery.connection_error",
 }
 

@@ -170,12 +170,10 @@
 		"password": "Password",
 		"password_placeholder": "••••••••",
 		"admin": "Admin",
-		"scheme": "Authentication method",
 		"required": "This server requires authentication",
 		"insecure_transport": "Credentials can only be sent over HTTPS (except on this computer).",
 		"unsupported_digest": "This authentication method is not supported.",
-		"remember": "Remember credentials for this library",
-		"use_saved": "Use saved credentials ({username})",
+		"unsupported_scheme": "This server uses an authentication method that is not supported.",
 		"clear": "Clear credentials",
 		"cleared": "Credentials cleared"
 	},

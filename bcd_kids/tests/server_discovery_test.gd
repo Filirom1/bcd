@@ -207,51 +207,55 @@ func _test_auth_controls() -> void:
 	var previous_username := str(settings.get("auth_username"))
 	var previous_password := str(settings.get("auth_password"))
 	var previous_scheme := str(settings.get("auth_scheme"))
+	var previous_origin := str(settings.get("auth_server_origin"))
 	var username: LineEdit = _screen.get_node("MainMargin/Root/AuthPanel/AuthContent/CredsRow/UsernameInput")
 	var password: LineEdit = _screen.get_node("MainMargin/Root/AuthPanel/AuthContent/CredsRow/PasswordInput")
-	var basic: CheckBox = _screen.get_node("MainMargin/Root/AuthPanel/AuthContent/AuthBottom/AuthSchemeBasic")
-	var digest: CheckBox = _screen.get_node("MainMargin/Root/AuthPanel/AuthContent/AuthBottom/AuthSchemeDigest")
-
 	settings.set("auth_username", "saved-user")
 	settings.set("auth_password", "saved-secret")
 	settings.set("auth_scheme", "digest")
-	_screen.get_node("MainMargin/Root/ManualRow/ManualInput").text = "http://localhost:8888"
-	_screen.set("_pending_base_url", "")
 	settings.set("auth_server_origin", settings.call("server_origin", "http://localhost:8888"))
-	_screen.call("_on_use_saved_auth_toggled", true)
-	_test.equal(username.text, "saved-user", "Server discovery restores a saved username")
-	_test.equal(password.text, "saved-secret", "Server discovery restores a saved password")
-	_test.expect(digest.button_pressed and not basic.button_pressed, "Server discovery restores the saved auth scheme")
-	_screen.call("_on_use_saved_auth_toggled", false)
-	_test.equal(username.text, "", "Server discovery clears the username when saved auth is disabled")
-	_test.equal(password.text, "", "Server discovery clears the password when saved auth is disabled")
-	_test.equal(settings.get("auth_username"), "saved-user", "Disabling saved auth keeps the saved username")
-	_test.equal(settings.get("auth_password"), "saved-secret", "Disabling saved auth keeps the saved password")
+	_screen.call("_load_saved_auth_for_url", "http://localhost:8888")
+	_test.equal(username.text, "saved-user", "Server discovery pre-fills the saved username")
+	_test.equal(password.text, "saved-secret", "Server discovery pre-fills the saved password")
+	var saved_auth: Dictionary = _screen.call("_auth_from_ui_for_server", "http://localhost:8888")
+	_test.equal(saved_auth.get("password", ""), "saved-secret", "The pre-filled password is used for this server")
+	_test.expect(not saved_auth.has("scheme"), "Server discovery negotiates the authentication scheme")
 
-	_screen.set("_pending_base_url", "http://127.0.0.1:8888")
+	# Editing a pre-filled password takes effect immediately and updates storage.
+	password.text = "replacement secret"
+	_screen.call("_on_auth_input_changed", password.text)
+	var edited_auth: Dictionary = _screen.call("_auth_from_ui_for_server", "http://localhost:8888")
+	_test.equal(edited_auth.get("password", ""), "replacement secret", "Edited password overrides the saved password")
+	_test.equal(settings.get("auth_password"), "replacement secret", "Edited password is saved automatically")
+
+	# Credentials are scoped to one origin; switching servers loads that server's
+	# credentials (or a blank form) instead of reusing the previous server's.
+	_screen.call("_load_saved_auth_for_url", "http://127.0.0.1:8888")
+	_test.equal(username.text, "", "A different server starts with an empty username")
+	_test.equal(password.text, "", "A different server starts with an empty password")
 	username.text = "teacher"
 	password.text = "secret"
-	var origin_a: Dictionary = _screen.call("_auth_from_ui_for_server", "http://127.0.0.1:8888")
-	var origin_b: Dictionary = _screen.call("_auth_from_ui_for_server", "http://localhost:8888")
-	_test.equal(origin_a.get("username", ""), "teacher", "Server discovery accepts credentials for their selected origin")
-	_test.equal(origin_b, {}, "Server discovery does not reuse credentials for another origin")
-
-	username.text = "teacher"
-	password.text = "secret"
-	basic.button_pressed = true
-	digest.button_pressed = false
-	_screen.get_node("MainMargin/Root/AuthPanel/AuthContent/RememberAuth").button_pressed = true
-	_screen.call("_apply_auth_from_ui")
-	_test.equal(settings.get("auth_username"), "teacher", "Server discovery saves credentials only when requested")
-	_test.equal(settings.get("auth_scheme"), "basic", "Server discovery saves the selected basic auth scheme")
+	_screen.call("_on_auth_input_changed", password.text)
+	var entered_auth: Dictionary = _screen.call("_auth_from_ui_for_server", "http://127.0.0.1:8888")
+	_test.equal(entered_auth.get("username", ""), "teacher", "Server discovery accepts credentials for the selected origin")
+	_test.equal(entered_auth.get("password", ""), "secret", "New password is available to the connection attempt")
+	_test.equal(settings.get("auth_password"), "secret", "New password is saved without an opt-in checkbox")
+	_test.equal(
+		_screen.call("_auth_from_ui_for_server", "http://localhost:8888"),
+		{},
+		"Server discovery does not reuse credentials for another origin"
+	)
 
 	_screen.call("_on_clear_auth")
-	_test.equal(settings.get("auth_username"), "", "Server discovery clears the saved username")
-	_test.equal(settings.get("auth_password"), "", "Server discovery clears the saved password")
+	_test.equal(settings.get("auth_username"), "", "Clear credentials removes the saved username")
+	_test.equal(settings.get("auth_password"), "", "Clear credentials removes the saved password")
+	_test.equal(username.text, "", "Clear credentials empties the username field")
+	_test.equal(password.text, "", "Clear credentials empties the password field")
 
 	settings.set("auth_username", previous_username)
 	settings.set("auth_password", previous_password)
 	settings.set("auth_scheme", previous_scheme)
+	settings.set("auth_server_origin", previous_origin)
 	settings.call("save_settings")
 
 

@@ -17,14 +17,10 @@ const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
 @onready var _connect_manual_btn: Button = %ConnectManualBtn
 @onready var _auth_panel: PanelContainer = %AuthPanel
 @onready var _auth_title: Label = %AuthTitle
-@onready var _use_saved_auth: CheckBox = %UseSavedAuth
 @onready var _username_input: LineEdit = %UsernameInput
 @onready var _password_input: LineEdit = %PasswordInput
-@onready var _auth_scheme_basic: CheckBox = %AuthSchemeBasic
-@onready var _auth_scheme_digest: CheckBox = %AuthSchemeDigest
 @onready var _retry_btn: Button = %RetryBtn
 @onready var _clear_auth_btn: Button = %ClearAuthBtn
-@onready var _remember_auth: CheckBox = %RememberAuth
 
 const _LOCAL_CANDIDATES := [
 	{"addr": "127.0.0.1", "host": "127.0.0.1"},
@@ -46,9 +42,8 @@ var _suppress_auth_tracking := false
 func _ready() -> void:
 	_bg.color = ThemeManager.BG
 	_manual_input.text = _last_server_base_url()
-	_remember_auth.text = I18n.t("auth.remember")
-	_remember_auth.button_pressed = false
 	_load_saved_auth_for_url(_manual_input.text)
+	_manual_input.text_changed.connect(_on_manual_url_changed)
 	_username_input.text_changed.connect(_on_auth_input_changed)
 	_password_input.text_changed.connect(_on_auth_input_changed)
 
@@ -72,13 +67,6 @@ func _ready() -> void:
 	_username_input.placeholder_text = I18n.t("auth.username_placeholder")
 	_password_input.placeholder_text = I18n.t("auth.password_placeholder")
 
-	_auth_scheme_basic.button_pressed = true
-	_auth_scheme_digest.button_pressed = false
-	_auth_scheme_basic.toggled.connect(func(p): if p: _auth_scheme_digest.button_pressed = false)
-	_auth_scheme_digest.toggled.connect(func(p): if p: _auth_scheme_basic.button_pressed = false)
-
-	_use_saved_auth.toggled.connect(_on_use_saved_auth_toggled)
-
 	_retry_btn.pressed.connect(func(): _retry_with_auth())
 
 	_clear_auth_btn.text = I18n.t("auth.clear")
@@ -98,27 +86,29 @@ func _last_server_base_url() -> String:
 
 func _load_saved_auth_for_url(url: String) -> void:
 	var saved := Settings.get_saved_auth_for_server(url)
-	if saved.is_empty():
-		_clear_auth_inputs_only()
-		_use_saved_auth.visible = false
-		_use_saved_auth.set_pressed_no_signal(false)
-		return
 	_suppress_auth_tracking = true
 	_username_input.text = str(saved.get("username", ""))
 	_password_input.text = str(saved.get("password", ""))
 	_suppress_auth_tracking = false
 	_auth_input_origin = Settings.server_origin(url)
-	_auth_scheme_basic.button_pressed = str(saved.get("scheme", "basic")) == "basic"
-	_auth_scheme_digest.button_pressed = str(saved.get("scheme", "basic")) == "digest"
-	_use_saved_auth.text = I18n.t("auth.use_saved", {"username": saved.get("username", "")})
-	_use_saved_auth.button_pressed = true
-	_use_saved_auth.visible = true
+
+func _on_manual_url_changed(value: String) -> void:
+	var new_origin := Settings.server_origin(_base_server_url(value))
+	if not _auth_input_origin.is_empty() and new_origin != _auth_input_origin:
+		_clear_auth_inputs_only()
+		_auth_panel.visible = false
 
 func _on_auth_input_changed(_value: String) -> void:
-	if _suppress_auth_tracking:
+	if _suppress_auth_tracking or _auth_input_origin.is_empty():
 		return
-	if not _pending_base_url.is_empty():
-		_auth_input_origin = Settings.server_origin(_pending_base_url)
+
+	var username := _username_input.text.strip_edges()
+	var password := _password_input.text
+	if username.is_empty() and password.is_empty():
+		if Settings.auth_server_origin == _auth_input_origin:
+			Settings.clear_auth()
+		return
+	Settings.save_auth(username, password, "basic", _auth_input_origin)
 
 func _refresh_ui() -> void:
 	_title_lbl.text = I18n.t("server_discovery.title")
@@ -127,7 +117,6 @@ func _refresh_ui() -> void:
 	_connect_manual_btn.text = I18n.t("server_discovery.connect")
 	_retry_btn.text = I18n.t("server_discovery.connect")
 	_auth_title.text = "🔐 " + I18n.t("auth.title")
-	_remember_auth.text = I18n.t("auth.remember")
 	_manual_input.placeholder_text = I18n.t("server_discovery.manual_placeholder")
 
 func _discover_servers() -> void:
@@ -386,6 +375,8 @@ func _select_server(url: String, library_code: String) -> void:
 	var base_url := _base_server_url(url)
 	var api_url := base_url + "/api/v1"
 	_pending_base_url = base_url
+	if _auth_input_origin != Settings.server_origin(base_url):
+		_load_saved_auth_for_url(base_url)
 	var credentials := _auth_from_ui_for_server(base_url)
 	var generation := Mgr.navigation_generation
 	# Query the candidate URL without changing the active global server. One
@@ -399,7 +390,6 @@ func _select_server(url: String, library_code: String) -> void:
 		var error_code := ERROR_MESSAGES.code(settings_result)
 		if error_code == "auth_required":
 			_auth_panel.visible = true
-			_remember_auth.visible = true
 			Mgr.notify(I18n.t("auth.required"), "warning")
 			return
 		Mgr.notify(ERROR_MESSAGES.message(settings_result, ERROR_MESSAGES.DISCOVERY), "error")
@@ -412,13 +402,12 @@ func _select_server(url: String, library_code: String) -> void:
 		Settings.clear_session_auth()
 	else:
 		Settings.set_session_auth(credentials)
-		if _remember_auth.button_pressed:
-			Settings.save_auth(
-				str(credentials.get("username", "")),
-				str(credentials.get("password", "")),
-				str(credentials.get("scheme", "basic")),
-				base_url
-			)
+		Settings.save_auth(
+			str(credentials.get("username", "")),
+			str(credentials.get("password", "")),
+			"basic",
+			base_url
+		)
 	Settings.save_server(api_url, GS.library_name)
 	API.apply_settings(settings_result)
 	# Refresh the single local popular-books list only after the user has
@@ -444,27 +433,16 @@ func _is_connection_attempt_current(attempt_id: int, generation: int) -> bool:
 
 func _auth_from_ui_for_server(base_url: String) -> Dictionary:
 	var origin := Settings.server_origin(base_url)
-	if _use_saved_auth.visible and _use_saved_auth.button_pressed:
-		var saved := Settings.get_saved_auth_for_server(base_url)
-		if not saved.is_empty():
-			_auth_input_origin = origin
-			return saved
-		# Never fall back to fields that may contain credentials for another origin.
-		_clear_auth_inputs_only()
-		_use_saved_auth.set_pressed_no_signal(false)
-	if not _auth_input_origin.is_empty() and _auth_input_origin != origin:
-		_clear_auth_inputs_only()
-		_use_saved_auth.set_pressed_no_signal(false)
+	if _auth_input_origin != origin:
 		return {}
 	var username := _username_input.text.strip_edges()
-	var password := _password_input.text.strip_edges()
+	var password := _password_input.text
 	if username.is_empty() or password.is_empty():
 		return {}
 	_auth_input_origin = origin
 	return {
 		"username": username,
 		"password": password,
-		"scheme": "basic" if _auth_scheme_basic.button_pressed else "digest",
 		"server_origin": origin,
 	}
 
@@ -484,49 +462,19 @@ func _connect_manual() -> void:
 func _clear_servers() -> void:
 	NODE_HELPER.clear_children(_servers_container)
 
-func _on_use_saved_auth_toggled(pressed: bool) -> void:
-	_use_saved_auth.set_pressed_no_signal(pressed)
-	if pressed:
-		_load_saved_auth_for_url(_pending_base_url if not _pending_base_url.is_empty() else _manual_input.text)
-	else:
-		# Disabling saved credentials only changes this attempt. The explicit
-		# clear action below is the only operation that deletes saved credentials.
-		_clear_auth_inputs_only()
-		_remember_auth.visible = true
-
 func _clear_auth_inputs_only() -> void:
 	_suppress_auth_tracking = true
 	_username_input.text = ""
 	_password_input.text = ""
 	_suppress_auth_tracking = false
 	_auth_input_origin = ""
-	_auth_scheme_basic.button_pressed = true
-	_auth_scheme_digest.button_pressed = false
 
 func _on_clear_auth() -> void:
+	var origin := _auth_input_origin
 	Settings.clear_auth()
 	_clear_auth_inputs_only()
-	_use_saved_auth.set_pressed_no_signal(false)
-	_use_saved_auth.visible = false
-	_remember_auth.button_pressed = false
-	_remember_auth.visible = false
+	_auth_input_origin = origin
 	Mgr.notify(I18n.t("auth.cleared"), "warning")
-
-func _apply_auth_from_ui() -> Dictionary:
-	var base_url := _pending_base_url
-	if base_url.is_empty():
-		base_url = _base_server_url(_manual_input.text)
-	var credentials := _auth_from_ui_for_server(base_url)
-	if not credentials.is_empty():
-		Settings.set_session_auth(credentials)
-		if _remember_auth.button_pressed:
-			Settings.save_auth(
-				str(credentials.get("username", "")),
-				str(credentials.get("password", "")),
-				str(credentials.get("scheme", "basic")),
-				base_url
-			)
-	return credentials
 
 func _hide_splash() -> void:
 	_reading_intro.hide_intro()

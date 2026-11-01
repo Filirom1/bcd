@@ -328,12 +328,8 @@ def return_items(
                     "display_title": display_title(
                         transaction.bibliographic_record.title, item.shelf_location
                     ),
-                    "authors": parse_json_list(
-                        transaction.bibliographic_record.authors
-                    ),
-                    "illustrators": parse_json_list(
-                        transaction.bibliographic_record.illustrators
-                    ),
+                    "authors": parse_json_list(transaction.bibliographic_record.authors),
+                    "illustrators": parse_json_list(transaction.bibliographic_record.illustrators),
                     "cover_image": transaction.bibliographic_record.cover_image,
                     "borrower_id": transaction.borrower.borrower_id,
                     "borrower_name": transaction.borrower.full_name,

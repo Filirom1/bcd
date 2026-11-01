@@ -234,19 +234,87 @@ func _test_error_matrix() -> void:
 
 
 func _test_basic_auth() -> void:
-	_set_auth("alice", "secret", "basic")
+	# The legacy saved scheme must not affect negotiation; the challenge decides.
+	_set_auth("alice", "secret", "digest")
+	_api.get("_auth_challenges").clear()
+	_api.get("_digest_challenges").clear()
 	_server.requests.clear()
+	_server.call(
+		"enqueue",
+		"/api/v1/auth/basic",
+		401,
+		"Unauthorized",
+		{"WWW-Authenticate": 'Basic realm="BCD"'}
+	)
 	_server.call("enqueue", "/api/v1/auth/basic", 200, '{"authenticated":true}')
 
 	var result: Dictionary = await _request("GET", "/auth/basic")
 	_test.equal(result, {"authenticated": true}, "API accepts a Basic-authenticated response")
-	var request: Dictionary = _server.call("last_request")
-	var headers: Dictionary = request.get("headers", {})
+	_test.equal(_server.requests.size(), 2, "Basic authentication sends an initial request and one retry")
+	if _server.requests.size() >= 2:
+		var first_headers: Dictionary = _server.requests[0].get("headers", {})
+		var retry_headers: Dictionary = _server.requests[1].get("headers", {})
+		_test.equal(first_headers.get("authorization", ""), "", "Authentication starts without credentials")
+		_test.equal(
+			retry_headers.get("authorization", ""),
+			"Basic YWxpY2U6c2VjcmV0",
+			"API builds Basic authorization from the server challenge"
+		)
+
+	_server.requests.clear()
+	_server.call("enqueue", "/api/v1/auth/basic-cached", 200, '{"authenticated":true}')
+	var cached_result: Dictionary = await _request("GET", "/auth/basic-cached")
+	_test.equal(cached_result, {"authenticated": true}, "API reuses a successful Basic challenge")
 	_test.equal(
-		headers.get("authorization", ""),
+		_server.call("last_request").get("headers", {}).get("authorization", ""),
 		"Basic YWxpY2U6c2VjcmV0",
-		"API generates the expected Basic Authorization header"
+		"API reuses Basic authorization for the same server"
 	)
+
+	# A Basic -> Digest switch is detected from the next 401 and retried once.
+	_server.requests.clear()
+	_server.call(
+		"enqueue",
+		"/api/v1/auth/switch-to-digest",
+		401,
+		"Unauthorized",
+		{"WWW-Authenticate": 'Digest realm="BCD", nonce="switch-nonce", qop="auth"'}
+	)
+	_server.call("enqueue", "/api/v1/auth/switch-to-digest", 200, '{"authenticated":true}')
+	var digest_result: Dictionary = await _request("GET", "/auth/switch-to-digest")
+	_test.equal(digest_result, {"authenticated": true}, "API switches from Basic to Digest after a challenge")
+	if _server.requests.size() >= 2:
+		_test.expect(
+			str(_server.requests[0].get("headers", {}).get("authorization", "")).begins_with("Basic "),
+			"API initially reuses the previous Basic scheme"
+		)
+		_test.expect(
+			str(_server.requests[1].get("headers", {}).get("authorization", "")).begins_with("Digest username=\"alice\""),
+			"API retries with the newly challenged Digest scheme"
+		)
+
+	# And the reverse switch must also invalidate the cached Digest challenge.
+	_server.requests.clear()
+	_server.call(
+		"enqueue",
+		"/api/v1/auth/switch-to-basic",
+		401,
+		"Unauthorized",
+		{"WWW-Authenticate": 'Basic realm="BCD"'}
+	)
+	_server.call("enqueue", "/api/v1/auth/switch-to-basic", 200, '{"authenticated":true}')
+	var basic_again: Dictionary = await _request("GET", "/auth/switch-to-basic")
+	_test.equal(basic_again, {"authenticated": true}, "API switches from Digest back to Basic")
+	if _server.requests.size() >= 2:
+		_test.expect(
+			str(_server.requests[0].get("headers", {}).get("authorization", "")).begins_with("Digest "),
+			"API initially reuses the previous Digest scheme"
+		)
+		_test.equal(
+			_server.requests[1].get("headers", {}).get("authorization", ""),
+			"Basic YWxpY2U6c2VjcmV0",
+			"API retries with the newly challenged Basic scheme"
+		)
 
 
 func _test_auth_scope_and_transport() -> void:
@@ -275,6 +343,8 @@ func _test_auth_scope_and_transport() -> void:
 
 func _test_digest_challenge_and_retry() -> void:
 	_set_auth("alice", "secret", "digest")
+	_api.get("_auth_challenges").clear()
+	_api.get("_digest_challenges").clear()
 	_server.requests.clear()
 	_server.call(
 		"enqueue",

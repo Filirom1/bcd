@@ -10,6 +10,7 @@ const POPULAR_BOOKS_CACHE = preload("res://src/utils/PopularBooksCache.gd")
 # deterministic workflow tests and avoids coupling them to a specific node.
 var in_flight_requests := 0
 var _debug_logging := false
+var _auth_challenges: Dictionary = {}
 var _digest_challenges: Dictionary = {}
 var _digest_nonce_counts: Dictionary = {}
 
@@ -244,6 +245,24 @@ func _hash_digest(text: String, algorithm: String) -> String:
 		_:
 			return ""
 
+func _build_basic_header(auth: Dictionary) -> String:
+	var username := str(auth.get("username", Settings.auth_username))
+	var password := str(auth.get("password", Settings.auth_password))
+	var credentials := Marshalls.utf8_to_base64(username + ":" + password)
+	return "Basic " + credentials
+
+func _auth_scheme_from_challenge(www_auth: String) -> String:
+	var separator := www_auth.find(" ")
+	var scheme := www_auth.substr(0, separator if separator != -1 else www_auth.length()).to_lower()
+	return scheme if scheme in ["basic", "digest"] else ""
+
+func _clear_auth_challenge(origin: String) -> void:
+	_auth_challenges.erase(origin)
+	_digest_challenges.erase(origin)
+	for key in _digest_nonce_counts.keys():
+		if str(key).begins_with(origin + "|"):
+			_digest_nonce_counts.erase(key)
+
 func _build_digest_header(
 		method: String,
 		uri: String,
@@ -374,20 +393,17 @@ func _request(
 	var auth := _resolve_auth(base_url, auth_override)
 	var origin := Settings.server_origin(base_url)
 
-	var auth_scheme := str(auth.get("scheme", "basic")).to_lower()
-	if auth_scheme == "basic" and not auth.is_empty():
-		var creds := str(auth.get("username", "")) + ":" + str(auth.get("password", ""))
-		headers.append("Authorization: Basic " + Marshalls.utf8_to_base64(creds))
-		_debug("Basic authentication configured for the selected server")
-	elif auth_scheme == "digest" and not auth.is_empty():
-		var cached_challenge: Dictionary = _digest_challenges.get(origin, {})
-		var cached_header := str(cached_challenge.get("header", ""))
-		if not cached_header.is_empty():
-			var cached_digest := _build_digest_header(
-				method, _extract_uri(url), cached_header, body_string, auth, base_url)
-			if cached_digest.is_empty():
-				return _auth_error("unsupported_digest")
-			headers.append("Authorization: " + cached_digest)
+	var cached_auth_challenge: Dictionary = _auth_challenges.get(origin, {})
+	var cached_auth_scheme := str(cached_auth_challenge.get("scheme", ""))
+	if not auth.is_empty() and cached_auth_scheme == "basic":
+		headers.append("Authorization: " + _build_basic_header(auth))
+	elif not auth.is_empty() and cached_auth_scheme == "digest":
+		var cached_header := str(cached_auth_challenge.get("header", ""))
+		var cached_digest := _build_digest_header(
+			method, _extract_uri(url), cached_header, body_string, auth, base_url)
+		if cached_digest.is_empty():
+			return _auth_error("unsupported_digest")
+		headers.append("Authorization: " + cached_digest)
 
 	_debug("%s %s" % [method, url])
 
@@ -406,29 +422,22 @@ func _request(
 	var resp_headers: PackedStringArray = response[2]
 	var response_body: PackedByteArray = response[3]
 
-	# Digest authentication uses the server challenge once and then reuses its
-	# nonce with an incremented nonce-count for subsequent requests.
-	if status_code == 401 and auth_scheme == "digest" and not auth.is_empty():
+	# The WWW-Authenticate challenge is authoritative. Re-negotiate after any
+	# 401 so a server can change between Basic and Digest without user action.
+	if status_code == 401 and not auth.is_empty():
 		var www_auth := _find_header(resp_headers, "www-authenticate")
-		if www_auth.to_lower().begins_with("digest"):
-			_digest_challenges[origin] = {
-				"header": www_auth,
-				"nonce": _parse_digest_param(www_auth, "nonce"),
-			}
-			var digest := _build_digest_header(
-				method, _extract_uri(url), www_auth, body_string, auth, base_url)
-			if digest.is_empty():
-				return _auth_error("unsupported_digest")
+		var challenged_scheme := _auth_scheme_from_challenge(www_auth)
+		if challenged_scheme.is_empty():
+			_clear_auth_challenge(origin)
+			if not www_auth.is_empty():
+				return _auth_error("unsupported_auth_scheme")
+		elif challenged_scheme == "basic":
+			_auth_challenges[origin] = {"scheme": "basic", "header": www_auth}
+			_digest_challenges.erase(origin)
+			var basic_header := _build_basic_header(auth)
 			var auth_headers: PackedStringArray = headers.duplicate()
-			# Replace a preemptive Authorization header if the cached challenge was stale.
-			var replaced_authorization := false
-			for index in range(auth_headers.size() - 1, -1, -1):
-				if auth_headers[index].to_lower().begins_with("authorization:"):
-					auth_headers.remove_at(index)
-					replaced_authorization = true
-					break
-			if replaced_authorization or not auth_headers.has("Authorization: " + digest):
-				auth_headers.append("Authorization: " + digest)
+			_remove_authorization_header(auth_headers)
+			auth_headers.append("Authorization: " + basic_header)
 			response = await _send_request(url, auth_headers, http_method, body_string)
 			if response[0] != HTTPRequest.RESULT_SUCCESS:
 				return _network_error()
@@ -436,7 +445,25 @@ func _request(
 			resp_headers = response[2]
 			response_body = response[3]
 			if status_code == 401:
-				_digest_challenges.erase(origin)
+				_clear_auth_challenge(origin)
+				return _auth_error("auth_required")
+		elif challenged_scheme == "digest":
+			_auth_challenges[origin] = {"scheme": "digest", "header": www_auth}
+			var digest := _build_digest_header(
+				method, _extract_uri(url), www_auth, body_string, auth, base_url)
+			if digest.is_empty():
+				return _auth_error("unsupported_digest")
+			var auth_headers: PackedStringArray = headers.duplicate()
+			_remove_authorization_header(auth_headers)
+			auth_headers.append("Authorization: " + digest)
+			response = await _send_request(url, auth_headers, http_method, body_string)
+			if response[0] != HTTPRequest.RESULT_SUCCESS:
+				return _network_error()
+			status_code = response[1]
+			resp_headers = response[2]
+			response_body = response[3]
+			if status_code == 401:
+				_clear_auth_challenge(origin)
 				return _auth_error("auth_required")
 
 	_debug("Response status: %d" % status_code)
@@ -483,6 +510,11 @@ func _request(
 
 	_debug("Parsed data type: " + data_type)
 	return response_json.data if response_json.data != null else {}
+
+func _remove_authorization_header(headers: PackedStringArray) -> void:
+	for index in range(headers.size() - 1, -1, -1):
+		if headers[index].to_lower().begins_with("authorization:"):
+			headers.remove_at(index)
 
 func _auth_error(code: String) -> Dictionary:
 	return {"error": true, "detail": {"code": code, "details": {}}}
