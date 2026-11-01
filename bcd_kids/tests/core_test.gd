@@ -270,6 +270,7 @@ func _test_settings() -> void:
 		"theme": settings.get("theme"),
 		"graphics_quality": settings.get("graphics_quality"),
 		"resolution": settings.get("resolution"),
+		"student_idle_timeout_seconds": settings.get("student_idle_timeout_seconds"),
 		"last_server_url": settings.get("last_server_url"),
 		"last_library_name": settings.get("last_library_name"),
 		"auth_username": settings.get("auth_username"),
@@ -299,6 +300,13 @@ func _test_settings() -> void:
 	settings.call("set_resolution", "unsupported")
 	_test.equal(str(settings.get("resolution")), "maximized", "Settings normalizes unsupported resolution")
 	_test.equal(str(settings.call("get_resolution_label")), "Maximisée (recommandé)", "Settings falls back to maximized mode")
+
+	settings.call("set_student_idle_timeout", 300)
+	_test.equal(int(settings.get("student_idle_timeout_seconds")), 300, "Settings stores the student inactivity timeout")
+	settings.call("set_student_idle_timeout", 0)
+	_test.equal(int(settings.get("student_idle_timeout_seconds")), 0, "Settings allows disabling the inactivity check")
+	settings.call("set_student_idle_timeout", 4000)
+	_test.equal(int(settings.get("student_idle_timeout_seconds")), 3600, "Settings caps the inactivity timeout")
 
 	settings.call("save_server", "http://library.example/api/v1", "School Library")
 	_test.equal(str(settings.get("last_server_url")), "http://library.example/api/v1", "Settings stores the last server URL")
@@ -337,6 +345,7 @@ func _test_settings() -> void:
 	reloaded.load_settings()
 	_test.equal(str(reloaded.get("last_server_url")), str(settings.get("last_server_url")), "Settings round-trips the server URL")
 	_test.equal(str(reloaded.get("last_library_name")), str(settings.get("last_library_name")), "Settings round-trips the library name")
+	_test.equal(int(reloaded.get("student_idle_timeout_seconds")), 3600, "Settings round-trips the student inactivity timeout")
 	_test.equal(str(reloaded.get("theme")), "forest", "Settings round-trips the theme")
 
 	for key in previous_state:

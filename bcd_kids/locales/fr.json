@@ -184,6 +184,8 @@
 		"resolution_title": "Résolution",
 		"quality_title": "Qualité graphique",
 		"theme_title": "Thème",
+		"idle_timeout_title": "Vérification après inactivité (secondes)",
+		"idle_timeout_hint": "0 désactive la vérification. Sans réponse pendant {seconds} secondes, retour au choix de la classe.",
 		"current_resolution": "Résolution actuelle : {value}",
 		"current_quality": "Qualité actuelle : {value}",
 		"resolution_720p": "1280×720\n(petits écrans)",
@@ -199,6 +201,13 @@
 		"apply": "Appliquer",
 		"theme_applied": "Thème appliqué : {name}",
 		"theme_random_hint": "Thème aléatoire au démarrage"
+	},
+	"presence": {
+		"title": "{name}, es-tu toujours là ?",
+		"message": "Appuie sur « Oui » pour continuer. Sans réponse dans {seconds} secondes, retour au choix de la classe.",
+		"yes": "Oui, je suis là",
+		"change_student": "Changer d’enfant",
+		"countdown": "Retour au choix de la classe dans {seconds} s"
 	},
 	"common": {
 		"validate": "Valider",

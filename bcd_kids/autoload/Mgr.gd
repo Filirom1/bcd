@@ -4,12 +4,16 @@ extends CanvasLayer
 const NOTIFICATION = preload("res://src/components/Notification.tscn")
 const MANAGER_BACKGROUND = preload("res://src/components/ManagerBackground.tscn")
 const MANAGER_NOTIFICATIONS = preload("res://src/components/ManagerNotifications.tscn")
+const BORROWER_PRESENCE_DIALOG = preload("res://src/components/BorrowerPresenceDialog.tscn")
 const NODE_HELPER = preload("res://src/utils/NodeHelper.gd")
 
 var _stack: Array = []
 var _notif_box: VBoxContainer
 var _bg_tex_rect: TextureRect
 var _book_action_feedback: Node
+var _presence_dialog: Control
+var _idle_borrower_key := ""
+var _idle_elapsed_seconds := 0.0
 
 # Incremented whenever navigation starts. Screens use it to ignore results from
 # requests that began before the current screen/session became active.
@@ -36,6 +40,79 @@ func _build_background() -> void:
 	_bg_tex_rect = background.get_node("Root/BackgroundTexture") as TextureRect
 	_bg_tex_rect.texture = ThemeManager.background_texture
 	ThemeManager.theme_changed.connect(_on_theme_changed)
+
+func _process(delta: float) -> void:
+	var borrower_key := _current_borrower_key()
+	if borrower_key.is_empty():
+		_idle_borrower_key = ""
+		_idle_elapsed_seconds = 0.0
+		_close_presence_dialog()
+		return
+
+	if borrower_key != _idle_borrower_key:
+		_idle_borrower_key = borrower_key
+		_idle_elapsed_seconds = 0.0
+		_close_presence_dialog()
+
+	var timeout_seconds := int(Settings.student_idle_timeout_seconds)
+	if timeout_seconds <= 0 or is_instance_valid(_presence_dialog):
+		return
+
+	_idle_elapsed_seconds += delta
+	if _idle_elapsed_seconds >= timeout_seconds:
+		_show_presence_dialog()
+
+func _input(event: InputEvent) -> void:
+	if is_instance_valid(_presence_dialog):
+		return
+	if _current_borrower_key().is_empty():
+		return
+	if event is InputEventKey or event is InputEventMouse or event is InputEventScreenTouch \
+			or event is InputEventScreenDrag or event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		_idle_elapsed_seconds = 0.0
+
+func _current_borrower_key() -> String:
+	if not is_instance_valid(get_node_or_null("/root/GS")):
+		return ""
+	var borrower: Dictionary = GS.current_borrower
+	if borrower.is_empty():
+		return ""
+	var borrower_id := str(borrower.get("borrower_id", ""))
+	if borrower_id.is_empty():
+		borrower_id = str(borrower.get("id", ""))
+	return borrower_id
+
+func _show_presence_dialog() -> void:
+	if is_instance_valid(_presence_dialog):
+		return
+	var borrower := GS.current_borrower
+	var borrower_name := "%s %s" % [str(borrower.get("first_name", "")).strip_edges(), str(borrower.get("last_name", "")).strip_edges()]
+	borrower_name = borrower_name.strip_edges()
+	var dialog := BORROWER_PRESENCE_DIALOG.instantiate() as Control
+	dialog.theme = get_tree().root.theme
+	_presence_dialog = dialog
+	add_child(dialog)
+	dialog.call("setup", borrower_name)
+	dialog.connect("continue_session", _on_presence_continue.bind(dialog))
+	dialog.connect("change_student", _on_presence_change_student.bind(dialog))
+
+func _on_presence_continue(dialog: Control) -> void:
+	if _presence_dialog != dialog:
+		return
+	_close_presence_dialog()
+	_idle_elapsed_seconds = 0.0
+
+func _on_presence_change_student(dialog: Control) -> void:
+	if _presence_dialog != dialog:
+		return
+	_close_presence_dialog()
+	GS.reset_borrower()
+	reset_to("class_select")
+
+func _close_presence_dialog() -> void:
+	if is_instance_valid(_presence_dialog):
+		_presence_dialog.queue_free()
+	_presence_dialog = null
 
 func _on_theme_changed() -> void:
 	_bg_tex_rect.texture = ThemeManager.background_texture

@@ -16,6 +16,7 @@ func _run() -> void:
 	await _test_class_button()
 	await _test_filter_panel()
 	await _test_notification()
+	await _test_presence_dialog()
 	await _test_server_card()
 	await _test_book_card()
 	await _test_book_action_feedback()
@@ -126,6 +127,21 @@ func _test_notification() -> void:
 		_test.equal(label.text, "Message", "Notification displays its message: " + notification_type)
 	_test.equal(notification.theme_type_variation, "PanelNotificationSuccess", "Notification defaults unknown types to success")
 	notification.queue_free()
+	await _test.wait_frames(self)
+
+
+func _test_presence_dialog() -> void:
+	var dialog = load("res://src/components/BorrowerPresenceDialog.tscn").instantiate()
+	get_root().add_child(dialog)
+	dialog.call("setup", "Alice Martin")
+	await _test.wait_frames(self)
+	var changed: Array = []
+	dialog.change_student.connect(func(): changed.append(true))
+	_test.expect(dialog.get_node("Center/Panel/Content/Title").text.contains("Alice Martin"), "Presence dialog names the selected student")
+	_test.expect(not dialog.get_node("Center/Panel/Content/Buttons/YesButton").text.is_empty(), "Presence dialog labels the confirmation action")
+	dialog.get_node("Center/Panel/Content/Buttons/ChangeStudentButton").pressed.emit()
+	_test.equal(changed, [true], "Presence dialog emits a student-change request")
+	dialog.queue_free()
 	await _test.wait_frames(self)
 
 

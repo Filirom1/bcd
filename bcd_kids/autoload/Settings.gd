@@ -2,6 +2,10 @@
 extends Node
 
 const SETTINGS_FILE = "user://bcd_settings.cfg"
+const DEFAULT_STUDENT_IDLE_TIMEOUT_SECONDS := 10
+const MAX_STUDENT_IDLE_TIMEOUT_SECONDS := 3600
+const STUDENT_IDLE_TIMEOUT_STEP_SECONDS := 10
+const STUDENT_PRESENCE_GRACE_SECONDS := 30
 
 # Config cache to avoid repeated disk reads (HDD optimization)
 var _config_cache: ConfigFile = null
@@ -17,6 +21,9 @@ var graphics_quality := "low"
 
 # Resolution presets: "720p", "1080p", "maximized"
 var resolution := "maximized"
+
+# Return to class selection after this many seconds without activity. Zero disables it.
+var student_idle_timeout_seconds := DEFAULT_STUDENT_IDLE_TIMEOUT_SECONDS
 
 # Last used server and credentials (for auto-reconnect)
 var last_server_url := ""
@@ -63,6 +70,11 @@ func load_settings() -> void:
 	if err == OK:
 		graphics_quality = config.get_value("graphics", "quality", "low")
 		resolution = config.get_value("display", "resolution", "maximized")
+		student_idle_timeout_seconds = clampi(
+			int(config.get_value("student", "idle_timeout_seconds", DEFAULT_STUDENT_IDLE_TIMEOUT_SECONDS)),
+			0,
+			MAX_STUDENT_IDLE_TIMEOUT_SECONDS
+		)
 		theme = config.get_value("display", "theme", "forest")
 		locale = config.get_value("display", "locale", "fr")
 		if locale not in ["fr", "en"]:
@@ -83,6 +95,7 @@ func save_settings() -> void:
 	var config = _config_cache if _config_cache else ConfigFile.new()
 	config.set_value("graphics", "quality", graphics_quality)
 	config.set_value("display", "resolution", resolution)
+	config.set_value("student", "idle_timeout_seconds", student_idle_timeout_seconds)
 	config.set_value("display", "theme", theme)
 	config.set_value("display", "locale", locale)
 	config.set_value("server", "url", last_server_url)
@@ -125,6 +138,10 @@ func set_graphics_quality(quality: String) -> void:
 func set_resolution(res: String) -> void:
 	resolution = res if RESOLUTIONS.has(res) else "maximized"
 	apply_resolution()
+	save_settings()
+
+func set_student_idle_timeout(seconds: int) -> void:
+	student_idle_timeout_seconds = clampi(seconds, 0, MAX_STUDENT_IDLE_TIMEOUT_SECONDS)
 	save_settings()
 
 func apply_graphics_quality() -> void:

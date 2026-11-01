@@ -97,6 +97,22 @@ custom_minimum_size = Vector2(220, 60)
 
 [node name="Separator3" type="HSeparator" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
 
+[node name="IdleTimeoutTitle" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+unique_name_in_owner = true
+
+[node name="IdleTimeoutHint" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+unique_name_in_owner = true
+theme_type_variation = "LabelMedium"
+
+[node name="IdleTimeoutInput" type="SpinBox" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+unique_name_in_owner = true
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 60)
+min_value = 0.0
+rounded = true
+
+[node name="Separator4" type="HSeparator" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
+
 [node name="ThemeTitle" type="Label" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]
 
 [node name="ThemeCarousel" type="VBoxContainer" parent="MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent"]

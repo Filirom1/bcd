@@ -313,6 +313,12 @@ func _test_settings_screen() -> void:
 	var screen: Control = get_root().get_node("SSettings")
 	var name_label: Label = screen.get_node("MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel/CarouselRow/ThemeNameLabel")
 	var index_label: Label = screen.get_node("MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ThemeCarousel/ThemeIndexLabel")
+	var idle_timeout_input: SpinBox = screen.get_node("MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/IdleTimeoutInput")
+	_test.equal(int(idle_timeout_input.value), int(_settings.get("student_idle_timeout_seconds")), "Settings displays the configured inactivity timeout")
+	_test.expect(
+		idle_timeout_input.get_index() < idle_timeout_input.get_parent().get_node("ThemeCarousel").get_index(),
+		"Settings places the inactivity timeout before the theme apply button"
+	)
 	var initial_name := name_label.text
 	screen.call("_on_carousel_next")
 	_test.expect(name_label.text != initial_name, "Settings carousel advances to another theme")

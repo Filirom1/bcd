@@ -16,6 +16,9 @@ extends Control
 @onready var _theme_index_lbl: Label = %ThemeIndexLabel
 @onready var _theme_apply_btn: Button = %ThemeApplyBtn
 @onready var _theme_preview: TextureRect = %ThemePreview
+@onready var _idle_timeout_title: Label = %IdleTimeoutTitle
+@onready var _idle_timeout_hint: Label = %IdleTimeoutHint
+@onready var _idle_timeout_input: SpinBox = %IdleTimeoutInput
 
 @onready var _title_lbl: Label = get_node("MainMargin/Root/Title")
 @onready var _resolution_title_lbl: Label = get_node("MainMargin/Root/SettingsPanel/SettingsScroll/PanelContent/ResolutionTitle")
@@ -31,6 +34,10 @@ func _ready() -> void:
 	_original_theme = ThemeManager.current_theme_name
 	_refresh_ui()
 	_setup_carousel()
+	_idle_timeout_input.max_value = Settings.MAX_STUDENT_IDLE_TIMEOUT_SECONDS
+	_idle_timeout_input.step = Settings.STUDENT_IDLE_TIMEOUT_STEP_SECONDS
+	_idle_timeout_input.value = Settings.student_idle_timeout_seconds
+	_idle_timeout_input.value_changed.connect(_on_idle_timeout_changed)
 
 	_back_btn.pressed.connect(_on_back)
 	_back_btn.call_deferred("grab_focus")
@@ -70,10 +77,13 @@ func on_enter() -> void:
 
 func _refresh_ui() -> void:
 	_title_lbl.text = I18n.t("settings.title")
+	_idle_timeout_input.value = Settings.student_idle_timeout_seconds
 	_back_btn.text = "← " + I18n.t("common.back")
 	_resolution_title_lbl.text = I18n.t("settings.resolution_title")
 	_quality_title_lbl.text = I18n.t("settings.quality_title")
 	_theme_title_lbl.text = I18n.t("settings.theme_title")
+	_idle_timeout_title.text = I18n.t("settings.idle_timeout_title")
+	_idle_timeout_hint.text = I18n.t("settings.idle_timeout_hint", {"seconds": Settings.STUDENT_PRESENCE_GRACE_SECONDS})
 	_btn_720p.text = I18n.t("settings.resolution_720p")
 	_btn_1080p.text = I18n.t("settings.resolution_1080p")
 	_btn_max.text = I18n.t("settings.resolution_maximized")
@@ -85,6 +95,9 @@ func _refresh_ui() -> void:
 func _refresh_current_labels() -> void:
 	_current_res_lbl.text = I18n.t("settings.current_resolution", {"value": Settings.get_resolution_label()})
 	_current_quality_lbl.text = I18n.t("settings.current_quality", {"value": Settings.get_quality_label()})
+
+func _on_idle_timeout_changed(value: float) -> void:
+	Settings.set_student_idle_timeout(int(value))
 
 # ============================================================================
 # Theme carousel

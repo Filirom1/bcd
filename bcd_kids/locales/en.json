@@ -184,6 +184,8 @@
 		"resolution_title": "Resolution",
 		"quality_title": "Graphics quality",
 		"theme_title": "Theme",
+		"idle_timeout_title": "Inactivity check (seconds)",
+		"idle_timeout_hint": "0 disables the check. If there is no response for {seconds} seconds, the app returns to class selection.",
 		"current_resolution": "Current resolution: {value}",
 		"current_quality": "Current quality: {value}",
 		"resolution_720p": "1280×720\n(small screens)",
@@ -199,6 +201,13 @@
 		"apply": "Apply",
 		"theme_applied": "Theme applied: {name}",
 		"theme_random_hint": "Random theme on startup"
+	},
+	"presence": {
+		"title": "{name}, are you still there?",
+		"message": "Tap “Yes” to continue. If there is no response within {seconds} seconds, the app returns to class selection.",
+		"yes": "Yes, I'm here",
+		"change_student": "Change student",
+		"countdown": "Returning to class selection in {seconds} s"
 	},
 	"common": {
 		"validate": "Validate",

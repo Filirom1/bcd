@@ -24,6 +24,7 @@ func _run() -> void:
 	await _test_cover_fallbacks()
 	await _test_search_actions()
 	await _test_borrower_actions()
+	await _test_borrower_idle_prompt()
 	await _test_theme_animations()
 	_restore_global_state()
 	_test.finish(self)
@@ -48,6 +49,7 @@ func _save_global_state() -> void:
 		"theme": _settings.get("theme"),
 		"graphics_quality": _settings.get("graphics_quality"),
 		"resolution": _settings.get("resolution"),
+		"student_idle_timeout_seconds": _settings.get("student_idle_timeout_seconds"),
 	}
 	_previous_theme = str(_theme_manager.get("current_theme_name"))
 
@@ -186,6 +188,28 @@ func _test_borrower_actions() -> void:
 	settings.call("_unhandled_key_input", _escape_event())
 	_test.expect(is_instance_valid(settings), "Settings remains valid while handling back input")
 	await _unmount(settings)
+
+
+func _test_borrower_idle_prompt() -> void:
+	var manager: Node = get_root().get_node("Mgr")
+	var previous_borrower: Dictionary = (_gs.get("current_borrower") as Dictionary).duplicate(true)
+	var previous_timeout := int(_settings.get("student_idle_timeout_seconds"))
+	_settings.call("set_student_idle_timeout", 1)
+	_gs.set("current_borrower", {"id": 99, "first_name": "Alice", "last_name": "Reader"})
+	manager.call("_process", 1.1)
+	await _test.wait_frames(self)
+
+	var dialog := manager.get_node_or_null("BorrowerPresenceDialog") as Control
+	_test.expect(dialog != null, "Manager asks for confirmation after student inactivity")
+	if dialog != null:
+		_test.expect(dialog.get_node("Center/Panel/Content/Title").text.contains("Alice Reader"), "Inactivity prompt identifies the selected student")
+		dialog.get_node("Center/Panel/Content/Buttons/YesButton").pressed.emit()
+		await _test.wait_frames(self)
+	_test.expect(_gs.get("current_borrower").has("id"), "Confirming presence keeps the student selected")
+
+	_settings.call("set_student_idle_timeout", previous_timeout)
+	_gs.set("current_borrower", previous_borrower)
+	manager.call("_process", 0.0)
 
 
 func _test_theme_animations() -> void:
