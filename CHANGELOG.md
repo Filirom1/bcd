@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.7.0]
+
+- Added a circulation activity timeline with class and date navigation, plus support for simulating activity against the current date.
+- Added a configurable inactivity prompt in the Kids client to check whether a student is still present.
+- Kids server authentication now negotiates Basic or Digest automatically and saves credentials per server.
+- Refreshed the Web and Kids interfaces with updated styling and clearer interaction feedback.
+- Simplified the hold-ready popup and added the book cover.
 - Catalog and loan reports now show record subtitles, series details, barcodes, shelf locations, and call numbers.
 - Added a Kids checkout button to end a student's session and return to class selection.
 - Fixed Kids server discovery so the CLIENT_ONLY mDNS proxy is not listed as a library server.
