@@ -11,6 +11,7 @@ import ReportHeader from '../ui/ReportHeader.js';
 import ReportFilters from './ReportFilters.js';
 import DataTable from '../ui/DataTable.js';
 import RecordCell from '../catalog/RecordCell.js';
+import Pagination from '../ui/Pagination.js';
 
 export default defineComponent({
     name: 'HoldsReport',
@@ -19,12 +20,16 @@ export default defineComponent({
         ReportHeader,
         ReportFilters,
         DataTable,
-        RecordCell
+        RecordCell,
+        Pagination
     },
 
     setup() {
         const { t, d } = useI18n();
-        const { data, loading, classFilter, loadReport, printReport } = useReport('holds');
+        const {
+            data, loading, classFilter, paginatedData, currentPage, pageSize, totalItems, totalPages,
+            loadReport, printReport, goToPage, setPageSize
+        } = useReport('holds');
         const { openBorrower } = useGlobalModal();
 
         // Define table columns
@@ -70,6 +75,13 @@ export default defineComponent({
             data,
             loading,
             classFilter,
+            paginatedData,
+            currentPage,
+            pageSize,
+            totalItems,
+            totalPages,
+            goToPage,
+            setPageSize,
             loadReport,
             printReport,
             getStatusBadgeClass,
@@ -97,7 +109,7 @@ export default defineComponent({
                 </div>
             </div>
 
-            <div v-else-if="data.length === 0" class="alert alert-info">
+            <div v-else-if="totalItems === 0" class="alert alert-info">
                 <i class="bi bi-info-circle me-2"></i>
                 {{ t('reports.holds.noItems') }}
             </div>
@@ -107,7 +119,7 @@ export default defineComponent({
                     <div class="table-responsive">
                         <data-table
                             :columns="columns"
-                            :rows="data"
+                            :rows="paginatedData"
                             row-key="hold_id"
                             :framed="false"
                             bare
@@ -153,6 +165,17 @@ export default defineComponent({
                     </div>
                 </div>
             </div>
+
+            <pagination
+                v-if="!loading && totalItems > 0"
+                :current-page="currentPage"
+                :page-size="pageSize"
+                :total-items="totalItems"
+                :total-pages="totalPages"
+                @page-change="goToPage"
+                @page-size-change="setPageSize"
+                class="mt-3"
+            />
         </div>
     `
 });

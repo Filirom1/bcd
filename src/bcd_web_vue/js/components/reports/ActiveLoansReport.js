@@ -11,6 +11,7 @@ import ReportHeader from '../ui/ReportHeader.js';
 import ReportFilters from './ReportFilters.js';
 import DataTable from '../ui/DataTable.js';
 import RecordCell from '../catalog/RecordCell.js';
+import Pagination from '../ui/Pagination.js';
 
 export default defineComponent({
     name: 'ActiveLoansReport',
@@ -19,12 +20,16 @@ export default defineComponent({
         ReportHeader,
         ReportFilters,
         DataTable,
-        RecordCell
+        RecordCell,
+        Pagination
     },
 
     setup() {
         const { t, d } = useI18n();
-        const { data, loading, classFilter, loadReport, printReport } = useReport('active-loans');
+        const {
+            loading, classFilter, paginatedData, currentPage, pageSize, totalItems, totalPages,
+            loadReport, printReport, goToPage, setPageSize
+        } = useReport('active-loans');
         const { openBorrower } = useGlobalModal();
 
         // Define table columns
@@ -39,7 +44,7 @@ export default defineComponent({
         // Group items by class
         const groupedData = computed(() => {
             const groups = {};
-            data.value.forEach(item => {
+            paginatedData.value.forEach(item => {
                 const className = item.class_name || t('reports.activeLoans.noClass');
                 if (!groups[className]) groups[className] = [];
                 groups[className].push(item);
@@ -63,6 +68,12 @@ export default defineComponent({
             loading,
             classFilter,
             groupedData,
+            currentPage,
+            pageSize,
+            totalItems,
+            totalPages,
+            goToPage,
+            setPageSize,
             loadReport,
             printReport,
             getDaysUntilDueBadge,
@@ -146,6 +157,17 @@ export default defineComponent({
                     </div>
                 </div>
             </div>
+
+            <pagination
+                v-if="!loading && totalItems > 0"
+                :current-page="currentPage"
+                :page-size="pageSize"
+                :total-items="totalItems"
+                :total-pages="totalPages"
+                @page-change="goToPage"
+                @page-size-change="setPageSize"
+                class="mt-3"
+            />
         </div>
     `
 });

@@ -59,7 +59,7 @@ describe('HoldsReport', () => {
         wrapper.vm.classFilter = 'CM2';
         await wrapper.vm.loadReport();
         expect(apiClient.get).toHaveBeenLastCalledWith('/reports/holds', {
-            period: 'year', limit: 10, class_name: 'CM2'
+            limit: 500, class_name: 'CM2', offset: 0
         });
 
         wrapper.vm.printReport();

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.7.0]
 
+- Added shared pagination to active-loan, overdue, and holds reports, with 10 results per page by default.
 - Added a circulation activity timeline with class and date navigation, plus support for simulating activity against the current date.
 - Added a configurable inactivity prompt in the Kids client to check whether a student is still present.
 - Kids server authentication now negotiates Basic or Digest automatically and saves credentials per server.

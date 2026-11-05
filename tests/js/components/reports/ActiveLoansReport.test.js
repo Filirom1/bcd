@@ -58,4 +58,41 @@ describe('ActiveLoansReport', () => {
         wrapper.vm.printReport();
         expect(print).toHaveBeenCalledTimes(1);
     });
+
+    it('shows loans from every class after selecting All classes', async () => {
+        const allLoans = [
+            { circulation_id: 1, borrower_id: 'B-101', borrower_name: 'Amira', class_name: 'CP' },
+            { circulation_id: 2, borrower_id: 'B-102', borrower_name: 'Louis', class_name: 'CE1' }
+        ];
+        apiClient.get.mockImplementation(async (endpoint, params = {}) => {
+            if (endpoint === '/classes') return [{ id: 1, name: 'CP' }];
+            const loans = params.class_name
+                ? allLoans.filter(loan => loan.class_name === params.class_name)
+                : allLoans;
+            return {
+                items: loans,
+                total_active_loans: loans.length,
+                limit: 500,
+                offset: params.offset || 0
+            };
+        });
+
+        const wrapper = mount(ActiveLoansReport, {
+            global: {
+                stubs: { ReportHeader: true, DataTable: true }
+            }
+        });
+        await flushPromises();
+
+        const classSelect = wrapper.find('select');
+        await classSelect.setValue('CP');
+        await flushPromises();
+        await classSelect.setValue('');
+        await flushPromises();
+
+        const reportCalls = apiClient.get.mock.calls.filter(([endpoint]) => endpoint === '/reports/active-loans');
+        expect(reportCalls.at(-1)[1]).toEqual({ limit: 500, offset: 0 });
+        expect(Object.keys(wrapper.vm.groupedData)).toEqual(['CP', 'CE1']);
+        expect(wrapper.find('.pagination').exists()).toBe(true);
+    });
 });
