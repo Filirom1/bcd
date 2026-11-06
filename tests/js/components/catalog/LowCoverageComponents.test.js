@@ -54,6 +54,27 @@ describe('BibliographicFields', () => {
         expect(wrapper.emitted('update:modelValue').at(-1)[0].target_audience).toBe('adult');
     });
 
+    it('preserves spaces and commas while typing authors and illustrators', async () => {
+        const wrapper = mount(BibliographicFields, {
+            props: { modelValue: model() }
+        });
+        const authors = wrapper.findAll('input[type="text"]')[3];
+        const illustrators = wrapper.findAll('input[type="text"]')[4];
+
+        await authors.trigger('focus');
+        await authors.setValue('Jean Dupont, ');
+        expect(authors.element.value).toBe('Jean Dupont, ');
+        expect(wrapper.emitted('update:modelValue').at(-1)[0].authors).toEqual(['Jean Dupont']);
+        await authors.setValue('Jean Dupont, Alice Martin');
+        expect(authors.element.value).toBe('Jean Dupont, Alice Martin');
+        expect(wrapper.emitted('update:modelValue').at(-1)[0].authors).toEqual(['Jean Dupont', 'Alice Martin']);
+
+        await illustrators.trigger('focus');
+        await illustrators.setValue('Claire Martin,');
+        expect(illustrators.element.value).toBe('Claire Martin,');
+        expect(wrapper.emitted('update:modelValue').at(-1)[0].illustrators).toEqual(['Claire Martin']);
+    });
+
     it('renders only populated fields in read-only mode', () => {
         const value = { title: 'Visible', target_audience: 'child', language: 'fr', binding_type: 'hardcover' };
         const wrapper = mount(BibliographicFields, {

@@ -13,7 +13,7 @@
  * as comma-separated text here, so both callers can pass/receive arrays.
  */
 
-const { defineComponent, computed } = Vue;
+const { defineComponent, computed, ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import { AUDIENCE_VALUES, BINDING_TYPE_VALUES, parseCsv } from '../../utils/domain.js';
 
@@ -42,11 +42,34 @@ export default defineComponent({
         const set = (key, value) => emit('update:modelValue', { ...props.modelValue, [key]: value });
 
 
-        // Array<->CSV bridge for authors/illustrators/keywords.
+        // Keep the unparsed text while editing; parsing on each keystroke removes
+        // trailing spaces and commas needed to enter the next value.
+        const csvKeys = ['authors', 'illustrators', 'keywords'];
+        const csvText = (value) => Array.isArray(value) ? value.join(', ') : (value || '');
+        const csvDrafts = Object.fromEntries(csvKeys.map(key => [key, ref(csvText(props.modelValue[key]))]));
+        const csvFocused = Object.fromEntries(csvKeys.map(key => [key, ref(false)]));
+        csvKeys.forEach(key => watch(
+            () => props.modelValue[key],
+            value => {
+                if (!csvFocused[key].value) csvDrafts[key].value = csvText(value);
+            }
+        ));
         const csvField = (key) => computed({
-            get: () => (Array.isArray(form.value[key]) ? form.value[key].join(', ') : (form.value[key] || '')),
-            set: (val) => set(key, parseCsv(val))
+            get: () => csvDrafts[key].value,
+            set: (value) => {
+                csvDrafts[key].value = value;
+                set(key, parseCsv(value));
+            }
         });
+        const handleCsvBlur = (key) => {
+            const values = parseCsv(csvDrafts[key].value);
+            csvDrafts[key].value = values.join(', ');
+            csvFocused[key].value = false;
+            set(key, values);
+        };
+        const handleCsvFocus = (key) => {
+            csvFocused[key].value = true;
+        };
         const authorsText = csvField('authors');
         const illustratorsText = csvField('illustrators');
         const keywordsText = csvField('keywords');
@@ -71,7 +94,7 @@ export default defineComponent({
         });
 
         return {
-            form, set, authorsText, illustratorsText, keywordsText,
+            form, set, authorsText, illustratorsText, keywordsText, handleCsvFocus, handleCsvBlur,
             audienceOptions, bindingTypeOptions, mediumTypeSuggestions, levelSuggestions, languageSuggestions,
             hasValue, labelFor, getLanguageDisplay, t
         };
@@ -124,7 +147,7 @@ export default defineComponent({
           <div class="row mb-2 align-items-center" v-if="editMode || hasValue('authors')">
             <label class="col-sm-3 col-form-label fw-bold">{{ t('bibliographic.authors') }}</label>
             <div class="col-sm-9">
-              <input type="text" v-model="authorsText"
+              <input type="text" v-model="authorsText" @focus="handleCsvFocus('authors')" @blur="handleCsvBlur('authors')"
                 :class="editMode ? 'form-control' : 'form-control-plaintext'"
                 :readonly="!editMode" :placeholder="!editMode ? '—' : t('bibliographic.placeholder_authors')" />
               <small v-if="editMode" class="form-text text-muted">{{ t('bibliographic.help_authors') }}</small>
@@ -134,7 +157,7 @@ export default defineComponent({
           <div class="row mb-2 align-items-center" v-if="editMode || hasValue('illustrators')">
             <label class="col-sm-3 col-form-label fw-bold">{{ t('bibliographic.illustrators') }}</label>
             <div class="col-sm-9">
-              <input type="text" v-model="illustratorsText"
+              <input type="text" v-model="illustratorsText" @focus="handleCsvFocus('illustrators')" @blur="handleCsvBlur('illustrators')"
                 :class="editMode ? 'form-control' : 'form-control-plaintext'"
                 :readonly="!editMode" :placeholder="!editMode ? '—' : t('bibliographic.placeholder_illustrators')" />
               <small v-if="editMode" class="form-text text-muted">{{ t('bibliographic.help_illustrators') }}</small>
@@ -314,7 +337,7 @@ export default defineComponent({
           <div class="row mb-2 align-items-center" v-if="editMode || hasValue('keywords')">
             <label class="col-sm-3 col-form-label fw-bold">{{ t('bibliographic.keywords') }}</label>
             <div class="col-sm-9">
-              <input type="text" v-model="keywordsText"
+              <input type="text" v-model="keywordsText" @focus="handleCsvFocus('keywords')" @blur="handleCsvBlur('keywords')"
                 :class="editMode ? 'form-control' : 'form-control-plaintext'"
                 :readonly="!editMode" :placeholder="!editMode ? '—' : t('bibliographic.placeholder_keywords')" />
               <small v-if="editMode" class="form-text text-muted">{{ t('bibliographic.help_keywords') }}</small>
