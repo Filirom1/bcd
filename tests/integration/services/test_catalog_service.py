@@ -505,6 +505,26 @@ class TestBibliographicRecordSearch:
         assert total == 1
         assert results[0].title == "The Hobbit"
 
+    def test_general_search_ignores_accents_in_title_subtitle_and_collection(self, db_session):
+        records = [
+            BibliographicRecordCreate(title="L'histoire d'Adèle", isbn="9780000000001"),
+            BibliographicRecordCreate(
+                title="Livre", subtitle="Les aventures d'Adèle", isbn="9780000000002"
+            ),
+            BibliographicRecordCreate(
+                title="Livre", collection="Mortelle Adèle", isbn="9780000000003"
+            ),
+        ]
+        created = [
+            catalog_service.create_bibliographic_record(db_session, record, isbn_lookup=False)
+            for record in records
+        ]
+
+        results, total = catalog_service.search_bibliographic_records(db_session, q="Adele")
+
+        assert total == 3
+        assert {record.id for record in results} == {record.id for record in created}
+
     def test_search_bibliographic_records_pagination(self, db_session):
         """
         Test pagination of search results.

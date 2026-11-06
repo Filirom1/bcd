@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.7.0]
 
+- General catalog search now ignores accents across bibliographic text fields.
 - Fixed cataloging author and illustrator fields so spaces and commas remain editable while typing.
 - Added shared pagination to active-loan, overdue, and holds reports, with 10 results per page by default.
 - Added a circulation activity timeline with class and date navigation, plus support for simulating activity against the current date.

@@ -1,10 +1,11 @@
 """Queries module for the catalog domain."""
 
 import logging
+import unicodedata
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
@@ -16,6 +17,53 @@ from src.shared.constants import IDFormat
 from ._validation import item_id_search_values, require_item, require_record
 
 logger = logging.getLogger(__name__)
+
+_ACCENT_REPLACEMENTS = (
+    ("à", "a"),
+    ("â", "a"),
+    ("ä", "a"),
+    ("ç", "c"),
+    ("é", "e"),
+    ("è", "e"),
+    ("ê", "e"),
+    ("ë", "e"),
+    ("î", "i"),
+    ("ï", "i"),
+    ("ô", "o"),
+    ("ö", "o"),
+    ("ù", "u"),
+    ("û", "u"),
+    ("ü", "u"),
+    ("œ", "oe"),
+    ("æ", "ae"),
+)
+
+
+def _fold_search_accents(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    value = value.casefold()
+    value = "".join(
+        character
+        for character in unicodedata.normalize("NFD", value)
+        if unicodedata.category(character) != "Mn"
+    )
+    return value.replace("œ", "oe").replace("æ", "ae")
+
+
+def _accent_insensitive_column(db: Session, column):
+    """Build a case- and accent-insensitive expression for general search."""
+    dialect_name = db.get_bind().dialect.name
+    if dialect_name == "sqlite":
+        db.connection().connection.driver_connection.create_function(
+            "bcd_search_fold", 1, _fold_search_accents, deterministic=True
+        )
+        return func.bcd_search_fold(column)
+
+    expression = func.lower(column)
+    for source, target in _ACCENT_REPLACEMENTS:
+        expression = func.replace(expression, source, target)
+    return expression
 
 
 def get_bibliographic_record(db: Session, record_id: int) -> BibliographicRecord:
@@ -58,15 +106,15 @@ def search_bibliographic_records(
     query = db.query(BibliographicRecord)
 
     if q:
-        search_term = f"%{q}%"
+        search_term = f"%{_fold_search_accents(q)}%"
         search_conditions = [
-            BibliographicRecord.title.ilike(search_term),
-            BibliographicRecord.subtitle.ilike(search_term),
-            BibliographicRecord.authors.ilike(search_term),
-            BibliographicRecord.publisher.ilike(search_term),
-            BibliographicRecord.collection.ilike(search_term),
-            BibliographicRecord.keywords.ilike(search_term),
-            BibliographicRecord.description.ilike(search_term),
+            _accent_insensitive_column(db, BibliographicRecord.title).like(search_term),
+            _accent_insensitive_column(db, BibliographicRecord.subtitle).like(search_term),
+            _accent_insensitive_column(db, BibliographicRecord.authors).like(search_term),
+            _accent_insensitive_column(db, BibliographicRecord.publisher).like(search_term),
+            _accent_insensitive_column(db, BibliographicRecord.collection).like(search_term),
+            _accent_insensitive_column(db, BibliographicRecord.keywords).like(search_term),
+            _accent_insensitive_column(db, BibliographicRecord.description).like(search_term),
         ]
 
         if BibliographicRecord.isbn is not None:
