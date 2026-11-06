@@ -26,6 +26,7 @@ function mountInput(props = {}, mountOptions = {}) {
 }
 
 beforeEach(() => {
+    vi.spyOn(apiClient, 'get').mockResolvedValue([]);
     vi.spyOn(apiClient, 'post').mockImplementation(async (endpoint, data) => {
         if (endpoint === '/catalog/items') {
             return { id: 1, item_id: data.item_id, status: 'available' };

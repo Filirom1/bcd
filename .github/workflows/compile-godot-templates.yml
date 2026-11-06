@@ -13,7 +13,7 @@ env:
 jobs:
   compile:
     name: Compile Custom Templates
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
       - name: Compute cache key
         id: cache-key
         run: |
-          echo "key=godot-templates-${{ env.GODOT_VERSION }}-${{ hashFiles('bcd_kids/custom.py') }}" \
+          echo "key=godot-templates-${{ env.GODOT_VERSION }}-ubuntu-22.04-${{ hashFiles('bcd_kids/custom.py') }}" \
             >> $GITHUB_OUTPUT
 
       - name: Check if templates already cached
