@@ -140,9 +140,9 @@ jobs:
   # JOB 3 : Build BCD serveur — Linux (PyInstaller)
   # ═══════════════════════════════════════════════════════════════════════════
   build-bcd-linux:
-    name: Build BCD (Linux)
+    name: Build and test BCD (Ubuntu 22.04)
     needs: [test, build-web]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -332,9 +332,9 @@ jobs:
   # JOB 7 : Vérification des exports déjà produits
   # ═══════════════════════════════════════════════════════════════════════════
   verify-kids-linux:
-    name: Verify BCD Kids Linux export
+    name: Verify BCD Kids Linux export (Ubuntu 22.04)
     needs: build-kids-linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
