@@ -7,13 +7,11 @@ import { useNotification } from '../../../../src/bcd_web_vue/js/composables/useN
 
 const mountedWrappers = [];
 
-function mountForm(props = {}) {
+function mountForm(props = {}, { renderFields = false } = {}) {
     const wrapper = mount(BibliographicForm, {
         props,
         global: {
-            stubs: {
-                BibliographicFields: true
-            },
+            stubs: renderFields ? {} : { BibliographicFields: true },
             mocks: { $t: key => key }
         }
     });
@@ -204,11 +202,70 @@ describe('BibliographicForm', () => {
             isbn: '978-207-061275-8',
             bnfData: { isbn: '9782070612758', cover_image: 'cover.jpg' }
         });
-        const image = { src: 'http://localhost/covers/cover.jpg', style: {} };
+        const image = {
+            src: 'http://localhost/covers/cover.jpg',
+            style: {},
+            getAttribute: () => '/covers/cover.jpg'
+        };
         localCoverWrapper.vm.handleCoverError({ target: image });
         expect(image.src).toContain('covers.openlibrary.org/b/isbn/9782070612758');
 
         wrapper.vm.cancel();
         expect(wrapper.emitted('cancel')).toHaveLength(1);
+    });
+
+    it('reserves a right-side cover panel and shows a placeholder while the cover loads', async () => {
+        const wrapper = mountForm({
+            bnfData: {
+                _source: 'google_books',
+                title: 'Le Petit Prince',
+                cover_url: 'https://books.example/cover.jpg'
+            }
+        }, { renderFields: true });
+
+        const layout = wrapper.get('[data-testid="basic-information-layout"]');
+        const preview = layout.get('[data-testid="cataloging-cover-preview"]');
+        const frame = preview.get('[data-testid="cataloging-cover-frame"]');
+
+        expect(layout.get('.col-lg-9 [data-testid="cataloging-source-message"]').text())
+            .toContain('cataloging.google_books_data_found');
+        expect(preview.get('[data-testid="cataloging-cover-image"]').attributes('src'))
+            .toBe('https://books.example/cover.jpg');
+        expect(layout.get('[data-testid="basic-info-aside"]').element.lastElementChild)
+            .toBe(preview.element);
+        expect(preview.classes()).toContain('align-items-start');
+        expect(frame.element.parentElement).toBe(preview.element);
+        expect(frame.classes()).not.toContain('border');
+        expect(frame.classes()).not.toContain('shadow-sm');
+        expect(preview.get('[data-testid="cataloging-cover-placeholder"]').exists()).toBe(true);
+
+        await preview.get('[data-testid="cataloging-cover-image"]').trigger('load');
+
+        expect(wrapper.vm.coverPreviewLoaded).toBe(true);
+        expect(preview.find('[data-testid="cataloging-cover-placeholder"]').exists()).toBe(false);
+    });
+
+    it('keeps the right-side placeholder when external metadata has no cover', () => {
+        const wrapper = mountForm({
+            bnfData: { title: 'Le Petit Prince' }
+        }, { renderFields: true });
+
+        const preview = wrapper.get('[data-testid="cataloging-cover-preview"]');
+
+        expect(preview.get('[data-testid="cataloging-cover-frame"]').exists()).toBe(true);
+        expect(preview.get('[data-testid="cataloging-cover-placeholder"]').exists()).toBe(true);
+        expect(preview.find('[data-testid="cataloging-cover-image"]').exists()).toBe(false);
+    });
+
+    it('shows a saved record cover when restoring its bibliographic step', () => {
+        const wrapper = mountForm({
+            existingRecord: {
+                id: 42,
+                title: 'Le Petit Prince',
+                cover_image: 'saved-cover.jpg'
+            }
+        });
+
+        expect(wrapper.vm.coverPreviewUrl).toBe('/covers/saved-cover.jpg');
     });
 });

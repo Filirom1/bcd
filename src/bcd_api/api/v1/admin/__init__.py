@@ -63,6 +63,7 @@ from .settings import (
     get_env_file_content,
     get_settings,
     reset_settings,
+    test_cover_image_source,
     update_env_file_content,
     update_settings,
 )
@@ -96,6 +97,7 @@ __all__ = [
     "get_settings",
     "update_settings",
     "reset_settings",
+    "test_cover_image_source",
     "create_backup_endpoint",
     "list_backups_endpoint",
     "restore_backup_endpoint",

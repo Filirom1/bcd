@@ -34,7 +34,7 @@ def test_local_notice_search_endpoint_is_database_only(catalog_client, db_sessio
     body = response.json()
     assert body["total"] == 1
     assert body["items"][0]["title"] == "Wapiti"
-    assert body["external_sources"] == []
+    assert body["external_sources"] == ["bnf", "google_books", "sudoc"]
 
 
 def test_lookup_endpoint_accepts_one_explicit_source(catalog_client, monkeypatch):
@@ -50,6 +50,37 @@ def test_lookup_endpoint_accepts_one_explicit_source(catalog_client, monkeypatch
 
     assert response.status_code == 200
     assert response.json()["source"] == "bnf"
+
+
+def test_lookup_endpoint_returns_text_candidates(catalog_client, monkeypatch):
+    candidates = [
+        {
+            "title": "Le Petit Prince",
+            "_source": "google_books",
+            "cover_url": "https://books.example/cover.jpg",
+        }
+    ]
+    monkeypatch.setattr(
+        "src.bcd_api.api.v1.catalog.catalog_service.lookup_notice_source",
+        lambda db, query, source: {
+            "status": "results",
+            "source": source,
+            "items": candidates,
+            "total": len(candidates),
+            "input_type": "text",
+            "elapsed_ms": 4,
+        },
+    )
+
+    response = catalog_client.post(
+        "/api/v1/catalog/notices/lookup",
+        json={"query": "Le Petit Prince", "source": "google_books"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "results"
+    assert response.json()["items"] == candidates
+    assert response.json()["total"] == 1
 
 
 def test_external_source_configuration_endpoint_returns_all_fixed_sources(catalog_client):

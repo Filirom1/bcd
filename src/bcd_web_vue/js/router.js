@@ -114,7 +114,11 @@ const routes = [
         path: '/settings/external-sources',
         name: 'external-catalog-sources',
         component: ExternalCatalogSourcesPage,
-        meta: { titleKey: 'settings.external_catalog_sources' }
+        meta: { titleKey: 'settings.external_sources_settings' }
+    },
+    {
+        path: '/settings/covers',
+        redirect: '/settings/external-sources'
     },
     {
         path: '/settings/:section?',

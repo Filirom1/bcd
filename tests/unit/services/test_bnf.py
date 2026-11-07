@@ -13,6 +13,7 @@ from src.bcd_api.services.external.bnf import (
     _parse_page_count,
     parse_unimarc_xml,
     search_by_isbn,
+    search_by_title,
 )
 
 
@@ -253,3 +254,79 @@ class TestSearchByISBN:
         """Test invalid ISBN handling."""
         result = search_by_isbn("")
         assert result is None
+
+
+class TestSearchByTitle:
+    @staticmethod
+    def _record(title):
+        return f"""
+        <srw:record><srw:recordData>
+          <mxc:record xmlns:mxc="info:lc/xmlns/marcxchange-v2">
+            <mxc:datafield tag="200" ind1="1" ind2=" ">
+              <mxc:subfield code="a">{title}</mxc:subfield>
+            </mxc:datafield>
+          </mxc:record>
+        </srw:recordData></srw:record>
+        """
+
+    @patch("src.bcd_api.services.external.bnf._rate_limit")
+    @patch("httpx.Client")
+    def test_title_search_skips_diagnostic_and_caps_candidates(
+        self, mock_client_class, mock_rate_limit
+    ):
+        records = [
+            "<srw:record><srw:recordData><diagnostic/></srw:recordData></srw:record>",
+            *(self._record(f"Le Petit Prince {index}") for index in range(12)),
+        ]
+        mock_response = Mock()
+        mock_response.content = f"""
+        <srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/">
+          <srw:records>{''.join(records)}</srw:records>
+        </srw:searchRetrieveResponse>
+        """.encode()
+        mock_client = Mock()
+        mock_client.get.return_value = mock_response
+        mock_client.__enter__ = Mock(return_value=mock_client)
+        mock_client.__exit__ = Mock(return_value=None)
+        mock_client_class.return_value = mock_client
+
+        results = search_by_title("Le Petit Prince", timeout=7, limit=10)
+
+        assert len(results) == 10
+        assert results[0]["title"] == "Le Petit Prince 0"
+        assert all(item.get("title") for item in results)
+        call = mock_client.get.call_args
+        assert 'bib.title all "Le Petit Prince"' == call.kwargs["params"]["query"]
+        assert call.kwargs["params"]["maximumRecords"] == "10"
+        assert call.kwargs["timeout"] == 7
+
+    @patch("src.bcd_api.services.external.bnf._rate_limit")
+    @patch("httpx.Client")
+    def test_title_search_returns_empty_list_when_no_records(
+        self, mock_client_class, mock_rate_limit
+    ):
+        mock_response = Mock()
+        mock_response.content = b"""
+        <srw:searchRetrieveResponse xmlns:srw="http://www.loc.gov/zing/srw/">
+          <srw:records/>
+        </srw:searchRetrieveResponse>
+        """
+        mock_client = Mock()
+        mock_client.get.return_value = mock_response
+        mock_client.__enter__ = Mock(return_value=mock_client)
+        mock_client.__exit__ = Mock(return_value=None)
+        mock_client_class.return_value = mock_client
+
+        assert search_by_title("No matching title") == []
+
+    @patch("src.bcd_api.services.external.bnf._rate_limit")
+    @patch("httpx.Client")
+    def test_title_search_propagates_timeout(self, mock_client_class, mock_rate_limit):
+        mock_client = Mock()
+        mock_client.get.side_effect = httpx.TimeoutException("timeout")
+        mock_client.__enter__ = Mock(return_value=mock_client)
+        mock_client.__exit__ = Mock(return_value=None)
+        mock_client_class.return_value = mock_client
+
+        with pytest.raises(httpx.TimeoutException):
+            search_by_title("Le Petit Prince", timeout=4)

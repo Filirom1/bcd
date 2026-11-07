@@ -13,6 +13,7 @@ from src.bcd_api.services.external.sudoc import (
     configure,
     search_by_isbn,
     search_by_issn,
+    search_by_text,
     search_by_title_author,
 )
 
@@ -345,6 +346,45 @@ class TestSearchByTitleAuthor:
         query = call_kwargs[1]["params"]["query"]
         assert "mti=" in query
         assert "aut=" in query
+
+
+class TestSearchByText:
+    @patch("src.bcd_api.services.external.sudoc._rate_limit")
+    @patch("httpx.Client")
+    def test_returns_bounded_title_candidates_without_covers(
+        self, mock_client_class, mock_rate_limit
+    ):
+        records = [_pica_xml([("021A", "a", f"Le Petit Prince {index}")]) for index in range(12)]
+        mock_client_class.return_value = _mock_client(_sru_response(records))
+
+        results = search_by_text("Le Petit Prince", timeout=8, limit=10)
+
+        assert len(results) == 10
+        assert results[0]["title"] == "Le Petit Prince 0"
+        assert all("cover_url" not in result for result in results)
+        call = mock_client_class.return_value.get.call_args
+        assert "mti=petit" in call.kwargs["params"]["query"]
+        assert call.kwargs["params"]["maximumRecords"] == "10"
+        assert call.kwargs["timeout"] == 8
+
+    @patch("src.bcd_api.services.external.sudoc._rate_limit")
+    @patch("httpx.Client")
+    def test_empty_results(self, mock_client_class, mock_rate_limit):
+        mock_client_class.return_value = _mock_client(_empty_sru_response())
+
+        assert search_by_text("No matching title") == []
+
+    @patch("src.bcd_api.services.external.sudoc._rate_limit")
+    @patch("httpx.Client")
+    def test_timeout_propagates(self, mock_client_class, mock_rate_limit):
+        mock_client = Mock()
+        mock_client.get.side_effect = httpx.TimeoutException("timeout")
+        mock_client.__enter__ = Mock(return_value=mock_client)
+        mock_client.__exit__ = Mock(return_value=None)
+        mock_client_class.return_value = mock_client
+
+        with pytest.raises(httpx.TimeoutException):
+            search_by_text("Le Petit Prince", timeout=4)
 
 
 # ---------------------------------------------------------------------------

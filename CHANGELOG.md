@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- External catalog source lookups now default to 2-second timeouts for BnF and Google Books and 3 seconds for SUDOC; upgrades preserve non-default timeout settings.
+- Improved rapid cataloging with configurable external-source and cover-provider settings (2 s default for covers, configurable bulk-download pause), local-first text search across BnF, Google Books, and SUDOC, separate local and remote results with covers, URL-based navigation, keyboard shortcuts, and faster copy entry.
 
 ## [1.7.0]
 

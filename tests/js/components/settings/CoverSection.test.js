@@ -15,6 +15,17 @@ afterEach(() => {
 });
 
 describe('CoverSection', () => {
+    it('surfaces status errors without leaving a stale progress indicator', async () => {
+        vi.spyOn(apiClient, 'get').mockRejectedValue(new Error('status unavailable'));
+        const wrapper = mount(CoverSection);
+        await flushPromises();
+
+        expect(wrapper.vm.downloading).toBe(false);
+        expect(useNotification().notifications.value).toContainEqual(
+            expect.objectContaining({ type: 'error' })
+        );
+    });
+
     it('loads status, backfills local covers and calculates the ETA', async () => {
         const get = vi.spyOn(apiClient, 'get').mockResolvedValue({
             running: false,
@@ -43,13 +54,21 @@ describe('CoverSection', () => {
     });
 
     it('starts polling for a background download and cancels it', async () => {
-        const get = vi.spyOn(apiClient, 'get').mockResolvedValue({
-            running: false,
-            processed: 0,
-            total: 0,
-            found: 0,
-            last_processed_isbn: null
-        });
+        const statuses = [
+            {
+                running: false, scanning: false, processed: 0, total: 0, found: 0,
+                last_processed_isbn: null, cancelled: false, error: null
+            },
+            {
+                running: true, scanning: true, processed: 0, total: 0, found: 0,
+                last_processed_isbn: null, cancelled: false, error: null
+            },
+            {
+                running: false, scanning: false, processed: 0, total: 4, found: 0,
+                last_processed_isbn: null, cancelled: true, error: null
+            }
+        ];
+        const get = vi.spyOn(apiClient, 'get').mockImplementation(async () => statuses.shift());
         const post = vi.spyOn(apiClient, 'post').mockImplementation(async endpoint => {
             if (endpoint === '/admin/covers/download-missing') return { status: 'started' };
             return {};
@@ -60,6 +79,7 @@ describe('CoverSection', () => {
         await wrapper.vm.startDownload();
         expect(post).toHaveBeenCalledWith('/admin/covers/download-missing');
         expect(wrapper.vm.downloading).toBe(true);
+        expect(wrapper.text()).toContain('settings.covers_download_preparing');
 
         await wrapper.vm.cancelDownload();
         expect(post).toHaveBeenCalledWith('/admin/covers/download-missing/cancel');
@@ -83,6 +103,30 @@ describe('CoverSection', () => {
         expect(wrapper.vm.downloading).toBe(false);
         expect(useNotification().notifications.value).toContainEqual(
             expect.objectContaining({ message: 'settings.covers_download_done' })
+        );
+    });
+
+    it('reports when there are no covers to download', async () => {
+        const statuses = [
+            {
+                running: false, scanning: false, processed: 0, total: 0, found: 0,
+                last_processed_isbn: null, cancelled: false, error: null
+            },
+            {
+                running: false, scanning: false, processed: 0, total: 0, found: 0,
+                last_processed_isbn: null, cancelled: false, error: null
+            }
+        ];
+        vi.spyOn(apiClient, 'get').mockImplementation(async () => statuses.shift());
+        vi.spyOn(apiClient, 'post').mockResolvedValue({ status: 'started' });
+        const wrapper = mount(CoverSection);
+        await flushPromises();
+
+        await wrapper.vm.startDownload();
+
+        expect(wrapper.vm.downloading).toBe(false);
+        expect(useNotification().notifications.value).toContainEqual(
+            expect.objectContaining({ message: 'settings.covers_download_none' })
         );
     });
 });

@@ -378,10 +378,19 @@ def _normalised_external_data(
     if not data:
         return None
     result = dict(data)
+    title = result.get("title")
+    if not isinstance(title, str) or not title.strip():
+        logger.info("Ignoring external catalog result without a title from %s", source)
+        return None
+    result["title"] = title.strip()
     if classified.normalized_identifier:
         result["isbn"] = classified.normalized_identifier
     if classified.identifier_type == "issn":
         result.pop("issn", None)
+        result["medium_type"] = MediumType.PERIODIQUE.value
+    elif result.get("issn") and not result.get("isbn"):
+        result["isbn"] = f"issn:{result['issn']}"
+        result["identifier_type"] = "issn"
         result["medium_type"] = MediumType.PERIODIQUE.value
     result["_source"] = source
     return result
@@ -391,7 +400,21 @@ def _call_source(
     source: str,
     classified: CatalogInput,
     timeout: int,
-) -> Optional[dict[str, Any]]:
+) -> Optional[dict[str, Any]] | list[dict[str, Any]]:
+    if classified.kind == "text":
+        if source == "bnf":
+            from ..external.bnf import search_by_title
+
+            return search_by_title(classified.raw, timeout=timeout, limit=10)
+        if source == "google_books":
+            from ..external.google_books import search_by_text
+
+            return search_by_text(classified.raw, timeout=timeout, limit=10)
+        if source == "sudoc":
+            from ..external.sudoc import search_by_text
+
+            return search_by_text(classified.raw, timeout=timeout, limit=10)
+
     if source == "bnf":
         from ..external.bnf import search_by_isbn
 
@@ -412,18 +435,18 @@ def lookup_notice_source(
     query: str,
     source: str,
 ) -> dict[str, Any]:
-    """Perform one source lookup after rechecking the local catalog.
+    """Perform one external source lookup, except for local identifier matches.
 
-    The local recheck is intentional: callers can safely use this endpoint as
-    the second step without accidentally causing an external request when a
-    matching notice was added or already existed locally.
+    Identifier lookups stop at a local match to avoid duplicate notices.
+    Text lookups can intentionally return local and external candidates side
+    by side, so a local text match does not suppress the selected source.
     """
     source = source.strip().lower()
     if source not in EXTERNAL_SOURCES:
         raise ValidationError(f"Unknown external catalog source: {source}")
 
     local_items, local_total, classified = search_local_notices(db, query, limit=20)
-    if local_total:
+    if local_total and classified.kind != "text":
         return {
             "status": "local",
             "source": "local",
@@ -467,6 +490,23 @@ def lookup_notice_source(
         }
 
     elapsed_ms = round((time.perf_counter() - started) * 1000)
+    if classified.kind == "text":
+        items = [
+            normalised
+            for candidate in data or []
+            if (normalised := _normalised_external_data(candidate, classified, source))
+            and normalised.get("title")
+        ]
+        return {
+            "status": "results" if items else "not_found",
+            "source": source,
+            "items": items[:10],
+            "total": min(len(items), 10),
+            "input_type": classified.kind,
+            "normalized_identifier": classified.normalized_identifier,
+            "elapsed_ms": elapsed_ms,
+        }
+
     normalised = _normalised_external_data(data, classified, source)
     return {
         "status": "found" if normalised else "not_found",
@@ -489,6 +529,8 @@ def lookup_identifier_cascade(db: Session, query: str) -> Optional[dict[str, Any
     local_items, local_total, classified = search_local_notices(db, query, limit=1)
     if local_total:
         return local_items[0]
+    if not classified.is_identifier:
+        return None
     for source in classified.external_sources:
         result = lookup_notice_source(db, query, source)
         if result.get("status") == "found":

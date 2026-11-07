@@ -423,3 +423,48 @@ def search_by_title_author(
     best_record["_source"] = "sudoc"
     logger.info(f"SUDOC match for '{title}': score={best_score:.2f}")
     return best_record
+
+
+def search_by_text(title: str, timeout: int = 10, limit: int = 10) -> list[dict]:
+    """Search SUDOC by title words and return up to ten candidates."""
+    clean_title = _ISSUE_STRIP_RE.sub("", (title or "")).strip()
+    if not clean_title:
+        return []
+
+    from .._catalog_utils import normalize as _normalize
+
+    title_words = [word for word in _normalize(clean_title).split() if len(word) > 1]
+    if not title_words:
+        return []
+
+    limit = min(max(int(limit), 1), 10)
+    query = " and ".join(f"mti={word}" for word in title_words[:4])
+    params = {
+        "version": "1.1",
+        "operation": "searchRetrieve",
+        "query": query,
+        "recordSchema": "pica",
+        "maximumRecords": str(limit),
+    }
+    content = _get(params, timeout)
+    if not content:
+        return []
+
+    records = _parse_sudoc_response(content)
+    records.sort(
+        key=lambda record: score_match(
+            clean_title,
+            "",
+            record.get("title", ""),
+            " ".join(record.get("authors", [])),
+        ),
+        reverse=True,
+    )
+    for record in records[:limit]:
+        score = score_match(
+            clean_title, "", record.get("title", ""), " ".join(record.get("authors", []))
+        )
+        record["_confidence"] = "high" if score >= 0.75 else "low"
+        record["_score"] = round(score, 3)
+        record["_source"] = "sudoc"
+    return records[:limit]

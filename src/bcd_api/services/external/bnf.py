@@ -435,3 +435,67 @@ def search_by_isbn(isbn: str, timeout: int = 10) -> Optional[dict]:
     except httpx.HTTPError as e:
         logger.error(f"BNF API error: {e}")
         raise
+
+
+def search_by_title(title: str, timeout: int = 10, limit: int = 10) -> list[dict]:
+    """Search BnF by title and return up to ten usable bibliographic records."""
+    clean_title = re.sub(r'["\\]', " ", (title or "")).strip()
+    if not clean_title:
+        return []
+
+    limit = min(max(int(limit), 1), 10)
+    params = {
+        "version": "1.2",
+        "operation": "searchRetrieve",
+        "query": f'bib.title all "{clean_title}"',
+        "recordSchema": "unimarcxchange",
+        "maximumRecords": str(limit),
+    }
+
+    try:
+        import httpx
+
+        _rate_limit()
+        with httpx.Client() as client:
+            response = client.get(_BNF_URL, params=params, timeout=timeout)
+            response.raise_for_status()
+
+        from lxml import etree
+
+        root = etree.fromstring(response.content)
+        namespaces = {
+            "srw": "http://www.loc.gov/zing/srw/",
+            "mxc": "info:lc/xmlns/marcxchange-v2",
+        }
+        results = []
+        for record_data in root.findall(".//srw:recordData", namespaces):
+            marc_record = record_data.find(".//mxc:record", namespaces)
+            if marc_record is None:
+                continue
+
+            wrapper = etree.Element(
+                "{http://www.loc.gov/zing/srw/}searchRetrieveResponse",
+                nsmap={"srw": namespaces["srw"], "mxc": namespaces["mxc"]},
+            )
+            etree.SubElement(wrapper, "{http://www.loc.gov/zing/srw/}numberOfRecords").text = "1"
+            records = etree.SubElement(wrapper, "{http://www.loc.gov/zing/srw/}records")
+            record = etree.SubElement(records, "{http://www.loc.gov/zing/srw/}record")
+            record_data_wrapper = etree.SubElement(
+                record, "{http://www.loc.gov/zing/srw/}recordData"
+            )
+            record_data_wrapper.append(marc_record)
+
+            result = parse_unimarc_xml(etree.tostring(wrapper))
+            if result and result.get("title") and len(results) < limit:
+                results.append(result)
+        return results
+
+    except httpx.TimeoutException:
+        logger.error("BNF API timeout for title search")
+        raise
+    except httpx.HTTPStatusError as exc:
+        logger.error("BNF API HTTP error: %s", exc.response.status_code)
+        raise
+    except httpx.HTTPError as exc:
+        logger.error("BNF API error: %s", exc)
+        raise

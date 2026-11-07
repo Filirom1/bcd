@@ -79,8 +79,12 @@ from src.bcd_api.services import catalog_service
 @pytest.fixture(autouse=True)
 def disable_cover_download_for_catalog_tests(monkeypatch):
     """Keep catalog integration tests local; cover providers are tested separately."""
-    monkeypatch.setattr("src.bcd_api.services.catalog.commands._download_cover", lambda isbn: None)
-    monkeypatch.setattr("src.bcd_api.services.catalog.lookup._download_cover", lambda isbn: None)
+    monkeypatch.setattr(
+        "src.bcd_api.services.catalog.commands._download_cover", lambda isbn, db=None: None
+    )
+    monkeypatch.setattr(
+        "src.bcd_api.services.catalog.lookup._download_cover", lambda isbn, db=None: None
+    )
     monkeypatch.setattr("src.bcd_api.services.catalog_service._download_cover", lambda isbn: None)
 
 

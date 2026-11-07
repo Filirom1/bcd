@@ -51,7 +51,6 @@ export default defineComponent({
                     { to: '/settings/catalog', icon: 'bi-tags', label: t('settings.tabs.catalog') },
                     { to: '/settings/external-sources', icon: 'bi-cloud-download', label: t('settings.tabs.external_sources') },
                     { to: '/settings/backup', icon: 'bi-archive', label: t('settings.tabs.backup') },
-                    { to: '/settings/covers', icon: 'bi-image', label: t('settings.tabs.covers') },
                     { to: '/settings/maintenance', icon: 'bi-tools', label: t('settings.tabs.maintenance') },
                     { to: '/settings/env', icon: 'bi-file-earmark-code', label: t('settings.tabs.env') },
                     { to: '/settings/logs', icon: 'bi-journal-text', label: t('settings.tabs.logs') }

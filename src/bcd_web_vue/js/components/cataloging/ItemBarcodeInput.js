@@ -58,6 +58,14 @@ export default defineComponent({
         recordIllustrators: {
             type: Array,
             default: () => []
+        },
+        recordCoverImage: {
+            type: String,
+            default: ''
+        },
+        recordCoverUrl: {
+            type: String,
+            default: ''
         }
     },
 
@@ -345,6 +353,22 @@ export default defineComponent({
             collection: props.recordCollection,
             illustrators: props.recordIllustrators
         }));
+        const recordCoverSrc = computed(() => {
+            if (props.recordCoverImage) {
+                if (/^(?:https?:|\/)/i.test(props.recordCoverImage)) return props.recordCoverImage;
+                return `/covers/${props.recordCoverImage}`;
+            }
+            return props.recordCoverUrl || null;
+        });
+        const hideRecordCover = (event) => {
+            const image = event.target;
+            const fallback = image.dataset.fallback;
+            if (fallback && image.getAttribute('src') !== fallback) {
+                image.src = fallback;
+                return;
+            }
+            image.style.display = 'none';
+        };
 
         // Computed
         const itemCount = computed(() => createdItems.value.length);
@@ -381,6 +405,8 @@ export default defineComponent({
             handleItemSaved,
             deleteItem,
             loadExistingItems,
+            recordCoverSrc,
+            hideRecordCover,
             checkoutItem: item => emit('checkout-item', item),
             record
         };
@@ -402,7 +428,17 @@ export default defineComponent({
                         {{ $t('cataloging.scan_barcodes_help') }}
                     </p>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-3">
+                    <img
+                        v-if="recordCoverSrc"
+                        :src="recordCoverSrc"
+                        :alt="recordTitle"
+                        class="rounded shadow-sm"
+                        style="width: 3.5rem; height: 4.5rem; object-fit: cover"
+                        :data-fallback="recordCoverUrl"
+                        data-testid="record-cover"
+                        @error="hideRecordCover"
+                    >
                     <button
                         type="button"
                         class="btn btn-outline-primary btn-sm"
@@ -428,7 +464,7 @@ export default defineComponent({
                         class="form-control"
                         :placeholder="$t('periodical.issue_number_placeholder')"
                         :disabled="loading"
-                        @keypress.enter.prevent="$refs.barcodeInput?.focus()"
+                        @keydown.enter.prevent="$refs.barcodeInput?.focus()"
                     />
                 </div>
 
@@ -470,7 +506,7 @@ export default defineComponent({
                                 class="form-control"
                                 :placeholder="$t('cataloging.item_barcode_placeholder')"
                                 :disabled="loading"
-                                @keypress="handleKeypress"
+                                @keydown="handleKeypress"
                                 autofocus
                             />
                         </div>

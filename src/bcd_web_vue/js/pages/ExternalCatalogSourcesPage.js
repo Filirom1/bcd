@@ -9,11 +9,19 @@ import { useErrorHandler } from '../composables/useErrorHandler.js';
 import LoadingSpinner from '../components/ui/LoadingSpinner.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import ExternalCatalogSourcesSection from '../components/settings/ExternalCatalogSourcesSection.js';
+import CoverSection from '../components/settings/CoverSection.js';
 
 const SOURCE_FIELDS = [
     'bnf_enabled', 'bnf_timeout',
     'google_books_enabled', 'google_books_timeout',
-    'sudoc_enabled', 'sudoc_timeout'
+    'sudoc_enabled', 'sudoc_timeout',
+    'cover_custom_url_enabled', 'cover_custom_url_timeout',
+    'cover_image_url_pattern',
+    'cover_amazon_enabled', 'cover_amazon_timeout',
+    'cover_openlibrary_enabled', 'cover_openlibrary_timeout',
+    'cover_google_books_enabled', 'cover_google_books_timeout',
+    'cover_geobib_enabled', 'cover_geobib_timeout',
+    'cover_download_delay_seconds'
 ];
 
 import PageHeader from '../components/ui/PageHeader.js';
@@ -25,7 +33,8 @@ export default defineComponent({
         PageHeader,
         LoadingSpinner,
         HelpPanel,
-        ExternalCatalogSourcesSection
+        ExternalCatalogSourcesSection,
+        CoverSection
     },
 
     setup() {
@@ -42,7 +51,19 @@ export default defineComponent({
             google_books_enabled: true,
             google_books_timeout: 2,
             sudoc_enabled: true,
-            sudoc_timeout: 3
+            sudoc_timeout: 3,
+            cover_custom_url_enabled: true,
+            cover_custom_url_timeout: 2,
+            cover_image_url_pattern: '',
+            cover_amazon_enabled: true,
+            cover_amazon_timeout: 2,
+            cover_openlibrary_enabled: true,
+            cover_openlibrary_timeout: 2,
+            cover_google_books_enabled: true,
+            cover_google_books_timeout: 2,
+            cover_geobib_enabled: true,
+            cover_geobib_timeout: 2,
+            cover_download_delay_seconds: 60
         });
         const originalSettings = ref({});
 
@@ -103,7 +124,7 @@ export default defineComponent({
                 <template #heading>
                     <h1 class="page-title">
                         <i class="bi bi-cloud-download me-2"></i>
-                        {{ t('settings.external_catalog_sources') }}
+                        {{ t('settings.external_sources_settings') }}
                     </h1>
                 </template>
                 <template #actions>
@@ -112,23 +133,26 @@ export default defineComponent({
             </page-header>
 
             <loading-spinner v-if="loading" />
-            <form v-else @submit.prevent="saveSettings">
-                <div class="card">
-                    <div class="card-body">
-                        <external-catalog-sources-section :settings="settings" />
+            <template v-else>
+                <form @submit.prevent="saveSettings">
+                    <div class="card">
+                        <div class="card-body">
+                            <external-catalog-sources-section :settings="settings" />
+                        </div>
                     </div>
-                </div>
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary" :disabled="saving">
-                        <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-                        <i v-else class="bi bi-save me-1"></i>
-                        {{ t('common.save') }}
-                    </button>
-                    <button type="button" class="btn btn-secondary ms-2" :disabled="saving" @click="resetSettings">
-                        <i class="bi bi-x-circle me-1"></i>{{ t('common.cancel') }}
-                    </button>
-                </div>
-            </form>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary" :disabled="saving">
+                            <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
+                            <i v-else class="bi bi-save me-1"></i>
+                            {{ t('common.save') }}
+                        </button>
+                        <button type="button" class="btn btn-secondary ms-2" :disabled="saving" @click="resetSettings">
+                            <i class="bi bi-x-circle me-1"></i>{{ t('common.cancel') }}
+                        </button>
+                    </div>
+                </form>
+                <cover-section class="mt-4" />
+            </template>
 
             <div v-if="appVersion" class="mt-3 text-muted small text-end">
                 {{ t('settings.app_version') }} v{{ appVersion }} &mdash;

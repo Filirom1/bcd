@@ -547,6 +547,16 @@ h6 { font-size: var(--bcd-font-size-base); }
     font-size: var(--bcd-font-size-subsection-title);
 }
 
+.cataloging-stepper .btn-primary {
+    background-color: var(--bcd-primary);
+    border-color: var(--bcd-primary);
+    color: var(--bcd-white);
+}
+
+.cataloging-stepper .btn-primary i {
+    color: inherit;
+}
+
 .card-header h5 {
     margin: 0;
     font-size: var(--bcd-font-size-lg);

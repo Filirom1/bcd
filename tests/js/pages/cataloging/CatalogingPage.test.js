@@ -118,6 +118,17 @@ describe('CatalogingPage', () => {
         expect(wrapper.vm.pageTitle).toBe('cataloging.item_creation_title');
     });
 
+    it('keeps a selected remote cover visible through copy creation', () => {
+        const wrapper = mountCatalogingPage();
+        wrapper.vm.bnfData = {
+            title: record.title,
+            cover_url: 'https://books.example/cover.jpg'
+        };
+        wrapper.vm.handleRecordCreated(record);
+
+        expect(wrapper.vm.createdRecord.cover_url).toBe('https://books.example/cover.jpg');
+    });
+
     it('opens checkout for a newly cataloged copy with its barcode prefilled', async () => {
         const push = vi.fn().mockResolvedValue(undefined);
         globalThis.__testRouter.push = push;
@@ -174,6 +185,84 @@ describe('CatalogingPage', () => {
         expect(header.find('button').exists()).toBe(true);
     });
 
+    it('keeps the stepper near the header and resets the URL to a clean lookup', () => {
+        const replace = vi.fn().mockResolvedValue(undefined);
+        globalThis.__testRouter.replace = replace;
+        const wrapper = mountCatalogingPage();
+        wrapper.vm.handleExistingRecordFound(record);
+
+        const workflowCard = wrapper.get('[data-testid="cataloging-workflow-card"]');
+        const stepper = workflowCard.get('[data-testid="cataloging-stepper"]');
+        expect(stepper.classes()).toContain('flex-grow-1');
+        expect(stepper.get('[role="group"]').classes())
+            .toEqual(expect.arrayContaining(['d-flex', 'w-100']));
+        expect(stepper.findAll('[role="group"] > button')).toHaveLength(3);
+        stepper.findAll('[role="group"] > button').forEach(button => {
+            expect(button.classes()).toContain('flex-fill');
+        });
+        expect(workflowCard.get('.card-body').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="cataloging-stepper"]').exists()).toBe(true);
+        wrapper.vm.resetWorkflow();
+
+        expect(replace).toHaveBeenLastCalledWith({
+            query: { step: 'lookup' }
+        });
+        expect(wrapper.vm.state).toBe('find-notice');
+    });
+
+    it('pushes the active text query into the bibliographic form route', () => {
+        const push = vi.fn().mockResolvedValue(undefined);
+        globalThis.__testRouter.push = push;
+        const wrapper = mountCatalogingPage();
+
+        wrapper.vm.handleManualEntry({
+            value: 'Le Petit Prince',
+            inputType: 'text',
+            title: 'Le Petit Prince'
+        });
+
+        expect(push).toHaveBeenCalledWith({
+            query: { step: 'bibliographic-form', query: 'Le Petit Prince' }
+        });
+    });
+
+    it('retains the active title query rather than an earlier scanned barcode', () => {
+        const push = vi.fn().mockResolvedValue(undefined);
+        globalThis.__testRouter.push = push;
+        const wrapper = mountCatalogingPage();
+
+        wrapper.vm.handleManualEntry({
+            value: 'Le Petit Prince',
+            originalInput: '3780237306003',
+            inputType: 'text',
+            title: 'Le Petit Prince'
+        });
+
+        expect(wrapper.vm.originalInput).toBe('3780237306003');
+        expect(push).toHaveBeenCalledWith({
+            query: { step: 'bibliographic-form', query: 'Le Petit Prince' }
+        });
+    });
+
+    it('keeps selected remote data when the unsaved form route is synchronized', async () => {
+        const wrapper = mountCatalogingPage();
+        const candidate = {
+            title: 'Le Petit Prince',
+            cover_url: 'https://books.example/cover.jpg'
+        };
+        wrapper.vm.lookupQuery = 'Le Petit Prince';
+        wrapper.vm.handleLookupSuccess(candidate);
+        globalThis.__testRoute.query = {
+            step: 'bibliographic-form',
+            query: 'Le Petit Prince'
+        };
+
+        await wrapper.vm.syncFromRoute();
+
+        expect(wrapper.vm.bnfData).toEqual(candidate);
+        expect(wrapper.vm.initialTitle).toBe('Le Petit Prince');
+    });
+
     it('loads a record from the route when launched from the catalog', async () => {
         const get = vi.spyOn(apiClient, 'get').mockResolvedValue(record);
         const wrapper = mountCatalogingPage({ record_id: '42' });
@@ -182,6 +271,91 @@ describe('CatalogingPage', () => {
         expect(get).toHaveBeenCalledWith('/catalog/bibliographic/42');
         expect(wrapper.vm.state).toBe('item-creation');
         expect(wrapper.vm.createdRecord.id).toBe(42);
+    });
+
+    it('restores a saved step from the route and discards malformed item routes', async () => {
+        const get = vi.spyOn(apiClient, 'get').mockResolvedValue(record);
+        const wrapper = mountCatalogingPage({
+            step: 'item-creation',
+            record_id: '42'
+        });
+        await flushPromises();
+
+        expect(get).toHaveBeenCalledWith('/catalog/bibliographic/42');
+        expect(wrapper.vm.state).toBe('item-creation');
+
+        const replace = vi.fn().mockResolvedValue(undefined);
+        globalThis.__testRouter.replace = replace;
+        globalThis.__testRoute.query = { step: 'item-creation' };
+        await wrapper.vm.syncFromRoute();
+
+        expect(wrapper.vm.state).toBe('find-notice');
+        expect(replace).toHaveBeenLastCalledWith({ query: { step: 'lookup' } });
+    });
+
+    it('restores saved bibliographic data when navigating back and forward', async () => {
+        const wrapper = mountCatalogingPage();
+        wrapper.vm.handleExistingRecordFound(record);
+
+        globalThis.__testRoute.query = {
+            step: 'bibliographic-form',
+            record_id: '42'
+        };
+        await wrapper.vm.syncFromRoute();
+        expect(wrapper.vm.state).toBe('bibliographic-form');
+        expect(wrapper.vm.existingRecord.title).toBe(record.title);
+
+        globalThis.__testRoute.query = {
+            step: 'item-creation',
+            record_id: '42'
+        };
+        await wrapper.vm.syncFromRoute();
+        expect(wrapper.vm.state).toBe('item-creation');
+        expect(wrapper.vm.createdRecord.title).toBe(record.title);
+    });
+
+    it('resets to a new lookup when Escape is pressed', () => {
+        const wrapper = mountCatalogingPage();
+        wrapper.vm.handleManualEntry({
+            value: 'Le Petit Prince',
+            inputType: 'text',
+            title: 'Le Petit Prince'
+        });
+        const preventDefault = vi.fn();
+
+        wrapper.vm.handleKeydown({ key: 'Escape', preventDefault });
+
+        expect(preventDefault).toHaveBeenCalledOnce();
+        expect(wrapper.vm.state).toBe('find-notice');
+        expect(wrapper.vm.lookupQuery).toBe('');
+    });
+
+    it('runs the active primary action on Enter when focus is outside a control', () => {
+        const wrapper = mountCatalogingPage();
+        wrapper.vm.handleExistingRecordFound(record);
+        const createItem = vi.fn();
+        wrapper.vm.itemBarcodeInputRef = { createItem };
+        const preventDefault = vi.fn();
+
+        wrapper.vm.handleKeydown({
+            key: 'Enter',
+            repeat: false,
+            target: document.body,
+            preventDefault
+        });
+
+        expect(preventDefault).toHaveBeenCalledOnce();
+        expect(createItem).toHaveBeenCalledOnce();
+
+        const inputPreventDefault = vi.fn();
+        wrapper.vm.handleKeydown({
+            key: 'Enter',
+            repeat: false,
+            target: document.createElement('input'),
+            preventDefault: inputPreventDefault
+        });
+        expect(createItem).toHaveBeenCalledOnce();
+        expect(inputPreventDefault).not.toHaveBeenCalled();
     });
 
     it('allows editing the created record and falls back to the current data if loading fails', async () => {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 
 import BibliographicFields from '../../../../src/bcd_web_vue/js/components/catalog/BibliographicFields.js';
 import CatalogBulkEditModal from '../../../../src/bcd_web_vue/js/components/catalog/BulkEditModal.js';
@@ -25,6 +25,34 @@ afterEach(() => {
 });
 
 describe('BibliographicFields', () => {
+    it('places an optional aside in a second basic-information column', () => {
+        const wrapper = mount(BibliographicFields, {
+            props: { modelValue: model() },
+            slots: {
+                'basic-info-aside': '<div data-testid="cover">Cover</div>'
+            }
+        });
+
+        const layout = wrapper.get('[data-testid="basic-information-layout"]');
+
+        expect(layout.get('.col-lg-9').exists()).toBe(true);
+        expect(layout.get('[data-testid="basic-info-aside"]').classes())
+            .toEqual(expect.arrayContaining(['col-lg-3', 'align-self-start', 'pt-0']));
+        expect(layout.get('[data-testid="cover"]').text()).toBe('Cover');
+    });
+
+    it('focuses the ISBN field when requested by cataloging', async () => {
+        const wrapper = mount(BibliographicFields, {
+            props: { modelValue: model(), focusIsbn: true },
+            attachTo: document.body
+        });
+
+        await flushPromises();
+
+        expect(document.activeElement).toBe(wrapper.get('[data-testid="isbn-input"]').element);
+        wrapper.unmount();
+    });
+
     it('bridges arrays and CSV fields and exposes suggestions and validation', async () => {
         const value = model();
         const wrapper = mount(BibliographicFields, {

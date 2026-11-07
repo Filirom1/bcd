@@ -13,7 +13,7 @@
  * as comma-separated text here, so both callers can pass/receive arrays.
  */
 
-const { defineComponent, computed, ref, watch } = Vue;
+const { defineComponent, computed, nextTick, onMounted, ref, watch } = Vue;
 const { useI18n } = VueI18n;
 import { AUDIENCE_VALUES, BINDING_TYPE_VALUES, parseCsv } from '../../utils/domain.js';
 
@@ -30,15 +30,19 @@ export default defineComponent({
         // App settings, used for medium_type / language suggestions.
         settings: { type: Object, default: null },
         // Hide series_number (periodicals in view mode).
-        hideSeriesNumber: { type: Boolean, default: false }
+        hideSeriesNumber: { type: Boolean, default: false },
+        // Focus the ISBN/ISSN field when cataloging advances to this form.
+        focusIsbn: { type: Boolean, default: false }
     },
 
     emits: ['update:modelValue'],
 
-    setup(props, { emit }) {
+    setup(props, { emit, slots }) {
         const { t } = useI18n();
 
         const form = computed(() => props.modelValue);
+        const isbnInput = ref(null);
+        const hasBasicInfoAside = computed(() => Boolean(slots['basic-info-aside']));
         const set = (key, value) => emit('update:modelValue', { ...props.modelValue, [key]: value });
 
 
@@ -93,10 +97,14 @@ export default defineComponent({
             return form.value.language || ''; 
         });
 
+        onMounted(() => {
+            if (props.focusIsbn) nextTick(() => isbnInput.value?.focus());
+        });
+
         return {
             form, set, authorsText, illustratorsText, keywordsText, handleCsvFocus, handleCsvBlur,
             audienceOptions, bindingTypeOptions, mediumTypeSuggestions, levelSuggestions, languageSuggestions,
-            hasValue, labelFor, getLanguageDisplay, t
+            hasValue, labelFor, getLanguageDisplay, hasBasicInfoAside, isbnInput, t
         };
     },
 
@@ -109,34 +117,44 @@ export default defineComponent({
             <i class="bi bi-info-circle me-2"></i>{{ t('bibliographic.section_basic_info') }}
           </h6>
 
-          <div class="row mb-2 align-items-center" v-if="editMode || hasValue('title')">
-            <label class="col-sm-3 col-form-label fw-bold">
-              {{ t('bibliographic.title') }} <span v-if="editMode" class="text-danger">*</span>
-            </label>
-            <div class="col-sm-9">
-              <input type="text" v-model="form.title"
-                :class="editMode ? 'form-control' : 'form-control-plaintext fw-bold'"
-                :readonly="!editMode" :placeholder="!editMode ? '—' : ''" @input="set('title', form.title)" />
-              <div v-if="editMode && errors.title" class="invalid-feedback d-block" data-testid="error-title">{{ errors.title }}</div>
-            </div>
-          </div>
+          <div class="row g-3" data-testid="basic-information-layout">
+            <div :class="hasBasicInfoAside ? 'col-lg-9' : 'col-12'">
+              <slot name="basic-info-message"></slot>
 
-          <div class="row mb-2 align-items-center" v-if="editMode || hasValue('subtitle')">
-            <label class="col-sm-3 col-form-label fw-bold">{{ t('bibliographic.subtitle') }}</label>
-            <div class="col-sm-9">
-              <input type="text" v-model="form.subtitle"
-                :class="editMode ? 'form-control' : 'form-control-plaintext fst-italic'"
-                :readonly="!editMode" :placeholder="!editMode ? '—' : ''" @input="set('subtitle', form.subtitle)" />
-            </div>
-          </div>
+              <div class="row mb-2 align-items-center" v-if="editMode || hasValue('title')">
+                <label class="col-sm-3 col-form-label fw-bold">
+                  {{ t('bibliographic.title') }} <span v-if="editMode" class="text-danger">*</span>
+                </label>
+                <div class="col-sm-9">
+                  <input type="text" v-model="form.title"
+                    :class="editMode ? 'form-control' : 'form-control-plaintext fw-bold'"
+                    :readonly="!editMode" :placeholder="!editMode ? '—' : ''" @input="set('title', form.title)" />
+                  <div v-if="editMode && errors.title" class="invalid-feedback d-block" data-testid="error-title">{{ errors.title }}</div>
+                </div>
+              </div>
 
-          <div class="row mb-2 align-items-center" v-if="editMode || hasValue('isbn')">
-            <label class="col-sm-3 col-form-label fw-bold">{{ t('bibliographic.isbn') }}</label>
-            <div class="col-sm-9">
-              <input type="text" v-model="form.isbn" maxlength="17"
-                :class="editMode ? 'form-control font-monospace' : 'form-control-plaintext font-monospace'"
-                :readonly="!editMode" :placeholder="!editMode ? '—' : t('bibliographic.placeholder_isbn')" @input="set('isbn', form.isbn)" />
+              <div class="row mb-2 align-items-center" v-if="editMode || hasValue('subtitle')">
+                <label class="col-sm-3 col-form-label fw-bold">{{ t('bibliographic.subtitle') }}</label>
+                <div class="col-sm-9">
+                  <input type="text" v-model="form.subtitle"
+                    :class="editMode ? 'form-control' : 'form-control-plaintext fst-italic'"
+                    :readonly="!editMode" :placeholder="!editMode ? '—' : ''" @input="set('subtitle', form.subtitle)" />
+                </div>
+              </div>
+
+              <div class="row mb-2 align-items-center" v-if="editMode || hasValue('isbn')">
+                <label class="col-sm-3 col-form-label fw-bold">{{ t('bibliographic.isbn') }}</label>
+                <div class="col-sm-9">
+                  <input ref="isbnInput" data-testid="isbn-input" type="text" v-model="form.isbn" maxlength="17"
+                    :class="editMode ? 'form-control font-monospace' : 'form-control-plaintext font-monospace'"
+                    :readonly="!editMode" :placeholder="!editMode ? '—' : t('bibliographic.placeholder_isbn')" @input="set('isbn', form.isbn)" />
+                </div>
+              </div>
             </div>
+
+            <aside v-if="hasBasicInfoAside" class="col-lg-3 align-self-start pt-0" data-testid="basic-info-aside">
+              <slot name="basic-info-aside"></slot>
+            </aside>
           </div>
 
           <!-- Authors & Contributors -->

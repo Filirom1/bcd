@@ -146,6 +146,18 @@ def update_settings(
         "google_books_timeout",
         "sudoc_enabled",
         "sudoc_timeout",
+        "cover_custom_url_enabled",
+        "cover_custom_url_timeout",
+        "cover_image_url_pattern",
+        "cover_amazon_enabled",
+        "cover_amazon_timeout",
+        "cover_openlibrary_enabled",
+        "cover_openlibrary_timeout",
+        "cover_google_books_enabled",
+        "cover_google_books_timeout",
+        "cover_geobib_enabled",
+        "cover_geobib_timeout",
+        "cover_download_delay_seconds",
         "inventory_search_result_limit",
         "dewey_colors_enabled",
         "dewey_colors",
@@ -205,6 +217,18 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.google_books_timeout = 2
     settings.sudoc_enabled = True
     settings.sudoc_timeout = 3
+    settings.cover_custom_url_enabled = True
+    settings.cover_custom_url_timeout = 2
+    settings.cover_image_url_pattern = None
+    settings.cover_amazon_enabled = True
+    settings.cover_amazon_timeout = 2
+    settings.cover_openlibrary_enabled = True
+    settings.cover_openlibrary_timeout = 2
+    settings.cover_google_books_enabled = True
+    settings.cover_google_books_timeout = 2
+    settings.cover_geobib_enabled = True
+    settings.cover_geobib_timeout = 2
+    settings.cover_download_delay_seconds = 60
     settings.dewey_colors_enabled = True
     settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
 

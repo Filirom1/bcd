@@ -86,6 +86,20 @@ class SystemSettings(Base):
     sudoc_enabled = Column(Boolean, nullable=False, default=True)
     sudoc_timeout = Column(Integer, nullable=False, default=3)
 
+    # Cover providers used when downloading and caching cover images.
+    cover_custom_url_enabled = Column(Boolean, nullable=False, default=True)
+    cover_custom_url_timeout = Column(Integer, nullable=False, default=2)
+    cover_image_url_pattern = Column(Text, nullable=True, default=None)
+    cover_amazon_enabled = Column(Boolean, nullable=False, default=True)
+    cover_amazon_timeout = Column(Integer, nullable=False, default=2)
+    cover_openlibrary_enabled = Column(Boolean, nullable=False, default=True)
+    cover_openlibrary_timeout = Column(Integer, nullable=False, default=2)
+    cover_google_books_enabled = Column(Boolean, nullable=False, default=True)
+    cover_google_books_timeout = Column(Integer, nullable=False, default=2)
+    cover_geobib_enabled = Column(Boolean, nullable=False, default=True)
+    cover_geobib_timeout = Column(Integer, nullable=False, default=2)
+    cover_download_delay_seconds = Column(Integer, nullable=False, default=60)
+
     # Dewey classification colors (JSON array of 10 hex strings or null, index = class 0–9)
     dewey_colors_enabled = Column(Boolean, nullable=False, default=True)
     dewey_colors = Column(
@@ -152,6 +166,18 @@ class SystemSettings(Base):
             "google_books_timeout >= 1 AND google_books_timeout <= 60 AND "
             "sudoc_timeout >= 1 AND sudoc_timeout <= 60",
             name="check_external_catalog_timeouts",
+        ),
+        CheckConstraint(
+            "cover_custom_url_timeout >= 1 AND cover_custom_url_timeout <= 60 AND "
+            "cover_amazon_timeout >= 1 AND cover_amazon_timeout <= 60 AND "
+            "cover_openlibrary_timeout >= 1 AND cover_openlibrary_timeout <= 60 AND "
+            "cover_google_books_timeout >= 1 AND cover_google_books_timeout <= 60 AND "
+            "cover_geobib_timeout >= 1 AND cover_geobib_timeout <= 60",
+            name="check_cover_source_timeouts",
+        ),
+        CheckConstraint(
+            "cover_download_delay_seconds >= 0 AND cover_download_delay_seconds <= 300",
+            name="check_cover_download_delay",
         ),
     )
 

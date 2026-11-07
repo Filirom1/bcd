@@ -75,6 +75,14 @@ def test_unsupported_press_barcode_is_not_an_identifier():
     assert classified.external_sources == []
 
 
+def test_free_text_routes_to_all_three_external_catalogs():
+    classified = classify_catalog_input("Le Petit Prince")
+
+    assert classified.kind == "text"
+    assert classified.external_sources == ["bnf", "google_books", "sudoc"]
+    assert classify_catalog_input(" ").external_sources == []
+
+
 def test_search_by_title_after_unsupported_barcode_finds_local_notice(db_session):
     make_record(db_session, title="Wapiti", isbn="issn:0984-2314", medium_type="Périodique")
 
@@ -127,6 +135,25 @@ def test_isbn_tries_bnf_then_google_and_never_sudoc(db_session, monkeypatch):
     assert [call[0] for call in calls] == ["bnf", "google_books"]
     assert calls[0][2] == 2
     assert calls[1][2] == 2
+
+
+def test_isbn_skips_external_metadata_without_title_and_uses_google(db_session, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        "src.bcd_api.services.external.bnf.search_by_isbn",
+        lambda value, timeout: calls.append("bnf")
+        or {"authors": ["Gérald Stehr"], "cover_url": "https://books.example/cover.jpg"},
+    )
+    monkeypatch.setattr(
+        "src.bcd_api.services.external.google_books.search_by_isbn",
+        lambda value, timeout: calls.append("google_books")
+        or {"title": "Fouines à peur du noir", "isbn": value},
+    )
+
+    result = lookup_identifier_cascade(db_session, "9782211053150")
+
+    assert result["title"] == "Fouines à peur du noir"
+    assert calls == ["bnf", "google_books"]
 
 
 def test_issn_uses_sudoc_only(db_session, monkeypatch):
@@ -204,6 +231,74 @@ def test_source_timeout_setting_is_forwarded(db_session, monkeypatch):
     lookup_notice_source(db_session, "9782123456789", "bnf")
 
     provider.assert_called_once_with("9782123456789", timeout=11)
+
+
+def test_text_lookup_returns_candidates_from_requested_source(db_session, monkeypatch):
+    candidates = [
+        {"title": "Le Petit Prince", "cover_url": "https://books.example/cover.jpg"},
+        {"title": "Le Petit Prince illustré"},
+    ]
+    provider = Mock(return_value=candidates)
+    monkeypatch.setattr(
+        "src.bcd_api.services.external.bnf.search_by_title",
+        provider,
+    )
+
+    result = lookup_notice_source(db_session, "Le Petit Prince", "bnf")
+
+    assert result["status"] == "results"
+    assert result["source"] == "bnf"
+    assert result["total"] == 2
+    assert result["items"][0]["cover_url"] == "https://books.example/cover.jpg"
+    assert all(item["_source"] == "bnf" for item in result["items"])
+    provider.assert_called_once_with("Le Petit Prince", timeout=2, limit=10)
+
+
+@pytest.mark.parametrize(
+    ("source", "provider_path"),
+    [
+        ("bnf", "src.bcd_api.services.external.bnf.search_by_title"),
+        ("google_books", "src.bcd_api.services.external.google_books.search_by_text"),
+        ("sudoc", "src.bcd_api.services.external.sudoc.search_by_text"),
+    ],
+)
+def test_text_lookup_dispatches_to_each_external_provider(
+    db_session, monkeypatch, source, provider_path
+):
+    candidate = {"title": "Le Petit Prince"}
+    if source == "sudoc":
+        candidate.update({"issn": "1163-7706", "medium_type": "Périodique"})
+    provider = Mock(return_value=[candidate])
+    monkeypatch.setattr(provider_path, provider)
+
+    result = lookup_notice_source(db_session, "Le Petit Prince", source)
+
+    assert result["status"] == "results"
+    assert result["items"][0]["_source"] == source
+    if source == "sudoc":
+        assert result["items"][0]["isbn"] == "issn:1163-7706"
+        assert result["items"][0]["identifier_type"] == "issn"
+    provider.assert_called_once_with(
+        "Le Petit Prince", timeout={"bnf": 2, "google_books": 2, "sudoc": 3}[source], limit=10
+    )
+
+
+def test_text_lookup_returns_remote_candidates_even_when_local_match_exists(db_session, monkeypatch):
+    record = make_record(db_session, title="Le Petit Prince")
+    provider = Mock(return_value=[{"title": "Le Petit Prince nouvelle édition"}])
+    monkeypatch.setattr(
+        "src.bcd_api.services.external.bnf.search_by_title",
+        provider,
+    )
+
+    result = lookup_notice_source(db_session, "Le Petit Prince", "bnf")
+    local_items, local_total, _ = search_local_notices(db_session, "Le Petit Prince")
+
+    assert local_total == 1
+    assert local_items[0]["notice_id"] == record.id
+    assert result["status"] == "results"
+    assert result["items"][0]["title"] == "Le Petit Prince nouvelle édition"
+    provider.assert_called_once_with("Le Petit Prince", timeout=2, limit=10)
 
 
 def test_settings_test_button_calls_configured_source(db_session, monkeypatch):

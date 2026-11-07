@@ -243,3 +243,27 @@ def search_by_title_author(title: str, author_lastname: str, timeout: int = 10) 
     result["_score"] = round(best_score, 3)
     logger.info(f"Google Books match for '{title}': score={best_score:.2f}")
     return result
+
+
+def search_by_text(query: str, timeout: int = 10, limit: int = 10) -> list[dict]:
+    """Search Google Books by free text and return bounded normalized records."""
+    clean_query = re.sub(r'["\\]', " ", (query or "")).strip()
+    if not clean_query:
+        return []
+
+    limit = min(max(int(limit), 1), 10)
+    data = _get(
+        {"q": clean_query, "maxResults": limit, "langRestrict": "fr"},
+        timeout,
+    )
+    if not data:
+        return []
+
+    results = []
+    for item in data.get("items", []):
+        result = _parse_volume(item)
+        if result.get("title"):
+            results.append(result)
+            if len(results) == limit:
+                break
+    return results

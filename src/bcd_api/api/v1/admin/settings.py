@@ -92,6 +92,24 @@ def test_external_catalog_source(
     return catalog_service.test_external_source(db, source, request.query if request else None)
 
 
+@router.post("/settings/cover-sources/{source}/test")
+def test_cover_image_source(
+    source: str,
+    settings_update: SystemSettingsUpdate | None = None,
+    db: Session = Depends(get_db),
+):
+    """Test one cover provider with current form settings and a sample ISBN."""
+    from ....services.external.cover import snapshot_cover_source_settings
+    from ....services.external.cover import test_cover_source as test_cover_provider
+    from . import settings_service
+
+    settings = settings_service.get_settings(db)
+    source_settings = snapshot_cover_source_settings(settings)
+    if settings_update is not None:
+        source_settings.update(settings_update.model_dump(exclude_unset=True))
+    return test_cover_provider(source, source_settings)
+
+
 @router.post("/settings/reset", response_model=SystemSettingsResponse)
 def reset_settings(db: Session = Depends(get_db)):
     """Reset all settings to their default values."""

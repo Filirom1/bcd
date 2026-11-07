@@ -15,11 +15,26 @@ from .notice_lookup import (
 )
 
 
-def _download_cover(identifier: str) -> Optional[str]:
+def _download_cover(identifier: Optional[str], db: Optional[Session] = None) -> Optional[str]:
     """Download a cover through the cover service when available."""
-    from ..external.cover import download_cover as cover_download_cover
+    if not identifier:
+        return None
 
-    return cover_download_cover(identifier, covers_dir=None)
+    from ..external.cover import (
+        download_cover as cover_download_cover,
+    )
+    from ..external.cover import (
+        snapshot_cover_source_settings,
+    )
+
+    source_settings = None
+    if db is not None:
+        from ...models.system_settings import SystemSettings
+
+        settings = db.query(SystemSettings).filter(SystemSettings.id == 1).first()
+        source_settings = snapshot_cover_source_settings(settings)
+
+    return cover_download_cover(identifier, covers_dir=None, source_settings=source_settings)
 
 
 def lookup_isbn(db: Session, isbn: str) -> Optional[dict[str, Any]]:

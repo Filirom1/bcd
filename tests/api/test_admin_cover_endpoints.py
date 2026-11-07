@@ -24,17 +24,23 @@ def reset_status():
     """Reset the global download status before and after each test."""
     with _download_lock:
         _download_status["running"] = False
+        _download_status["scanning"] = False
         _download_status["processed"] = 0
         _download_status["total"] = 0
         _download_status["found"] = 0
         _download_status["last_processed_isbn"] = None
+        _download_status["cancelled"] = False
+        _download_status["error"] = None
     yield
     with _download_lock:
         _download_status["running"] = False
+        _download_status["scanning"] = False
         _download_status["processed"] = 0
         _download_status["total"] = 0
         _download_status["found"] = 0
         _download_status["last_processed_isbn"] = None
+        _download_status["cancelled"] = False
+        _download_status["error"] = None
 
 
 class TestAdminCoverEndpoints:
@@ -46,6 +52,7 @@ class TestAdminCoverEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["running"] is False
+        assert data["scanning"] is False
         assert data["processed"] == 0
         assert data["total"] == 0
         assert data["found"] == 0
@@ -67,6 +74,7 @@ class TestAdminCoverEndpoints:
             # Status should be set to running
             with _download_lock:
                 assert _download_status["running"] is True
+                assert _download_status["scanning"] is True
 
             # Try to start it again while running
             response2 = client.post("/api/v1/admin/covers/download-missing")
@@ -84,6 +92,7 @@ class TestAdminCoverEndpoints:
         # Set it to running
         with _download_lock:
             _download_status["running"] = True
+            _download_status["scanning"] = False
 
         # Cancel it
         response2 = client.post("/api/v1/admin/covers/download-missing/cancel")

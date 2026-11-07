@@ -61,6 +61,22 @@ class TestUpdateSettings:
         assert settings.loan_duration_days == 21
         assert settings.loan_limit_default == 3
 
+    def test_update_cover_provider_settings(self, db_session):
+        settings = settings_service.update_settings(
+            db_session,
+            {
+                "cover_amazon_enabled": False,
+                "cover_amazon_timeout": 7,
+                "cover_image_url_pattern": "https://covers.example/{isbn}.jpg",
+                "cover_download_delay_seconds": 18,
+            },
+        )
+
+        assert settings.cover_amazon_enabled is False
+        assert settings.cover_amazon_timeout == 7
+        assert settings.cover_image_url_pattern == "https://covers.example/{isbn}.jpg"
+        assert settings.cover_download_delay_seconds == 18
+
     def test_update_settings_loan_limits(self, db_session):
         """Test updating loan limits for different roles."""
         updates = {
@@ -179,6 +195,7 @@ class TestResetToDefaults:
         assert settings.bnf_timeout == 2
         assert settings.google_books_timeout == 2
         assert settings.sudoc_timeout == 3
+        assert settings.cover_download_delay_seconds == 60
 
     def test_reset_to_defaults_persists(self, db_session):
         """Test that reset persists to database."""

@@ -1,9 +1,8 @@
 /**
  * Find-a-notice component.
  *
- * The field is deliberately not an ISBN-only lookup: it performs a
- * local database search first and only then calls the one applicable external
- * source at a time.
+ * The field is deliberately not an ISBN-only lookup: it searches the local
+ * database first, then offers external matches for text queries separately.
  */
 
 const { defineComponent, ref, computed, onMounted, nextTick } = Vue;
@@ -43,11 +42,18 @@ function classifyInput(value) {
     if (/^[\d-]{8,20}$/.test(raw.replace(/\s/g, ''))) {
         return { kind: 'unsupported_barcode', identifierType: null, normalized: null, sources: [] };
     }
-    return { kind: 'text', identifierType: null, normalized: null, sources: [] };
+    return { kind: 'text', identifierType: null, normalized: null, sources: SOURCES };
 }
 
 export default defineComponent({
     name: 'FindNotice',
+
+    props: {
+        initialQuery: {
+            type: String,
+            default: ''
+        }
+    },
 
     emits: [
         'lookup-success',
@@ -62,7 +68,7 @@ export default defineComponent({
         const { t } = useI18n();
         const { error: showError } = useNotification();
 
-        const query = ref('');
+        const query = ref(props.initialQuery);
         const titleQuery = ref('');
         const queryInput = ref(null);
         const titleInput = ref(null);
@@ -73,6 +79,7 @@ export default defineComponent({
         const classification = ref(classifyInput(''));
         const originalInput = ref('');
         const sourceStates = ref([]);
+        const remoteResults = ref([]);
         const externalSearchVisible = ref(false);
         const currentSourceIndex = ref(-1);
         const activeRequest = ref(null);
@@ -103,6 +110,7 @@ export default defineComponent({
             localResults.value = [];
             localTotal.value = 0;
             sourceStates.value = [];
+            remoteResults.value = [];
             externalSearchVisible.value = false;
             currentSourceIndex.value = -1;
         };
@@ -117,7 +125,7 @@ export default defineComponent({
         };
 
         const focusQuery = () => {
-            nextTick(() => queryInput.value?.focus());
+            return nextTick(() => queryInput.value?.focus());
         };
 
         const handleLocalResults = (response, generation, searchedValue) => {
@@ -136,6 +144,7 @@ export default defineComponent({
             emit('local-results', {
                 items,
                 total: localTotal.value,
+                query: searchedValue,
                 inputType: classification.value.kind,
                 normalizedIdentifier: classification.value.normalized
             });
@@ -194,12 +203,28 @@ export default defineComponent({
                     emit('lookup-success', response.data);
                     return;
                 }
+                if (response?.status === 'results' && Array.isArray(response.items)) {
+                    const candidates = response.items.filter(candidate => candidate?.title).map(candidate => ({
+                        ...candidate,
+                        _source: candidate._source || state.source
+                    }));
+                    remoteResults.value.push(...candidates);
+                    if (candidates.length) {
+                        state.status = 'found';
+                        loading.value = false;
+                        return;
+                    }
+                }
                 if (response?.status === 'local' && response.items?.length) {
                     localResults.value = response.items;
                     localTotal.value = response.total || response.items.length;
                     externalSearchVisible.value = false;
                     loading.value = false;
-                    emit('local-results', { items: localResults.value, total: localTotal.value });
+                    emit('local-results', {
+                        items: localResults.value,
+                        total: localTotal.value,
+                        query: query.value.trim()
+                    });
                     return;
                 }
                 await runSource(index + 1, generation);
@@ -246,7 +271,7 @@ export default defineComponent({
                 handleLocalResults(response, generation, searchedValue);
                 if (generation !== searchGeneration) return;
 
-                if (localTotal.value > 0) {
+                if (localTotal.value > 0 && classification.value.kind !== 'text') {
                     loading.value = false;
                     return;
                 }
@@ -300,6 +325,47 @@ export default defineComponent({
             emit('notice-selected', notice);
         };
 
+        const selectCandidate = (candidate) => {
+            emit('lookup-success', candidate);
+        };
+
+        const candidateAuthors = (candidate) => {
+            return Array.isArray(candidate.authors)
+                ? candidate.authors.join(', ')
+                : (candidate.authors || '');
+        };
+
+        const candidateCover = (candidate) => {
+            if (candidate.cover_image) {
+                if (/^(?:https?:|\/)/i.test(candidate.cover_image)) return candidate.cover_image;
+                return `/covers/${candidate.cover_image}`;
+            }
+            return candidate.cover_url || openLibraryCover(candidate);
+        };
+
+        const openLibraryCover = (candidate) => {
+            if (candidate.identifier_type === 'issn' || candidate.issn) return null;
+            const isbn = normalizeISBN(candidate.isbn || candidate.identifier || '');
+            if (!/^(?:\d{9}[\dXx]|\d{13})$/.test(isbn)) return null;
+            return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
+        };
+
+        const candidateFallbackCover = (candidate) => {
+            if (candidate.cover_image && candidate.cover_url) return candidate.cover_url;
+            const fallback = openLibraryCover(candidate);
+            return fallback !== candidateCover(candidate) ? fallback : null;
+        };
+
+        const hideCandidateCover = (event) => {
+            const image = event.target;
+            const fallback = image.dataset.fallback;
+            if (fallback && image.getAttribute('src') !== fallback) {
+                image.src = fallback;
+                return;
+            }
+            image.style.display = 'none';
+        };
+
         const skipCurrentSource = () => {
             const index = currentSourceIndex.value;
             const state = sourceStates.value[index];
@@ -318,13 +384,6 @@ export default defineComponent({
 
         const switchToManualEntry = () => emitManualEntry();
 
-        const handleKeypress = (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                search();
-            }
-        };
-
         onMounted(() => {
             nextTick(() => queryInput.value?.focus());
         });
@@ -339,6 +398,7 @@ export default defineComponent({
             searchingLocal,
             localResults,
             localTotal,
+            remoteResults,
             classification,
             originalInput,
             sourceStates,
@@ -354,11 +414,16 @@ export default defineComponent({
             search,
             searchTitle,
             useNotice,
+            selectCandidate,
+            candidateAuthors,
+            candidateCover,
+            candidateFallbackCover,
+            hideCandidateCover,
             skipCurrentSource,
             startSource,
             switchToManualEntry,
             emitManualEntry,
-            handleKeypress
+            focusQuery
         };
     },
 
@@ -384,7 +449,7 @@ export default defineComponent({
                         class="form-control"
                         :placeholder="$t('cataloging.find_notice_placeholder')"
                         :disabled="loading"
-                        @keypress="handleKeypress"
+                        @keydown.enter.prevent="search"
                     />
                     <button type="submit" class="btn btn-primary" :disabled="loading || !query.trim()">
                         <span v-if="searchingLocal" class="spinner-border spinner-border-sm me-2"></span>
@@ -398,6 +463,15 @@ export default defineComponent({
                 <h6>{{ $t('cataloging.local_results_title') }}</h6>
                 <div v-for="notice in localResults" :key="notice.id || notice.notice_id" class="card mb-2">
                     <div class="card-body py-3 d-flex justify-content-between align-items-start gap-3">
+                        <img
+                            v-if="candidateCover(notice)"
+                            :src="candidateCover(notice)"
+                            :alt="notice.title"
+                            class="rounded object-fit-cover flex-shrink-0"
+                            style="width: 3rem; height: 4rem"
+                            :data-fallback="candidateFallbackCover(notice)"
+                            @error="hideCandidateCover"
+                        >
                         <div class="flex-grow-1">
                             <strong>{{ notice.title }}</strong>
                             <div v-if="notice.authors && notice.authors.length" class="small text-muted">
@@ -429,7 +503,7 @@ export default defineComponent({
                 <form @submit.prevent="searchTitle">
                     <label for="title-search-input" class="form-label">{{ $t('cataloging.search_by_title') }}</label>
                     <div class="input-group">
-                        <input id="title-search-input" ref="titleInput" v-model="titleQuery" class="form-control" :placeholder="$t('cataloging.title_search_placeholder')" />
+                        <input id="title-search-input" ref="titleInput" v-model="titleQuery" class="form-control" :placeholder="$t('cataloging.title_search_placeholder')" @keydown.enter.prevent="searchTitle" />
                         <button type="submit" class="btn btn-outline-primary" :disabled="!titleQuery.trim()">
                             <i class="bi bi-search me-1"></i>{{ $t('cataloging.lookup_button') }}
                         </button>
@@ -450,6 +524,42 @@ export default defineComponent({
                     <span v-else class="text-muted">{{ $t('cataloging.external_not_found') }}</span>
                     <button v-if="state.status === 'searching'" type="button" class="btn btn-sm btn-link" @click="skipCurrentSource">{{ $t('cataloging.skip_source') }}</button>
                     <button v-else-if="state.status === 'waiting'" type="button" class="btn btn-sm btn-link" @click="startSource(index)">{{ $t('cataloging.start_source') }}</button>
+                </div>
+            </div>
+
+            <div v-if="remoteResults.length" class="mt-3" data-testid="remote-candidates">
+                <h6>{{ $t('cataloging.remote_candidates_title') }}</h6>
+                <div class="d-flex flex-column gap-2">
+                    <button
+                        v-for="(candidate, index) in remoteResults"
+                        :key="candidate._source + '-' + (candidate.isbn || candidate.title) + '-' + index"
+                        type="button"
+                        class="btn btn-outline-secondary text-start p-2"
+                        @click="selectCandidate(candidate)"
+                    >
+                        <span class="d-flex align-items-center gap-3">
+                            <img
+                                v-if="candidateCover(candidate)"
+                                :src="candidateCover(candidate)"
+                                :alt="candidate.title"
+                                class="rounded object-fit-cover"
+                                style="width: 3rem; height: 4rem"
+                                :data-fallback="candidateFallbackCover(candidate)"
+                                @error="hideCandidateCover"
+                            >
+                            <span class="flex-grow-1">
+                                <span class="d-block fw-semibold">{{ candidate.title }}</span>
+                                <span v-if="candidateAuthors(candidate)" class="d-block small text-muted">
+                                    {{ candidateAuthors(candidate) }}
+                                </span>
+                                <span v-if="candidate.publisher || candidate.publication_year" class="d-block small text-muted">
+                                    {{ [candidate.publisher, candidate.publication_year].filter(Boolean).join(' · ') }}
+                                </span>
+                                <span class="d-block small text-muted">{{ sourceLabel(candidate._source) }}</span>
+                            </span>
+                            <span class="btn btn-sm btn-primary">{{ $t('cataloging.select_candidate') }}</span>
+                        </span>
+                    </button>
                 </div>
             </div>
 

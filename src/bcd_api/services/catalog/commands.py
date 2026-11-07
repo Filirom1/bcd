@@ -76,7 +76,7 @@ def create_bibliographic_record(
         db_data.pop("cover_url", None)
 
         if db_data.get("isbn") and not db_data.get("cover_image"):
-            filename = _download_cover(db_data["isbn"])
+            filename = _download_cover(db_data["isbn"], db=db)
             if filename:
                 db_data["cover_image"] = filename
 

@@ -58,6 +58,18 @@ class SystemSettingsResponse(BaseModel):
     google_books_timeout: int = Field(2, ge=1, le=60)
     sudoc_enabled: bool = True
     sudoc_timeout: int = Field(3, ge=1, le=60)
+    cover_custom_url_enabled: bool = True
+    cover_custom_url_timeout: int = Field(2, ge=1, le=60)
+    cover_image_url_pattern: str = ""
+    cover_amazon_enabled: bool = True
+    cover_amazon_timeout: int = Field(2, ge=1, le=60)
+    cover_openlibrary_enabled: bool = True
+    cover_openlibrary_timeout: int = Field(2, ge=1, le=60)
+    cover_google_books_enabled: bool = True
+    cover_google_books_timeout: int = Field(2, ge=1, le=60)
+    cover_geobib_enabled: bool = True
+    cover_geobib_timeout: int = Field(2, ge=1, le=60)
+    cover_download_delay_seconds: int = Field(60, ge=0, le=300)
     inventory_search_result_limit: int = 200
     dewey_colors_enabled: bool = True
     dewey_colors: Optional[List[str]] = None
@@ -73,6 +85,15 @@ class SystemSettingsResponse(BaseModel):
             except Exception:
                 return []
         return v
+
+    @field_validator("cover_image_url_pattern", mode="before")
+    @classmethod
+    def use_legacy_cover_url_pattern(cls, value):
+        if value is None:
+            from src.bcd_api.core.config import settings
+
+            return settings.cover_image_url_pattern
+        return value
 
     @field_validator("catalog_shelf_locations", mode="before")
     @classmethod
@@ -158,6 +179,18 @@ class SystemSettingsUpdate(BaseModel):
     google_books_timeout: Optional[int] = Field(None, ge=1, le=60)
     sudoc_enabled: Optional[bool] = None
     sudoc_timeout: Optional[int] = Field(None, ge=1, le=60)
+    cover_custom_url_enabled: Optional[bool] = None
+    cover_custom_url_timeout: Optional[int] = Field(None, ge=1, le=60)
+    cover_image_url_pattern: Optional[str] = Field(None, max_length=2000)
+    cover_amazon_enabled: Optional[bool] = None
+    cover_amazon_timeout: Optional[int] = Field(None, ge=1, le=60)
+    cover_openlibrary_enabled: Optional[bool] = None
+    cover_openlibrary_timeout: Optional[int] = Field(None, ge=1, le=60)
+    cover_google_books_enabled: Optional[bool] = None
+    cover_google_books_timeout: Optional[int] = Field(None, ge=1, le=60)
+    cover_geobib_enabled: Optional[bool] = None
+    cover_geobib_timeout: Optional[int] = Field(None, ge=1, le=60)
+    cover_download_delay_seconds: Optional[int] = Field(None, ge=0, le=300)
     inventory_search_result_limit: Optional[int] = Field(None, ge=1, le=1000)
     dewey_colors_enabled: Optional[bool] = None
     dewey_colors: Optional[List[str]] = None

@@ -4,29 +4,33 @@ from src.bcd_api.api.v1 import admin
 
 
 def test_cover_download_status_and_cancel():
+    admin._download_status.update(scanning=False, cancelled=False, error=None)
     admin._download_status.update(running=True, processed=2, total=5, found=1)
     status = admin.get_download_missing_covers_status()
     assert status["running"] is True
     assert admin.cancel_download_missing_covers()["status"] == "cancelling"
     assert admin.cancel_download_missing_covers()["status"] == "not_running"
+    admin._download_status.update(running=False, scanning=False, cancelled=False, error=None)
 
 
 def test_start_cover_download_schedules_task():
     admin._download_status["running"] = False
+    admin._download_status["scanning"] = False
     background = MagicMock()
     result = admin.start_download_missing_covers(background)
     assert result["status"] == "started"
     background.add_task.assert_called_once_with(admin._download_missing_covers_task)
-    admin._download_status["running"] = False
+    admin._download_status.update(running=False, scanning=False)
 
 
 def test_start_cover_download_does_not_duplicate_running_task():
     admin._download_status["running"] = True
+    admin._download_status["scanning"] = False
     background = MagicMock()
     result = admin.start_download_missing_covers(background)
     assert result["status"] == "already_running"
     background.add_task.assert_not_called()
-    admin._download_status["running"] = False
+    admin._download_status.update(running=False, scanning=False)
 
 
 def test_backfill_covers_updates_cached_records(monkeypatch, tmp_path):

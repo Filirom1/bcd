@@ -27,6 +27,32 @@ def test_reset_settings_delegates_to_service(monkeypatch):
     assert admin.reset_settings(db=object()) is expected
 
 
+def test_test_cover_image_source_uses_current_cover_settings(monkeypatch):
+    settings = SimpleNamespace(cover_image_url_pattern="https://covers.example/{isbn}.jpg")
+    calls = []
+    monkeypatch.setattr(admin.settings_service, "get_settings", lambda db: settings)
+    monkeypatch.setattr(
+        "src.bcd_api.services.external.cover.test_cover_source",
+        lambda source, options: calls.append((source, options)) or {"status": "reachable"},
+    )
+
+    result = admin.test_cover_image_source(
+        "custom_url",
+        admin.SystemSettingsUpdate(
+            cover_custom_url_enabled=True,
+            cover_custom_url_timeout=7,
+            cover_image_url_pattern="https://draft.example/{isbn}.jpg",
+        ),
+        db=object(),
+    )
+
+    assert result == {"status": "reachable"}
+    assert calls[0][0] == "custom_url"
+    assert calls[0][1]["cover_custom_url_enabled"] is True
+    assert calls[0][1]["cover_custom_url_timeout"] == 7
+    assert calls[0][1]["cover_image_url_pattern"] == "https://draft.example/{isbn}.jpg"
+
+
 def test_get_logs_returns_current_log_tail(monkeypatch, tmp_path):
     log_file = tmp_path / "bcd.log"
     log_file.write_text("first\nsecond\n", encoding="utf-8")

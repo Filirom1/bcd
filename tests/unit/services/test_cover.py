@@ -3,7 +3,7 @@
 All HTTP calls are mocked. No real network requests are made.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import httpx
 import pytest
@@ -22,6 +22,9 @@ from src.bcd_api.services.external.cover import (
     _try_openlibrary,
     configure,
     download_cover,
+)
+from src.bcd_api.services.external.cover import (
+    test_cover_source as _test_cover_source,
 )
 
 # ---------------------------------------------------------------------------
@@ -148,6 +151,13 @@ class TestFetch:
         client.get.side_effect = httpx.ConnectError("connection refused")
         assert _fetch("https://example.com/cover.jpg", client) is None
 
+    def test_passes_configured_timeout_to_http_client(self):
+        client = _make_client(content=_image())
+        assert _fetch("https://example.com/cover.jpg", client, timeout=4) is not None
+        client.get.assert_called_once_with(
+            "https://example.com/cover.jpg", timeout=4, follow_redirects=True
+        )
+
 
 # ---------------------------------------------------------------------------
 # _try_amazon
@@ -183,7 +193,9 @@ class TestTryAmazon:
         client.get.side_effect = side_effect
         # Patch _fetch to use our client directly
         with patch("src.bcd_api.services.external.cover._fetch") as mock_fetch:
-            mock_fetch.side_effect = lambda url, c: (data if "TZZZZZZZ" in url else None)
+            mock_fetch.side_effect = lambda url, c, timeout=10: (
+                data if "TZZZZZZZ" in url else None
+            )
             result = _try_amazon("2211056466", client)
         assert result == data
 
@@ -228,7 +240,7 @@ class TestTryOpenlibrary:
     def test_falls_back_to_isbn10_when_isbn13_fails(self):
         data = _image()
         with patch("src.bcd_api.services.external.cover._fetch") as mock_fetch:
-            mock_fetch.side_effect = lambda url, c: (
+            mock_fetch.side_effect = lambda url, c, timeout=10: (
                 data if "2211056466" in url and "978" not in url else None
             )
             client = MagicMock()
@@ -369,7 +381,7 @@ class TestTryConfiguredUrl:
             result = _try_configured_url("9782244404639", client)
 
         assert result == data
-        fetch.assert_called_once_with("https://covers.example/9/39/9782244404639.jpg", client)
+        fetch.assert_called_once_with("https://covers.example/9/39/9782244404639.jpg", client, 2)
 
     def test_supports_arbitrary_index_and_slice_lengths(self, monkeypatch):
         from src.bcd_api.core.config import settings
@@ -385,7 +397,7 @@ class TestTryConfiguredUrl:
             _try_configured_url("9782244404639", client)
 
         fetch.assert_called_once_with(
-            "https://covers.example/9/39/4639/978/9782244404639.jpg", client
+            "https://covers.example/9/39/4639/978/9782244404639.jpg", client, 2
         )
 
     def test_download_uses_isbn13_for_isbn10_records(self, monkeypatch, tmp_path):
@@ -522,6 +534,21 @@ class TestDownloadCover:
         mock_g.assert_not_called()
         mock_geo.assert_not_called()
 
+    def test_uses_database_url_pattern(self):
+        pattern = "https://covers.example/{isbn[-1]}/{isbn}.jpg"
+        with (
+            patch("src.bcd_api.services.external.cover._fetch", return_value=_image()) as fetch,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
+            result = download_cover(
+                "9782244404639",
+                covers_dir=self.covers,
+                source_settings={"cover_image_url_pattern": pattern},
+            )
+
+        assert result == "9782244404639.jpg"
+        assert fetch.call_args.args[0] == "https://covers.example/9/9782244404639.jpg"
+
     def test_cascade_stops_at_amazon(self):
         data = _image()
         with (
@@ -537,6 +564,118 @@ class TestDownloadCover:
         mock_ol.assert_not_called()
         mock_g.assert_not_called()
         mock_geo.assert_not_called()
+
+    def test_uses_only_enabled_provider_and_its_timeout(self):
+        source_settings = {
+            "cover_custom_url_enabled": False,
+            "cover_amazon_enabled": True,
+            "cover_amazon_timeout": 4,
+            "cover_openlibrary_enabled": False,
+            "cover_google_books_enabled": False,
+            "cover_geobib_enabled": False,
+        }
+        with (
+            patch("src.bcd_api.services.external.cover._try_configured_url") as mock_custom,
+            patch(
+                "src.bcd_api.services.external.cover._try_amazon", return_value=_image()
+            ) as mock_amazon,
+            patch("src.bcd_api.services.external.cover._try_openlibrary") as mock_openlibrary,
+            patch("src.bcd_api.services.external.cover._try_google_api") as mock_google,
+            patch("src.bcd_api.services.external.cover._try_geobib") as mock_geobib,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
+            result = download_cover(
+                "2211056466", covers_dir=self.covers, source_settings=source_settings
+            )
+
+        assert result == "9782211056465.jpg"
+        mock_custom.assert_not_called()
+        mock_amazon.assert_called_once_with("2211056466", ANY, 4)
+        mock_openlibrary.assert_not_called()
+        mock_google.assert_not_called()
+        mock_geobib.assert_not_called()
+
+    def test_passes_each_provider_its_configured_timeout(self):
+        source_settings = {
+            "cover_custom_url_timeout": 6,
+            "cover_amazon_timeout": 7,
+            "cover_openlibrary_timeout": 8,
+            "cover_google_books_timeout": 9,
+            "cover_geobib_timeout": 10,
+        }
+        with (
+            patch(
+                "src.bcd_api.services.external.cover._try_configured_url", return_value=None
+            ) as mock_custom,
+            patch(
+                "src.bcd_api.services.external.cover._try_amazon", return_value=None
+            ) as mock_amazon,
+            patch(
+                "src.bcd_api.services.external.cover._try_openlibrary", return_value=None
+            ) as mock_openlibrary,
+            patch(
+                "src.bcd_api.services.external.cover._try_google_api", return_value=None
+            ) as mock_google,
+            patch(
+                "src.bcd_api.services.external.cover._try_geobib", return_value=None
+            ) as mock_geobib,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
+            download_cover("2211056466", covers_dir=self.covers, source_settings=source_settings)
+
+        assert mock_custom.call_args.args[2] == 6
+        assert mock_amazon.call_args.args[-1] == 7
+        assert mock_openlibrary.call_args.args[-1] == 8
+        assert mock_google.call_args.args[-1] == 9
+        assert mock_geobib.call_args.args[-1] == 10
+
+    def test_test_cover_source_uses_selected_provider_and_timeout(self):
+        with (
+            patch(
+                "src.bcd_api.services.external.cover._try_amazon", return_value=_image()
+            ) as mock_amazon,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
+            result = _test_cover_source(
+                "amazon",
+                {
+                    "cover_amazon_enabled": True,
+                    "cover_amazon_timeout": 4,
+                },
+            )
+
+        assert result["status"] == "reachable"
+        mock_amazon.assert_called_once_with(ANY, ANY, 4)
+
+    def test_test_cover_source_does_not_call_disabled_provider(self):
+        with patch("httpx.Client") as mock_client:
+            result = _test_cover_source(
+                "amazon",
+                {"cover_amazon_enabled": False, "cover_amazon_timeout": 4},
+            )
+
+        assert result == {"source": "amazon", "status": "disabled", "ok": False}
+        mock_client.assert_not_called()
+
+    def test_test_cover_source_uses_legacy_url_pattern_when_unset(self, monkeypatch):
+        from src.bcd_api.core.config import settings
+
+        pattern = "https://legacy.example/{isbn}.jpg"
+        monkeypatch.setattr(settings, "cover_image_url_pattern", pattern)
+        with (
+            patch(
+                "src.bcd_api.services.external.cover._try_configured_url",
+                return_value=_image(),
+            ) as mock_custom,
+            patch("httpx.Client", return_value=_make_client()),
+        ):
+            result = _test_cover_source(
+                "custom_url",
+                {"cover_custom_url_enabled": True, "cover_custom_url_timeout": 4},
+            )
+
+        assert result["status"] == "reachable"
+        assert mock_custom.call_args.args[3] == pattern
 
     def test_cascade_falls_through_to_openlibrary(self):
         data = _image()

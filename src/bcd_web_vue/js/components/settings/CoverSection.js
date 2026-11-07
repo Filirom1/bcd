@@ -14,7 +14,7 @@ export default defineComponent({
 
     setup() {
         const { t } = useI18n();
-        const { success } = useNotification();
+        const { success, error: showError } = useNotification();
         const { handleError } = useErrorHandler(t);
 
         const backfilling = ref(false);
@@ -51,27 +51,33 @@ export default defineComponent({
         const checkDownloadStatus = async () => {
             try {
                 const status = await apiClient.get('/admin/covers/download-missing/status');
-                const wasRunning = downloadStatus.value.running;
+                const wasRunning = downloading.value
+                    || downloadStatus.value.running
+                    || downloadStatus.value.scanning;
                 downloadStatus.value = status;
-                downloading.value = status.running;
+                downloading.value = Boolean(status.running || status.scanning);
 
-                if (status.running) {
+                if (status.running || status.scanning) {
                     if (!pollingInterval.value) {
                         startPolling();
                     }
                 } else {
                     stopPolling();
                     if (wasRunning) {
-                        // If it just stopped, notify the user of the final result
-                        if (status.total > 0 && status.processed < status.total) {
+                        if (status.error) {
+                            showError(t('settings.covers_download_error'));
+                        } else if (status.cancelled || (status.total > 0 && status.processed < status.total)) {
                             success(t('settings.covers_download_cancelled'));
+                        } else if (status.total === 0) {
+                            success(t('settings.covers_download_none'));
                         } else if (status.total > 0) {
                             success(t('settings.covers_download_done', { found: status.found, total: status.total }));
                         }
                     }
                 }
             } catch (error) {
-                console.error("Error checking cover download status", error);
+                handleError(error);
+                downloading.value = false;
                 stopPolling();
             }
         };
@@ -91,9 +97,21 @@ export default defineComponent({
         const startDownload = async () => {
             try {
                 downloading.value = true;
+                downloadStatus.value = {
+                    ...downloadStatus.value,
+                    running: true,
+                    scanning: true,
+                    processed: 0,
+                    total: 0,
+                    found: 0,
+                    last_processed_isbn: null,
+                    cancelled: false,
+                    error: null
+                };
                 const data = await apiClient.post('/admin/covers/download-missing');
                 if (data.status === 'started' || data.status === 'already_running') {
                     startPolling();
+                    await checkDownloadStatus();
                 }
             } catch (error) {
                 handleError(error);
@@ -181,7 +199,8 @@ export default defineComponent({
                     <div v-if="downloading" class="alert alert-info small py-2 mb-2">
                         <span class="spinner-border spinner-border-sm me-2 text-primary align-middle" role="status"></span>
                         <span class="align-middle">
-                            {{ t('settings.covers_download_running', { processed: downloadStatus.processed, total: downloadStatus.total, found: downloadStatus.found }) }}
+                            <template v-if="downloadStatus.scanning">{{ t('settings.covers_download_preparing') }}</template>
+                            <template v-else>{{ t('settings.covers_download_running', { processed: downloadStatus.processed, total: downloadStatus.total, found: downloadStatus.found }) }}</template>
                         </span>
                         <span v-if="downloadStatus.last_processed_isbn" class="text-muted d-block mt-1" style="font-size: var(--bcd-font-size-sm);">
                             ISBN: {{ downloadStatus.last_processed_isbn }}

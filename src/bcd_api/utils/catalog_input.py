@@ -39,6 +39,8 @@ class CatalogInput:
             return ["bnf", "google_books"]
         if self.identifier_type == "issn":
             return ["sudoc"]
+        if self.kind == "text" and self.raw:
+            return ["bnf", "google_books", "sudoc"]
         return []
 
 

@@ -219,26 +219,45 @@ export default defineComponent({
         const lookupSource = computed(() => props.bnfData?._source || 'bnf');
         const coverPreviewUrl = computed(() => {
             // Local cover pre-downloaded during lookup (most reliable)
-            if (props.bnfData?.cover_image) return `/covers/${props.bnfData.cover_image}`;
+            const coverImage = props.bnfData?.cover_image || props.existingRecord?.cover_image;
+            if (coverImage) {
+                if (/^(?:https?:|\/)/i.test(coverImage)) return coverImage;
+                return `/covers/${coverImage}`;
+            }
             // Google Books thumbnail (already fetched)
-            if (props.bnfData?.cover_url) return props.bnfData.cover_url;
+            const coverUrl = props.bnfData?.cover_url || props.existingRecord?.cover_url;
+            if (coverUrl) return coverUrl;
             // Open Library direct URL as last resort
             const isbn = normalizeISBN(formData.isbn || props.isbn);
             if (isbn) return `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
             return null;
         });
+        const coverPreviewLoaded = ref(false);
+        watch(coverPreviewUrl, () => {
+            coverPreviewLoaded.value = false;
+        });
+        const markCoverLoaded = () => {
+            coverPreviewLoaded.value = true;
+        };
 
         const handleCoverError = (event) => {
-            const src = event.target.src;
+            const image = event.target;
+            const src = image.getAttribute('src') || '';
+            const remoteCover = props.bnfData?.cover_url || props.existingRecord?.cover_url;
+            coverPreviewLoaded.value = false;
+            if (src.includes('/covers/') && remoteCover && src !== remoteCover) {
+                image.src = remoteCover;
+                return;
+            }
             // If local cover failed, try Open Library before giving up
             if (src.includes('/covers/')) {
                 const isbn = normalizeISBN(formData.isbn || props.isbn);
                 if (isbn) {
-                    event.target.src = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
+                    image.src = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
                     return;
                 }
             }
-            event.target.style.display = 'none';
+            coverPreviewLoaded.value = false;
         };
 
         // Reactive wrapper so BibliographicFields v-model can spread-merge updates
@@ -257,6 +276,8 @@ export default defineComponent({
             isBnfData,
             lookupSource,
             coverPreviewUrl,
+            coverPreviewLoaded,
+            markCoverLoaded,
             handleCoverError,
             existingRecord: computed(() => props.existingRecord)
         };
@@ -283,34 +304,49 @@ export default defineComponent({
                 </div>
             </div>
 
-            <!-- Lookup Data Banner -->
-            <div v-if="isBnfData && !existingRecord" class="alert alert-success mb-4 d-flex gap-3 align-items-start">
-                <div class="flex-grow-1">
-                    <h6 class="mb-2">
-                        <i class="bi bi-check-circle"></i>
-                        {{ $t('cataloging.' + lookupSource + '_data_found') }}
-                    </h6>
-                    <p class="mb-0 small">{{ $t('cataloging.' + lookupSource + '_data_help') }}</p>
-                </div>
-                <img v-if="coverPreviewUrl" :src="coverPreviewUrl" alt=""
-                    class="rounded shadow-sm flex-shrink-0"
-                    style="max-height:120px; max-width:85px; object-fit:contain;"
-                    @error="handleCoverError" />
-            </div>
-            <div v-else-if="coverPreviewUrl" class="text-end mb-3">
-                <img :src="coverPreviewUrl" alt="" class="rounded shadow-sm"
-                    style="max-height:120px; max-width:85px; object-fit:contain;"
-                    @error="handleCoverError" />
-            </div>
-
             <form @submit.prevent="submitRecord">
                 <bibliographic-fields
                     v-model="formDataModel"
                     :edit-mode="true"
                     :settings="settings"
-                />
+                    :focus-isbn="true"
+                >
+                    <template #basic-info-message>
+                        <div v-if="isBnfData" class="alert alert-success py-2 mb-3" data-testid="cataloging-source-message">
+                            <div class="fw-semibold mb-1">
+                                <i class="bi bi-check-circle me-1"></i>
+                                {{ $t('cataloging.' + lookupSource + '_data_found') }}
+                            </div>
+                            <p class="small mb-0">{{ $t('cataloging.' + lookupSource + '_data_help') }}</p>
+                        </div>
+                    </template>
+                    <template #basic-info-aside>
+                        <div class="d-flex align-items-start justify-content-lg-end"
+                            data-testid="cataloging-cover-preview">
+                            <div data-testid="cataloging-cover-frame" style="width:9rem;">
+                                <div class="position-relative overflow-hidden rounded" style="aspect-ratio:3 / 4;">
+                                    <div v-if="!coverPreviewLoaded"
+                                        class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center gap-2 rounded bg-light text-center text-muted"
+                                        data-testid="cataloging-cover-placeholder"
+                                        role="img"
+                                        :aria-label="$t('cataloging.cover_preview')">
+                                        <i class="bi bi-book-half fs-2" aria-hidden="true"></i>
+                                        <span class="small">{{ $t('cataloging.cover_preview') }}</span>
+                                    </div>
+                                    <img v-if="coverPreviewUrl" :src="coverPreviewUrl" alt=""
+                                        class="position-absolute top-0 start-0 w-100 h-100 rounded"
+                                        :class="{ invisible: !coverPreviewLoaded }"
+                                        style="object-fit:contain;"
+                                        data-testid="cataloging-cover-image"
+                                        @load="markCoverLoaded"
+                                        @error="handleCoverError" />
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </bibliographic-fields>
 
-                <div class="mt-4 d-flex gap-2">
+                <div class="position-sticky bottom-0 mt-4 d-flex gap-2 border-top bg-white py-2" style="z-index: 1">
                     <button type="submit" class="btn btn-primary" :disabled="loading">
                         <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
                         <i v-else class="bi bi-save me-2"></i>

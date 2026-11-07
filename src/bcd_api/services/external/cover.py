@@ -14,11 +14,15 @@ Idempotent: if the file already exists in data/covers/, returns immediately.
 
 import logging
 import re
+import time
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Optional
 
 import httpx
 from sqlalchemy.orm import Session
+
+from src.bcd_api.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +43,38 @@ _HEADERS = {
 # Optional Google Books API key — configured via settings
 _google_api_key: Optional[str] = None
 
+_COVER_SOURCE_DEFAULTS: dict[str, bool | int | str | None] = {
+    "cover_custom_url_enabled": True,
+    "cover_custom_url_timeout": 2,
+    "cover_image_url_pattern": None,
+    "cover_amazon_enabled": True,
+    "cover_amazon_timeout": 2,
+    "cover_openlibrary_enabled": True,
+    "cover_openlibrary_timeout": 2,
+    "cover_google_books_enabled": True,
+    "cover_google_books_timeout": 2,
+    "cover_geobib_enabled": True,
+    "cover_geobib_timeout": 2,
+}
+
 
 def configure(google_api_key: Optional[str] = None) -> None:
     """Call once at startup with values from settings."""
     global _google_api_key
     _google_api_key = google_api_key or None
+
+
+def snapshot_cover_source_settings(settings: object | None) -> dict[str, bool | int | str | None]:
+    """Copy the cover provider options before the database session is closed."""
+    options = {
+        key: getattr(settings, key, default) if settings is not None else default
+        for key, default in _COVER_SOURCE_DEFAULTS.items()
+    }
+    if options["cover_image_url_pattern"] is None:
+        from src.bcd_api.core.config import settings as app_settings
+
+        options["cover_image_url_pattern"] = app_settings.cover_image_url_pattern
+    return options
 
 
 def _get_covers_dir() -> Path:
@@ -146,9 +177,9 @@ def _both_forms(isbn: str) -> tuple[Optional[str], Optional[str]]:
 # ---------------------------------------------------------------------------
 
 
-def _fetch(url: str, client: httpx.Client) -> Optional[bytes]:
+def _fetch(url: str, client: httpx.Client, timeout: int = 2) -> Optional[bytes]:
     try:
-        r = client.get(url, timeout=10, follow_redirects=True)
+        r = client.get(url, timeout=timeout, follow_redirects=True)
         if r.status_code == 200:
             ct = r.headers.get("content-type", "")
             if "image" in ct and len(r.content) >= _MIN_BYTES:
@@ -163,37 +194,41 @@ def _fetch(url: str, client: httpx.Client) -> Optional[bytes]:
 # ---------------------------------------------------------------------------
 
 
-def _try_amazon(isbn10: Optional[str], client: httpx.Client) -> Optional[bytes]:
+def _try_amazon(isbn10: Optional[str], client: httpx.Client, timeout: int = 2) -> Optional[bytes]:
     if not isbn10:
         return None
     for suffix in _AMAZON_SUFFIXES:
         for host in _AMAZON_HOSTS:
             url = f"https://{host}/images/P/{isbn10}.01.{suffix}.jpg"
-            data = _fetch(url, client)
+            data = _fetch(url, client, timeout)
             if data:
                 return data
     return None
 
 
 def _try_openlibrary(
-    isbn10: Optional[str], isbn13: Optional[str], client: httpx.Client
+    isbn10: Optional[str], isbn13: Optional[str], client: httpx.Client, timeout: int = 2
 ) -> Optional[bytes]:
     for isbn in filter(None, [isbn13, isbn10]):
         url = f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false"
-        data = _fetch(url, client)
+        data = _fetch(url, client, timeout)
         if data:
             return data
     return None
 
 
-def _try_google_api(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
+def _try_google_api(
+    isbn13: Optional[str], client: httpx.Client, timeout: int = 2
+) -> Optional[bytes]:
     if not isbn13:
         return None
     params: dict = {"q": f"isbn:{isbn13}", "maxResults": "1"}
     if _google_api_key:
         params["key"] = _google_api_key
     try:
-        r = client.get("https://www.googleapis.com/books/v1/volumes", params=params, timeout=10)
+        r = client.get(
+            "https://www.googleapis.com/books/v1/volumes", params=params, timeout=timeout
+        )
         r.raise_for_status()
         data = r.json()
         if not data.get("items"):
@@ -202,17 +237,17 @@ def _try_google_api(isbn13: Optional[str], client: httpx.Client) -> Optional[byt
         for size in ["large", "medium", "small", "thumbnail", "smallThumbnail"]:
             if size in links:
                 thumb = links[size].replace("http://", "https://")
-                return _fetch(thumb, client)
+                return _fetch(thumb, client, timeout)
     except Exception:
         pass
     return None
 
 
-def _try_geobib(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
+def _try_geobib(isbn13: Optional[str], client: httpx.Client, timeout: int = 2) -> Optional[bytes]:
     if not isbn13:
         return None
     url = f"https://couverture.geobib.fr/api/v1/{isbn13}/medium"
-    return _fetch(url, client)
+    return _fetch(url, client, timeout)
 
 
 def _expand_isbn_url_pattern(pattern: str, isbn13: str) -> str:
@@ -245,7 +280,12 @@ def _expand_isbn_url_pattern(pattern: str, isbn13: str) -> str:
     return url
 
 
-def _try_configured_url(isbn13: Optional[str], client: httpx.Client) -> Optional[bytes]:
+def _try_configured_url(
+    isbn13: Optional[str],
+    client: httpx.Client,
+    timeout: int = 2,
+    pattern: Optional[str] = None,
+) -> Optional[bytes]:
     """Try an optional URL template configured through ``.env``.
 
     Templates support ``{isbn}`` and arbitrary Python-style ISBN indexes and
@@ -255,9 +295,11 @@ def _try_configured_url(isbn13: Optional[str], client: httpx.Client) -> Optional
     if not isbn13 or len(isbn13) != 13 or not isbn13.isdigit():
         return None
 
-    from src.bcd_api.core.config import settings
+    if pattern is None:
+        from src.bcd_api.core.config import settings
 
-    pattern = settings.cover_image_url_pattern.strip()
+        pattern = settings.cover_image_url_pattern
+    pattern = pattern.strip()
     if not pattern:
         return None
 
@@ -271,7 +313,7 @@ def _try_configured_url(isbn13: Optional[str], client: httpx.Client) -> Optional
         logger.warning("Cover image URL pattern must produce an HTTP(S) URL")
         return None
 
-    return _fetch(url, client)
+    return _fetch(url, client, timeout)
 
 
 # ---------------------------------------------------------------------------
@@ -305,13 +347,18 @@ def find_cached_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[
     return dest.name if dest.exists() else None
 
 
-def download_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str]:
+def download_cover(
+    isbn: str,
+    covers_dir: Optional[Path] = None,
+    source_settings: Optional[Mapping[str, bool | int | str | None]] = None,
+) -> Optional[str]:
     """
     Download a book cover image, trying multiple providers in cascade.
 
     Args:
         isbn: ISBN-10 or ISBN-13 (hyphens allowed; ``isbn:`` / ``issn:`` prefixes stripped).
         covers_dir: Directory where cover images are stored.
+        source_settings: Per-provider switches and timeouts from system settings.
 
     Returns:
         Filename (e.g. '9782070368228.jpg') on success, None if no cover found.
@@ -342,18 +389,39 @@ def download_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str
     if dest.exists():
         return dest.name
 
+    options = {**_COVER_SOURCE_DEFAULTS, **(source_settings or {})}
+    if options["cover_image_url_pattern"] is None:
+        from src.bcd_api.core.config import settings
+
+        options["cover_image_url_pattern"] = settings.cover_image_url_pattern
     providers = [
-        ("configured_url", lambda c: _try_configured_url(isbn13, c)),
-        ("amazon", lambda c: _try_amazon(isbn10, c)),
-        ("openlibrary", lambda c: _try_openlibrary(isbn10, isbn13, c)),
-        ("google_api", lambda c: _try_google_api(isbn13, c)),
-        ("geobib", lambda c: _try_geobib(isbn13, c)),
+        (
+            "configured_url",
+            "cover_custom_url",
+            lambda c, timeout: _try_configured_url(
+                isbn13, c, timeout, str(options["cover_image_url_pattern"] or "")
+            ),
+        ),
+        ("amazon", "cover_amazon", lambda c, timeout: _try_amazon(isbn10, c, timeout)),
+        (
+            "openlibrary",
+            "cover_openlibrary",
+            lambda c, timeout: _try_openlibrary(isbn10, isbn13, c, timeout),
+        ),
+        (
+            "google_api",
+            "cover_google_books",
+            lambda c, timeout: _try_google_api(isbn13, c, timeout),
+        ),
+        ("geobib", "cover_geobib", lambda c, timeout: _try_geobib(isbn13, c, timeout)),
     ]
 
     with httpx.Client(headers=_HEADERS) as client:
-        for name, fn in providers:
+        for name, key, fn in providers:
+            if not options[f"{key}_enabled"]:
+                continue
             try:
-                data = fn(client)
+                data = fn(client, int(options[f"{key}_timeout"]))
                 if data:
                     dest.write_bytes(data)
                     logger.info(f"Cover downloaded for ISBN {normalized} via {name}")
@@ -363,3 +431,72 @@ def download_cover(isbn: str, covers_dir: Optional[Path] = None) -> Optional[str
 
     logger.info(f"No cover found for ISBN {normalized}")
     return None
+
+
+def test_cover_source(
+    source: str, source_settings: Optional[Mapping[str, bool | int | str | None]] = None
+) -> dict[str, object]:
+    """Test one enabled cover provider with a sample ISBN without storing its image."""
+    source = source.strip().lower()
+    options = {**_COVER_SOURCE_DEFAULTS, **(source_settings or {})}
+    if options["cover_image_url_pattern"] is None:
+        from src.bcd_api.core.config import settings
+
+        options["cover_image_url_pattern"] = settings.cover_image_url_pattern
+    isbn10, isbn13 = _both_forms("9782070612758")
+    providers = {
+        "custom_url": (
+            "cover_custom_url_enabled",
+            "cover_custom_url_timeout",
+            lambda client, timeout: _try_configured_url(
+                isbn13, client, timeout, str(options["cover_image_url_pattern"] or "")
+            ),
+        ),
+        "amazon": (
+            "cover_amazon_enabled",
+            "cover_amazon_timeout",
+            lambda client, timeout: _try_amazon(isbn10, client, timeout),
+        ),
+        "openlibrary": (
+            "cover_openlibrary_enabled",
+            "cover_openlibrary_timeout",
+            lambda client, timeout: _try_openlibrary(isbn10, isbn13, client, timeout),
+        ),
+        "google_books": (
+            "cover_google_books_enabled",
+            "cover_google_books_timeout",
+            lambda client, timeout: _try_google_api(isbn13, client, timeout),
+        ),
+        "geobib": (
+            "cover_geobib_enabled",
+            "cover_geobib_timeout",
+            lambda client, timeout: _try_geobib(isbn13, client, timeout),
+        ),
+    }
+    if source not in providers:
+        raise ValidationError(f"Unknown cover source: {source}")
+
+    enabled_key, timeout_key, provider = providers[source]
+    if not options[enabled_key]:
+        return {"source": source, "status": "disabled", "ok": False}
+
+    started = time.perf_counter()
+    try:
+        with httpx.Client(headers=_HEADERS) as client:
+            data = provider(client, int(options[timeout_key]))
+        return {
+            "source": source,
+            "status": "reachable" if data else "not_found",
+            "ok": True,
+            "found": bool(data),
+            "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        }
+    except Exception as exc:
+        logger.warning("Cover source test for '%s' failed: %s", source, exc)
+        return {
+            "source": source,
+            "status": "error",
+            "ok": False,
+            "error": str(exc),
+            "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        }

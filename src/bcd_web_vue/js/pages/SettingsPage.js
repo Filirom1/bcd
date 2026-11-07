@@ -15,12 +15,11 @@ import LoadingSpinner from '../components/ui/LoadingSpinner.js';
 import HelpPanel from '../components/ui/HelpPanel.js';
 import SettingsForm from '../components/settings/SettingsForm.js';
 import BackupSection from '../components/settings/BackupSection.js';
-import CoverSection from '../components/settings/CoverSection.js';
 import EnvSection from '../components/settings/EnvSection.js';
 import DataMaintenanceSection from '../components/settings/DataMaintenanceSection.js';
 import LogsSection from '../components/settings/LogsSection.js';
 
-const VALID_SECTIONS = ['general', 'catalog', 'backup', 'covers', 'maintenance', 'env', 'logs', 'external-sources'];
+const VALID_SECTIONS = ['general', 'catalog', 'backup', 'maintenance', 'env', 'logs', 'external-sources'];
 
 import PageHeader from '../components/ui/PageHeader.js';
 
@@ -30,7 +29,7 @@ export default defineComponent({
     components: {
         PageHeader,
         LoadingSpinner, HelpPanel, SettingsForm,
-        BackupSection, CoverSection, EnvSection, DataMaintenanceSection, LogsSection
+        BackupSection, EnvSection, DataMaintenanceSection, LogsSection
     },
 
     setup() {
@@ -163,7 +162,6 @@ export default defineComponent({
                     @train-shelf-suggestion="trainShelfSuggestion"
                 />
                 <backup-section v-else-if="activeSection === 'backup'" />
-                <cover-section v-else-if="activeSection === 'covers'" />
                 <data-maintenance-section v-else-if="activeSection === 'maintenance'" />
                 <env-section v-else-if="activeSection === 'env'" />
                 <logs-section v-else-if="activeSection === 'logs'" />

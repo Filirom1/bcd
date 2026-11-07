@@ -52,6 +52,35 @@ afterEach(() => {
 });
 
 describe('ItemBarcodeInput', () => {
+    it('shows the record cover and hides it safely when the image fails', async () => {
+        const wrapper = mountInput({ recordCoverImage: 'prince.jpg' });
+        await flushPromises();
+
+        const cover = wrapper.get('[data-testid="record-cover"]');
+        expect(cover.attributes('src')).toBe('/covers/prince.jpg');
+        expect(wrapper.get('#item-barcode-input').exists()).toBe(true);
+
+        await cover.trigger('error');
+        expect(cover.element.style.display).toBe('none');
+        expect(wrapper.get('#item-barcode-input').exists()).toBe(true);
+    });
+
+    it('falls back to a remote cover before hiding a failed local cover', async () => {
+        const wrapper = mountInput({
+            recordCoverImage: 'missing.jpg',
+            recordCoverUrl: 'https://books.example/cover.jpg'
+        });
+        await flushPromises();
+        const cover = wrapper.get('[data-testid="record-cover"]');
+
+        await cover.trigger('error');
+        expect(cover.attributes('src')).toBe('https://books.example/cover.jpg');
+        expect(cover.element.style.display).not.toBe('none');
+
+        await cover.trigger('error');
+        expect(cover.element.style.display).toBe('none');
+    });
+
     it('creates physical item for a record when barcode is submitted', async () => {
         const postSpy = vi.spyOn(apiClient, 'post');
         const wrapper = mountInput();
@@ -69,6 +98,20 @@ describe('ItemBarcodeInput', () => {
         const copiesList = wrapper.findComponent({ name: 'CopiesList' });
         copiesList.vm.$emit('checkout', { item_id: 'BCD000123' });
         expect(wrapper.emitted('checkout-item')).toEqual([[{ item_id: 'BCD000123' }]]);
+    });
+
+    it('creates the next physical item when Enter is pressed in the barcode field', async () => {
+        const wrapper = mountInput();
+        await flushPromises();
+        wrapper.vm.barcode = 'BCD000124';
+
+        await wrapper.get('#item-barcode-input').trigger('keydown', { key: 'Enter' });
+        await flushPromises();
+
+        expect(apiClient.post).toHaveBeenCalledWith('/catalog/items', expect.objectContaining({
+            bibliographic_record_id: 42,
+            item_id: 'BCD000124'
+        }));
     });
 
     it('focuses the barcode input on mount and after a failed scan', async () => {

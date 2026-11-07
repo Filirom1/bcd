@@ -13,6 +13,7 @@ from src.bcd_api.services.external.google_books import (
     _parse_year,
     configure,
     search_by_isbn,
+    search_by_text,
     search_by_title_author,
 )
 
@@ -310,3 +311,54 @@ class TestSearchByTitleAuthor:
         result = search_by_title_author("", "White")
         assert result is None
         mock_client_class.return_value.get.assert_not_called()
+
+
+class TestSearchByText:
+    @patch("src.bcd_api.services.external.google_books._rate_limit")
+    @patch("httpx.Client")
+    def test_returns_bounded_results_with_covers(
+        self, mock_client_class, mock_rate_limit, sample_volume
+    ):
+        volumes = [
+            {
+                **sample_volume,
+                "id": f"book-{index}",
+                "volumeInfo": {
+                    **sample_volume["volumeInfo"],
+                    "title": f"Le Petit Prince {index}",
+                },
+            }
+            for index in range(12)
+        ]
+        mock_client_class.return_value = _mock_client(
+            {"totalItems": len(volumes), "items": volumes}
+        )
+
+        results = search_by_text("Le Petit Prince", timeout=6, limit=10)
+
+        assert len(results) == 10
+        assert results[0]["cover_url"].startswith("https://books.google.com")
+        call = mock_client_class.return_value.get.call_args
+        assert call.kwargs["params"]["q"] == "Le Petit Prince"
+        assert call.kwargs["params"]["maxResults"] == 10
+        assert call.kwargs["params"]["langRestrict"] == "fr"
+        assert call.kwargs["timeout"] == 6
+
+    @patch("src.bcd_api.services.external.google_books._rate_limit")
+    @patch("httpx.Client")
+    def test_empty_results(self, mock_client_class, mock_rate_limit, api_response_empty):
+        mock_client_class.return_value = _mock_client(api_response_empty)
+
+        assert search_by_text("No matching title") == []
+
+    @patch("src.bcd_api.services.external.google_books._rate_limit")
+    @patch("httpx.Client")
+    def test_timeout_propagates(self, mock_client_class, mock_rate_limit):
+        mock_client = Mock()
+        mock_client.get.side_effect = httpx.TimeoutException("timeout")
+        mock_client.__enter__ = Mock(return_value=mock_client)
+        mock_client.__exit__ = Mock(return_value=None)
+        mock_client_class.return_value = mock_client
+
+        with pytest.raises(httpx.TimeoutException):
+            search_by_text("Le Petit Prince", timeout=4)

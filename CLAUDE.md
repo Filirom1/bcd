@@ -297,3 +297,10 @@ See [`bcd_kids/README.md`](bcd_kids/README.md) for complete documentation.
 - Target: 4GB RAM, HDD, Windows 10, GPU Intel HD Graphics 2000+
 
 Voir `bcd_kids/DEPLOYMENT.md` pour guide complet déploiement PC scolaires.
+
+## Active Technologies
+- JavaScript ES modules, Vue 3 + Vue Router, Vue I18n, Bootstrap 5, existing cataloging components (015-cataloging-ui)
+- Existing catalog API and database records; no schema changes (015-cataloging-ui)
+
+## Recent Changes
+- 015-cataloging-ui: Added JavaScript ES modules, Vue 3 + Vue Router, Vue I18n, Bootstrap 5, existing cataloging components
