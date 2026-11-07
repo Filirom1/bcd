@@ -61,4 +61,4 @@ def test_external_source_configuration_endpoint_returns_all_fixed_sources(catalo
         "google_books",
         "sudoc",
     ]
-    assert response.json()["sources"][0]["timeout"] == 4
+    assert response.json()["sources"][0]["timeout"] == 2

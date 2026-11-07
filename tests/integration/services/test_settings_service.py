@@ -176,6 +176,9 @@ class TestResetToDefaults:
         assert settings.barcode_type == "code39"
         assert settings.id_format == "numeric"
         assert settings.id_validation_regex == r"^\d+$"
+        assert settings.bnf_timeout == 2
+        assert settings.google_books_timeout == 2
+        assert settings.sudoc_timeout == 3
 
     def test_reset_to_defaults_persists(self, db_session):
         """Test that reset persists to database."""

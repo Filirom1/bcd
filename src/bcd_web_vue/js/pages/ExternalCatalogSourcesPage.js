@@ -38,11 +38,11 @@ export default defineComponent({
         const appVersion = ref('');
         const settings = ref({
             bnf_enabled: true,
-            bnf_timeout: 4,
+            bnf_timeout: 2,
             google_books_enabled: true,
-            google_books_timeout: 4,
+            google_books_timeout: 2,
             sudoc_enabled: true,
-            sudoc_timeout: 5
+            sudoc_timeout: 3
         });
         const originalSettings = ref({});
 

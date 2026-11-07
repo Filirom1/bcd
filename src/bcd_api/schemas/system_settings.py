@@ -53,11 +53,11 @@ class SystemSettingsResponse(BaseModel):
     catalog_languages: Optional[str] = None
     catalog_levels: Optional[str] = None
     bnf_enabled: bool = True
-    bnf_timeout: int = Field(4, ge=1, le=60)
+    bnf_timeout: int = Field(2, ge=1, le=60)
     google_books_enabled: bool = True
-    google_books_timeout: int = Field(4, ge=1, le=60)
+    google_books_timeout: int = Field(2, ge=1, le=60)
     sudoc_enabled: bool = True
-    sudoc_timeout: int = Field(5, ge=1, le=60)
+    sudoc_timeout: int = Field(3, ge=1, le=60)
     inventory_search_result_limit: int = 200
     dewey_colors_enabled: bool = True
     dewey_colors: Optional[List[str]] = None

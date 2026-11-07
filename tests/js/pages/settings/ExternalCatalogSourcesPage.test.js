@@ -8,11 +8,11 @@ import { useNotification } from '../../../../src/bcd_web_vue/js/composables/useN
 const sourceSettings = {
     id: 1,
     bnf_enabled: true,
-    bnf_timeout: 4,
+    bnf_timeout: 2,
     google_books_enabled: true,
-    google_books_timeout: 4,
+    google_books_timeout: 2,
     sudoc_enabled: true,
-    sudoc_timeout: 5
+    sudoc_timeout: 3
 };
 
 afterEach(() => {
@@ -38,11 +38,11 @@ describe('ExternalCatalogSourcesPage', () => {
         expect(put).toHaveBeenCalledWith('/admin/settings', {
             updates: {
                 bnf_enabled: true,
-                bnf_timeout: 4,
+                bnf_timeout: 2,
                 google_books_enabled: false,
                 google_books_timeout: 9,
                 sudoc_enabled: true,
-                sudoc_timeout: 5
+                sudoc_timeout: 3
             }
         });
         expect(useNotification().notifications.value).toEqual([

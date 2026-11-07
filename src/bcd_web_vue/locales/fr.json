@@ -904,7 +904,7 @@
     "catalog_lists": "Listes du catalogue",
     "catalog_lists_help": "Valeurs séparées par des virgules. Utilisées comme suggestions dans les filtres et l'édition groupée.",
     "external_catalog_sources": "Sources de catalogues externes",
-    "external_catalog_sources_help": "Ces sources sont utilisées uniquement si aucune notice adaptée n'existe dans le catalogue local. Le routage est fixe : BnF puis Google Books pour les ISBN, SUDOC pour les ISSN.",
+    "external_catalog_sources_help": "Ces sources sont utilisées uniquement si aucune notice adaptée n'existe dans le catalogue local. Le routage est fixe : BnF puis Google Books pour les ISBN, SUDOC pour les ISSN. Le délai s'applique à chaque source séparément ; par défaut, 2 s pour la BnF et Google Books, 3 s pour le SUDOC. En cas de délai dépassé, la recherche continue avec la source suivante ou la saisie manuelle.",
     "external_source": "Source",
     "external_source_enabled": "Activée",
     "external_source_timeout": "Délai",

@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- External catalog source lookups now default to 2-second timeouts for BnF and Google Books and 3 seconds for SUDOC; upgrades preserve non-default timeout settings.
+
 ## [1.7.0]
 
 - Portable release archives include rollback scripts, and rollback-enabled updates keep one previous application, configuration, and data snapshot.

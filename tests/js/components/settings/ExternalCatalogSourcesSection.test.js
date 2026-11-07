@@ -18,9 +18,9 @@ describe('ExternalCatalogSourcesSection', () => {
         const wrapper = mount(ExternalCatalogSourcesSection, {
             props: {
                 settings: {
-                    bnf_enabled: true, bnf_timeout: 4,
-                    google_books_enabled: true, google_books_timeout: 4,
-                    sudoc_enabled: true, sudoc_timeout: 5
+                    bnf_enabled: true, bnf_timeout: 2,
+                    google_books_enabled: true, google_books_timeout: 2,
+                    sudoc_enabled: true, sudoc_timeout: 3
                 }
             }
         });

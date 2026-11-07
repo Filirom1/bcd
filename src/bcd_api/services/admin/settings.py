@@ -200,11 +200,11 @@ def reset_to_defaults(db: Session) -> SystemSettings:
     settings.id_length_max = 10
     settings.catalog_medium_types = "Livre, Périodique, Audio, Vidéo, Jeu, Numérique, Autre"
     settings.bnf_enabled = True
-    settings.bnf_timeout = 4
+    settings.bnf_timeout = 2
     settings.google_books_enabled = True
-    settings.google_books_timeout = 4
+    settings.google_books_timeout = 2
     settings.sudoc_enabled = True
-    settings.sudoc_timeout = 5
+    settings.sudoc_timeout = 3
     settings.dewey_colors_enabled = True
     settings.catalog_call_number_rules = DEFAULT_CALL_NUMBER_RULES
 

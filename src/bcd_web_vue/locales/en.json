@@ -902,7 +902,7 @@
     "catalog_lists": "Catalog Lists",
     "catalog_lists_help": "Comma-separated values. Used as suggestions in filters and bulk edit.",
     "external_catalog_sources": "External catalog sources",
-    "external_catalog_sources_help": "These sources are used only after the local catalog has no suitable notice. Routing is fixed: BnF then Google Books for ISBNs, SUDOC for ISSNs.",
+    "external_catalog_sources_help": "These sources are used only after the local catalog has no suitable notice. Routing is fixed: BnF then Google Books for ISBNs, SUDOC for ISSNs. The timeout applies to each source separately; defaults are 2 s for BnF and Google Books, and 3 s for SUDOC. If a timeout is reached, lookup continues with the next source or manual entry.",
     "external_source": "Source",
     "external_source_enabled": "Enabled",
     "external_source_timeout": "Timeout",

@@ -80,11 +80,11 @@ class SystemSettings(Base):
     # per-school settings rather than environment-only switches so a librarian
     # can disable a slow source without editing deployment files.
     bnf_enabled = Column(Boolean, nullable=False, default=True)
-    bnf_timeout = Column(Integer, nullable=False, default=4)
+    bnf_timeout = Column(Integer, nullable=False, default=2)
     google_books_enabled = Column(Boolean, nullable=False, default=True)
-    google_books_timeout = Column(Integer, nullable=False, default=4)
+    google_books_timeout = Column(Integer, nullable=False, default=2)
     sudoc_enabled = Column(Boolean, nullable=False, default=True)
-    sudoc_timeout = Column(Integer, nullable=False, default=5)
+    sudoc_timeout = Column(Integer, nullable=False, default=3)
 
     # Dewey classification colors (JSON array of 10 hex strings or null, index = class 0–9)
     dewey_colors_enabled = Column(Boolean, nullable=False, default=True)

@@ -14,6 +14,7 @@ from src.bcd_api.services.catalog.notice_lookup import (
     lookup_identifier_cascade,
     lookup_notice_source,
     search_local_notices,
+    source_configuration,
 )
 from src.bcd_api.services.catalog.notice_lookup import (
     test_external_source as run_external_source_test,
@@ -124,8 +125,8 @@ def test_isbn_tries_bnf_then_google_and_never_sudoc(db_session, monkeypatch):
 
     assert result["title"] == "Found book"
     assert [call[0] for call in calls] == ["bnf", "google_books"]
-    assert calls[0][2] == 4
-    assert calls[1][2] == 4
+    assert calls[0][2] == 2
+    assert calls[1][2] == 2
 
 
 def test_issn_uses_sudoc_only(db_session, monkeypatch):
@@ -147,7 +148,7 @@ def test_issn_uses_sudoc_only(db_session, monkeypatch):
     result = lookup_identifier_cascade(db_session, "0984-2314")
 
     assert result["title"] == "Wapiti"
-    assert calls == [("sudoc", "0984-2314", 5)]
+    assert calls == [("sudoc", "0984-2314", 3)]
 
 
 def test_ean977_extracts_issn_and_uses_local_or_sudoc(db_session, monkeypatch):
@@ -167,7 +168,17 @@ def test_ean977_extracts_issn_and_uses_local_or_sudoc(db_session, monkeypatch):
     external = lookup_identifier_cascade(db_session, "9771144165005")
 
     assert external["title"] == "Wapiti"
-    sudoc.assert_called_once_with("1144-1658", timeout=5)
+    sudoc.assert_called_once_with("1144-1658", timeout=3)
+
+
+def test_source_configuration_uses_shorter_default_timeouts(db_session):
+    sources = source_configuration(db_session)
+
+    assert {source["source"]: source["timeout"] for source in sources} == {
+        "bnf": 2,
+        "google_books": 2,
+        "sudoc": 3,
+    }
 
 
 def test_disabled_source_is_not_called(db_session, monkeypatch):

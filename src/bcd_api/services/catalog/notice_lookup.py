@@ -41,9 +41,9 @@ logger = logging.getLogger(__name__)
 
 EXTERNAL_SOURCES = ("bnf", "google_books", "sudoc")
 _SOURCE_DEFAULTS = {
-    "bnf": {"enabled": True, "timeout": 4},
-    "google_books": {"enabled": True, "timeout": 4},
-    "sudoc": {"enabled": True, "timeout": 5},
+    "bnf": {"enabled": True, "timeout": 2},
+    "google_books": {"enabled": True, "timeout": 2},
+    "sudoc": {"enabled": True, "timeout": 3},
 }
 
 # SQLite does not provide a portable accent-insensitive collation.  Normalize
