@@ -283,7 +283,9 @@ def test_text_lookup_dispatches_to_each_external_provider(
     )
 
 
-def test_text_lookup_returns_remote_candidates_even_when_local_match_exists(db_session, monkeypatch):
+def test_text_lookup_returns_remote_candidates_even_when_local_match_exists(
+    db_session, monkeypatch
+):
     record = make_record(db_session, title="Le Petit Prince")
     provider = Mock(return_value=[{"title": "Le Petit Prince nouvelle édition"}])
     monkeypatch.setattr(

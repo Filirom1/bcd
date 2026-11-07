@@ -106,39 +106,57 @@ def search_bibliographic_records(
     query = db.query(BibliographicRecord)
 
     if q:
-        search_term = f"%{_fold_search_accents(q)}%"
-        search_conditions = [
-            _accent_insensitive_column(db, BibliographicRecord.title).like(search_term),
-            _accent_insensitive_column(db, BibliographicRecord.subtitle).like(search_term),
-            _accent_insensitive_column(db, BibliographicRecord.authors).like(search_term),
-            _accent_insensitive_column(db, BibliographicRecord.publisher).like(search_term),
-            _accent_insensitive_column(db, BibliographicRecord.collection).like(search_term),
-            _accent_insensitive_column(db, BibliographicRecord.keywords).like(search_term),
-            _accent_insensitive_column(db, BibliographicRecord.description).like(search_term),
-        ]
-
-        if BibliographicRecord.isbn is not None:
-            search_conditions.append(BibliographicRecord.isbn.ilike(search_term))
-
-        if q.strip().isdigit():
-            search_conditions.append(BibliographicRecord.id == int(q.strip()))
-
         from sqlalchemy import exists
 
         settings = db.query(SystemSettings).first()
         prefix = (settings.item_barcode_prefix if settings else ".").strip()
-        item_search_terms = item_id_search_values(q, prefix)
+        normalized_query = q.strip()
+        item_search_terms = item_id_search_values(normalized_query, prefix)
 
-        search_conditions.append(
-            exists().where(
-                and_(
-                    Item.bibliographic_record_id == BibliographicRecord.id,
-                    or_(*(Item.item_id.ilike(f"%{term}%") for term in item_search_terms)),
+        if prefix and normalized_query.startswith(prefix) and len(normalized_query) > len(prefix):
+            query = query.filter(
+                exists().where(
+                    and_(
+                        Item.bibliographic_record_id == BibliographicRecord.id,
+                        Item.item_id.in_(item_search_terms),
+                    )
                 )
             )
-        )
+        else:
+            text_columns = (
+                BibliographicRecord.title,
+                BibliographicRecord.subtitle,
+                BibliographicRecord.authors,
+                BibliographicRecord.publisher,
+                BibliographicRecord.collection,
+                BibliographicRecord.keywords,
+                BibliographicRecord.description,
+            )
+            search_term = f"%{normalized_query}%"
 
-        query = query.filter(or_(*search_conditions))
+            if normalized_query.isdigit():
+                search_conditions = [column.like(search_term) for column in text_columns]
+                search_conditions.append(BibliographicRecord.isbn.like(search_term))
+            else:
+                folded_search_term = f"%{_fold_search_accents(normalized_query)}%"
+                search_conditions = [
+                    _accent_insensitive_column(db, column).like(folded_search_term)
+                    for column in text_columns
+                ]
+                search_conditions.append(BibliographicRecord.isbn.ilike(search_term))
+
+            if normalized_query.isdigit():
+                search_conditions.append(BibliographicRecord.id == int(normalized_query))
+
+            search_conditions.append(
+                exists().where(
+                    and_(
+                        Item.bibliographic_record_id == BibliographicRecord.id,
+                        or_(*(Item.item_id.ilike(f"%{term}%") for term in item_search_terms)),
+                    )
+                )
+            )
+            query = query.filter(or_(*search_conditions))
 
     if title:
         query = query.filter(BibliographicRecord.title.ilike(f"%{title}%"))

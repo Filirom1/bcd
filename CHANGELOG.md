@@ -4,10 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Improved rapid cataloging with configurable external-source and cover-provider settings (2 s default for covers, configurable bulk-download pause), local-first text search across BnF, Google Books, and SUDOC, separate local and remote results with covers, URL-based navigation, keyboard shortcuts, and faster copy entry.
 
 ## [1.7.0]
 
+- Improved rapid cataloging with configurable external-source and cover-provider settings (2 s default for covers, configurable bulk-download pause), local-first text search across BnF, Google Books, and SUDOC, separate local and remote results with covers, URL-based navigation, keyboard shortcuts, and faster copy entry.
+- Optimized catalog searches for prefixed item barcodes and numeric-only queries by avoiding unnecessary metadata and accent-folding scans.
 - Portable release archives include rollback scripts, and rollback-enabled updates keep one previous application, configuration, and data snapshot.
 - Fixed the portable Linux launcher passing PyInstaller's bundled library path to the Kids client, which could prevent it from opening.
 - General catalog search now ignores accents across bibliographic text fields.

@@ -529,6 +529,50 @@ class TestBibliographicRecordSearch:
         assert total == 3
         assert {record.id for record in results} == {record.id for record in created}
 
+    def test_prefixed_item_search_matches_exact_item_without_metadata_search(self, db_session):
+        matching_record = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Matching copy"),
+            isbn_lookup=False,
+        )
+        partial_match_record = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Partial barcode match"),
+            isbn_lookup=False,
+        )
+        catalog_service.create_item(
+            db_session,
+            ItemCreate(item_id="174", bibliographic_record_id=matching_record.id),
+        )
+        catalog_service.create_item(
+            db_session,
+            ItemCreate(item_id="1745", bibliographic_record_id=partial_match_record.id),
+        )
+
+        results, total = catalog_service.search_bibliographic_records(db_session, q=".174")
+
+        assert total == 1
+        assert results[0].id == matching_record.id
+
+    def test_numeric_general_search_skips_accent_folding(self, db_session, monkeypatch):
+        record = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="1984"),
+            isbn_lookup=False,
+        )
+
+        def unexpected_accent_search(*args, **kwargs):
+            pytest.fail("Numeric searches should not invoke accent folding")
+
+        monkeypatch.setattr(
+            "src.bcd_api.services.catalog.queries._accent_insensitive_column",
+            unexpected_accent_search,
+        )
+        results, total = catalog_service.search_bibliographic_records(db_session, q="1984")
+
+        assert total == 1
+        assert results[0].id == record.id
+
     def test_search_bibliographic_records_pagination(self, db_session):
         """
         Test pagination of search results.
