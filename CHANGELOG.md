@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Fixed the portable Linux launcher passing PyInstaller's bundled library path to the Kids client, which could prevent it from opening.
+
 ## [1.7.0]
 
 - General catalog search now ignores accents across bibliographic text fields.

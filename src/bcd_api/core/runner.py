@@ -111,6 +111,25 @@ def _start_mdns_proxy_thread(port: int) -> tuple:
     return None, None
 
 
+def _kids_client_environment(proxy_port: int | None = None) -> dict[str, str]:
+    """Build a clean environment for the external Kids executable."""
+    import os
+    import sys
+
+    env = os.environ.copy()
+    original_library_path = env.pop("LD_LIBRARY_PATH_ORIG", None)
+    if original_library_path is not None:
+        if original_library_path:
+            env["LD_LIBRARY_PATH"] = original_library_path
+        else:
+            env.pop("LD_LIBRARY_PATH", None)
+    elif is_portable() and sys.platform.startswith("linux"):
+        env.pop("LD_LIBRARY_PATH", None)
+    if proxy_port is not None:
+        env["BCD_MDNS_PROXY_PORT"] = str(proxy_port)
+    return env
+
+
 def _run_portable_browser(host: str, port: int):
     """Run in portable mode: open the system browser, no webview dependency."""
     import webbrowser
@@ -149,7 +168,6 @@ def _run_portable_browser(host: str, port: int):
 
 def _run_portable_kids(host: str, port: int):
     """Run in portable mode: launch Kids client and keep server running."""
-    import os
     import subprocess
 
     kids_path = settings.kids_client_path.strip()
@@ -179,10 +197,7 @@ def _run_portable_kids(host: str, port: int):
     if settings.client_only:
         mdns_proxy_server, mdns_proxy_thread = _start_mdns_proxy_thread(port)
 
-    child_env = None
-    if mdns_proxy_server is not None:
-        child_env = os.environ.copy()
-        child_env["BCD_MDNS_PROXY_PORT"] = str(port)
+    child_env = _kids_client_environment(port if mdns_proxy_server is not None else None)
 
     # Launch Kids client FIRST so its splash screen is visible immediately
     # while Alembic runs and the server starts in the background.
@@ -227,8 +242,11 @@ def _run_portable_kids(host: str, port: int):
 
     try:
         # Wait for Kids client to exit
-        process.wait()
-        logger.info("Kids client closed, shutting down server...")
+        exit_code = process.wait()
+        if exit_code:
+            logger.error("Kids client exited with status %d; shutting down server...", exit_code)
+        else:
+            logger.info("Kids client closed, shutting down server...")
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt received, shutting down...")
     finally:
