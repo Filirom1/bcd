@@ -1,6 +1,11 @@
 import json
+import subprocess
 import sys
+import tarfile
+from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 # Custom dummy classes to mock tkinter completely and avoid "_tkinter" import errors and MagicMock renaming conflicts
@@ -141,13 +146,35 @@ def test_cleanup_stale_update_removes_files_and_directory(tmp_path):
     update = tmp_path / "update"
     update.mkdir()
     (update / "partial.zip").write_text("partial")
+    rollback_backup = tmp_path / "rollback_backup"
+    rollback_backup.mkdir()
+    (rollback_backup / "bcd").write_text("previous")
     updater._cleanup_stale_update(tmp_path)
     assert not (tmp_path / "bcd.exe.old").exists()
     assert not update.exists()
+    assert (rollback_backup / "bcd").read_text() == "previous"
 
 
 def test_cleanup_stale_update_ignores_missing_paths(tmp_path):
     updater._cleanup_stale_update(tmp_path)
+
+
+def test_release_rollback_scripts_anchor_storage_paths_to_package(tmp_path):
+    updater._write_rollback_script_linux(
+        tmp_path, Path("data"), Path("config"), Path("data/bcd.db")
+    )
+    linux_content = (tmp_path / "rollback.sh").read_text()
+    assert 'DATA_DIR="$APP"/data' in linux_content
+    assert 'CONFIG_DIR="$APP"/config' in linux_content
+    assert 'DB_PATH="$APP"/data/bcd.db' in linux_content
+
+    updater._write_rollback_script_windows(
+        tmp_path, Path("data"), Path("config"), Path("data/bcd.db")
+    )
+    windows_content = (tmp_path / "rollback.bat").read_text()
+    assert 'set "DATA_DIR=%APP%data"' in windows_content
+    assert 'set "CONFIG_DIR=%APP%config"' in windows_content
+    assert 'set "DB_PATH=%APP%data\\bcd.db"' in windows_content
 
 
 def test_show_yes_no_mocked():
@@ -196,6 +223,20 @@ def test_apply_update_windows_mocked(tmp_path, monkeypatch):
         content = bat_file.read_text()
         assert "ping -n 5" in content
         assert "robocopy" in content
+        assert "rollback_backup.new" in content
+        assert "database.present" in content
+
+        rollback_file = app_dir / "rollback.bat"
+        assert rollback_file.exists()
+        rollback_content = rollback_file.read_text()
+        assert "rollback_backup" in rollback_content
+        assert any(
+            prompt in rollback_content
+            for prompt in (
+                "Restore the previous application, configuration, and data",
+                "Restaurer la version, la configuration et les données précédentes",
+            )
+        )
 
         # Process launched?
         mock_popen.assert_called_once()
@@ -225,9 +266,91 @@ def test_apply_update_linux_mocked(tmp_path, monkeypatch):
         content = sh_file.read_text()
         assert "sleep 2" in content
         assert "rm -rf" in content
+        assert "rollback_backup.new" in content
+        assert "database.present" in content
+
+        rollback_file = app_dir / "rollback.sh"
+        assert rollback_file.exists()
+        assert rollback_file.stat().st_mode & 0o111
+        rollback_content = rollback_file.read_text()
+        assert "rollback_backup" in rollback_content
+        assert any(
+            prompt in rollback_content
+            for prompt in (
+                "Restore the previous application, configuration, and data",
+                "Restaurer la version, la configuration et les données précédentes",
+            )
+        )
 
         # Process launched?
         mock_popen.assert_called_once()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Requires POSIX shell scripts")
+def test_linux_update_and_rollback_restore_previous_app_and_data(tmp_path, monkeypatch):
+    from src.bcd_api.core.config import settings
+
+    app_dir = tmp_path / "app"
+    app_dir.mkdir()
+    data_dir = app_dir / "data"
+    config_dir = app_dir / "config"
+    database_path = data_dir / "bcd.db"
+    monkeypatch.setattr(settings, "data_dir_path", str(data_dir))
+    monkeypatch.setattr(settings, "config_dir_path", str(config_dir))
+    monkeypatch.setattr(settings, "database_url", f"sqlite:///{database_path}")
+
+    def write_executable(path, content):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"#!/bin/sh\n{content}\n")
+        path.chmod(0o755)
+
+    write_executable(app_dir / "bcd", "exit 0")
+    (app_dir / "_internal").mkdir()
+    (app_dir / "_internal" / "version.txt").write_text("old")
+    (app_dir / "BCD-Kids.x86_64").write_text("old kids")
+    (app_dir / "BCD-Kids.pck").write_text("old pck")
+    data_dir.mkdir()
+    (data_dir / "catalog.txt").write_text("old data")
+    database_path.write_text("old database")
+    config_dir.mkdir()
+    (config_dir / ".env").write_text("old config")
+
+    package = tmp_path / "package" / "BCD-v2.0.0-Linux"
+    write_executable(package / "bcd", "exit 0")
+    (package / "_internal").mkdir()
+    (package / "_internal" / "version.txt").write_text("new")
+    (package / "BCD-Kids.x86_64").write_text("new kids")
+    (package / "BCD-Kids.pck").write_text("new pck")
+    archive_path = tmp_path / "update.tar.gz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        archive.add(package, arcname=package.name)
+
+    monkeypatch.setattr(updater.sys, "exit", lambda _code: None)
+    with patch("subprocess.Popen"):
+        updater._apply_update_linux(archive_path, "2.0.0", app_dir)
+
+    update_script = app_dir / "update.sh"
+    update_script.write_text(update_script.read_text().replace("sleep 2\n", ""))
+    subprocess.run([str(update_script)], check=True)
+    assert (app_dir / "_internal" / "version.txt").read_text() == "new"
+
+    (data_dir / "catalog.txt").write_text("new data")
+    database_path.write_text("new database")
+    (config_dir / ".env").write_text("new config")
+    subprocess.run(
+        ["sh", str(app_dir / "rollback.sh")],
+        input="o\n" if updater._detect_lang() == "fr" else "y\n",
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    assert (app_dir / "_internal" / "version.txt").read_text() == "old"
+    assert (app_dir / "BCD-Kids.x86_64").read_text() == "old kids"
+    assert (app_dir / "BCD-Kids.pck").read_text() == "old pck"
+    assert (data_dir / "catalog.txt").read_text() == "old data"
+    assert database_path.read_text() == "old database"
+    assert (config_dir / ".env").read_text() == "old config"
 
 
 def test_check_and_apply_update_full_workflow_mocked(tmp_path, monkeypatch):

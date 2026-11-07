@@ -4,10 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Fixed the portable Linux launcher passing PyInstaller's bundled library path to the Kids client, which could prevent it from opening.
-
 ## [1.7.0]
 
+- Portable release archives include rollback scripts, and rollback-enabled updates keep one previous application, configuration, and data snapshot.
+- Fixed the portable Linux launcher passing PyInstaller's bundled library path to the Kids client, which could prevent it from opening.
 - General catalog search now ignores accents across bibliographic text fields.
 - Fixed cataloging author and illustrator fields so spaces and commas remain editable while typing.
 - Added shared pagination to active-loan, overdue, and holds reports, with 10 results per page by default.

@@ -85,6 +85,8 @@ jobs:
           # Copy documentation to top level (PyInstaller buries data in _internal/)
           cp README.md README_FR.md INSTALL.md DEVELOPERS.md LICENSE "$DIST_NAME/"
 
+          PYTHONPATH=. python scripts/generate_rollback_script.py windows "$DIST_NAME"
+
           # Create version file
           echo "BCD Library Management System" > "$DIST_NAME/VERSION.txt"
           echo "Version: $VERSION" >> "$DIST_NAME/VERSION.txt"

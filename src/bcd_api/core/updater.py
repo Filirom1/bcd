@@ -206,6 +206,264 @@ def _download_with_progress(url: str, dest_path: Path) -> None:
         raise error_holder[0]
 
 
+def _rollback_storage_paths(app_dir: Path) -> tuple[Path, Path, Path]:
+    """Resolve the portable data, config, and SQLite paths for rollback."""
+    from sqlalchemy.engine import make_url
+
+    from src.bcd_api.core.config import settings
+
+    app_dir = app_dir.resolve()
+
+    def resolve_path(value: str, default: Path) -> Path:
+        path = Path(value).expanduser() if value else default
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        return path.resolve()
+
+    data_dir = resolve_path(settings.data_dir_path, app_dir / "data")
+    config_dir = resolve_path(settings.config_dir_path, app_dir / "config")
+    for label, directory in (("data", data_dir), ("configuration", config_dir)):
+        if directory == app_dir or app_dir.is_relative_to(directory):
+            raise ValueError(
+                f"The portable {label} directory cannot be the application directory or its parent."
+            )
+    database_url = make_url(settings.database_url)
+    if database_url.get_backend_name() != "sqlite":
+        raise ValueError("Automatic rollback backups require a file-based SQLite database.")
+    if not database_url.database or database_url.database == ":memory:":
+        raise ValueError("Automatic rollback backups require a file-based SQLite database.")
+    if database_url.database.startswith("file:"):
+        raise ValueError("SQLite URI database paths are not supported for automatic rollback.")
+    database_path = resolve_path(database_url.database, app_dir / "data" / "bcd.db")
+    return data_dir, config_dir, database_path
+
+
+def _write_rollback_script_windows(
+    app_dir: Path, data_dir: Path, config_dir: Path, database_path: Path
+) -> None:
+    """Write the Windows rollback script alongside the portable executable."""
+
+    def batch_value(value: Path) -> str:
+        rendered = str(value).replace("/", "\\").replace("%", "%%")
+        if not value.is_absolute():
+            return f"%APP%{rendered}"
+        return rendered
+
+    is_french = _detect_lang() == "fr"
+    no_backup_message = (
+        "Aucune sauvegarde de rollback n'est disponible."
+        if is_french
+        else "No rollback backup is available."
+    )
+    close_message = (
+        "Fermez BCD avant d'exécuter le rollback."
+        if is_french
+        else "Close BCD before running the rollback script."
+    )
+    confirmation = (
+        'choice /C ON /M "Restaurer la version, la configuration et les données précédentes ?"'
+        if is_french
+        else 'choice /C YN /M "Restore the previous application, configuration, and data?"'
+    )
+    complete_message = (
+        "Rollback terminé. Redémarrage de BCD..."
+        if is_french
+        else "Rollback complete. Restarting BCD..."
+    )
+    failed_message = (
+        "Échec du rollback. Vérifiez les permissions et le dossier rollback_backup."
+        if is_french
+        else "Rollback failed. Check file permissions and the rollback_backup directory."
+    )
+    lines = [
+        "@echo off",
+        "setlocal",
+        'set "APP=%~dp0"',
+        f'set "DATA_DIR={batch_value(data_dir)}"',
+        f'set "CONFIG_DIR={batch_value(config_dir)}"',
+        f'set "DB_PATH={batch_value(database_path)}"',
+        'set "BACKUP=%APP%rollback_backup"',
+        "",
+        'if not exist "%BACKUP%\\bcd.exe" (',
+        f"  echo {no_backup_message}",
+        "  pause",
+        "  exit /b 1",
+        ")",
+        'tasklist /FI "IMAGENAME eq bcd.exe" /NH | find /I "bcd.exe" > nul',
+        "if not errorlevel 1 (",
+        f"  echo {close_message}",
+        "  pause",
+        "  exit /b 1",
+        ")",
+        confirmation,
+        "if errorlevel 2 exit /b 0",
+        "ping -n 3 127.0.0.1 > nul",
+        "",
+        'copy /y "%BACKUP%\\bcd.exe" "%APP%bcd.exe" > nul',
+        "if errorlevel 1 goto restore_failed",
+        'if exist "%APP%_internal" rmdir /s /q "%APP%_internal"',
+        'robocopy "%BACKUP%\\_internal" "%APP%_internal" /e /copy:DAT /dcopy:DAT /R:5 /W:2 > nul',
+        "if errorlevel 8 goto restore_failed",
+        "",
+        'if exist "%BACKUP%\\data.present" (',
+        '  if exist "%DATA_DIR%" rmdir /s /q "%DATA_DIR%"',
+        '  mkdir "%DATA_DIR%"',
+        '  robocopy "%BACKUP%\\data" "%DATA_DIR%" /e /copy:DAT /dcopy:DAT /R:5 /W:2 > nul',
+        "  if errorlevel 8 goto restore_failed",
+        ') else if exist "%DATA_DIR%" rmdir /s /q "%DATA_DIR%"',
+        'if exist "%BACKUP%\\config.present" (',
+        '  if exist "%CONFIG_DIR%" rmdir /s /q "%CONFIG_DIR%"',
+        '  mkdir "%CONFIG_DIR%"',
+        '  robocopy "%BACKUP%\\config" "%CONFIG_DIR%" /e /copy:DAT /dcopy:DAT /R:5 /W:2 > nul',
+        "  if errorlevel 8 goto restore_failed",
+        ') else if exist "%CONFIG_DIR%" rmdir /s /q "%CONFIG_DIR%"',
+        "",
+        'if exist "%BACKUP%\\database.present" (',
+        '  for %%I in ("%DB_PATH%") do if not exist "%%~dpI" mkdir "%%~dpI"',
+        '  if exist "%DB_PATH%" del /f /q "%DB_PATH%"',
+        '  if exist "%DB_PATH%-wal" del /f /q "%DB_PATH%-wal"',
+        '  if exist "%DB_PATH%-shm" del /f /q "%DB_PATH%-shm"',
+        '  copy /y "%BACKUP%\\database" "%DB_PATH%" > nul',
+        "  if errorlevel 1 goto restore_failed",
+        '  if exist "%BACKUP%\\database-wal" copy /y "%BACKUP%\\database-wal" "%DB_PATH%-wal" > nul',
+        "  if errorlevel 1 goto restore_failed",
+        ") else (",
+        '  if exist "%DB_PATH%" del /f /q "%DB_PATH%"',
+        '  if exist "%DB_PATH%-wal" del /f /q "%DB_PATH%-wal"',
+        '  if exist "%DB_PATH%-shm" del /f /q "%DB_PATH%-shm"',
+        ")",
+        "",
+        'if exist "%BACKUP%\\kids_exe.present" (',
+        '  copy /y "%BACKUP%\\BCD-Kids.exe" "%APP%BCD-Kids.exe" > nul',
+        "  if errorlevel 1 goto restore_failed",
+        ') else if exist "%APP%BCD-Kids.exe" del /f /q "%APP%BCD-Kids.exe"',
+        'if exist "%BACKUP%\\kids_pck.present" (',
+        '  copy /y "%BACKUP%\\BCD-Kids.pck" "%APP%BCD-Kids.pck" > nul',
+        "  if errorlevel 1 goto restore_failed",
+        ') else if exist "%APP%BCD-Kids.pck" del /f /q "%APP%BCD-Kids.pck"',
+        "",
+        f"echo {complete_message}",
+        'start "" /D "%APP%" "%APP%bcd.exe"',
+        "exit /b 0",
+        "",
+        ":restore_failed",
+        f"echo {failed_message}",
+        "pause",
+        "exit /b 1",
+    ]
+    (app_dir / "rollback.bat").write_text("\r\n".join(lines) + "\r\n", encoding="utf-8")
+
+
+def _write_rollback_script_linux(
+    app_dir: Path, data_dir: Path, config_dir: Path, database_path: Path
+) -> None:
+    """Write the Linux rollback script alongside the portable executable."""
+    import shlex
+
+    def shell_value(value: Path) -> str:
+        if not value.is_absolute():
+            return f'"$APP"/{shlex.quote(value.as_posix())}'
+        return shlex.quote(str(value))
+
+    is_french = _detect_lang() == "fr"
+    no_backup_message = (
+        "Aucune sauvegarde de rollback n'est disponible."
+        if is_french
+        else "No rollback backup is available."
+    )
+    close_message = (
+        "Fermez BCD avant d'exécuter le rollback."
+        if is_french
+        else "Close BCD before running the rollback script."
+    )
+    confirmation = (
+        'printf "Restaurer la version, la configuration et les données précédentes ? [o/N] "'
+        if is_french
+        else 'printf "Restore the previous application, configuration, and data? [y/N] "'
+    )
+    confirmation_choices = (
+        'case "$CONFIRM" in o|O|oui|OUI) ;; *) echo "Rollback annulé."; exit 0 ;; esac'
+        if is_french
+        else 'case "$CONFIRM" in y|Y|yes|YES) ;; *) echo "Rollback cancelled."; exit 0 ;; esac'
+    )
+    complete_message = (
+        "Rollback terminé. Redémarrage de BCD..."
+        if is_french
+        else "Rollback complete. Restarting BCD..."
+    )
+    lines = [
+        "#!/bin/sh",
+        "set -eu",
+        'APP=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)',
+        'cd "$APP"',
+        'BACKUP="$APP/rollback_backup"',
+        f"DATA_DIR={shell_value(data_dir)}",
+        f"CONFIG_DIR={shell_value(config_dir)}",
+        f"DB_PATH={shell_value(database_path)}",
+        "",
+        'if [ ! -f "$BACKUP/bcd" ] || [ ! -d "$BACKUP/_internal" ]; then',
+        f'    echo "{no_backup_message}" >&2',
+        "    exit 1",
+        "fi",
+        "if command -v pgrep >/dev/null 2>&1 && pgrep -x bcd >/dev/null 2>&1; then",
+        f'    echo "{close_message}" >&2',
+        "    exit 1",
+        "fi",
+        confirmation,
+        "read -r CONFIRM",
+        confirmation_choices,
+        "",
+        'cp -p "$BACKUP/bcd" "$APP/bcd.rollback"',
+        'rm -f "$APP/bcd"',
+        'mv "$APP/bcd.rollback" "$APP/bcd"',
+        'rm -rf "$APP/_internal"',
+        'cp -a "$BACKUP/_internal" "$APP/_internal"',
+        "",
+        'if [ -f "$BACKUP/data.present" ]; then',
+        '    rm -rf "$DATA_DIR"',
+        '    mkdir -p "$(dirname -- "$DATA_DIR")"',
+        '    cp -a "$BACKUP/data" "$DATA_DIR"',
+        "else",
+        '    rm -rf "$DATA_DIR"',
+        "fi",
+        'if [ -f "$BACKUP/config.present" ]; then',
+        '    rm -rf "$CONFIG_DIR"',
+        '    mkdir -p "$(dirname -- "$CONFIG_DIR")"',
+        '    cp -a "$BACKUP/config" "$CONFIG_DIR"',
+        "else",
+        '    rm -rf "$CONFIG_DIR"',
+        "fi",
+        "",
+        'if [ -f "$BACKUP/database.present" ]; then',
+        '    mkdir -p "$(dirname -- "$DB_PATH")"',
+        '    rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm"',
+        '    cp -p "$BACKUP/database" "$DB_PATH"',
+        '    if [ -f "$BACKUP/database-wal" ]; then cp -p "$BACKUP/database-wal" "$DB_PATH-wal"; fi',
+        "else",
+        '    rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm"',
+        "fi",
+        "",
+        'if [ -f "$BACKUP/kids_exe.present" ]; then',
+        '    cp -p "$BACKUP/BCD-Kids.x86_64" "$APP/BCD-Kids.x86_64"',
+        '    chmod +x "$APP/BCD-Kids.x86_64"',
+        "else",
+        '    rm -f "$APP/BCD-Kids.x86_64"',
+        "fi",
+        'if [ -f "$BACKUP/kids_pck.present" ]; then',
+        '    cp -p "$BACKUP/BCD-Kids.pck" "$APP/BCD-Kids.pck"',
+        "else",
+        '    rm -f "$APP/BCD-Kids.pck"',
+        "fi",
+        "",
+        'chmod +x "$APP/bcd"',
+        f'echo "{complete_message}"',
+        '"$APP/bcd" >/dev/null 2>&1 &',
+    ]
+    rollback_path = app_dir / "rollback.sh"
+    rollback_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    rollback_path.chmod(0o755)
+
+
 # ---------------------------------------------------------------------------
 # Windows update script
 # ---------------------------------------------------------------------------
@@ -233,6 +491,8 @@ def _apply_update_windows(archive_path: Path, new_version: str, app_dir: Path) -
         zf.extractall(extracted_dir)
 
     pkg = f"BCD-v{new_version}-Windows"
+    data_dir, config_dir, database_path = _rollback_storage_paths(app_dir)
+    _write_rollback_script_windows(app_dir, data_dir, config_dir, database_path)
 
     # Build the batch script as a string (CRLF line endings required on Windows)
     lines = [
@@ -240,9 +500,53 @@ def _apply_update_windows(archive_path: Path, new_version: str, app_dir: Path) -
         "setlocal",
         'set "APP=%~dp0"',
         f'set "SRC=%APP%update\\extracted\\{pkg}"',
+        f'set "DATA_DIR={str(data_dir).replace("%", "%%")}"',
+        f'set "CONFIG_DIR={str(config_dir).replace("%", "%%")}"',
+        f'set "DB_PATH={str(database_path).replace("%", "%%")}"',
+        'set "BACKUP_NEW=%APP%rollback_backup.new"',
         "",
         "REM Wait for bcd.exe to fully exit and release all file locks (~4 s)",
         "ping -n 5 127.0.0.1 > nul",
+        "",
+        "REM Stage a single previous-version backup before replacing any files",
+        'if exist "%BACKUP_NEW%" rmdir /s /q "%BACKUP_NEW%"',
+        'mkdir "%BACKUP_NEW%"',
+        'copy /y "%APP%bcd.exe" "%BACKUP_NEW%\\bcd.exe" > nul',
+        "if errorlevel 1 goto backup_failed",
+        'robocopy "%APP%_internal" "%BACKUP_NEW%\\_internal" /e /copy:DAT /dcopy:DAT /R:5 /W:2 > nul',
+        "if errorlevel 8 goto backup_failed",
+        'if exist "%DATA_DIR%\\" (',
+        '  echo present>"%BACKUP_NEW%\\data.present"',
+        '  robocopy "%DATA_DIR%" "%BACKUP_NEW%\\data" /e /copy:DAT /dcopy:DAT /R:5 /W:2 > nul',
+        "  if errorlevel 8 goto backup_failed",
+        ")",
+        'if exist "%CONFIG_DIR%\\" (',
+        '  echo present>"%BACKUP_NEW%\\config.present"',
+        '  robocopy "%CONFIG_DIR%" "%BACKUP_NEW%\\config" /e /copy:DAT /dcopy:DAT /R:5 /W:2 > nul',
+        "  if errorlevel 8 goto backup_failed",
+        ")",
+        'if exist "%DB_PATH%" (',
+        '  echo present>"%BACKUP_NEW%\\database.present"',
+        '  copy /y "%DB_PATH%" "%BACKUP_NEW%\\database" > nul',
+        "  if errorlevel 1 goto backup_failed",
+        '  if exist "%DB_PATH%-wal" copy /y "%DB_PATH%-wal" "%BACKUP_NEW%\\database-wal" > nul',
+        "  if errorlevel 1 goto backup_failed",
+        ")",
+        'if exist "%APP%BCD-Kids.exe" (',
+        '  echo present>"%BACKUP_NEW%\\kids_exe.present"',
+        '  copy /y "%APP%BCD-Kids.exe" "%BACKUP_NEW%\\BCD-Kids.exe" > nul',
+        "  if errorlevel 1 goto backup_failed",
+        ")",
+        'if exist "%APP%BCD-Kids.pck" (',
+        '  echo present>"%BACKUP_NEW%\\kids_pck.present"',
+        '  copy /y "%APP%BCD-Kids.pck" "%BACKUP_NEW%\\BCD-Kids.pck" > nul',
+        "  if errorlevel 1 goto backup_failed",
+        ")",
+        'if exist "%APP%rollback_backup.old" rmdir /s /q "%APP%rollback_backup.old"',
+        'if exist "%APP%rollback_backup" move /y "%APP%rollback_backup" "%APP%rollback_backup.old" > nul',
+        'move /y "%BACKUP_NEW%" "%APP%rollback_backup" > nul',
+        "if errorlevel 1 goto backup_commit_failed",
+        'if exist "%APP%rollback_backup.old" rmdir /s /q "%APP%rollback_backup.old"',
         "",
         "REM Rename old exe — rename succeeds even on open handles",
         'if exist "%APP%bcd.exe.old" del /f /q "%APP%bcd.exe.old"',
@@ -266,9 +570,20 @@ def _apply_update_windows(archive_path: Path, new_version: str, app_dir: Path) -
         "",
         "REM Restart BCD",
         'start "" "%APP%bcd.exe"',
-        "",
         "REM Self-delete",
         '(goto) 2>nul & del "%~f0"',
+        "exit /b 0",
+        "",
+        ":backup_commit_failed",
+        'if exist "%APP%rollback_backup.old" if not exist "%APP%rollback_backup" move /y "%APP%rollback_backup.old" "%APP%rollback_backup" > nul',
+        "",
+        ":backup_failed",
+        "echo Update cancelled because the previous version could not be backed up.",
+        'if exist "%BACKUP_NEW%" rmdir /s /q "%BACKUP_NEW%"',
+        'if exist "%APP%update" rmdir /s /q "%APP%update"',
+        'if exist "%APP%bcd.exe" start "" "%APP%bcd.exe"',
+        '(goto) 2>nul & del "%~f0"',
+        "exit /b 1",
     ]
     bat_content = "\r\n".join(lines) + "\r\n"
 
@@ -301,6 +616,7 @@ def _apply_update_linux(archive_path: Path, new_version: str, app_dir: Path) -> 
     Therefore, the update script unlinks the existing bcd binary and _internal directory
     before copying the new versions, avoiding any file-in-use locks.
     """
+    import shlex
     import subprocess
     import tarfile
 
@@ -316,14 +632,61 @@ def _apply_update_linux(archive_path: Path, new_version: str, app_dir: Path) -> 
             tf.extractall(extracted_dir)
 
     pkg = f"BCD-v{new_version}-Linux"
+    data_dir, config_dir, database_path = _rollback_storage_paths(app_dir)
+    _write_rollback_script_linux(app_dir, data_dir, config_dir, database_path)
+
     src = str(extracted_dir / pkg)
     app = str(app_dir)
 
     sh_lines = [
         "#!/bin/sh",
         "sleep 2",
-        f'SRC="{src}"',
-        f'APP="{app}"',
+        f"SRC={shlex.quote(src)}",
+        f"APP={shlex.quote(app)}",
+        f"DATA_DIR={shlex.quote(str(data_dir))}",
+        f"CONFIG_DIR={shlex.quote(str(config_dir))}",
+        f"DB_PATH={shlex.quote(str(database_path))}",
+        'BACKUP_NEW="$APP/rollback_backup.new"',
+        "",
+        "backup_current_install() {",
+        '    rm -rf "$BACKUP_NEW" || return 1',
+        '    mkdir -p "$BACKUP_NEW" || return 1',
+        '    cp -p "$APP/bcd" "$BACKUP_NEW/bcd" || return 1',
+        '    cp -a "$APP/_internal" "$BACKUP_NEW/_internal" || return 1',
+        '    if [ -d "$DATA_DIR" ]; then',
+        '        touch "$BACKUP_NEW/data.present" && cp -a "$DATA_DIR" "$BACKUP_NEW/data" || return 1',
+        "    fi",
+        '    if [ -d "$CONFIG_DIR" ]; then',
+        '        touch "$BACKUP_NEW/config.present" && cp -a "$CONFIG_DIR" "$BACKUP_NEW/config" || return 1',
+        "    fi",
+        '    if [ -f "$DB_PATH" ]; then',
+        '        touch "$BACKUP_NEW/database.present" && cp -p "$DB_PATH" "$BACKUP_NEW/database" || return 1',
+        '        if [ -f "$DB_PATH-wal" ]; then cp -p "$DB_PATH-wal" "$BACKUP_NEW/database-wal" || return 1; fi',
+        "    fi",
+        '    if [ -f "$APP/BCD-Kids.x86_64" ]; then',
+        '        touch "$BACKUP_NEW/kids_exe.present" && cp -p "$APP/BCD-Kids.x86_64" "$BACKUP_NEW/BCD-Kids.x86_64" || return 1',
+        "    fi",
+        '    if [ -f "$APP/BCD-Kids.pck" ]; then',
+        '        touch "$BACKUP_NEW/kids_pck.present" && cp -p "$APP/BCD-Kids.pck" "$BACKUP_NEW/BCD-Kids.pck" || return 1',
+        "    fi",
+        "}",
+        "",
+        "if ! backup_current_install; then",
+        '    echo "Update cancelled because the previous version could not be backed up." >&2',
+        '    rm -rf "$BACKUP_NEW"',
+        '    "$APP/bcd" >/dev/null 2>&1 &',
+        "    exit 1",
+        "fi",
+        'if [ -e "$APP/rollback_backup.old" ]; then rm -rf "$APP/rollback_backup.old"; fi',
+        'if [ -e "$APP/rollback_backup" ]; then mv "$APP/rollback_backup" "$APP/rollback_backup.old"; fi',
+        'if ! mv "$BACKUP_NEW" "$APP/rollback_backup"; then',
+        '    if [ -e "$APP/rollback_backup.old" ]; then mv "$APP/rollback_backup.old" "$APP/rollback_backup"; fi',
+        '    echo "Update cancelled because the rollback backup could not be installed." >&2',
+        '    "$APP/bcd" >/dev/null 2>&1 &',
+        "    exit 1",
+        "fi",
+        'rm -rf "$APP/rollback_backup.old"',
+        "",
         '# Remove old _internal directory and bcd files to prevent "Text file busy" errors',
         'rm -rf "$APP/_internal"',
         'cp -r "$SRC/_internal" "$APP/_internal"',

@@ -458,6 +458,8 @@ Click **Oui** — BCD downloads the archive, replaces all its own files (`bcd.ex
 
 Database migrations run automatically on the restarted instance — no manual steps needed.
 
+The release archive includes `rollback.bat` (Windows) or `rollback.sh` (Linux). A rollback backup is created immediately before an automatic update by a rollback-enabled BCD version and keeps one previous version of the application files, `config/`, `data/`, and the configured SQLite database. To restore it, close BCD and run the platform script. Confirm the prompt to restore and restart BCD. This replaces the current configuration and data with the snapshot from before the update, so changes made since then will be lost. Upgrades performed by older releases cannot be rolled back retroactively because they did not create a snapshot.
+
 #### Manual update (fallback)
 
 Use this if the automatic update fails or if the machine has no internet access.

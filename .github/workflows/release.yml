@@ -411,6 +411,8 @@ jobs:
           # Documentation
           cp README.md README_FR.md INSTALL.md LICENSE "$PKG/"
 
+          PYTHONPATH=. python scripts/generate_rollback_script.py windows "$PKG"
+
           printf "BCD Library Management System\nVersion: %s\nPlatform: Windows 10/11 (64-bit)\n" \
             "$VERSION" > "$PKG/VERSION.txt"
 
@@ -437,6 +439,8 @@ jobs:
 
           # Documentation
           cp README.md README_FR.md INSTALL.md LICENSE "$PKG/"
+
+          PYTHONPATH=. python scripts/generate_rollback_script.py linux "$PKG"
 
           printf "BCD Library Management System\nVersion: %s\nPlatform: Linux x86_64\n" \
             "$VERSION" > "$PKG/VERSION.txt"
