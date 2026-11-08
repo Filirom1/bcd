@@ -3,7 +3,7 @@
  * Scanner input for checkout/return with <200ms feedback and autocomplete
  */
 
-const { defineComponent, ref, computed, onMounted, nextTick, watch } = Vue;
+const { defineComponent, ref, onMounted, nextTick, watch } = Vue;
 const { useI18n } = VueI18n;
 import { apiClient } from '../../api/client.js';
 import { normalizeCollection } from '../../models/pagination.js';
@@ -45,9 +45,6 @@ export default defineComponent({
         const itemBarcode = ref('');
         const autocompleteRef = ref(null);
         const scanning = ref(false);
-        const autoSubmitOnScanner = computed(() =>
-            props.mode === 'checkout' && Boolean(props.borrower) && !props.disabled
-        );
 
         // Fetch items from API for autocomplete
         const fetchItems = async (query, signal) => {
@@ -251,7 +248,6 @@ export default defineComponent({
             itemBarcode,
             autocompleteRef,
             scanning,
-            autoSubmitOnScanner,
             fetchItems,
             formatItemResult,
             handleItemSelect,
@@ -276,7 +272,6 @@ export default defineComponent({
                             :fetchResults="fetchItems"
                             :formatResult="formatItemResult"
                             :disabled="disabled || scanning"
-                            :auto-submit-on-scanner="autoSubmitOnScanner"
                             inputmode="text"
                             :minChars="2"
                             :autoSelectFirst="true"

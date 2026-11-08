@@ -101,21 +101,26 @@ describe('ItemScanner', () => {
         expect(wrapper.vm.itemBarcode).toBe('');
     });
 
-    it('auto-checks out rapid scanner input in checkout without Enter', async () => {
+    it('waits for Enter when rapid input is entered manually', async () => {
         vi.useFakeTimers();
         const wrapper = mount(ItemScanner, {
             props: { mode: 'checkout', borrower: { id: 1 } }
         });
         const autocomplete = wrapper.findComponent({ name: 'AutocompleteInput' });
 
-        autocomplete.vm.handleInput({ target: { value: '7' } });
-        autocomplete.vm.handleInput({ target: { value: '78' } });
-        autocomplete.vm.handleInput({ target: { value: '785' } });
+        for (const value of ['L', 'Le', 'Le ', 'Le P', 'Le Pe', 'Le Petit Prince']) {
+            autocomplete.vm.handleInput({ target: { value } });
+        }
+        await vi.advanceTimersByTimeAsync(120);
         expect(wrapper.emitted('item-scanned')).toBeUndefined();
 
-        await vi.advanceTimersByTimeAsync(120);
-        expect(wrapper.emitted('item-scanned')).toEqual([['785']]);
+        await vi.advanceTimersByTimeAsync(180);
+        await flushPromises();
+        autocomplete.vm.handleKeydown({ key: 'Enter', preventDefault: vi.fn() });
+
+        expect(wrapper.emitted('item-scanned')).toEqual([['I-001']]);
         expect(wrapper.vm.itemBarcode).toBe('');
+        await vi.advanceTimersByTimeAsync(50);
         wrapper.unmount();
     });
 
@@ -130,14 +135,12 @@ describe('ItemScanner', () => {
 
         expect(wrapper.vm.itemBarcode).toBe('.I-003');
         expect(wrapper.emitted('item-scanned')).toBeUndefined();
-        expect(wrapper.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(false);
 
         await wrapper.setProps({ borrower: { id: 1 } });
         await flushPromises();
 
         expect(wrapper.emitted('item-scanned')).toEqual([['.I-003']]);
         expect(wrapper.vm.itemBarcode).toBe('');
-        expect(wrapper.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(true);
     });
 
     it('does not auto-submit a prefilled copy outside checkout or while disabled', async () => {
@@ -146,7 +149,6 @@ describe('ItemScanner', () => {
         });
         await flushPromises();
         expect(returnScanner.emitted('item-scanned')).toBeUndefined();
-        expect(returnScanner.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(false);
 
         const disabledCheckout = mount(ItemScanner, {
             props: {
@@ -158,7 +160,6 @@ describe('ItemScanner', () => {
         });
         await flushPromises();
         expect(disabledCheckout.emitted('item-scanned')).toBeUndefined();
-        expect(disabledCheckout.findComponent({ name: 'AutocompleteInput' }).props('autoSubmitOnScanner')).toBe(false);
 
         await disabledCheckout.setProps({ disabled: false });
         await flushPromises();

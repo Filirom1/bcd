@@ -109,29 +109,7 @@ describe('AutocompleteInput', () => {
         expect(wrapper.emitted('select')).toEqual([[{ id: 1, name: 'Result 1' }]]);
     });
 
-    it('auto-submits rapid barcode input without Enter when explicitly enabled', async () => {
-        const wrapper = mount(AutocompleteInput, {
-            props: {
-                modelValue: '',
-                fetchResults: fetchSpy,
-                formatResult,
-                autoSubmitOnScanner: true
-            },
-            global: { mocks: { $t: key => key } }
-        });
-
-        wrapper.vm.handleInput({ target: { value: '7' } });
-        wrapper.vm.handleInput({ target: { value: '78' } });
-        wrapper.vm.handleInput({ target: { value: '785' } });
-
-        expect(wrapper.emitted('submit')).toBeUndefined();
-        await vi.advanceTimersByTimeAsync(120);
-
-        expect(wrapper.emitted('submit')).toEqual([['785']]);
-        expect(fetchSpy).not.toHaveBeenCalled();
-    });
-
-    it('does not auto-submit rapid input when scanner auto-submit is disabled', async () => {
+    it('does not auto-submit rapid input without Enter', async () => {
         const wrapper = mount(AutocompleteInput, {
             props: {
                 modelValue: '',
@@ -144,14 +122,13 @@ describe('AutocompleteInput', () => {
         wrapper.vm.handleInput({ target: { value: '7' } });
         wrapper.vm.handleInput({ target: { value: '78' } });
         wrapper.vm.handleInput({ target: { value: '785' } });
+
         await vi.advanceTimersByTimeAsync(120);
 
         expect(wrapper.emitted('submit')).toBeUndefined();
     });
 
-    it('bypasses autocomplete fetch when rapid keystrokes simulate barcode scanner input', async () => {
-        vi.useRealTimers();
-
+    it('uses autocomplete results for rapid barcode input followed by Enter', async () => {
         const wrapper = mount(AutocompleteInput, {
             props: {
                 modelValue: '',
@@ -161,26 +138,19 @@ describe('AutocompleteInput', () => {
             global: { mocks: { $t: key => key } }
         });
 
-        // Mock Date.now to return progressive fast times (20ms increments)
-        let mockTime = 1000;
-        vi.spyOn(Date, 'now').mockImplementation(() => {
-            mockTime += 20;
-            return mockTime;
-        });
-
-        // Trigger manual handleInput calls simulating rapid typing
         wrapper.vm.handleInput({ target: { value: '9' } });
         wrapper.vm.handleInput({ target: { value: '97' } });
         wrapper.vm.handleInput({ target: { value: '978' } });
         wrapper.vm.handleInput({ target: { value: '9782070612758' } });
 
+        await vi.advanceTimersByTimeAsync(300);
         await flushPromises();
+        expect(fetchSpy).toHaveBeenCalledWith('9782070612758', expect.any(AbortSignal));
 
-        // Trigger keydown Enter directly on the VM
         wrapper.vm.handleKeydown({ key: 'Enter', preventDefault: () => {} });
 
-        // Autocomplete should be bypassed on rapid input and submit the full code
-        expect(wrapper.emitted('submit')).toEqual([['9782070612758']]);
+        expect(wrapper.emitted('select')).toEqual([[{ id: 1, name: 'Result 1' }]]);
+        expect(wrapper.emitted('submit')).toBeUndefined();
     });
 
     it('supports multiple simultaneous instances with unique IDs', async () => {
@@ -409,7 +379,7 @@ describe('AutocompleteInput', () => {
         expect(wrapper.emitted('submit')).toBeUndefined();
     });
 
-    it('does not use scanner submit for a slow Enter and ignores a late response after close', async () => {
+    it('selects the first suggestion on Enter and ignores a late response after close', async () => {
         vi.useRealTimers();
         let resolveRequest;
         fetchSpy.mockImplementation(() => new Promise(resolve => { resolveRequest = resolve; }));
@@ -517,7 +487,7 @@ describe('AutocompleteInput', () => {
         expect(wrapper.find('[role="listbox"]').exists()).toBe(false);
     });
 
-    it('keeps the dropdown open for inside clicks and trims scanner keystroke history', async () => {
+    it('keeps the dropdown open for inside clicks and supports manual key handling', async () => {
         const wrapper = mount(AutocompleteInput, {
             props: { fetchResults: fetchSpy, formatResult },
             global: { mocks: { $t: key => key } }

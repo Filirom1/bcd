@@ -41,10 +41,6 @@ export default defineComponent({
             type: Boolean,
             default: false
         },
-        autoSubmitOnScanner: {
-            type: Boolean,
-            default: false
-        },
         inputmode: {
             type: String,
             default: 'text'
@@ -77,15 +73,12 @@ export default defineComponent({
         const showDropdown = ref(false);
         const selectedIndex = ref(-1);
 
-        // Debounce and scanner detection
+        // Debounced search lifecycle
         let abortController = null;
-        let scannerAutoSubmitTimeout = null;
         // AbortController is advisory: a fetcher may still resolve after abort.
         // Use a generation as well so an obsolete response can never overwrite
         // the results of a newer query or reopen a closed dropdown.
         let searchGeneration = 0;
-        let lastKeystrokeTime = 0;
-        let keystrokeTimes = [];
 
         // Debounced search
         const debouncedSearch = useDebouncedAction(() => {
@@ -104,35 +97,6 @@ export default defineComponent({
         const showNoResults = computed(() => {
             return !loading.value && !error.value && !hasResults.value && hasMinChars.value && showDropdown.value;
         });
-
-        // Scanner detection: rapid keystrokes < 100ms apart
-        const isRapidInput = () => {
-            if (keystrokeTimes.length < 2) return false;
-
-            // Check if last 3 keystrokes were within 100ms of each other
-            const recentTimes = keystrokeTimes.slice(-3);
-            if (recentTimes.length < 2) return false;
-
-            for (let i = 1; i < recentTimes.length; i++) {
-                if (recentTimes[i] - recentTimes[i - 1] > 100) {
-                    return false;
-                }
-            }
-            return true;
-        };
-
-        // Detect if Enter was pressed shortly after last keystroke (scanner input)
-        const isScannerSubmit = () => {
-            const timeSinceLastKey = Date.now() - lastKeystrokeTime;
-            return timeSinceLastKey < 200 && isRapidInput();
-        };
-
-        const clearScannerAutoSubmit = () => {
-            if (scannerAutoSubmitTimeout !== null) {
-                clearTimeout(scannerAutoSubmitTimeout);
-                scannerAutoSubmitTimeout = null;
-            }
-        };
 
         // Fetch autocomplete results
         const fetchAutocomplete = async () => {
@@ -181,40 +145,11 @@ export default defineComponent({
 
         // Handle input change
         const handleInput = (event) => {
-            const now = Date.now();
-            keystrokeTimes.push(now);
-
-            // Keep only last 5 keystroke times
-            if (keystrokeTimes.length > 5) {
-                keystrokeTimes.shift();
-            }
-
-            lastKeystrokeTime = now;
-
             inputValue.value = event.target.value;
             emit('update:modelValue', inputValue.value);
 
             // Trigger debounced search
             debouncedSearch();
-
-            // Some barcode readers type the code but do not send Enter. In
-            // checkout mode, submit a rapid scan after a short idle period.
-            // Ordinary typing remains in the autocomplete flow.
-            clearScannerAutoSubmit();
-            const scannedValue = inputValue.value.trim();
-            if (props.autoSubmitOnScanner && scannedValue && isRapidInput()) {
-                scannerAutoSubmitTimeout = setTimeout(() => {
-                    scannerAutoSubmitTimeout = null;
-                    if (
-                        props.autoSubmitOnScanner &&
-                        !props.disabled &&
-                        inputValue.value.trim() === scannedValue
-                    ) {
-                        closeDropdown();
-                        handleSubmit();
-                    }
-                }, 120);
-            }
         };
 
         // Handle keyboard navigation
@@ -252,14 +187,6 @@ export default defineComponent({
 
                 case 'Enter':
                     event.preventDefault();
-
-                    // Check if this is a barcode scanner submit
-                    if (isScannerSubmit()) {
-                        // Scanner detected - bypass autocomplete
-                        closeDropdown();
-                        handleSubmit();
-                        return;
-                    }
 
                     // Manual entry - use autocomplete
                     if (selectedIndex.value >= 0) {
@@ -302,7 +229,6 @@ export default defineComponent({
 
         // Close dropdown
         const closeDropdown = () => {
-            clearScannerAutoSubmit();
             showDropdown.value = false;
             selectedIndex.value = -1;
             searchGeneration += 1;
@@ -319,7 +245,6 @@ export default defineComponent({
 
         // Handle submit (Enter or button click)
         const handleSubmit = () => {
-            clearScannerAutoSubmit();
             emit('submit', inputValue.value);
         };
 
@@ -342,10 +267,6 @@ export default defineComponent({
             if (newValue !== inputValue.value) {
                 inputValue.value = newValue;
             }
-        });
-
-        watch(() => [props.autoSubmitOnScanner, props.disabled], ([enabled, disabled]) => {
-            if (!enabled || disabled) clearScannerAutoSubmit();
         });
 
         // Lifecycle
