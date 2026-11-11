@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Replaced full-scan accent-insensitive catalog text search with a synchronized SQLite FTS5 trigram index, preserving `œ`/`æ` transliteration and checking FTS5 support in portable builds.
 
 ## [1.7.0]
 

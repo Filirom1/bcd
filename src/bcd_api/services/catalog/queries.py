@@ -5,9 +5,10 @@ import unicodedata
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, column, false, or_, select, table, text
 from sqlalchemy.orm import Session, joinedload
 
+from src.bcd_api.core.catalog_search import CATALOG_FTS_TABLE
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
 from src.bcd_api.models.hold import Hold
 from src.bcd_api.models.item import Item
@@ -18,30 +19,8 @@ from ._validation import item_id_search_values, require_item, require_record
 
 logger = logging.getLogger(__name__)
 
-_ACCENT_REPLACEMENTS = (
-    ("à", "a"),
-    ("â", "a"),
-    ("ä", "a"),
-    ("ç", "c"),
-    ("é", "e"),
-    ("è", "e"),
-    ("ê", "e"),
-    ("ë", "e"),
-    ("î", "i"),
-    ("ï", "i"),
-    ("ô", "o"),
-    ("ö", "o"),
-    ("ù", "u"),
-    ("û", "u"),
-    ("ü", "u"),
-    ("œ", "oe"),
-    ("æ", "ae"),
-)
 
-
-def _fold_search_accents(value: Optional[str]) -> Optional[str]:
-    if value is None:
-        return None
+def _fold_search_accents(value: str) -> str:
     value = value.casefold()
     value = "".join(
         character
@@ -51,19 +30,8 @@ def _fold_search_accents(value: Optional[str]) -> Optional[str]:
     return value.replace("œ", "oe").replace("æ", "ae")
 
 
-def _accent_insensitive_column(db: Session, column):
-    """Build a case- and accent-insensitive expression for general search."""
-    dialect_name = db.get_bind().dialect.name
-    if dialect_name == "sqlite":
-        db.connection().connection.driver_connection.create_function(
-            "bcd_search_fold", 1, _fold_search_accents, deterministic=True
-        )
-        return func.bcd_search_fold(column)
-
-    expression = func.lower(column)
-    for source, target in _ACCENT_REPLACEMENTS:
-        expression = func.replace(expression, source, target)
-    return expression
+def _quote_fts_phrase(value: str) -> str:
+    return '"' + value.replace('"', '""') + '"'
 
 
 def get_bibliographic_record(db: Session, record_id: int) -> BibliographicRecord:
@@ -123,26 +91,23 @@ def search_bibliographic_records(
                 )
             )
         else:
-            text_columns = (
-                BibliographicRecord.title,
-                BibliographicRecord.subtitle,
-                BibliographicRecord.authors,
-                BibliographicRecord.publisher,
-                BibliographicRecord.collection,
-                BibliographicRecord.keywords,
-                BibliographicRecord.description,
-            )
             search_term = f"%{normalized_query}%"
 
+            if len(normalized_query) >= 3:
+                folded_query = _fold_search_accents(normalized_query)
+                fts_table = table(CATALOG_FTS_TABLE, column("rowid"))
+                matching_record_ids = (
+                    select(fts_table.c.rowid)
+                    .where(text(f"{CATALOG_FTS_TABLE} MATCH :fts_query"))
+                    .params(fts_query=_quote_fts_phrase(folded_query))
+                )
+                search_conditions = [BibliographicRecord.id.in_(matching_record_ids)]
+            else:
+                search_conditions = [false()]
+
             if normalized_query.isdigit():
-                search_conditions = [column.like(search_term) for column in text_columns]
                 search_conditions.append(BibliographicRecord.isbn.like(search_term))
             else:
-                folded_search_term = f"%{_fold_search_accents(normalized_query)}%"
-                search_conditions = [
-                    _accent_insensitive_column(db, column).like(folded_search_term)
-                    for column in text_columns
-                ]
                 search_conditions.append(BibliographicRecord.isbn.ilike(search_term))
 
             if normalized_query.isdigit():

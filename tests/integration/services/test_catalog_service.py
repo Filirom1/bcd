@@ -60,6 +60,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
+from sqlalchemy import text
 
 from src.bcd_api.core.exceptions import (
     BibliographicRecordNotFoundException,
@@ -529,6 +530,77 @@ class TestBibliographicRecordSearch:
         assert total == 3
         assert {record.id for record in results} == {record.id for record in created}
 
+    def test_general_search_transliterates_ligatures(self, db_session):
+        coeur = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Cœur d’œuvre"),
+            isbn_lookup=False,
+        )
+        aether = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Æther"),
+            isbn_lookup=False,
+        )
+
+        for search_term, expected in (("coeur", coeur), ("oeuvre", coeur), ("aether", aether)):
+            results, total = catalog_service.search_bibliographic_records(db_session, q=search_term)
+            assert total == 1
+            assert results[0].id == expected.id
+
+    def test_general_search_does_not_match_text_with_queries_under_three_characters(
+        self, db_session
+    ):
+        catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Adèle"),
+            isbn_lookup=False,
+        )
+
+        results, total = catalog_service.search_bibliographic_records(db_session, q="ad")
+
+        assert total == 0
+        assert results == []
+
+    def test_general_search_index_tracks_record_updates_and_deletes(self, db_session):
+        record = catalog_service.create_bibliographic_record(
+            db_session,
+            BibliographicRecordCreate(title="Searchable keyword"),
+            isbn_lookup=False,
+        )
+
+        results, total = catalog_service.search_bibliographic_records(db_session, q="searchable")
+        assert total == 1
+        assert results[0].id == record.id
+
+        db_session.execute(
+            text(
+                "UPDATE bibliographic_record SET title = 'Different title' " "WHERE id = :record_id"
+            ),
+            {"record_id": record.id},
+        )
+        db_session.commit()
+        old_results, old_total = catalog_service.search_bibliographic_records(
+            db_session, q="searchable"
+        )
+        new_results, new_total = catalog_service.search_bibliographic_records(
+            db_session, q="different"
+        )
+        assert old_total == 0
+        assert old_results == []
+        assert new_total == 1
+        assert new_results[0].id == record.id
+
+        db_session.execute(
+            text("DELETE FROM bibliographic_record WHERE id = :record_id"),
+            {"record_id": record.id},
+        )
+        db_session.commit()
+        deleted_results, deleted_total = catalog_service.search_bibliographic_records(
+            db_session, q="different"
+        )
+        assert deleted_total == 0
+        assert deleted_results == []
+
     def test_prefixed_item_search_matches_exact_item_without_metadata_search(self, db_session):
         matching_record = catalog_service.create_bibliographic_record(
             db_session,
@@ -554,20 +626,13 @@ class TestBibliographicRecordSearch:
         assert total == 1
         assert results[0].id == matching_record.id
 
-    def test_numeric_general_search_skips_accent_folding(self, db_session, monkeypatch):
+    def test_numeric_general_search_matches_numeric_records(self, db_session):
         record = catalog_service.create_bibliographic_record(
             db_session,
             BibliographicRecordCreate(title="1984"),
             isbn_lookup=False,
         )
 
-        def unexpected_accent_search(*args, **kwargs):
-            pytest.fail("Numeric searches should not invoke accent folding")
-
-        monkeypatch.setattr(
-            "src.bcd_api.services.catalog.queries._accent_insensitive_column",
-            unexpected_accent_search,
-        )
         results, total = catalog_service.search_bibliographic_records(db_session, q="1984")
 
         assert total == 1

@@ -1,10 +1,39 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller spec file for BCD API server (Windows and Linux portable distribution)."""
 
+import sqlite3
 import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import get_package_paths
+
+
+def verify_sqlite_fts5():
+    try:
+        with sqlite3.connect(":memory:") as connection:
+            connection.execute(
+                "CREATE VIRTUAL TABLE bcd_fts5_probe "
+                "USING fts5(value, tokenize='trigram remove_diacritics 1')"
+            )
+            connection.execute(
+                "INSERT INTO bcd_fts5_probe(value) VALUES (?)", ("L'histoire d'Adèle",)
+            )
+            match = connection.execute(
+                "SELECT 1 FROM bcd_fts5_probe WHERE bcd_fts5_probe MATCH ?",
+                ('"adele"',),
+            ).fetchone()
+    except sqlite3.OperationalError as exc:
+        raise RuntimeError(
+            "The build Python SQLite library must support FTS5 trigram search."
+        ) from exc
+
+    if not match:
+        raise RuntimeError(
+            "The build Python SQLite library does not support accent-insensitive FTS5 search."
+        )
+
+
+verify_sqlite_fts5()
 
 # Verify that the Web UI production build is present before proceeding.
 # This prevents packaging stale development sources or an incomplete build.

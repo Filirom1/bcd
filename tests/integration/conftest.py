@@ -12,6 +12,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from src.bcd_api.core.catalog_search import (
+    create_catalog_search_index,
+    drop_catalog_search_index,
+)
 from src.bcd_api.core.database import Base, get_db
 from src.bcd_api.main import app
 from src.bcd_api.models.bibliographic_record import BibliographicRecord
@@ -31,7 +35,11 @@ def db_engine():
         poolclass=StaticPool,
     )
     Base.metadata.create_all(bind=engine)
+    with engine.begin() as connection:
+        create_catalog_search_index(connection)
     yield engine
+    with engine.begin() as connection:
+        drop_catalog_search_index(connection)
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
 
