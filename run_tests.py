@@ -12,8 +12,10 @@ def print_header(title):
     print("=" * 60)
 
 
-FAST_TEST_MARKER = "not e2e and not slow and not external"
-SLOW_OR_EXTERNAL_TEST_MARKER = "not e2e and (slow or external)"
+FAST_TEST_MARKER = "not e2e and not slow and not external and not asyncio"
+FAST_ASYNC_TEST_MARKER = "asyncio and not e2e and not slow and not external"
+SLOW_OR_EXTERNAL_TEST_MARKER = "not e2e and not asyncio and (slow or external)"
+SLOW_OR_EXTERNAL_ASYNC_TEST_MARKER = "asyncio and not e2e and (slow or external)"
 CLI_E2E_TEST_MARKER = "e2e and external"
 BROWSER_SMOKE_MARKER = "browser_smoke"
 CI_TRUE_VALUES = {"1", "true", "yes"}
@@ -85,17 +87,36 @@ def run_command(cmd, name, verbose=False):
 
 def pytest_command(*paths, marker=None, coverage=False, append_coverage=False, verbose=False):
     """Build an isolated pytest command for one test-suite boundary."""
-    command = ["pytest", *paths]
+    command = [sys.executable, "-m", "pytest", *paths]
     if not verbose:
         command.append("-q")
     if marker:
         command.extend(["-m", marker])
     if coverage:
+        command.extend(
+            [
+                "--cov=src",
+                "--cov-report=term-missing",
+                "--cov-report=html",
+                "--cov-report=xml",
+            ]
+        )
         if append_coverage:
             command.append("--cov-append")
-    else:
-        command.append("--no-cov")
     return command
+
+
+def python_unit_suite(coverage=False, verbose=False):
+    """Return the focused Python unit-test suite."""
+    return (
+        "Python Pytest (unit)",
+        pytest_command(
+            "tests/unit",
+            marker="not e2e and not asyncio",
+            coverage=coverage,
+            verbose=verbose,
+        ),
+    )
 
 
 def python_test_suites(fast, coverage, verbose=False):
@@ -111,7 +132,17 @@ def python_test_suites(fast, coverage, verbose=False):
         (
             "Python Pytest (fast)",
             pytest_command("tests", marker=FAST_TEST_MARKER, coverage=coverage, verbose=verbose),
-        )
+        ),
+        (
+            "Python Pytest (fast async)",
+            pytest_command(
+                "tests",
+                marker=FAST_ASYNC_TEST_MARKER,
+                coverage=coverage,
+                append_coverage=coverage,
+                verbose=verbose,
+            ),
+        ),
     ]
 
     if fast:
@@ -124,6 +155,16 @@ def python_test_suites(fast, coverage, verbose=False):
                 pytest_command(
                     "tests",
                     marker=SLOW_OR_EXTERNAL_TEST_MARKER,
+                    coverage=coverage,
+                    append_coverage=coverage,
+                    verbose=verbose,
+                ),
+            ),
+            (
+                "Python Pytest (slow/external async)",
+                pytest_command(
+                    "tests",
+                    marker=SLOW_OR_EXTERNAL_ASYNC_TEST_MARKER,
                     coverage=coverage,
                     append_coverage=coverage,
                     verbose=verbose,
@@ -160,8 +201,8 @@ def main():
     )
     parser.add_argument(
         "suite",
-        choices=["python", "js", "godot", "all"],
-        help="Test suite to run: 'python', 'js', 'godot', or 'all'",
+        choices=["unit", "python", "js", "godot", "all"],
+        help="Test suite to run: 'unit', 'python', 'js', 'godot', or 'all'",
     )
     parser.add_argument(
         "--fast",
@@ -191,8 +232,16 @@ def main():
     run_js_suite = args.suite in ("js", "all")
     run_py_suite = args.suite in ("python", "all")
     run_godot_suite = args.suite in ("godot", "all")
+    run_unit_suite = args.suite == "unit"
 
     success = True
+
+    if run_unit_suite:
+        if verbose:
+            print_header("Python Unit Test Suite")
+        suite_name, unit_cmd = python_unit_suite(args.coverage, verbose)
+        if not run_command(unit_cmd, suite_name, verbose):
+            success = False
 
     # 1. Run JavaScript Test Suite
     if run_js_suite:

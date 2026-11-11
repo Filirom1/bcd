@@ -1,60 +1,65 @@
 { pkgs ? import <nixpkgs> {} }:
 
+let
+  # Keep the interpreter and its libraries/plugins in one Python environment.
+  # Listing python3Packages individually in mkShell only adds their executables
+  # to PATH; `python -m pytest` then cannot import them.
+  pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+    pip
+    setuptools
+    wheel
+    virtualenv
+
+    # Core dependencies
+    fastapi
+    uvicorn
+    sqlalchemy
+    alembic
+    pydantic
+    pydantic-settings
+    python-multipart
+    jinja2
+
+    # CLI dependencies
+    click
+    httpx
+    rich
+
+    # Integration dependencies
+    requests
+
+    # Utilities and GTK integration
+    lxml
+    zeroconf
+    pygobject3
+
+    # Testing
+    pytest
+    pytest-asyncio
+    pytest-cov
+    pytest-playwright
+
+    # Development tools
+    black
+    mypy
+    ipython
+    pyinstaller
+  ]);
+in
 pkgs.mkShell {
   name = "bcd-dev-environment";
 
   buildInputs = with pkgs; [
-    # Python 3.13
-    python313
-    python313Packages.pip
-    python313Packages.setuptools
-    python313Packages.wheel
-    python313Packages.virtualenv
-
-    # Core dependencies from nixpkgs (pre-built)
-    python313Packages.fastapi
-    python313Packages.uvicorn
-    python313Packages.sqlalchemy
-    python313Packages.alembic
-    python313Packages.pydantic
-    python313Packages.pydantic-settings
-    python313Packages.python-multipart
-    python313Packages.jinja2
-
-    # CLI dependencies
-    python313Packages.click
-    python313Packages.httpx
-    python313Packages.rich
-
-    # Integration dependencies
-    python313Packages.requests
-
-    # Utilities
-    python313Packages.lxml
-    python313Packages.zeroconf
+    pythonEnv
 
     # pywebview system dependencies (GTK + WebKit2, uses OS-provided engine)
     gtk3
     webkitgtk_4_1
     gobject-introspection
-    python313Packages.pygobject3
 
     # Godot 4.6 headless client tests
     godot
-
-    # Testing
-    python313Packages.pytest
-    python313Packages.pytest-asyncio
-    python313Packages.pytest-cov
-    python313Packages.pytest-mock
-    python313Packages.pytest-playwright
     playwright-driver.browsers
-
-    # Development tools
-    python313Packages.black
-    python313Packages.mypy
-    python313Packages.ipython
-    python313Packages.pyinstaller
 
     # Additional tools
     sqlite
@@ -67,25 +72,21 @@ pkgs.mkShell {
   ];
 
   shellHook = ''
+    # Prefer the Python environment containing both the interpreter and its
+    # packages over any parent shell's venv or standalone Python executables.
+    unset VIRTUAL_ENV
+    export PATH="${pythonEnv}/bin:$PATH"
+
     echo "BCD Development Environment"
     echo "Python version: $(python --version)"
     echo ""
-
-    # Create virtualenv if it doesn't exist
-    if [ ! -d "venv" ]; then
-      echo "Creating Python virtual environment..."
-      python -m venv venv
-    fi
-
-    # Activate virtualenv
-    source venv/bin/activate
 
     # Set Playwright browser path for Nix
     export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
     export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
 
     # Set up Python path to include src directory
-    export PYTHONPATH="${toString ./.}/src:$PYTHONPATH"
+    export PYTHONPATH="${toString ./.}/src"
 
     # Create .env only when the path is genuinely absent. Some CI/dev
     # harnesses expose secrets as a special file at .env; never overwrite it.

@@ -52,7 +52,6 @@ dev = [
     "pytest>=7.4.3",
     "pytest-asyncio>=0.23.2",
     "pytest-cov>=4.1.0",
-    "pytest-mock>=3.12.0",
     "pytest-playwright>=0.7.2",
     "playwright>=1.50.0",
     # Keep formatter output stable across CI runs; newer releases can change formatting.
@@ -90,8 +89,7 @@ python_functions = ["test_*"]
 # Browser E2E is an explicit boundary suite. The default pytest invocation stays
 # fast and deterministic; the central runner selects browser_smoke and CLI E2E
 # explicitly when a complete run is requested.
-addopts = "-m 'not e2e' --verbose --cov=src --cov-report=term-missing --cov-report=html --cov-report=xml --strict-markers"
-asyncio_mode = "auto"
+addopts = "-m 'not e2e and not asyncio' --verbose --strict-markers"
 filterwarnings = [
     "error",
     "ignore::ResourceWarning",
@@ -107,6 +105,7 @@ markers = [
     "e2e: End-to-end tests",
     "browser_smoke: Minimal browser boundary tests that must run in the default complete suite",
     "external: Tests requiring an external service, network, or a running server",
+    "asyncio: Tests requiring pytest-asyncio",
 ]
 
 [tool.coverage.run]

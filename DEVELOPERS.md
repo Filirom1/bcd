@@ -139,6 +139,13 @@ bcd/
 
 ### First-Time Setup
 
+On NixOS, `shell.nix` provides the Python environment without a virtualenv. For
+VS Code, enable `direnv` with `nix-direnv`, install the recommended Direnv
+extension, then run `direnv allow` once in the repository. The environment is
+cached and loaded automatically when opening the workspace.
+
+For other systems, use the manual setup below:
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -221,19 +228,19 @@ The recommended and simplest way to run all test suites is via the central unifi
 ```bash
 python run_tests.py all         # Run Python + JS plus the minimal browser smoke suite
 python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
+python run_tests.py unit        # Run synchronous Python unit tests without plugins
 python run_tests.py js          # Run JavaScript Vitest tests only
-python run_tests.py python      # Run Python Pytest tests only
+python run_tests.py python      # Run all Python tests, including async suites
 python run_tests.py all --cov   # Run selected suites with coverage enabled
 ```
 
 Alternatively, you can run specific pytest suites manually:
 
 ```bash
-# All Python tests
-pytest
-
-# Specific test suite
+# Synchronous unit tests; async tests run in a separate phase
 pytest tests/unit -v
+
+# Specific test suites
 pytest tests/integration -v
 pytest tests/cli -v
 pytest tests/e2e -m browser_smoke -v
@@ -248,8 +255,8 @@ pytest tests/unit/services/test_catalog_service_unit.py -v
 # Specific test function
 pytest tests/unit/services/test_catalog_service_unit.py::test_create_bibliographic_record -v
 
-# Fast tests only (skip slow markers)
-pytest -m "not slow"
+# Fast sync and async tests
+python run_tests.py python --fast
 
 # Run in parallel (faster)
 pytest -n auto

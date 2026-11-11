@@ -1,6 +1,7 @@
 """Tests for the isolated Python-suite orchestration in ``run_tests.py``."""
 
 import subprocess
+import sys
 from unittest.mock import MagicMock
 
 import run_tests
@@ -87,41 +88,65 @@ def test_python_test_suites_splits_loop_and_server_owners_without_coverage():
     # ASSERT
     assert [name for name, _ in suites] == [
         "Python Pytest (fast)",
+        "Python Pytest (fast async)",
         "Python Pytest (slow/external)",
+        "Python Pytest (slow/external async)",
         "CLI end-to-end Pytest",
         "Browser smoke Pytest",
     ]
     assert suites[0][1] == [
+        sys.executable,
+        "-m",
         "pytest",
         "tests",
         "-q",
         "-m",
-        "not e2e and not slow and not external",
-        "--no-cov",
+        "not e2e and not slow and not external and not asyncio",
     ]
     assert suites[1][1] == [
+        sys.executable,
+        "-m",
         "pytest",
         "tests",
         "-q",
         "-m",
-        "not e2e and (slow or external)",
-        "--no-cov",
+        "asyncio and not e2e and not slow and not external",
     ]
     assert suites[2][1] == [
+        sys.executable,
+        "-m",
+        "pytest",
+        "tests",
+        "-q",
+        "-m",
+        "not e2e and not asyncio and (slow or external)",
+    ]
+    assert suites[3][1] == [
+        sys.executable,
+        "-m",
+        "pytest",
+        "tests",
+        "-q",
+        "-m",
+        "asyncio and not e2e and (slow or external)",
+    ]
+    assert suites[4][1] == [
+        sys.executable,
+        "-m",
         "pytest",
         "tests/cli/test_e2e_real_data.py",
         "-q",
         "-m",
         "e2e and external",
-        "--no-cov",
     ]
-    assert suites[3][1] == [
+    assert suites[5][1] == [
+        sys.executable,
+        "-m",
         "pytest",
         "tests/e2e",
         "-q",
         "-m",
         "browser_smoke",
-        "--no-cov",
     ]
 
 
@@ -135,15 +160,44 @@ def test_python_test_suites_fast_runs_only_fast_non_external_tests():
         (
             "Python Pytest (fast)",
             [
+                sys.executable,
+                "-m",
                 "pytest",
                 "tests",
                 "-q",
                 "-m",
-                "not e2e and not slow and not external",
-                "--no-cov",
+                "not e2e and not slow and not external and not asyncio",
+            ],
+        ),
+        (
+            "Python Pytest (fast async)",
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                "tests",
+                "-q",
+                "-m",
+                "asyncio and not e2e and not slow and not external",
             ],
         )
     ]
+
+
+def test_python_unit_suite_runs_only_unit_tests():
+    """Test the unit target is a focused pytest invocation."""
+    assert run_tests.python_unit_suite() == (
+        "Python Pytest (unit)",
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/unit",
+            "-q",
+            "-m",
+            "not e2e and not asyncio",
+        ],
+    )
 
 
 def test_python_test_suites_appends_coverage_across_isolated_processes():
@@ -152,6 +206,6 @@ def test_python_test_suites_appends_coverage_across_isolated_processes():
     suites = run_tests.python_test_suites(fast=False, coverage=True)
 
     # ASSERT
-    assert "--no-cov" not in suites[0][1]
+    assert all("--cov=src" in command for _, command in suites)
     assert "--cov-append" not in suites[0][1]
     assert all("--cov-append" in command for _, command in suites[1:])

@@ -37,11 +37,19 @@ env/
 
 # VS Code
 .vscode/
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Nix-direnv environment cache
+.direnv/
 
 # Environment variables
 .env
 .env.*
 !.env.example
+!.envrc
 
 # Database
 *.db

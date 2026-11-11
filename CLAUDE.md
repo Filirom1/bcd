@@ -17,11 +17,14 @@ BCD is a school library management system for French elementary schools:
 ### Development Setup
 
 ```bash
-# NixOS (recommended): auto-creates venv, sets PYTHONPATH, configures Playwright
+# NixOS (recommended): nix-shell provides Python packages, PYTHONPATH, and Playwright
 nix-shell
 npm ci
 
-# Manual:
+# VS Code on NixOS: install the recommended Direnv extension, then allow .envrc once
+direnv allow
+
+# Manual setup for non-Nix systems:
 python3.11 -m venv venv && source venv/bin/activate
 pip install -e ".[dev]"
 npm ci
@@ -58,6 +61,7 @@ The recommended way to run tests is using the unified central test runner:
 ```bash
 python run_tests.py all         # Run Python + JS plus the minimal browser smoke suite
 python run_tests.py all --fast  # Run fast Python + JS tests (ideal before commit)
+python run_tests.py unit        # Run synchronous unit tests without plugins
 python run_tests.py js          # Run JavaScript Vitest tests only
 python run_tests.py python      # Run Python Pytest tests only
 python run_tests.py all --cov   # Run selected suites with coverage enabled
@@ -71,11 +75,12 @@ npm run test:js                                                # Run JS tests
 npm run test:js:coverage                                       # Run JS tests with coverage
 
 # Pure Python (Pytest)
-pytest tests -m "not e2e and not slow and not external"           # Fast Python suite
-pytest tests                                                   # Complete non-browser Python suite
+pytest tests/unit -q                                               # Synchronous unit tests; async tests run separately
+python run_tests.py python --fast                                  # Fast sync and async Python suites
+python run_tests.py python                                          # Complete Python suite, including async tests
 pytest tests/integration/services/ -v                           # Service-layer integration tests
 pytest tests/integration/test_catalog_service.py -v            # Run a single file
-pytest tests/e2e -m browser_smoke -v                          # Minimal browser boundary
+pytest tests/e2e -m browser_smoke -v                               # Minimal browser boundary
 ```
 
 Pre-commit hook: `./scripts/install-hooks.sh` (runs `pytest tests/integration tests/unit` before each commit; skips CLI tests due to known setup issues).
