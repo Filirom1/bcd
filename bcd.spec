@@ -109,6 +109,7 @@ hiddenimports = [
     # Format converters (bcd_converters package)
     'bcd_converters',
     'bcd_converters.bibliopuce_to_dublin_core',
+    'bcd_converters.catalog.biblioboost_to_dublin_core',
     'bcd_converters.onde_to_bcd_borrowers',
     'bcd_converters.xls_classes_to_csv',
     # Native webview window (uses OS WebView2/WebKit — no bundled browser)

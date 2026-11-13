@@ -61,6 +61,19 @@ Le fichier d'import est un tableau à préparer avec **Excel** ou **LibreOffice 
 
 **Avec BiblioPuce :** exporter la bibliothèque normalement, puis sélectionner le format « BiblioPuce » dans la fenêtre d'import de BCD. Aucune autre manipulation n'est nécessaire.
 
+**Avec Biblioboost :** exporter la liste des documents en CSV, puis sélectionner
+le format « Biblioboost » dans la fenêtre d'import. Les CSV UTF-8 (avec ou sans
+BOM) ou Windows-1252, séparés par des virgules ou points-virgules, sont acceptés.
+Le titre, le numéro d'inventaire et la colonne `ISBN/ISSN` sont requis ; l'ISBN
+peut être vide. Les numéros d'inventaire conservent leurs zéros initiaux.
+Les auteurs, illustrateurs, éditeur, collection, année, cote et niveau sont
+repris. Genre et matière deviennent des mots-clés ; résumé, informations
+diverses et fonds sont conservés dans la description. La date « Entré le »
+devient la date d'acquisition. Le numéro d'un périodique est conservé et ajouté
+au titre pour distinguer les fascicules. L'identifiant d'école n'est pas importé.
+Les lignes sans titre ou inventaire et les dates d'entrée invalides sont
+signalées avant tout import.
+
 **Avec BCDI :** sélectionner le format « BCDI » et fournir un export XML
 **MémoNotices** (ancien format avant 2009 ou format depuis 2009), ou un CSV
 avec les noms de champs BCDI (`TITRE_N`, `ISBN_D`, `AUTEURS_N`, etc.) ou

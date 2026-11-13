@@ -61,6 +61,18 @@ The import file is a spreadsheet you prepare in **Excel** or **LibreOffice Calc*
 
 **If you use BiblioPuce:** export your library as usual, then select the "BiblioPuce" format in the BCD import window. No other steps needed.
 
+**If you use Biblioboost:** export the document list as CSV, then select
+"Biblioboost" in the import window. Comma/semicolon-separated UTF-8 (with or
+without BOM) and Windows-1252 CSV files are accepted. Title, inventory number
+and the `ISBN/ISSN` column are required; ISBN values may be empty. Leading
+zeros in inventory numbers are preserved. Authors, illustrators, publisher,
+collection, year, call number and reading level are retained. Genre and subject
+become keywords; summary, notes and fonds are preserved in the description.
+The "Entré le" entry date becomes the acquisition date. Periodical issue numbers
+are retained and appended to titles to distinguish issues. The school ID is
+not imported. Rows without a title or inventory and invalid entry dates are
+reported before any import.
+
 **If you use BCDI:** select "BCDI" and upload a **MemoNotices XML** export
 (before 2009 or since 2009), or a CSV using BCDI field names (`TITRE_N`,
 `ISBN_D`, `AUTEURS_N`, etc.) or common headers (`Titre`, `ISBN`, `Auteur`,

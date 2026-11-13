@@ -230,7 +230,7 @@ The **Backup** section shows the date of the last backup and lists all existing 
 
 | Data | Import format | Export format |
 |------|--------------|---------------|
-| Catalog | Dublin Core CSV, BiblioPuce CSV | Dublin Core CSV |
+| Catalog | Dublin Core CSV, BiblioPuce CSV, Biblioboost CSV | Dublin Core CSV |
 | Borrowers | BCD CSV (borrower_id, first_name, last_name, class, role) | BCD CSV |
 
 Import results show exactly how many records were created, updated, skipped, or failed, with row-level error details.

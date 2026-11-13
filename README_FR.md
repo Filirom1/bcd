@@ -226,7 +226,7 @@ La section **Sauvegardes** affiche la date de la dernière sauvegarde et liste t
 
 | Données | Format d'import | Format d'export |
 |---------|----------------|----------------|
-| Catalogue | CSV Dublin Core, CSV BiblioPuce | CSV Dublin Core |
+| Catalogue | CSV Dublin Core, CSV BiblioPuce, CSV Biblioboost | CSV Dublin Core |
 | Emprunteurs | CSV BCD (borrower_id, first_name, last_name, class, role) | CSV BCD |
 
 Les résultats d'import indiquent exactement combien de notices ont été créées, mises à jour, ignorées ou rejetées, avec le détail des erreurs par ligne.
