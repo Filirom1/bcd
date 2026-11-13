@@ -180,7 +180,7 @@ def test_python_test_suites_fast_runs_only_fast_non_external_tests():
                 "-m",
                 "asyncio and not e2e and not slow and not external",
             ],
-        )
+        ),
     ]
 
 
