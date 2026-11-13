@@ -52,7 +52,7 @@ describe('CatalogImport', () => {
         expect(wrapper.vm.importersLoading).toBe(false);
     });
 
-    it('accepts CSV files and rejects non-CSV files', () => {
+    it('accepts CSV and XML files and rejects other files', () => {
         const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
         const wrapper = mountImport();
 
@@ -60,9 +60,48 @@ describe('CatalogImport', () => {
         expect(wrapper.vm.selectedFile).toBeInstanceOf(File);
         expect(wrapper.vm.selectedFile.name).toBe('catalog.csv');
 
+        wrapper.vm.onFileSelected(fileEvent('catalog.XML'));
+        expect(wrapper.vm.selectedFile.name).toBe('catalog.XML');
+        expect(wrapper.vm.selectedFormat).toBe('bcdi');
+
         wrapper.vm.onFileSelected(fileEvent('catalog.txt'));
         expect(wrapper.vm.selectedFile).toBe(null);
-        expect(alert).toHaveBeenCalledWith('borrowers.import.invalid_file');
+        expect(alert).toHaveBeenCalledWith('catalog.import_invalid_file');
+    });
+
+    it('uploads XML as BCDI even when selected before formats finish loading', async () => {
+        const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ records_created: 1 });
+        const wrapper = mountImport();
+        wrapper.vm.onFileSelected(fileEvent('catalog.xml', '<MEMO_NOTICES/>'));
+        await flushPromises();
+
+        await wrapper.vm.startImport();
+
+        expect(post).toHaveBeenCalledWith('/catalog/import?format=bcdi', expect.any(FormData));
+    });
+
+    it('rejects XML when the user switches to a CSV-only format', async () => {
+        const post = vi.spyOn(apiClient, 'post');
+        const alert = vi.spyOn(window, 'alert').mockImplementation(() => {});
+        const wrapper = mountImport();
+        wrapper.vm.onFileSelected(fileEvent('catalog.xml'));
+        wrapper.vm.selectedFormat = 'dublin_core';
+
+        await wrapper.vm.startImport();
+
+        expect(post).not.toHaveBeenCalled();
+        expect(alert).toHaveBeenCalledWith('catalog.import_xml_requires_bcdi');
+    });
+
+    it('clears a cancelled file selection without displaying an error', () => {
+        const alert = vi.spyOn(window, 'alert');
+        const wrapper = mountImport();
+        wrapper.vm.onFileSelected(fileEvent());
+
+        wrapper.vm.onFileSelected({ target: { files: [] } });
+
+        expect(wrapper.vm.selectedFile).toBe(null);
+        expect(alert).not.toHaveBeenCalled();
     });
 
     it('uploads a CSV with the selected format and preserves valid/invalid row results', async () => {

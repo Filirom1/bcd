@@ -61,6 +61,28 @@ Le fichier d'import est un tableau à préparer avec **Excel** ou **LibreOffice 
 
 **Avec BiblioPuce :** exporter la bibliothèque normalement, puis sélectionner le format « BiblioPuce » dans la fenêtre d'import de BCD. Aucune autre manipulation n'est nécessaire.
 
+**Avec BCDI :** sélectionner le format « BCDI » et fournir un export XML
+**MémoNotices** (ancien format avant 2009 ou format depuis 2009), ou un CSV
+avec les noms de champs BCDI (`TITRE_N`, `ISBN_D`, `AUTEURS_N`, etc.) ou
+les en-têtes usuels (`Titre`, `ISBN`, `Auteur`, `Editeur`, `Inventaire`, `Cote`).
+Les CSV peuvent être séparés par des virgules, points-virgules ou tabulations,
+en UTF-8 ou Windows-1252. L'encodage XML est lu depuis sa déclaration.
+Le choix d'un fichier XML sélectionne automatiquement BCDI.
+
+- Les listes d'auteurs et mots-clés séparées par `/` ou `|` sont conservées.
+- Chaque code `CODE_EXEMPLAIRE_X` (ou `Inventaire` en CSV) crée un exemplaire.
+  Sans ce code, la notice est importée mais une erreur signale l'exemplaire
+  manquant : ni l'ISBN ni le code-barres du document ne remplacent l'inventaire.
+- Pour les notices de partie, seule la notice générale imbriquée est importée :
+  les articles ne deviennent pas des livres et leurs métadonnées ne sont pas
+  ajoutées à celles du document.
+- Les fascicules avec le même ISSN sont distingués par leur titre.
+- Les prêts, états d'exemplaire, emplacements et fichiers liés ne sont pas
+  migrés. Les formats MémoAuteurs, MémoEditeurs, MémoCollections et Emprunteurs
+  ne sont pas des exports de catalogue et sont refusés.
+
+[Référence des formats XML BCDI](https://ressources.solutionsdocumentaires.fr/manuels/bcdi/special/html/ChampsXML.htm).
+
 **Pour préparer le fichier manuellement avec Excel :**
 
 1. Ouvrir un nouveau classeur Excel.

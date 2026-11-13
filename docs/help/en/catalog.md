@@ -61,6 +61,26 @@ The import file is a spreadsheet you prepare in **Excel** or **LibreOffice Calc*
 
 **If you use BiblioPuce:** export your library as usual, then select the "BiblioPuce" format in the BCD import window. No other steps needed.
 
+**If you use BCDI:** select "BCDI" and upload a **MemoNotices XML** export
+(before 2009 or since 2009), or a CSV using BCDI field names (`TITRE_N`,
+`ISBN_D`, `AUTEURS_N`, etc.) or common headers (`Titre`, `ISBN`, `Auteur`,
+`Editeur`, `Inventaire`, `Cote`). CSV supports commas, semicolons or tabs,
+with UTF-8 or Windows-1252 encoding. XML uses its declared encoding.
+Selecting an XML file automatically selects BCDI.
+
+- Author and keyword lists separated by `/` or `|` are preserved.
+- Each `CODE_EXEMPLAIRE_X` (or CSV `Inventaire`) creates a copy. Without it,
+  the record is imported with a missing-copy error: ISBNs and document
+  barcodes are never substituted for inventory numbers.
+- For part notices, only the nested general notice is imported. Articles
+  do not become books and their metadata is not added to the parent document.
+- Issues sharing an ISSN are distinguished by title.
+- Loans, copy states, shelf locations and linked files are not migrated.
+  MemoAuteurs, MemoEditeurs, MemoCollections and Emprunteurs are not catalog
+  exports and are rejected.
+
+[BCDI XML format reference](https://ressources.solutionsdocumentaires.fr/manuels/bcdi/special/html/ChampsXML.htm).
+
 **If you prepare the file manually in Excel:**
 
 1. Open a new Excel spreadsheet.

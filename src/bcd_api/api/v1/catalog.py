@@ -426,10 +426,8 @@ def list_importers():
     """
     List supported catalog import formats.
 
-    Scans the scripts/convert/ directory for conversion scripts
-    (*_to_dublin_core.py). Each script becomes a named importer.
-    The importer name is derived from the filename by removing the
-    _to_dublin_core.py suffix.
+    Lists the catalog converters registered in ``bcd_converters.catalog``.
+    Each converter name is derived from its module filename.
 
     **Returns**: List of importers with name, description and filename.
     """
@@ -475,7 +473,7 @@ def get_catalog_template():
 
 @router.post("/import")
 async def import_catalog(
-    file: UploadFile = File(..., description="CSV file to import"),
+    file: UploadFile = File(..., description="CSV or BCDI MemoNotices XML file to import"),
     format: str = Query(
         "dublin_core",
         description="Source format name (dublin_core or any importer from /importers)",
@@ -483,12 +481,12 @@ async def import_catalog(
     db: Session = Depends(get_db),
 ):
     """
-    Import bibliographic records and items from a CSV file.
+    Import bibliographic records and items from a CSV or BCDI MemoNotices XML file.
 
     When **format** is `dublin_core` (default), the file is imported directly.
-    For any other format, the corresponding conversion script in `scripts/convert/`
-    is used to convert the file to Dublin Core before importing. The available
-    formats are listed by the `GET /catalog/importers` endpoint.
+    For any other format, the corresponding registered converter is used to
+    convert the file to Dublin Core before importing. The available formats
+    are listed by the `GET /catalog/importers` endpoint.
 
     **Dublin Core CSV Format** (comma-separated):
     ```
@@ -525,6 +523,11 @@ async def import_catalog(
     2. Creates one Item per row linked to BibliographicRecord
     3. Skips duplicates (existing ISBNs and item_ids)
 
+    BCDI accepts MemoNotices XML before/since 2009 and tabular CSV exports.
+    Only general notices are imported (including those nested in part notices).
+    Missing exemplar inventory codes are reported; ISBN/document barcodes are
+    never used as BCDI item IDs. Serial issues are grouped by ISSN + title.
+
     **Response:**
     - records_created: Number of new bibliographic records
     - items_created: Number of new items
@@ -539,7 +542,7 @@ async def import_catalog(
       -F "file=@catalog_dublin_core.csv"
 
     curl -X POST "http://localhost:8888/api/v1/catalog/import?format=bcdi" \\
-      -F "file=@bcdi_export.csv"
+      -F "file=@bcdi_export.xml"
     ```
     """
     from src.bcd_api.services.catalog.import_dc import import_dublin_core_csv
@@ -566,9 +569,13 @@ async def import_catalog(
                     detail=f"Format '{format}' does not support server-side conversion (missing convert() function).",
                 )
 
-            csv_content = module.convert(content)
+            try:
+                csv_content = module.convert(content)
+            except ValueError as exc:
+                logger.warning("Invalid catalog import (format=%s): %s", format, exc)
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-        result = import_dublin_core_csv(db, csv_content)
+        result = import_dublin_core_csv(db, csv_content, require_item_id=format == "bcdi")
         return result.to_dict()
 
     except HTTPException:

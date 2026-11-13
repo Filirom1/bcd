@@ -20,7 +20,16 @@ from .import_ import DublinCoreColumns, ImportResult, _normalize_isbn
 logger = logging.getLogger(__name__)
 
 
-def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
+def _bibliographic_key(identifier: str | None, title: str) -> str | tuple[str, str]:
+    # An ISSN identifies a serial, not an individual issue.
+    if identifier and identifier.startswith("issn:"):
+        return identifier, title
+    return identifier or title
+
+
+def import_dublin_core_csv(
+    db: Session, csv_content: str, *, require_item_id: bool = False
+) -> ImportResult:
     """
     Import bibliographic records and items from Dublin Core CSV file.
 
@@ -34,7 +43,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
     Multi-valued fields (pipe-separated): dc.creator, dc.contributor, dc.subject
 
     Strategy:
-    1. Group rows by ISBN or title
+    1. Group rows by ISBN, ISSN + title (serial issues), or title
     2. Create one BibliographicRecord per unique title
     3. Create one Item per row
     4. BULK INSERT for performance
@@ -42,6 +51,8 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
     Args:
         db: Database session
         csv_content: CSV file content as string
+        require_item_id: Require an explicit item.id (BCDI exemplar code);
+            do not use the bibliographic identifier as an inventory number.
 
     Returns:
         ImportResult with statistics and errors
@@ -50,8 +61,9 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
 
     # Auto-detect delimiter (comma or semicolon)
     sniffer = csv.Sniffer()
-    sample = csv_content[:1024]
-    delimiter = sniffer.sniff(sample).delimiter
+    # A bounded sample can cut a quoted description in half; the header is complete.
+    sample = csv_content.partition("\n")[0]
+    delimiter = sniffer.sniff(sample, delimiters=",;").delimiter
 
     logger.info(f"Detected delimiter: {repr(delimiter)}")
 
@@ -85,7 +97,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
             isbn = _normalize_isbn(identifier) if identifier else None
 
             # Determine bibliographic record key
-            biblio_key = isbn if isbn else title
+            biblio_key = _bibliographic_key(isbn, title)
 
             # Store row for item creation later
             items_to_create.append((row_num, row, biblio_key))
@@ -174,7 +186,10 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
             db.query(BibliographicRecord).filter(BibliographicRecord.isbn.in_(isbns_to_check)).all()
         )
         for record in existing_by_isbn:
-            existing_records[record.isbn] = record
+            key = _bibliographic_key(record.isbn, record.title)
+            if key not in biblio_map:
+                continue
+            existing_records[key] = record
             result.records_skipped += 1
             logger.info(
                 f"Bibliographic record already exists (ISBN): {record.isbn} (ID: {record.id})"
@@ -244,7 +259,7 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
     item_ids_to_check = []
     for _, row, _ in items_to_create:
         item_id = row.get(DublinCoreColumns.ITEM_ID, "").strip()
-        if not item_id:
+        if not item_id and not require_item_id:
             item_id = row.get(DublinCoreColumns.IDENTIFIER, "").strip()
         if item_id:
             # Strip prefix if present
@@ -274,13 +289,15 @@ def import_dublin_core_csv(db: Session, csv_content: str) -> ImportResult:
 
             # Get item ID from item.id or dc.identifier
             item_id = row.get(DublinCoreColumns.ITEM_ID, "").strip()
-            if not item_id:
+            if not item_id and not require_item_id:
                 item_id = row.get(DublinCoreColumns.IDENTIFIER, "").strip()
 
             if not item_id:
                 result.add_error(
                     row_num,
-                    f"Missing item ID (need {DublinCoreColumns.ITEM_ID} or {DublinCoreColumns.IDENTIFIER})",
+                    f"Missing item ID (need {DublinCoreColumns.ITEM_ID}"
+                    + ("" if require_item_id else f" or {DublinCoreColumns.IDENTIFIER}")
+                    + ")",
                 )
                 result.items_skipped += 1
                 continue

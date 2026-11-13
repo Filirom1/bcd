@@ -81,7 +81,7 @@ export default {
                 id="csv-file-catalog"
                 type="file"
                 class="form-control"
-                accept=".csv"
+                accept=".csv,.xml"
                 @change="onFileSelected"
                 ref="fileInput"
               >
@@ -269,7 +269,7 @@ export default {
         const result = await apiClient.get('/catalog/importers');
         importers.value = result.importers || [];
         // Default to first format (dublin_core)
-        if (importers.value.length > 0) {
+        if (importers.value.length > 0 && !selectedFile.value) {
           selectedFormat.value = importers.value[0].name;
         }
       } catch (error) {
@@ -286,16 +286,27 @@ export default {
 
     function onFileSelected(event) {
       const file = event.target.files[0];
-      if (file && file.name.endsWith('.csv')) {
+      if (!file) {
+        selectedFile.value = null;
+        return;
+      }
+      if (file && /\.(csv|xml)$/i.test(file.name)) {
         selectedFile.value = file;
+        if (/\.xml$/i.test(file.name)) {
+          selectedFormat.value = 'bcdi';
+        }
       } else {
         selectedFile.value = null;
-        alert(t('borrowers.import.invalid_file'));
+        alert(t('catalog.import_invalid_file'));
       }
     }
 
     async function startImport() {
       if (!selectedFile.value) return;
+      if (/\.xml$/i.test(selectedFile.value.name) && selectedFormat.value !== 'bcdi') {
+        alert(t('catalog.import_xml_requires_bcdi'));
+        return;
+      }
 
       importing.value = true;
       importResult.value = null;
